@@ -19,6 +19,22 @@ export function errorHandler(
     return;
   }
 
+  if (typeof err === "object" && err !== null && "type" in err) {
+    if (err.type === "entity.parse.failed") {
+      res.status(400).json({
+        error: { message: "JSON invalide" },
+      });
+      return;
+    }
+
+    if (err.type === "entity.too.large") {
+      res.status(413).json({
+        error: { message: "Requête trop volumineuse" },
+      });
+      return;
+    }
+  }
+
   if (
     err instanceof Prisma.PrismaClientKnownRequestError &&
     err.code === "P2002"
