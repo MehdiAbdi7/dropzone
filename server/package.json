@@ -11,6 +11,7 @@
     "test": "vitest"
   },
   "type": "module",
+  "engines": { "node": ">=22" },
   "keywords": [],
   "author": "",
   "license": "ISC",
