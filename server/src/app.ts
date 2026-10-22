@@ -15,12 +15,6 @@ app.get("/health", (req, res) => {
   res.json({ data: { status: "ok" } });
 });
 
-app.get("/debug-ip", (req, res) => {
-  res.json({
-    data: { ip: req.ip, forwardedFor: req.headers["x-forwarded-for"] ?? null },
-  });
-});
-
 app.use(notFound);
 app.use(errorHandler);
 
