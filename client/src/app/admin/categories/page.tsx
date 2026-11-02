@@ -2,7 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import Field from "@/components/ui/Field";
-import { KIND_LABELS } from "@/config/catalog";
+import { DEVICE_KINDS, KIND_LABELS } from "@/config/catalog";
+import BrandsEditor from "@/features/admin/BrandsEditor";
 import {
   useCategoriesQuery,
   useCreateCategoryMutation,
@@ -97,6 +98,7 @@ function CategoryRow({ category }: { category: Category }) {
         </button>
       </div>
       {error ? <p className="field-error">{errorMessage(error)}</p> : null}
+      <BrandsEditor categoryId={category.id} isDevice={DEVICE_KINDS.includes(category.kind)} />
     </div>
   );
 }

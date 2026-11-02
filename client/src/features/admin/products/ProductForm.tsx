@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import BrandLogo from "@/components/ui/BrandLogo";
 import Field from "@/components/ui/Field";
 import { KIND_LABELS, SPEC_SUGGESTIONS } from "@/config/catalog";
 import { errorMessage, fieldErrors } from "@/lib/errors";
 import {
+  useBrandsQuery,
   useCategoriesQuery,
   useCreateProductMutation,
   useGiftOptionsQuery,
@@ -37,6 +40,7 @@ export default function ProductForm({
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
   const { data: categories = [] } = useCategoriesQuery();
+  const { data: allBrands = [] } = useBrandsQuery();
   const { data: giftOptionsAll = [] } = useGiftOptionsQuery();
   const [createProduct, createState] = useCreateProductMutation();
   const [updateProduct, updateState] = useUpdateProductMutation();
@@ -45,6 +49,7 @@ export default function ProductForm({
   const category = categories.find((item) => item.id === draft.categoryId);
   const kind = category?.kind;
   const isDevice = isDeviceKind(kind);
+  const brands = allBrands.filter((brand) => brand.categoryId === draft.categoryId);
   // Un produit ne s'offre pas lui-même.
   const giftOptions = giftOptionsAll.filter((option) => !ownSkus.includes(option.sku));
 
@@ -56,6 +61,8 @@ export default function ProductForm({
     set({
       categoryId: id,
       deviceModelId: device ? draft.deviceModelId : null,
+      // Les marques sont rangées par catégorie : en changer vide la marque.
+      brandId: id === draft.categoryId ? draft.brandId : null,
       compatibleModelIds: next?.kind === "accessory" ? draft.compatibleModelIds : [],
       // Les caractéristiques habituelles de cette sorte, à compléter.
       specs:
@@ -66,8 +73,10 @@ export default function ProductForm({
     });
   }
 
+  // Choisir « Galaxy S24 Ultra » choisit la marque dont le fabricant est « Samsung ».
   function chooseModel(model: DeviceModel) {
-    set({ deviceModelId: model.id, name: draft.name || model.name });
+    const maker = brands.find((brand) => brand.makerName === model.brand);
+    set({ deviceModelId: model.id, name: draft.name || model.name, brandId: maker?.id ?? draft.brandId });
   }
 
   async function onSubmit(event: FormEvent) {
@@ -132,6 +141,43 @@ export default function ProductForm({
               />
             </section>
           ) : null}
+
+          <section aria-labelledby="step-brand" className="card space-y-4 p-5">
+            <h2 id="step-brand" className="text-xl">
+              Marque
+            </h2>
+            {brands.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="chip"
+                  aria-pressed={draft.brandId === null}
+                  onClick={() => set({ brandId: null })}
+                >
+                  Sans marque
+                </button>
+                {brands.map((brand) => (
+                  <button
+                    key={brand.id}
+                    type="button"
+                    className="chip"
+                    aria-pressed={draft.brandId === brand.id}
+                    onClick={() => set({ brandId: brand.id })}
+                  >
+                    <BrandLogo url={brand.logoUrl} />
+                    {brand.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-ink-muted">
+                Aucune marque dans cette catégorie.{" "}
+                <Link href="/admin/categories" className="font-semibold text-blue-ink underline">
+                  En ajouter dans Catégories
+                </Link>
+              </p>
+            )}
+          </section>
 
           <section aria-labelledby="step-info" className="card space-y-4 p-5">
             <h2 id="step-info" className="text-xl">

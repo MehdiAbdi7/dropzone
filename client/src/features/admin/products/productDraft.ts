@@ -24,6 +24,7 @@ export type ProductDraft = {
   description: string;
   categoryId: number | null;
   deviceModelId: number | null;
+  brandId: number | null;
   compatibleModelIds: number[];
   specs: { key: string; value: string }[];
   status: ProductStatus;
@@ -56,6 +57,7 @@ export function emptyDraft(): ProductDraft {
     description: "",
     categoryId: null,
     deviceModelId: null,
+    brandId: null,
     compatibleModelIds: [],
     specs: [],
     status: "draft",
@@ -70,6 +72,7 @@ export function draftFromProduct(product: AdminProduct): ProductDraft {
     description: product.description,
     categoryId: product.categoryId,
     deviceModelId: product.deviceModelId,
+    brandId: product.brandId,
     compatibleModelIds: product.compatibleModels.map((model) => model.id),
     specs: Object.entries(product.specs).map(([key, value]) => ({ key, value })),
     status: product.status,
@@ -101,6 +104,7 @@ export function bodyFromDraft(draft: ProductDraft): ProductBody {
     description: draft.description,
     categoryId: draft.categoryId ?? 0,
     deviceModelId: draft.deviceModelId,
+    brandId: draft.brandId,
     compatibleModelIds: draft.compatibleModelIds,
     specs: Object.fromEntries(
       draft.specs.filter((row) => row.key.trim() && row.value.trim()).map((row) => [row.key.trim(), row.value.trim()]),

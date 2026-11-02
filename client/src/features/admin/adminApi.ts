@@ -52,6 +52,7 @@ export type AdminProduct = {
   category: { id: number; name: string; kind: ProductKind };
   deviceModelId: number | null;
   deviceModel: { id: number; brand: string; name: string } | null;
+  brandId: number | null;
   compatibleModels: { id: number; brand: string; name: string }[];
   images: { id: number; url: string; publicId: string | null; position: number }[];
   variants: AdminVariant[];
@@ -62,10 +63,23 @@ export type ProductBody = {
   description: string;
   categoryId: number;
   deviceModelId: number | null;
+  brandId: number | null;
   compatibleModelIds: number[];
   specs: Options;
   status: ProductStatus;
   variants: (Omit<AdminVariant, "id"> & { id?: number })[];
+};
+
+// Une marque vue du back-office : toutes, même sans produit, avec sa catégorie.
+export type AdminBrand = {
+  id: number;
+  categoryId: number;
+  name: string;
+  slug: string;
+  makerName: string | null;
+  logoUrl: string | null;
+  position: number;
+  productCount: number;
 };
 
 export type DeviceModel = {
@@ -212,7 +226,38 @@ const adminApi = api.injectEndpoints({
     }),
     deleteCategory: build.mutation<void, number>({
       query: (id) => ({ url: `/admin/categories/${id}`, method: "DELETE" }),
-      invalidatesTags: ["Categories"],
+      invalidatesTags: ["Categories", "Brands"],
+    }),
+
+    // Marques (la liste publique des catégories les porte aussi : on l'invalide avec)
+    brands: build.query<AdminBrand[], void>({
+      query: () => "/admin/brands",
+      transformResponse: data<AdminBrand[]>,
+      providesTags: ["Brands"],
+    }),
+    createBrand: build.mutation<AdminBrand, { categoryId: number; name: string; makerName?: string | null }>({
+      query: ({ categoryId, ...body }) => ({ url: `/admin/categories/${categoryId}/brands`, method: "POST", body }),
+      transformResponse: data<AdminBrand>,
+      invalidatesTags: ["Brands", "Categories"],
+    }),
+    updateBrand: build.mutation<
+      AdminBrand,
+      { id: number; name?: string; makerName?: string | null; position?: number; logoUrl?: string | null }
+    >({
+      query: ({ id, ...body }) => ({ url: `/admin/brands/${id}`, method: "PATCH", body }),
+      invalidatesTags: ["Brands", "Categories"],
+    }),
+    uploadBrandLogo: build.mutation<unknown, { id: number; file: File }>({
+      query: ({ id, file }) => {
+        const form = new FormData();
+        form.append("image", file);
+        return { url: `/admin/brands/${id}/logo`, method: "POST", body: form };
+      },
+      invalidatesTags: ["Brands", "Categories"],
+    }),
+    deleteBrand: build.mutation<void, number>({
+      query: (id) => ({ url: `/admin/brands/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Brands", "Categories"],
     }),
 
     // Modèles d'appareils et listes à cocher
@@ -280,6 +325,11 @@ export const {
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,
+  useBrandsQuery,
+  useCreateBrandMutation,
+  useUpdateBrandMutation,
+  useUploadBrandLogoMutation,
+  useDeleteBrandMutation,
   useModelsQuery,
   useCreateModelMutation,
   useDeleteModelMutation,
