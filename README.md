@@ -60,3 +60,7 @@ server/   Express: modules/ (products, orders, auth, categories, models, choices
 ```
 
 Each API module keeps its routes, validation (Zod) and, when there is business logic, a service. The admin router is protected in one line: `app.use("/admin", requireAuth, requireRole("admin"), adminRouter)`.
+
+## Credits
+
+Brand logos in `client/public/brands/` come from [Simple Icons](https://simpleicons.org) 16.36.0 (CC0 1.0). The brands themselves belong to their owners; they are shown only to identify the products sold.

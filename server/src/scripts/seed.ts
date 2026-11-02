@@ -2,6 +2,7 @@
 //   npm run seed              → simulation : affiche ce qui serait créé
 //   npm run seed -- --apply   → vide le catalogue puis le recrée
 // Refuse de tourner en production, sauf avec --force.
+import { findLibraryLogo } from "../config/brandLogos.js";
 import { prisma } from "../config/db.js";
 import { env } from "../config/env.js";
 import type { ChoiceGroup } from "../generated/prisma/client.js";
@@ -9,7 +10,7 @@ import { modelSlug } from "../modules/models/modelSlug.js";
 import { computeMinPrice } from "../modules/products/product.service.js";
 import { slugify } from "../utils/slugify.js";
 import { CHOICES, DEVICE_MODELS } from "./device-models.js";
-import { CATEGORIES, PRODUCTS } from "./seed-data.js";
+import { BRANDS, CATEGORIES, PRODUCTS } from "./seed-data.js";
 
 const apply = process.argv.includes("--apply");
 const force = process.argv.includes("--force");
@@ -24,7 +25,7 @@ const variantCount = PRODUCTS.reduce((sum, product) => sum + product.variants.le
 
 if (!apply) {
   console.log(
-    `Simulation : ${CATEGORIES.length} catégories, ${DEVICE_MODELS.length} modèles, ` +
+    `Simulation : ${CATEGORIES.length} catégories, ${BRANDS.length} marques, ${DEVICE_MODELS.length} modèles, ` +
       `${choiceCount} valeurs de listes, ${PRODUCTS.length} produits, ${variantCount} variantes. ` +
       "Relance avec --apply pour écrire.",
   );
@@ -38,6 +39,7 @@ await prisma.variantGift.deleteMany();
 await prisma.productImage.deleteMany();
 await prisma.productVariant.deleteMany();
 await prisma.product.deleteMany();
+await prisma.brand.deleteMany();
 await prisma.deviceModel.deleteMany();
 await prisma.choice.deleteMany();
 await prisma.category.deleteMany();
@@ -48,6 +50,42 @@ for (const category of CATEGORIES) {
   const created = await prisma.category.create({ data: { ...category, slug } });
   categories.set(slug, created.id);
 }
+
+// Les marques, rangées par catégorie : « smartphones|iPhone » et, pour retrouver la
+// marque d'un appareil d'après son modèle, « smartphones|maker:Apple ».
+const brands = new Map<string, number>();
+for (const [index, brand] of BRANDS.entries()) {
+  const created = await prisma.brand.create({
+    data: {
+      categoryId: categories.get(brand.category)!,
+      name: brand.name,
+      slug: slugify(brand.name),
+      makerName: brand.makerName ?? null,
+      logoUrl: findLibraryLogo(brand.name),
+      position: index,
+    },
+  });
+  brands.set(`${brand.category}|${brand.name}`, created.id);
+  if (brand.makerName) {
+    brands.set(`${brand.category}|maker:${brand.makerName}`, created.id);
+  }
+}
+
+const brandId = (product: (typeof PRODUCTS)[number]) => {
+  const key = product.brand
+    ? `${product.category}|${product.brand}`
+    : product.model
+      ? `${product.category}|maker:${product.model.split("|")[0]}`
+      : null;
+  if (!key) {
+    return null;
+  }
+  const id = brands.get(key);
+  if (!id) {
+    throw new Error(`Marque inconnue dans seed-data.ts : ${key}`);
+  }
+  return id;
+};
 
 await prisma.deviceModel.createMany({
   data: DEVICE_MODELS.map((model) => ({ ...model, slug: modelSlug(model.brand, model.name) })),
@@ -85,6 +123,7 @@ for (const [index, product] of PRODUCTS.entries()) {
       description: product.description,
       categoryId: categories.get(product.category)!,
       deviceModelId: product.model ? modelId(product.model) : null,
+      brandId: brandId(product),
       compatibleModels: { connect: (product.compatible ?? []).map((key) => ({ id: modelId(key) })) },
       specs: product.specs ?? {},
       status: product.status ?? "published",
@@ -115,7 +154,7 @@ const gifts = PRODUCTS.flatMap((product) =>
 await prisma.variantGift.createMany({ data: gifts });
 
 console.log(
-  `Base remplie : ${CATEGORIES.length} catégories, ${DEVICE_MODELS.length} modèles, ${choiceCount} valeurs, ` +
+  `Base remplie : ${CATEGORIES.length} catégories, ${BRANDS.length} marques, ${DEVICE_MODELS.length} modèles, ${choiceCount} valeurs, ` +
     `${PRODUCTS.length} produits, ${variantCount} variantes, ${gifts.length} articles offerts.`,
 );
 await prisma.$disconnect();

@@ -69,8 +69,32 @@ model Category {
   slug     String      @unique
   kind     ProductKind @default(accessory)
   products Product[]
+  brands   Brand[]
 
   @@map("categories")
+}
+
+// Une marque dans une catégorie : « iPhone » dans Smartphones, « MacBook » dans PC
+// portables. Une même entreprise a donc une ligne par catégorie, avec son nom affiché.
+model Brand {
+  id         Int       @id @default(autoincrement())
+  categoryId Int       @map("category_id")
+  // Supprimer une catégorie supprime ses marques : elle n'est supprimable que sans
+  // produits (RESTRICT sur products.category_id), donc ses marques n'en ont pas.
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name       String
+  slug       String
+  // Le fabricant des modèles d'appareils (champ `brand` de DeviceModel), pour
+  // remplir la marque d'un produit depuis son modèle : « Apple » pour « iPhone ».
+  makerName  String?   @map("maker_name")
+  // « /brands/apple.svg » (bibliothèque Simple Icons) ou une URL Cloudinary.
+  logoUrl    String?   @map("logo_url")
+  position   Int       @default(0)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  products   Product[]
+
+  @@unique([categoryId, slug])
+  @@map("brands")
 }
 
 model DeviceModel {
@@ -106,6 +130,9 @@ model Product {
   category         Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   deviceModelId    Int?             @map("device_model_id")
   deviceModel      DeviceModel?     @relation("ProductDeviceModel", fields: [deviceModelId], references: [id], onDelete: Restrict)
+  // Facultative : un câble générique n'a pas de marque. Une marque utilisée ne se supprime pas.
+  brandId          Int?             @map("brand_id")
+  brand            Brand?           @relation(fields: [brandId], references: [id], onDelete: Restrict)
   compatibleModels DeviceModel[]    @relation("ProductCompatibleModels")
   specs            Json             @default("{}")
   status           ProductStatus    @default(draft)
@@ -119,6 +146,7 @@ model Product {
   @@index([status, minPrice])
   @@index([categoryId])
   @@index([deviceModelId])
+  @@index([brandId])
   @@map("products")
 }
 

@@ -9,7 +9,7 @@ export const PASSWORD = "motdepasse123";
 // séquences à leur départ : la première commande de chaque test porte le numéro 1001.
 export async function resetDb() {
   await prisma.$executeRaw`TRUNCATE order_items, orders, users, variant_gifts, product_images,
-    product_variants, "_ProductCompatibleModels", products, choices, device_models, categories
+    product_variants, "_ProductCompatibleModels", products, brands, choices, device_models, categories
     RESTART IDENTITY CASCADE`;
 }
 
@@ -28,6 +28,24 @@ export async function createCatalog() {
   const galaxy = await prisma.deviceModel.create({
     data: { brand: "Samsung", name: "Galaxy S24 Ultra", slug: "samsung-galaxy-s24-ultra", kind: "phone" },
   });
+  // Les marques : iPhone (logo Apple) et Samsung dans Smartphones, Anker (sans logo de
+  // bibliothèque) dans Accessoires. Seul le brouillon est Samsung.
+  const iphoneBrand = await prisma.brand.create({
+    data: { categoryId: phones.id, name: "iPhone", slug: "iphone", makerName: "Apple", logoUrl: "/brands/apple.svg" },
+  });
+  const samsungBrand = await prisma.brand.create({
+    data: {
+      categoryId: phones.id,
+      name: "Samsung",
+      slug: "samsung",
+      makerName: "Samsung",
+      logoUrl: "/brands/samsung.svg",
+      position: 1,
+    },
+  });
+  const ankerBrand = await prisma.brand.create({
+    data: { categoryId: accessories.id, name: "Anker", slug: "anker" },
+  });
 
   const charger = await prisma.product.create({
     data: {
@@ -35,6 +53,7 @@ export async function createCatalog() {
       slug: "chargeur-usb-c-20-w",
       description: "Charge rapide",
       categoryId: accessories.id,
+      brandId: ankerBrand.id,
       status: "published",
       minPrice: 2500,
       variants: { create: [{ sku: "CHG-20W", price: 2500, stock: 5 }] },
@@ -59,6 +78,7 @@ export async function createCatalog() {
       description: "Titane",
       categoryId: phones.id,
       deviceModelId: iphone.id,
+      brandId: iphoneBrand.id,
       status: "published",
       minPrice: 150000,
       variants: {
@@ -98,12 +118,25 @@ export async function createCatalog() {
       description: "Bientôt",
       categoryId: phones.id,
       deviceModelId: galaxy.id,
+      brandId: samsungBrand.id,
       status: "draft",
       variants: { create: [{ sku: "ZFLIP6", price: 175000, stock: 2 }] },
     },
   });
 
-  return { phones, accessories, iphone, galaxy, charger, phoneCase, phone, chargerVariant };
+  return {
+    phones,
+    accessories,
+    iphone,
+    galaxy,
+    charger,
+    phoneCase,
+    phone,
+    chargerVariant,
+    iphoneBrand,
+    samsungBrand,
+    ankerBrand,
+  };
 }
 
 export async function createUser(role: "customer" | "admin" = "customer", email = `${role}@test.dz`) {

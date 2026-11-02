@@ -22,6 +22,9 @@ export type SeedProduct = {
   category: string;
   // « Marque|Nom » d'un modèle de device-models.ts.
   model?: string;
+  // La marque, pour un produit sans modèle d'appareil ; un appareil prend celle du
+  // fabricant de son modèle (champ makerName de BRANDS).
+  brand?: string;
   compatible?: string[];
   description: string;
   specs?: Record<string, string>;
@@ -37,6 +40,24 @@ export const CATEGORIES = [
   { name: "Accessoires", kind: "accessory" },
   { name: "Audiovisuel", kind: "audiovisual" },
 ] as const;
+
+// Les marques de chaque catégorie, dans l'ordre des puces de la Boutique. Seulement
+// celles qui ont des produits dans ce seed : une marque vide n'aurait aucune puce.
+export const BRANDS: { category: string; name: string; makerName?: string }[] = [
+  { category: "smartphones", name: "iPhone", makerName: "Apple" },
+  { category: "smartphones", name: "Samsung", makerName: "Samsung" },
+  { category: "smartphones", name: "Google", makerName: "Google" },
+  { category: "smartphones", name: "Xiaomi", makerName: "Xiaomi" },
+  { category: "ordinateurs-portables", name: "MacBook", makerName: "Apple" },
+  { category: "ordinateurs-portables", name: "Dell", makerName: "Dell" },
+  { category: "ordinateurs-portables", name: "HP", makerName: "HP" },
+  { category: "ordinateurs-portables", name: "Lenovo", makerName: "Lenovo" },
+  { category: "montres-connectees", name: "Apple Watch", makerName: "Apple" },
+  { category: "montres-connectees", name: "Samsung", makerName: "Samsung" },
+  { category: "accessoires", name: "Apple" },
+  { category: "audiovisuel", name: "JBL" },
+  { category: "audiovisuel", name: "GoPro" },
+];
 
 const neuf = (sku: string, options: Record<string, string>, price: number, stock: number): SeedVariant => ({
   sku,
@@ -378,6 +399,7 @@ export const PRODUCTS: SeedProduct[] = [
   {
     name: "AirPods Pro (2e génération)",
     category: "accessoires",
+    brand: "Apple",
     description: "Réduction de bruit active, audio spatial et boîtier MagSafe USB-C.",
     image: "/products/earbuds.svg",
     variants: [neuf("AIRPODS-PRO2", { Couleur: "Blanc" }, 42000, 4)],
@@ -392,6 +414,7 @@ export const PRODUCTS: SeedProduct[] = [
   {
     name: "Coque silicone MagSafe iPhone 15 Pro Max",
     category: "accessoires",
+    brand: "Apple",
     compatible: ["Apple|iPhone 15 Pro Max"],
     description: "Silicone doux au toucher, aimants MagSafe intégrés.",
     image: "/products/case.svg",
@@ -429,6 +452,7 @@ export const PRODUCTS: SeedProduct[] = [
   {
     name: "GoPro HERO12 Black",
     category: "audiovisuel",
+    brand: "GoPro",
     description: "Vidéo 5,3K, stabilisation HyperSmooth 6.0 et étanchéité jusqu'à 10 m.",
     specs: { Vidéo: "5,3K à 60 i/s", Étanchéité: "10 m" },
     image: "/products/camera.svg",
@@ -437,6 +461,7 @@ export const PRODUCTS: SeedProduct[] = [
   {
     name: "Enceinte JBL Flip 6",
     category: "audiovisuel",
+    brand: "JBL",
     description: "Enceinte Bluetooth étanche IP67, 12 heures d'autonomie.",
     specs: { Autonomie: "12 h", Étanchéité: "IP67" },
     image: "/products/speaker.svg",
