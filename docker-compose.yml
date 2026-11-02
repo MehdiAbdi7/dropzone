@@ -1,0 +1,66 @@
+# Toute la boutique en une commande : `docker compose up --build`
+# Puis, une seule fois, le catalogue de démo et le compte admin :
+#   docker compose run --rm migrate npm run seed -- --apply
+#   docker compose run --rm -e ADMIN_EMAIL=… -e ADMIN_PASSWORD=… migrate npm run create-admin
+# Les secrets viennent d'un fichier .env à côté de ce fichier (voir README).
+
+services:
+  # La base PostgreSQL 18. Ses données vivent dans un volume : elles survivent
+  # à `docker compose down` (mais pas à `down -v`).
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: dropzone
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+      POSTGRES_DB: dropzone
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dropzone -d dropzone"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Applique les migrations, puis s'arrête. L'API attend qu'il ait réussi.
+  migrate:
+    build:
+      context: ./server
+      target: build
+    command: npx prisma migrate deploy
+    environment:
+      DATABASE_URL: postgresql://dropzone:${POSTGRES_PASSWORD}@db:5432/dropzone
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build: ./server
+    environment:
+      DATABASE_URL: postgresql://dropzone:${POSTGRES_PASSWORD}@db:5432/dropzone
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 5000
+      CORS_ORIGINS: http://localhost:3000
+      # Aucun relais devant l'API dans Docker : le front l'appelle directement.
+      TRUST_PROXY: 0
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ./client
+      args:
+        API_URL: http://api:5000
+    environment:
+      API_URL: http://api:5000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  db-data:
