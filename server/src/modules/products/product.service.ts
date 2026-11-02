@@ -74,8 +74,13 @@ export async function listProducts(query: ProductListQuery) {
       OR: [
         { name: { contains, mode: "insensitive" } },
         { deviceModel: { brand: { contains, mode: "insensitive" } } },
+        { brand: { name: { contains, mode: "insensitive" } } },
       ],
     });
+  }
+  if (query.brand) {
+    // Avec `category`, c'est la marque de cette catégorie (les deux filtres s'ajoutent).
+    filters.push({ brand: { slug: query.brand } });
   }
   if (query.condition) {
     const condition: Condition = query.condition === "reconditionne" ? "refurbished" : "new";
@@ -109,6 +114,7 @@ export async function listProducts(query: ProductListQuery) {
         minPrice: true,
         category: { select: { name: true, slug: true } },
         deviceModel: { select: { brand: true } },
+        brand: { select: { name: true } },
         images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
         variants: {
           select: { condition: true, stock: true, gifts: { select: { id: true }, take: 1 } },
@@ -117,11 +123,13 @@ export async function listProducts(query: ProductListQuery) {
     }),
   ]);
 
-  const data = products.map(({ variants, images, deviceModel, ...product }) => {
+  const data = products.map(({ variants, images, deviceModel, brand, ...product }) => {
     const available = variants.filter((variant) => variant.stock > 0);
     return {
       ...product,
-      brand: deviceModel?.brand ?? null,
+      // La petite ligne de la carte : le fabricant du modèle (« Apple » au-dessus
+      // d'« iPhone 15 », pas « iPhone » deux fois), sinon le nom de la marque.
+      brand: deviceModel?.brand ?? brand?.name ?? null,
       image: images[0]?.url ?? null,
       inStock: available.length > 0,
       hasNew: available.some((variant) => variant.condition === "new"),

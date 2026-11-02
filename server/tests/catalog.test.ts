@@ -17,6 +17,38 @@ describe("GET /categories", () => {
       expect.objectContaining({ slug: "accessoires", kind: "accessory", productCount: 2 }),
     ]);
   });
+
+  it("donne les marques de chaque catégorie, sans celles qui n'ont aucun produit publié", async () => {
+    const response = await request(app).get("/categories");
+    const [phones, accessories] = response.body.data;
+    // Samsung n'a qu'un brouillon : pas de puce.
+    expect(phones.brands).toEqual([{ name: "iPhone", slug: "iphone", logoUrl: "/brands/apple.svg", productCount: 1 }]);
+    expect(accessories.brands).toEqual([{ name: "Anker", slug: "anker", logoUrl: null, productCount: 1 }]);
+  });
+});
+
+describe("GET /products, filtre par marque", () => {
+  it("garde les produits de la marque dans la catégorie", async () => {
+    // La coque, publiée elle aussi dans les Accessoires, n'a pas de marque : elle sort.
+    const response = await request(app).get("/products?category=accessoires&brand=anker");
+    expect(response.body.data.map((p: { slug: string }) => p.slug)).toEqual(["chargeur-usb-c-20-w"]);
+  });
+
+  it("ne montre pas un brouillon, même de la bonne marque", async () => {
+    const response = await request(app).get("/products?brand=samsung");
+    expect(response.status).toBe(200);
+    expect(response.body.data).toEqual([]);
+  });
+
+  it("refuse une marque qui n'a pas la forme d'un slug", async () => {
+    const response = await request(app).get("/products?brand=Pas_un_slug");
+    expect(response.status).toBe(400);
+  });
+
+  it("cherche aussi dans le nom de la marque, et l'affiche sur la carte sans modèle", async () => {
+    const response = await request(app).get("/products?q=anker");
+    expect(response.body.data).toEqual([expect.objectContaining({ slug: "chargeur-usb-c-20-w", brand: "Anker" })]);
+  });
 });
 
 describe("GET /products", () => {

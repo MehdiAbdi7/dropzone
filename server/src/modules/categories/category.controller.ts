@@ -12,10 +12,26 @@ export async function getCategories(_req: Request, res: Response) {
       slug: true,
       kind: true,
       _count: { select: { products: { where: { status: "published" } } } },
+      brands: {
+        orderBy: [{ position: "asc" }, { name: "asc" }],
+        select: {
+          name: true,
+          slug: true,
+          logoUrl: true,
+          _count: { select: { products: { where: { status: "published" } } } },
+        },
+      },
     },
   });
   res.json({
-    data: categories.map(({ _count, ...category }) => ({ ...category, productCount: _count.products })),
+    data: categories.map(({ _count, brands, ...category }) => ({
+      ...category,
+      productCount: _count.products,
+      // Une marque sans produit publié n'aurait qu'une liste vide derrière sa puce.
+      brands: brands
+        .filter((brand) => brand._count.products > 0)
+        .map(({ _count: brandCount, ...brand }) => ({ ...brand, productCount: brandCount.products })),
+    })),
   });
 }
 
