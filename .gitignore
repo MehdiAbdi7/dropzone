@@ -5,3 +5,5 @@ dist
 .env.*
 !.env.example
 server/src/generated
+# Les images d'origine (lourdes), gardées en local : le site sert leurs versions WebP de client/public.
+client/design-sources/
