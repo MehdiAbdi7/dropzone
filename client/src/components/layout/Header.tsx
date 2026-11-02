@@ -1,67 +1,54 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import CartLink from "@/features/cart/CartLink";
 import Logo from "@/components/ui/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import { publicFetch } from "@/lib/publicFetch";
-import type { Category } from "@/types/api";
+import { MenuIcon, UserIcon } from "@/components/ui/icons";
+import HeaderNav from "./HeaderNav";
+import MobileMenu from "./MobileMenu";
+import NavLinks from "./NavLinks";
+import SearchToggle from "./SearchToggle";
 
-// Un Server Component : les catégories sont lues côté serveur, en cache 5 minutes.
-// Seuls le panier et le bouton de thème sont des composants client.
-export default async function Header() {
-  const categories = (await publicFetch<Category[]>("/categories", 300)) ?? [];
-
+// L'en-tête, sombre dans les deux thèmes (bloc de marque). Un Server Component :
+// seuls la navigation (qui lit l'adresse), la recherche, le panier, le thème et
+// le menu mobile sont des composants client.
+export default function Header() {
   return (
-    <header className="border-b border-line bg-bg">
-      <div className="container-page flex flex-wrap items-center gap-x-6 gap-y-3 py-4">
+    <header className="brand-dark relative z-30 border-b border-line">
+      <div className="container-page flex min-h-16 items-center gap-2 py-2 lg:gap-6">
         <Logo />
-        {/* Une simple form GET : chercher marche même sans JavaScript. */}
-        <form action="/produits" className="order-last w-full md:order-none md:w-auto md:flex-1" role="search">
-          <label htmlFor="header-search" className="sr-only">
-            Chercher un modèle
-          </label>
-          <input
-            id="header-search"
-            name="q"
-            type="search"
-            className="input"
-            placeholder="Chercher un modèle : iPhone 15 Pro Max, Galaxy S24…"
-          />
-        </form>
-        <nav className="ml-auto flex items-center gap-2" aria-label="Compte et panier">
-          <Link href="/compte" className="btn btn-secondary btn-small">
-            Mon compte
-          </Link>
-          <ThemeToggle />
-          <CartLink />
+
+        <nav aria-label="Navigation principale" className="mx-auto hidden lg:block">
+          {/* Le serveur affiche les liens sans lien actif ; le client le souligne. */}
+          <Suspense fallback={<NavLinks />}>
+            <HeaderNav />
+          </Suspense>
         </nav>
+
+        <div className="ml-auto flex items-center gap-0.5 lg:ml-0">
+          <SearchToggle />
+          <Link href="/compte" className="icon-btn hidden sm:inline-grid" aria-label="Mon compte">
+            <UserIcon />
+          </Link>
+          <CartLink />
+          <span className="hidden lg:contents">
+            <ThemeToggle />
+          </span>
+          <Link href="/produits?offre=affaire" className="btn btn-primary btn-small ml-2 hidden lg:inline-flex">
+            Voir les affaires
+          </Link>
+          {/* Même place et même taille avant que le client ne prenne la main : rien ne bouge. */}
+          <Suspense
+            fallback={
+              <span className="icon-btn lg:hidden" aria-hidden="true">
+                <MenuIcon />
+              </span>
+            }
+          >
+            <MobileMenu />
+          </Suspense>
+        </div>
       </div>
-      <nav aria-label="Catégories" className="border-t border-line">
-        <ul className="container-page scroll-quiet flex gap-1 overflow-x-auto py-2 text-sm font-semibold">
-          {categories.map((category) => (
-            <li key={category.slug}>
-              <Link
-                href={`/produits?category=${category.slug}`}
-                className="block whitespace-nowrap rounded-md px-3 py-2 text-ink-muted hover:bg-surface-2 hover:text-ink"
-              >
-                {category.name}
-              </Link>
-            </li>
-          ))}
-          <li>
-            <Link
-              href="/produits?condition=reconditionne"
-              className="block whitespace-nowrap rounded-md px-3 py-2 text-blue-ink hover:bg-surface-2"
-            >
-              Reconditionnés
-            </Link>
-          </li>
-          <li>
-            <Link href="/suivi" className="block whitespace-nowrap rounded-md px-3 py-2 text-ink-muted hover:bg-surface-2 hover:text-ink">
-              Suivre une commande
-            </Link>
-          </li>
-        </ul>
-      </nav>
     </header>
   );
 }

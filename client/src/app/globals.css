@@ -1,14 +1,14 @@
 /* =====================================================================
    DropZone : le thème du site
    1. Tailwind et les variantes
-   2. Les couleurs des deux thèmes (sombre par défaut, celui du logo)
+   2. Les couleurs des deux thèmes (clair par défaut) et des blocs de marque
    3. Le thème Tailwind : couleurs, polices, rayons
    4. La base (body, titres, focus, mouvements réduits)
    5. Les composants réutilisés partout (boutons, champs, puces, badges)
-   6. Les utilitaires de la marque (dégradé du logo, liseré néon)
+   6. Les utilitaires de la marque (dégradé du logo, socle néon, liseré)
 
-   Contrastes vérifiés en WCAG AA (4,5:1 pour le texte courant) : les valeurs
-   sont notées à côté de chaque couleur de texte.
+   Contrastes vérifiés en WCAG AA (4,5:1 pour le texte courant, 3:1 pour les
+   grands titres) : les valeurs sont notées à côté de chaque couleur de texte.
    ===================================================================== */
 
 /* ---------- 1. Tailwind et les variantes ---------- */
@@ -16,35 +16,13 @@
 @import "tailwindcss";
 
 /* `dark:` suit l'attribut data-theme de <html> (posé avant l'affichage par
-   ThemeScript), et non la préférence du système : le sombre est la marque. */
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+   ThemeScript), et vaut aussi dans les blocs de marque, toujours sombres. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .brand-dark, .brand-dark *));
 
-/* ---------- 2. Les couleurs des deux thèmes ---------- */
+/* ---------- 2. Les couleurs ---------- */
 
-/* Sombre : le noir du logo, des surfaces teintées du bleu de la marque. */
+/* Clair, le thème par défaut : fond gris très clair, cartes blanches. */
 :root,
-[data-theme="dark"] {
-  --bg: #000000;
-  --surface: #0e0f1a;
-  --surface-2: #171a2c;
-  --line: #2a2e4a;
-  --ink: #f2f3fa; /* 18,6:1 sur le fond */
-  --ink-muted: #a3a7c2; /* 8,9:1 sur le fond, 7,5:1 sur surface-2 */
-  --blue: #3d4bff; /* fond des boutons : texte blanc à 5,8:1 */
-  --blue-hover: #5260ff;
-  --blue-ink: #8c95ff; /* liens et texte bleu : 7,9:1 sur le fond */
-  --violet: #a33bf0; /* seulement dans le dégradé */
-  --red: #ff2e4d; /* texte rouge : 5,8:1 sur le fond, 4,8:1 sur surface-2 */
-  --red-soft: rgb(255 46 77 / 0.12);
-  --amber: #ffb547; /* défauts visibles : 11:1 sur le fond */
-  --amber-soft: rgb(255 181 71 / 0.1);
-  --blue-soft: rgb(61 75 255 / 0.16);
-  --on-brand: #ffffff;
-  --shadow: 0 18px 40px -24px rgb(61 75 255 / 0.55);
-  color-scheme: dark;
-}
-
-/* Clair : le même système, sur papier. */
 [data-theme="light"] {
   --bg: #f5f6fb;
   --surface: #ffffff;
@@ -58,12 +36,42 @@
   --violet: #8a2be2;
   --red: #d4143a; /* 5,3:1 sur blanc */
   --red-soft: rgb(212 20 58 / 0.08);
+  --on-red: #ffffff; /* blanc sur ce rouge : 5,3:1 */
   --amber: #8a5200; /* 6,4:1 sur blanc */
   --amber-soft: rgb(138 82 0 / 0.08);
   --blue-soft: rgb(43 55 224 / 0.08);
   --on-brand: #ffffff;
   --shadow: 0 18px 40px -28px rgb(10 11 20 / 0.35);
+  --card-shadow: 0 1px 3px rgb(10 11 20 / 0.06);
   color-scheme: light;
+}
+
+/* Sombre : le noir du logo, des surfaces teintées du bleu de la marque.
+   `.brand-dark` redéclare ces variables sur un bloc (en-tête, hero, affaires,
+   pied de page) : il reste sombre dans les deux thèmes, et les classes
+   bg-surface, text-ink… de ses enfants suivent toutes seules. */
+[data-theme="dark"],
+.brand-dark {
+  --bg: #000000;
+  --surface: #0e0f1a;
+  --surface-2: #171a2c;
+  --line: #2a2e4a;
+  --ink: #f2f3fa; /* 18,6:1 sur le fond */
+  --ink-muted: #a3a7c2; /* 8,9:1 sur le fond, 7,5:1 sur surface-2 */
+  --blue: #3d4bff; /* fond des boutons : texte blanc à 5,8:1 */
+  --blue-hover: #5260ff;
+  --blue-ink: #8c95ff; /* liens et texte bleu : 7,9:1 sur le fond */
+  --violet: #a33bf0; /* seulement dans le dégradé */
+  --red: #ff2e4d; /* texte rouge : 5,8:1 sur le fond, 5,2:1 sur surface */
+  --red-soft: rgb(255 46 77 / 0.12);
+  --on-red: #000000; /* noir sur rouge néon : 5,8:1 (le blanc n'y fait que 3,6:1) */
+  --amber: #ffb547; /* défauts visibles : 11:1 sur le fond */
+  --amber-soft: rgb(255 181 71 / 0.1);
+  --blue-soft: rgb(61 75 255 / 0.16);
+  --on-brand: #ffffff;
+  --shadow: 0 18px 40px -24px rgb(61 75 255 / 0.55);
+  --card-shadow: none;
+  color-scheme: dark;
 }
 
 /* ---------- 3. Le thème Tailwind ---------- */
@@ -83,23 +91,28 @@
   --color-violet: var(--violet);
   --color-red: var(--red);
   --color-red-soft: var(--red-soft);
+  --color-on-red: var(--on-red);
   --color-amber: var(--amber);
   --color-amber-soft: var(--amber-soft);
   --color-on-brand: var(--on-brand);
 
-  /* Les polices, chargées par next/font dans layout.tsx. */
+  /* Les polices, chargées par next/font dans layout.tsx : Montserrat pour les
+     titres et le logo (proche du logo des bannières de DropZone), Manrope pour le texte. */
   --font-sans: var(--font-manrope), system-ui, sans-serif;
-  --font-display: var(--font-chakra), var(--font-manrope), sans-serif;
-  --font-logo: var(--font-audiowide), var(--font-chakra), sans-serif;
+  --font-display: var(--font-montserrat), var(--font-manrope), sans-serif;
+  --font-logo: var(--font-montserrat), sans-serif;
 }
 
 @theme {
-  /* Des rayons qui suivent la hiérarchie : petits champs, cartes plus douces. */
-  --radius-field: 6px;
+  /* Des rayons qui suivent la hiérarchie : champs et boutons, cartes, grands blocs. */
+  --radius-field: 10px;
   --radius-card: 14px;
+  --radius-block: 20px;
 
   /* Le dégradé du logo, du bleu électrique au rouge, en passant par le violet. */
   --gradient-brand: linear-gradient(90deg, #3d4bff 0%, #a33bf0 50%, #ff2e4d 100%);
+  /* Le même, assombri pour porter du texte blanc : 5,3:1 au moins sur toute la bande. */
+  --gradient-deep: linear-gradient(90deg, #2b37e0 0%, #8a2be2 50%, #d4143a 100%);
 }
 
 /* ---------- 4. La base ---------- */
@@ -140,6 +153,11 @@
     color: var(--on-brand);
   }
 
+  /* Le menu mobile ouvert (un <dialog> modal) bloque le défilement de la page, sans JavaScript. */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -159,6 +177,13 @@
     max-width: 1200px;
     margin-inline: auto;
     padding-inline: 16px;
+  }
+
+  /* Un bloc de marque : les variables sombres (section 2), plus le fond et la
+     couleur du texte, qui sinon resteraient ceux calculés sur <body>. */
+  .brand-dark {
+    background-color: var(--bg);
+    color: var(--ink);
   }
 
   /* Les boutons. */
@@ -191,6 +216,11 @@
   .btn-primary:not(:disabled):hover {
     background: var(--blue-hover);
   }
+  /* Le léger halo des boutons pleins, seulement sur fond sombre. */
+  .brand-dark .btn-primary,
+  [data-theme="dark"] .btn-primary {
+    box-shadow: 0 8px 24px -10px rgb(61 75 255 / 0.9);
+  }
   .btn-secondary {
     background: var(--surface);
     border-color: var(--line);
@@ -198,6 +228,16 @@
   }
   .btn-secondary:not(:disabled):hover {
     border-color: var(--blue-ink);
+  }
+  /* Un bouton contour, sans fond : « Les reconditionnés », « Tout voir ». */
+  .btn-outline {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--ink) 35%, transparent);
+    color: var(--ink);
+  }
+  .btn-outline:not(:disabled):hover {
+    border-color: var(--blue-ink);
+    color: var(--blue-ink);
   }
   .btn-danger {
     background: transparent;
@@ -211,6 +251,26 @@
     min-height: 36px;
     padding: 0.375rem 0.75rem;
     font-size: 0.875rem;
+  }
+  .btn-pill {
+    border-radius: 999px;
+  }
+
+  /* Un bouton icône rond de l'en-tête (recherche, compte, panier, thème, menu). */
+  .icon-btn {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background-color 150ms;
+  }
+  .icon-btn:hover {
+    background: var(--surface-2);
   }
 
   /* Les champs de formulaire. */
@@ -252,11 +312,12 @@
     font-size: 0.85rem;
   }
 
-  /* Les cartes. */
+  /* Les cartes : une ombre très légère en clair, aucune en sombre. */
   .card {
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
   }
 
   /* Les puces à cocher : une valeur d'une liste (stockage, couleur, défaut…). */
@@ -305,14 +366,11 @@
   }
   .badge-deal {
     background: var(--red);
-    color: #000000; /* noir sur rouge néon : 5,8:1 */
+    color: var(--on-red);
   }
   .badge-out {
     background: var(--surface-2);
     color: var(--ink-muted);
-  }
-  [data-theme="light"] .badge-deal {
-    color: #ffffff; /* blanc sur le rouge du thème clair : 5,3:1 */
   }
 
   .table {
@@ -332,6 +390,30 @@
     border-bottom: 1px solid var(--line);
     vertical-align: middle;
   }
+
+  /* Le menu mobile : un panneau qui s'ouvre sur la droite, par-dessus la page. */
+  .mobile-menu {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(340px, 88vw);
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    border-left: 1px solid var(--line);
+  }
+  .mobile-menu::backdrop {
+    background: rgb(0 0 0 / 0.6);
+  }
+
+  /* La recherche de l'en-tête : un <details>, qui s'ouvre même sans JavaScript. */
+  .search-toggle > summary {
+    list-style: none;
+  }
+  .search-toggle > summary::-webkit-details-marker {
+    display: none;
+  }
 }
 
 /* ---------- 6. Les utilitaires de la marque ---------- */
@@ -345,25 +427,73 @@
     color: transparent;
   }
 
-  /* La bannière de l'accueil : le fond change avec le thème. Une image de fond CSS
-     qui ne s'applique pas n'est jamais téléchargée : le visiteur ne charge que celle
-     de son thème, et le bouton de thème la change sans JavaScript. */
-  .hero-banner {
-    background-color: var(--bg);
-    background-image: url("/fond-sombre.webp");
-    background-size: cover;
-    background-position: center;
-  }
-  [data-theme="light"] .hero-banner {
-    background-image: url("/fond-clair.webp");
+  /* Le bandeau d'annonce, en haut de toutes les pages. */
+  .bg-gradient-deep {
+    background: var(--gradient-deep);
   }
 
-  /* Une bande qui défile au doigt (catégories sur mobile), sans barre visible. */
-  .scroll-quiet {
-    scrollbar-width: none;
+  /* Le filet en dégradé à côté des titres de section. */
+  .rule-gradient {
+    display: block;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--gradient-brand);
   }
-  .scroll-quiet::-webkit-scrollbar {
-    display: none;
+
+  /* Le fond du hero : du noir, un halo bleu derrière le socle, un peu de rouge en haut à gauche. */
+  .hero-glow {
+    background:
+      radial-gradient(55% 70% at 78% 60%, rgb(61 75 255 / 0.22), transparent 70%),
+      radial-gradient(35% 45% at 6% 12%, rgb(255 46 77 / 0.1), transparent 70%),
+      var(--bg);
+  }
+
+  /* Le socle éclairé où se posent les appareils (DeviceStage). Le cadre garde ses
+     proportions : les appareils y sont placés en pourcentages. */
+  .stage {
+    position: relative;
+    aspect-ratio: 5 / 4;
+  }
+  .stage-halo {
+    position: absolute;
+    inset: 8% 4% 2%;
+    background: radial-gradient(closest-side, rgb(61 75 255 / 0.4), rgb(255 46 77 / 0.14) 60%, transparent);
+    filter: blur(14px);
+  }
+  .stage-plinth {
+    position: absolute;
+    left: 9%;
+    right: 9%;
+    bottom: 3%;
+    height: 32%;
+  }
+  /* Le flanc du socle : un cylindre, arrondi en bas comme la face du dessus. */
+  .stage-plinth::before {
+    content: "";
+    position: absolute;
+    inset: 30% 0 0;
+    border-radius: 0 0 50% 50% / 0 0 42% 42%;
+    background: linear-gradient(180deg, #161931, #05060c 75%);
+    box-shadow: 0 30px 60px -24px rgb(0 0 0 / 0.9);
+  }
+  /* La face du dessus : un ovale bordé du dégradé, rouge à gauche et bleu à droite. */
+  .stage-plinth::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 40%;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    background:
+      radial-gradient(closest-side, #1d2142, #090a14) padding-box,
+      linear-gradient(90deg, #ff2e4d, #a33bf0, #3d4bff) border-box;
+    box-shadow:
+      0 0 28px rgb(61 75 255 / 0.5),
+      0 0 60px rgb(255 46 77 / 0.22);
+  }
+  .stage-item {
+    position: absolute;
+    aspect-ratio: 1;
+    filter: drop-shadow(0 0 14px rgb(61 75 255 / 0.35));
   }
 
   /* Le liseré néon : un filet en dégradé sur le bord gauche (fiche d'état). */

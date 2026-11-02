@@ -8,7 +8,7 @@ import type { Category, ProductCard } from "@/types/api";
 
 export const metadata: Metadata = { title: "Produits" };
 
-const PARAMS = ["category", "q", "condition", "model", "sort", "page"] as const;
+const PARAMS = ["category", "q", "condition", "model", "offre", "sort", "page"] as const;
 
 export default async function CatalogPage({ searchParams }: PageProps<"/produits">) {
   const query = await searchParams;
@@ -30,9 +30,11 @@ export default async function CatalogPage({ searchParams }: PageProps<"/produits
   const search = params.get("q");
   const title = search
     ? `Résultats pour « ${search} »`
-    : params.get("condition") === "reconditionne"
-      ? "Reconditionnés disponibles"
-      : (category?.name ?? "Tous les produits");
+    : params.get("offre") === "affaire"
+      ? "Les affaires du moment"
+      : params.get("condition") === "reconditionne"
+        ? "Reconditionnés disponibles"
+        : (category?.name ?? "Tous les produits");
 
   // Les liens de pagination gardent les filtres et changent seulement la page.
   const pageHref = (page: number) => {

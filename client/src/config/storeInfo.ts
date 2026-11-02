@@ -5,7 +5,12 @@ const TO_PROVIDE = "Fournie par DropZone après accord";
 export const STORE_INFO = {
   name: "DropZone",
   tagline: "Laptops, smartphones et audiovisuel, sélectionnés d'Europe",
+  town: "Kouba",
+  city: "Alger",
   instagram: "https://www.instagram.com/dropzone.officiel/",
+  instagramHandle: "@dropzone.officiel",
+  // Relevé sur Instagram le 02/11/2026 : à remettre à jour de temps en temps.
+  instagramFollowers: "128 k",
   phones: {
     smartphones: "07 95 13 19 17",
     laptops: "05 50 61 12 57",

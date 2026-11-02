@@ -1,12 +1,17 @@
 import type { ProductCard as ProductCardData } from "@/types/api";
 import ProductCard from "./ProductCard";
 
-export default function ProductGrid({ products }: { products: ProductCardData[] }) {
+// `wide` : 6 colonnes sur grand écran (l'accueil) ; sinon 4, comme le catalogue.
+// `sizes` dit au navigateur la largeur réelle des images, pour le jour des photos.
+export default function ProductGrid({ products, wide = false }: { products: ProductCardData[]; wide?: boolean }) {
   return (
-    <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+    <ul className={`grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 ${wide ? "lg:grid-cols-6" : "lg:grid-cols-4"}`}>
       {products.map((product) => (
         <li key={product.id} className="flex">
-          <ProductCard product={product} />
+          <ProductCard
+            product={product}
+            sizes={wide ? "(min-width: 1024px) 180px, (min-width: 768px) 33vw, 50vw" : "(min-width: 1024px) 280px, (min-width: 768px) 33vw, 50vw"}
+          />
         </li>
       ))}
     </ul>

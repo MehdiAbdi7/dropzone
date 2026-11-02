@@ -1,10 +1,13 @@
 "use client";
 
-// Bascule entre le thème sombre (celui de la marque) et le thème clair.
+import { MoonIcon } from "./icons";
+
+// Bascule entre le thème clair (par défaut) et le thème sombre. Les blocs de
+// marque (en-tête, hero, pied de page) restent sombres dans les deux cas.
 // Le choix est gardé dans localStorage et relu par ThemeScript au prochain chargement.
-export default function ThemeToggle() {
+export default function ThemeToggle({ withLabel = false }: { withLabel?: boolean }) {
   function toggle() {
-    const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
     try {
       localStorage.setItem("theme", next);
@@ -13,11 +16,17 @@ export default function ThemeToggle() {
     }
   }
 
+  if (withLabel) {
+    return (
+      <button type="button" onClick={toggle} className="btn btn-secondary w-full justify-start">
+        <MoonIcon />
+        Changer de thème
+      </button>
+    );
+  }
   return (
-    <button type="button" onClick={toggle} className="btn btn-secondary btn-small" aria-label="Changer de thème">
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z" />
-      </svg>
+    <button type="button" onClick={toggle} className="icon-btn" aria-label="Changer de thème">
+      <MoonIcon />
     </button>
   );
 }

@@ -1,41 +1,71 @@
 import Link from "next/link";
+import {
+  AlertIcon,
+  ArrowRightIcon,
+  CashIcon,
+  ClipboardCheckIcon,
+  DocumentIcon,
+  EyeIcon,
+  GlobeIcon,
+  InstagramIcon,
+  PackageIcon,
+  StoreIcon,
+  SwapIcon,
+  TruckIcon,
+} from "@/components/ui/icons";
+import { FREE_SHIPPING_FROM } from "@/config/shipping";
+import { STORE_INFO } from "@/config/storeInfo";
+import CategoryCards from "@/features/home/CategoryCards";
+import DeviceStage, { DEAL_DEVICES, HERO_DEVICES } from "@/features/home/DeviceStage";
+import Guarantees, { type Guarantee } from "@/features/home/Guarantees";
 import ConditionReport from "@/features/products/ConditionReport";
 import ProductGrid from "@/features/products/ProductGrid";
+import { formatPrice } from "@/lib/format";
 import { publicFetch, publicFetchPage } from "@/lib/publicFetch";
-import type { Category, ProductCard, ProductDetail } from "@/types/api";
+import type { ProductCard, ProductDetail } from "@/types/api";
 
-// Les modèles que les clients de DropZone demandent le plus souvent.
-const POPULAR_MODELS = [
-  { slug: "apple-iphone-15-pro-max", label: "iPhone 15 Pro Max" },
-  { slug: "apple-iphone-13", label: "iPhone 13" },
-  { slug: "samsung-galaxy-s24-ultra", label: "Galaxy S24 Ultra" },
-  { slug: "apple-macbook-air-13-pouces-m2", label: "MacBook Air M2" },
-  { slug: "apple-watch-series-9", label: "Apple Watch Series 9" },
+// Rien d'inventé : chaque garantie est un fait (règle du serveur, façon de vendre
+// du magasin, chiffre relevé sur Instagram).
+const TOP_GUARANTEES: Guarantee[] = [
+  { icon: <GlobeIcon />, title: "Sélectionnés d'Europe", text: "Smartphones, PC et montres" },
+  { icon: <TruckIcon />, title: "Livraison dans les 58 wilayas", text: `Offerte dès ${formatPrice(FREE_SHIPPING_FROM)}` },
+  { icon: <CashIcon />, title: "Paiement à la livraison", text: "Vous payez en recevant" },
+  { icon: <ClipboardCheckIcon />, title: "Reconditionnés décrits", text: "Note, batterie, pièces et défauts" },
+];
+
+const BOTTOM_GUARANTEES: Guarantee[] = [
+  { icon: <StoreIcon />, title: `Magasin à ${STORE_INFO.town}`, text: STORE_INFO.city },
+  { icon: <PackageIcon />, title: "Suivi de commande", text: "Avec votre numéro et votre téléphone" },
+  { icon: <InstagramIcon />, title: `${STORE_INFO.instagramFollowers} abonnés`, text: "Sur Instagram" },
+  { icon: <DocumentIcon />, title: "Conditions claires", text: "Mentions légales et CGV" },
 ];
 
 const FAMILIES = [
   {
     title: "Limitations",
-    color: "text-red",
+    icon: <AlertIcon />,
+    tone: "bg-red-soft text-red",
     text: "Ce que l'appareil ne fait pas, par exemple « Wi-Fi seulement ». Toujours affiché en premier, et à accepter avant de commander.",
   },
   {
     title: "Pièces remplacées",
-    color: "text-blue-ink",
+    icon: <SwapIcon />,
+    tone: "bg-blue-soft text-blue-ink",
     text: "Caméra, batterie ou écran changés : ils fonctionnent, mais ne sont pas d'origine. On vous le dit.",
   },
   {
     title: "Défauts visibles",
-    color: "text-amber",
+    icon: <EyeIcon />,
+    tone: "bg-amber-soft text-amber",
     text: "Une rayure, un cache arrière fissuré : rien qui gêne l'usage, souvent invisible sous une coque.",
   },
 ];
 
 export default async function HomePage() {
-  const [latest, refurbished, categories] = await Promise.all([
-    publicFetchPage<ProductCard>("/products?limit=8", 60),
+  const [latest, refurbished, deals] = await Promise.all([
+    publicFetchPage<ProductCard>("/products?limit=6", 60),
     publicFetchPage<ProductCard>("/products?category=smartphones&condition=reconditionne&limit=12", 60),
-    publicFetch<Category[]>("/categories", 300),
+    publicFetchPage<ProductCard>("/products?offre=affaire&limit=1", 60),
   ]);
 
   // Un vrai reconditionné du stock, montré avec sa fiche d'état complète :
@@ -49,21 +79,35 @@ export default async function HomePage() {
     refurbishedUnits.find((variant) => variant.gifts.length > 0 && variant.limitations.length === 0) ??
     refurbishedUnits.find((variant) => variant.limitations.length === 0) ??
     refurbishedUnits[0];
+  // Le bandeau des affaires n'apparaît que s'il y a vraiment des affaires en stock.
+  const hasDeals = (deals?.pagination.total ?? 0) > 0;
 
   return (
     <>
-      {/* La bannière : l'image entière, aux couleurs du thème (classe hero-banner de
-          globals.css). Elle porte déjà le logo, donc aucun texte par-dessus son centre.
-          Sur mobile, la recherche passe sous l'image ; à partir de md, elle se pose en
-          bas de l'image, sur un dégradé vers la couleur du fond pour rester lisible. */}
-      <section aria-label="Recherche" className="relative border-b border-line">
-        <div
-          className="hero-banner aspect-[1376/768] w-full md:max-h-[620px] md:min-h-[440px]"
-          aria-hidden="true"
-        />
-        <div className="py-6 md:absolute md:inset-x-0 md:bottom-0 md:bg-linear-to-t md:from-bg md:via-bg/80 md:to-transparent md:pb-10 md:pt-28">
-          <div className="container-page flex flex-col items-center gap-4">
-            <form action="/produits" role="search" className="flex w-full max-w-xl gap-2">
+      {/* 1. Le hero, sombre dans les deux thèmes. */}
+      <section aria-labelledby="hero-title" className="brand-dark hero-glow relative overflow-hidden">
+        <div className="container-page grid items-center gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:py-16">
+          <div className="space-y-6">
+            <p className="text-sm font-bold tracking-[0.14em] text-red uppercase">Sélectionnés d&apos;Europe</p>
+            <h1 id="hero-title" className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-[3.5rem]">
+              Le bon appareil.
+              <span className="text-gradient block w-fit pb-1">Neuf ou reconditionné.</span>
+            </h1>
+            <p className="max-w-lg text-lg text-ink-muted">
+              Smartphones, PC portables et montres importés d&apos;Europe. Chaque reconditionné est testé et décrit
+              pièce par pièce : note, batterie, pièces changées.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/produits" className="btn btn-primary">
+                Voir la boutique
+                <ArrowRightIcon size={18} />
+              </Link>
+              <Link href="/produits?condition=reconditionne" className="btn btn-outline">
+                Les reconditionnés
+              </Link>
+            </div>
+            {/* Une simple form GET : chercher marche même sans JavaScript. */}
+            <form action="/produits" role="search" className="flex max-w-lg gap-2">
               <label htmlFor="hero-search" className="sr-only">
                 Quel modèle cherchez-vous ?
               </label>
@@ -71,36 +115,132 @@ export default async function HomePage() {
                 id="hero-search"
                 name="q"
                 type="search"
-                className="input min-h-12 flex-1 text-base"
-                placeholder="Quel modèle cherchez-vous ?"
+                className="input min-w-0 flex-1"
+                placeholder="Chercher un modèle…"
               />
-              <button type="submit" className="btn btn-primary min-h-12">
+              <button type="submit" className="btn btn-secondary">
                 Chercher
               </button>
             </form>
-            <ul className="flex flex-wrap justify-center gap-2" aria-label="Modèles demandés">
-              {POPULAR_MODELS.map((model) => (
-                <li key={model.slug}>
-                  <Link href={`/produits?model=${model.slug}`} className="chip">
-                    {model.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <a
+              href={STORE_INFO.instagram}
+              rel="noopener noreferrer"
+              target="_blank"
+              className="group inline-flex items-center gap-3 text-sm"
+            >
+              <span className="grid size-10 place-items-center rounded-full bg-surface-2 text-ink">
+                <InstagramIcon size={18} />
+              </span>
+              <span className="text-ink-muted">
+                <strong className="font-display text-ink group-hover:underline">
+                  {STORE_INFO.instagramFollowers} abonnés
+                </strong>{" "}
+                suivent DropZone sur Instagram
+              </span>
+            </a>
           </div>
+          <DeviceStage id="hero" devices={HERO_DEVICES} className="mx-auto w-full max-w-[360px] sm:max-w-[460px] lg:max-w-[580px]" />
         </div>
       </section>
 
-      <section className="border-b border-line">
-        <div className="container-page grid items-center gap-10 py-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:py-16">
-          <div className="space-y-6">
-            <h1 className="text-4xl leading-tight sm:text-5xl">
-              Neuf ou reconditionné, chaque appareil est décrit pièce par pièce.
-            </h1>
-            <p className="max-w-xl text-lg text-ink-muted">
-              Smartphones, PC portables et montres sélectionnés d&apos;Europe. Pour un reconditionné, vous voyez sa
-              note, sa batterie et tout ce qui a été changé avant de commander. Paiement à la livraison.
-            </p>
+      {/* 2. Les garanties, collées sous le hero. */}
+      <section aria-label="Nos garanties" className="brand-dark border-t border-line bg-surface">
+        <div className="container-page py-6">
+          <Guarantees items={TOP_GUARANTEES} />
+        </div>
+      </section>
+
+      {/* 3. Les catégories. */}
+      <section id="categories" aria-labelledby="categories-title" className="container-page scroll-mt-4 py-14">
+        <div className="mb-8 text-center">
+          <div className="flex items-center justify-center gap-4">
+            {/* Les filets seulement à partir de sm : sur mobile, ils feraient passer le titre sur deux lignes. */}
+            <span className="rule-gradient hidden w-16 sm:block" aria-hidden="true" />
+            <h2 id="categories-title" className="text-2xl sm:text-3xl">
+              Acheter par catégorie
+            </h2>
+            <span className="rule-gradient hidden w-16 -scale-x-100 sm:block" aria-hidden="true" />
+          </div>
+          <p className="mt-2 text-ink-muted">Trouvez l&apos;appareil qu&apos;il vous faut.</p>
+        </div>
+        <CategoryCards />
+      </section>
+
+      {/* 4. Le bandeau des affaires. */}
+      {hasDeals ? (
+        <section aria-labelledby="deals-title" className="container-page">
+          {/* La bordure ne se voit qu'en thème sombre, où le bandeau touche un fond aussi noir que lui. */}
+          <div className="brand-dark hero-glow relative grid items-center gap-6 overflow-hidden rounded-[var(--radius-block)] border border-line px-6 py-8 sm:px-10 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] md:py-6">
+            <div className="relative z-10 space-y-4">
+              <p className="text-sm font-bold tracking-[0.14em] text-red uppercase">Les affaires du moment</p>
+              <h2 id="deals-title" className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+                Un appareil, <span className="text-gradient">des accessoires offerts</span>
+              </h2>
+              <p className="max-w-md text-ink-muted">
+                Chargeur, écouteurs ou coque : choisis par le magasin et offerts avec certains appareils.
+              </p>
+              <Link href="/produits?offre=affaire" className="btn btn-primary">
+                Voir les affaires
+                <ArrowRightIcon size={18} />
+              </Link>
+            </div>
+            <DeviceStage id="deals" devices={DEAL_DEVICES} className="mx-auto w-full max-w-[300px] md:max-w-[380px]" />
+          </div>
+        </section>
+      ) : null}
+
+      {/* 5. Les derniers arrivages, avec les nouvelles cartes produit. */}
+      <section aria-labelledby="latest-title" className="container-page space-y-6 py-14">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 id="latest-title" className="text-2xl sm:text-3xl">
+                Notre sélection
+              </h2>
+              <span className="rule-gradient w-10" aria-hidden="true" />
+            </div>
+            <p className="mt-1 text-ink-muted">Les derniers arrivages, neufs et reconditionnés.</p>
+          </div>
+          <Link href="/produits" className="btn btn-outline btn-small btn-pill">
+            Tout voir
+            <ArrowRightIcon size={16} />
+          </Link>
+        </div>
+        {latest ? (
+          <ProductGrid products={latest.data} wide />
+        ) : (
+          <p role="alert" className="card p-6">
+            Le catalogue ne répond pas pour le moment. Rechargez la page dans quelques secondes.
+          </p>
+        )}
+      </section>
+
+      {/* 6. Ce qui distingue DropZone : la fiche d'état d'un reconditionné, avec un vrai exemple. */}
+      <section aria-labelledby="families-title" className="container-page pb-14">
+        <div className={`grid gap-8 ${showcase && unit ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start" : ""}`}>
+          <div className="space-y-5">
+            <div>
+              <h2 id="families-title" className="text-2xl sm:text-3xl">
+                Ce que dit la fiche d&apos;un reconditionné
+              </h2>
+              <p className="mt-2 max-w-xl text-ink-muted">
+                Avant de commander, vous voyez la note, la batterie et tout ce qui a été changé. Trois familles,
+                toujours dans le même ordre.
+              </p>
+            </div>
+            <ul className={`grid gap-3 ${showcase && unit ? "" : "md:grid-cols-3"}`}>
+              {FAMILIES.map((family) => (
+                <li key={family.title} className="card flex gap-4 p-4">
+                  <span className={`grid size-11 shrink-0 place-items-center rounded-full ${family.tone}`}>
+                    {family.icon}
+                  </span>
+                  <div>
+                    <h3 className="text-base">{family.title}</h3>
+                    <p className="mt-1 text-sm text-ink-muted">{family.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {showcase && unit ? (
@@ -126,58 +266,12 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section aria-labelledby="families" className="container-page py-12">
-        <h2 id="families" className="text-2xl">
-          Ce que dit la fiche d&apos;un reconditionné
-        </h2>
-        <div className="mt-6 grid gap-6 md:grid-cols-3">
-          {FAMILIES.map((family) => (
-            <div key={family.title} className="border-t-2 border-line pt-4">
-              <h3 className={`text-lg ${family.color}`}>{family.title}</h3>
-              <p className="mt-2 text-ink-muted">{family.text}</p>
-            </div>
-          ))}
+      {/* 7. Les garanties du bas. */}
+      <section aria-label="DropZone en bref" className="container-page">
+        <div className="brand-dark rounded-[var(--radius-block)] bg-surface px-6 py-7 sm:px-8">
+          <Guarantees items={BOTTOM_GUARANTEES} />
         </div>
       </section>
-
-      <section aria-labelledby="latest" className="container-page space-y-5 py-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 id="latest" className="text-2xl">
-            Nouvel arrivage
-          </h2>
-          <Link href="/produits" className="font-semibold text-blue-ink underline">
-            Tout le catalogue
-          </Link>
-        </div>
-        {latest ? (
-          <ProductGrid products={latest.data} />
-        ) : (
-          <p role="alert" className="card p-6">
-            Le catalogue ne répond pas pour le moment. Rechargez la page dans quelques secondes.
-          </p>
-        )}
-      </section>
-
-      {categories && categories.length > 0 ? (
-        <section aria-labelledby="categories" className="container-page py-12">
-          <h2 id="categories" className="text-2xl">
-            Par catégorie
-          </h2>
-          <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {categories.map((category) => (
-              <li key={category.slug}>
-                <Link
-                  href={`/produits?category=${category.slug}`}
-                  className="card flex items-baseline justify-between gap-3 p-4 hover:border-blue-ink"
-                >
-                  <span className="font-display text-lg font-bold">{category.name}</span>
-                  <span className="text-sm text-ink-muted">{category.productCount}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
     </>
   );
 }
