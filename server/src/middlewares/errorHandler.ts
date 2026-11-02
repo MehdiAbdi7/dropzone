@@ -1,10 +1,18 @@
 import type { NextFunction, Request, Response } from "express";
+import multer from "multer";
 import { AppError } from "../utils/AppError.js";
 import { Prisma } from "../generated/prisma/client.js";
 
 export function notFound(_req: Request, res: Response) {
   res.status(404).json({ error: { message: "Route introuvable" } });
 }
+
+// Les erreurs de Prisma utiles au client, traduites en un seul endroit.
+const PRISMA_ERRORS: Record<string, { status: number; message: string }> = {
+  P2002: { status: 409, message: "Cette valeur existe déjà" },
+  P2003: { status: 409, message: "Cette donnée est encore utilisée ailleurs" },
+  P2025: { status: 404, message: "Introuvable" },
+};
 
 export function errorHandler(
   err: unknown,
@@ -35,12 +43,20 @@ export function errorHandler(
     }
   }
 
-  if (
-    err instanceof Prisma.PrismaClientKnownRequestError &&
-    err.code === "P2002"
-  ) {
-    res.status(409).json({ error: { message: "Cette valeur existe déjà" } });
+  if (err instanceof multer.MulterError) {
+    const tooLarge = err.code === "LIMIT_FILE_SIZE";
+    res.status(tooLarge ? 413 : 400).json({
+      error: { message: tooLarge ? "Image trop lourde (5 Mo maximum)" : "Fichier refusé" },
+    });
     return;
+  }
+
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    const known = PRISMA_ERRORS[err.code];
+    if (known) {
+      res.status(known.status).json({ error: { message: known.message } });
+      return;
+    }
   }
 
   console.error(err);

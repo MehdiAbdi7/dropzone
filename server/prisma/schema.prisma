@@ -1,7 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Toutes les tables de DropZone. Chaque changement de ce fichier produit une
+// migration (prisma/migrations), commitée puis appliquée par `prisma migrate`.
+// Les contraintes CHECK et la séquence des numéros de commande sont ajoutées
+// à la main dans les fichiers SQL des migrations : Prisma ne sait pas les écrire.
 
 generator client {
   provider = "prisma-client"
@@ -12,12 +12,229 @@ datasource db {
   provider = "postgresql"
 }
 
-// model
+// ---------- Les listes fermées ----------
+
+// La sorte de produit : elle décide du formulaire du back-office
+// (modèle d'appareil, options proposées, reconditionné autorisé ou non).
+enum ProductKind {
+  phone
+  laptop
+  watch
+  accessory
+  audiovisual
+}
+
+enum ProductStatus {
+  draft
+  published
+}
+
+enum Condition {
+  new
+  refurbished
+}
+
+// Les listes à cocher du back-office.
+enum ChoiceGroup {
+  storage
+  color
+  ram
+  processor
+  keyboard
+  size
+  connectivity
+  replaced_part
+  defect
+  limitation
+}
+
+enum Role {
+  customer
+  admin
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  shipped
+  delivered
+  cancelled
+}
+
+// ---------- Le catalogue ----------
 
 model Category {
-  id   Int    @id @default(autoincrement())
-  name String @unique
-  slug String @unique
+  id       Int         @id @default(autoincrement())
+  name     String      @unique
+  slug     String      @unique
+  kind     ProductKind @default(accessory)
+  products Product[]
 
   @@map("categories")
+}
+
+model DeviceModel {
+  id                 Int         @id @default(autoincrement())
+  brand              String
+  name               String
+  slug               String      @unique
+  kind               ProductKind
+  products           Product[]   @relation("ProductDeviceModel")
+  compatibleProducts Product[]   @relation("ProductCompatibleModels")
+  createdAt          DateTime    @default(now()) @map("created_at")
+
+  @@unique([brand, name])
+  @@index([kind])
+  @@map("device_models")
+}
+
+model Choice {
+  id    Int         @id @default(autoincrement())
+  group ChoiceGroup
+  label String
+
+  @@unique([group, label])
+  @@map("choices")
+}
+
+model Product {
+  id               Int              @id @default(autoincrement())
+  name             String
+  slug             String           @unique
+  description      String
+  categoryId       Int              @map("category_id")
+  category         Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  deviceModelId    Int?             @map("device_model_id")
+  deviceModel      DeviceModel?     @relation("ProductDeviceModel", fields: [deviceModelId], references: [id], onDelete: Restrict)
+  compatibleModels DeviceModel[]    @relation("ProductCompatibleModels")
+  specs            Json             @default("{}")
+  status           ProductStatus    @default(draft)
+  minPrice         Int              @default(0) @map("min_price")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  variants         ProductVariant[]
+  images           ProductImage[]
+  orderItems       OrderItem[]
+
+  @@index([status, categoryId, createdAt(sort: Desc)])
+  @@index([status, minPrice])
+  @@index([categoryId])
+  @@index([deviceModelId])
+  @@map("products")
+}
+
+model ProductVariant {
+  id            Int           @id @default(autoincrement())
+  productId     Int           @map("product_id")
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku           String        @unique
+  options       Json          @default("{}")
+  price         Int
+  stock         Int
+  condition     Condition     @default(new)
+  // La fiche d'état d'un reconditionné (vide pour un neuf).
+  grade         Int?
+  batteryHealth Int?          @map("battery_health")
+  replacedParts String[]      @default([]) @map("replaced_parts")
+  defects       String[]      @default([])
+  limitations   String[]      @default([])
+  // Les articles offerts quand on achète cette variante (une « affaire »).
+  gifts         VariantGift[] @relation("DealVariant")
+  // Les affaires dans lesquelles cette variante est offerte.
+  giftedIn      VariantGift[] @relation("GiftVariant")
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model VariantGift {
+  id            Int            @id @default(autoincrement())
+  variantId     Int            @map("variant_id")
+  variant       ProductVariant @relation("DealVariant", fields: [variantId], references: [id], onDelete: Cascade)
+  giftVariantId Int            @map("gift_variant_id")
+  giftVariant   ProductVariant @relation("GiftVariant", fields: [giftVariantId], references: [id], onDelete: Cascade)
+  quantity      Int            @default(1)
+
+  @@unique([variantId, giftVariantId])
+  @@index([giftVariantId])
+  @@map("variant_gifts")
+}
+
+model ProductImage {
+  id        Int     @id @default(autoincrement())
+  productId Int     @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  publicId  String? @map("public_id")
+  position  Int     @default(0)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+// ---------- Les comptes ----------
+
+model User {
+  id             Int      @id @default(autoincrement())
+  firstName      String   @map("first_name")
+  lastName       String   @map("last_name")
+  email          String   @unique
+  passwordHash   String   @map("password_hash")
+  phone          String
+  role           Role     @default(customer)
+  addressWilaya  String?  @map("address_wilaya")
+  addressCommune String?  @map("address_commune")
+  addressLine    String?  @map("address_line")
+  createdAt      DateTime @default(now()) @map("created_at")
+  orders         Order[]
+
+  @@map("users")
+}
+
+// ---------- Les commandes ----------
+
+model Order {
+  id                  Int         @id @default(autoincrement())
+  // Une deuxième séquence, pour le numéro montré au client. Elle commence à 1001
+  // (réglé à la main dans la migration add_store_tables).
+  number              Int         @unique @default(autoincrement())
+  userId              Int?        @map("user_id")
+  user                User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  fullName            String      @map("full_name")
+  phone               String
+  wilaya              String
+  commune             String
+  address             String
+  subtotal            Int
+  shippingFee         Int         @map("shipping_fee")
+  total               Int
+  status              OrderStatus @default(pending)
+  note                String?
+  limitationsAccepted Boolean     @default(false) @map("limitations_accepted")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  items               OrderItem[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              Int       @id @default(autoincrement())
+  orderId         Int       @map("order_id")
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId       Int?      @map("product_id")
+  product         Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  // Recopiés à la commande : une commande est un fait passé.
+  sku             String
+  name            String
+  options         Json      @default("{}")
+  condition       Condition @default(new)
+  conditionReport String?   @map("condition_report")
+  unitPrice       Int       @map("unit_price")
+  quantity        Int
+  isGift          Boolean   @default(false) @map("is_gift")
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
 }

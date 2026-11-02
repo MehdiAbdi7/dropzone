@@ -1,0 +1,45 @@
+import type { Request, Response } from "express";
+import { prisma } from "../../config/db.js";
+import type { AdminOrderListQuery } from "./order.schema.js";
+import {
+  changeOrderStatus,
+  createOrder,
+  getAdminOrder,
+  getMyOrder,
+  listAdminOrders,
+  listMyOrders,
+  priceCart,
+  trackOrder,
+} from "./order.service.js";
+
+export async function postPreview(req: Request, res: Response) {
+  res.json({ data: await priceCart(prisma, req.body.items) });
+}
+
+export async function postOrder(req: Request, res: Response) {
+  res.status(201).json({ data: await createOrder(req.body, res.locals.user?.id) });
+}
+
+export async function postTrack(req: Request, res: Response) {
+  res.json({ data: await trackOrder(req.body.number, req.body.phone) });
+}
+
+export async function getMine(_req: Request, res: Response) {
+  res.json({ data: await listMyOrders(res.locals.user!.id) });
+}
+
+export async function getMineOne(req: Request, res: Response) {
+  res.json({ data: await getMyOrder(res.locals.user!.id, Number(req.params.number)) });
+}
+
+export async function getAdminOrders(_req: Request, res: Response) {
+  res.json(await listAdminOrders(res.locals.query as AdminOrderListQuery));
+}
+
+export async function getAdminOrderOne(req: Request, res: Response) {
+  res.json({ data: await getAdminOrder(Number(req.params.id)) });
+}
+
+export async function patchStatus(req: Request, res: Response) {
+  res.json({ data: await changeOrderStatus(Number(req.params.id), req.body.status) });
+}
