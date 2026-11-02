@@ -452,9 +452,10 @@
     background: var(--gradient-deep);
   }
 
-  /* Le filet en dégradé à côté des titres de section. */
+  /* Le filet en dégradé à côté des titres de section. Pas de `display` ici : la règle,
+     écrite après celles de Tailwind dans la même couche, l'emporterait sur `hidden`.
+     Le filet est toujours dans un conteneur flex, qui en fait déjà un bloc. */
   .rule-gradient {
-    display: block;
     height: 3px;
     border-radius: 3px;
     background: var(--gradient-brand);

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HashLink from "./HashLink";
 import { NAV_LINKS, type NavKey } from "./navigation";
 
 // La liste des liens, sans hook : le serveur l'affiche telle quelle (sans lien actif)
@@ -14,9 +15,11 @@ export default function NavLinks({
     <ul className={layout === "bar" ? "flex items-center gap-1" : "grid gap-1"}>
       {NAV_LINKS.map((link) => {
         const current = link.key === active;
+        // Un lien vers une section de page (« /#categories ») défile même au deuxième clic.
+        const LinkTag = link.href.includes("#") ? HashLink : Link;
         return (
           <li key={link.key}>
-            <Link
+            <LinkTag
               href={link.href}
               aria-current={current ? "page" : undefined}
               className={
@@ -32,7 +35,7 @@ export default function NavLinks({
               }
             >
               {link.label}
-            </Link>
+            </LinkTag>
           </li>
         );
       })}
