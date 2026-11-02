@@ -84,8 +84,8 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* 1. Le hero, sombre dans les deux thèmes. */}
-      <section aria-labelledby="hero-title" className="brand-dark hero-glow relative overflow-hidden">
+      {/* 1. Le hero : il suit le thème (noir en sombre, gris clair en clair), avec le même décor. */}
+      <section aria-labelledby="hero-title" className="hero-glow relative overflow-hidden">
         <div className="container-page grid items-center gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:py-16">
           <div className="space-y-6">
             <p className="text-sm font-bold tracking-[0.14em] text-red uppercase">Sélectionnés d&apos;Europe</p>

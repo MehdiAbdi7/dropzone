@@ -43,11 +43,22 @@
   --on-brand: #ffffff;
   --shadow: 0 18px 40px -28px rgb(10 11 20 / 0.35);
   --card-shadow: 0 1px 3px rgb(10 11 20 / 0.06);
+  /* Le décor du hero et du socle. Halos plus discrets qu'en sombre : le rouge
+     reste sous 5 % pour garder l'accroche rouge à 4,5:1 sur le gris. */
+  --glow-blue: rgb(61 75 255 / 0.14);
+  --glow-red: rgb(255 46 77 / 0.05);
+  --halo-blue: rgb(61 75 255 / 0.28);
+  --halo-red: rgb(255 46 77 / 0.1);
+  --plinth-top: #ffffff;
+  --plinth-top-edge: #e4e7f3;
+  --plinth-side: #dfe2ee;
+  --plinth-side-end: #b7bcd3;
+  --plinth-shadow: rgb(10 11 20 / 0.25);
   color-scheme: light;
 }
 
 /* Sombre : le noir du logo, des surfaces teintées du bleu de la marque.
-   `.brand-dark` redéclare ces variables sur un bloc (en-tête, hero, affaires,
+   `.brand-dark` redéclare ces variables sur un bloc (en-tête, garanties, affaires,
    pied de page) : il reste sombre dans les deux thèmes, et les classes
    bg-surface, text-ink… de ses enfants suivent toutes seules. */
 [data-theme="dark"],
@@ -71,6 +82,15 @@
   --on-brand: #ffffff;
   --shadow: 0 18px 40px -24px rgb(61 75 255 / 0.55);
   --card-shadow: none;
+  --glow-blue: rgb(61 75 255 / 0.22);
+  --glow-red: rgb(255 46 77 / 0.1);
+  --halo-blue: rgb(61 75 255 / 0.4);
+  --halo-red: rgb(255 46 77 / 0.14);
+  --plinth-top: #1d2142;
+  --plinth-top-edge: #090a14;
+  --plinth-side: #161931;
+  --plinth-side-end: #05060c;
+  --plinth-shadow: rgb(0 0 0 / 0.9);
   color-scheme: dark;
 }
 
@@ -440,11 +460,12 @@
     background: var(--gradient-brand);
   }
 
-  /* Le fond du hero : du noir, un halo bleu derrière le socle, un peu de rouge en haut à gauche. */
+  /* Le fond du hero : la couleur du fond du thème (noir ou gris clair), un halo bleu
+     derrière le socle, un peu de rouge en haut à gauche. */
   .hero-glow {
     background:
-      radial-gradient(55% 70% at 78% 60%, rgb(61 75 255 / 0.22), transparent 70%),
-      radial-gradient(35% 45% at 6% 12%, rgb(255 46 77 / 0.1), transparent 70%),
+      radial-gradient(55% 70% at 78% 60%, var(--glow-blue), transparent 70%),
+      radial-gradient(35% 45% at 6% 12%, var(--glow-red), transparent 70%),
       var(--bg);
   }
 
@@ -457,7 +478,7 @@
   .stage-halo {
     position: absolute;
     inset: 8% 4% 2%;
-    background: radial-gradient(closest-side, rgb(61 75 255 / 0.4), rgb(255 46 77 / 0.14) 60%, transparent);
+    background: radial-gradient(closest-side, var(--halo-blue), var(--halo-red) 60%, transparent);
     filter: blur(14px);
   }
   .stage-plinth {
@@ -473,8 +494,8 @@
     position: absolute;
     inset: 30% 0 0;
     border-radius: 0 0 50% 50% / 0 0 42% 42%;
-    background: linear-gradient(180deg, #161931, #05060c 75%);
-    box-shadow: 0 30px 60px -24px rgb(0 0 0 / 0.9);
+    background: linear-gradient(180deg, var(--plinth-side), var(--plinth-side-end) 75%);
+    box-shadow: 0 30px 60px -24px var(--plinth-shadow);
   }
   /* La face du dessus : un ovale bordé du dégradé, rouge à gauche et bleu à droite. */
   .stage-plinth::after {
@@ -484,7 +505,7 @@
     border-radius: 50%;
     border: 2px solid transparent;
     background:
-      radial-gradient(closest-side, #1d2142, #090a14) padding-box,
+      radial-gradient(closest-side, var(--plinth-top), var(--plinth-top-edge)) padding-box,
       linear-gradient(90deg, #ff2e4d, #a33bf0, #3d4bff) border-box;
     box-shadow:
       0 0 28px rgb(61 75 255 / 0.5),
