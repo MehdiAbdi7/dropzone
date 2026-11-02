@@ -13,6 +13,7 @@ import {
   SwapIcon,
   TruckIcon,
 } from "@/components/ui/icons";
+import ScrollToHash from "@/components/ui/ScrollToHash";
 import { FREE_SHIPPING_FROM } from "@/config/shipping";
 import { STORE_INFO } from "@/config/storeInfo";
 import CategoryCards from "@/features/home/CategoryCards";
@@ -152,6 +153,7 @@ export default async function HomePage() {
 
       {/* 3. Les catégories. */}
       <section id="categories" aria-labelledby="categories-title" className="container-page scroll-mt-4 py-14">
+        <ScrollToHash id="categories" />
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center gap-4">
             {/* Les filets seulement à partir de sm : sur mobile, ils feraient passer le titre sur deux lignes. */}
