@@ -15,13 +15,17 @@ if (ready) {
   });
 }
 
-export function uploadToCloudinary(buffer: Buffer): Promise<{ url: string; publicId: string }> {
+// `folder` range les images par usage : photos produit ou logos de marques.
+export function uploadToCloudinary(
+  buffer: Buffer,
+  folder = "dropzone/products",
+): Promise<{ url: string; publicId: string }> {
   if (!ready) {
     throw new AppError(503, "L'envoi d'images n'est pas configuré (variables CLOUDINARY_*)");
   }
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: "dropzone/products", format: "webp" },
+      { folder, format: "webp" },
       (error, result) => {
         if (error || !result) {
           reject(new AppError(502, "Cloudinary a refusé l'image"));

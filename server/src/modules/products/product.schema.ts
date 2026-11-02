@@ -93,6 +93,7 @@ export const productBodySchema = z
     description: z.string().trim().min(1).max(5000),
     categoryId: z.number().int().positive(),
     deviceModelId: z.number().int().positive().nullable().default(null),
+    brandId: z.number().int().positive().nullable().default(null),
     compatibleModelIds: z.array(z.number().int().positive()).max(60).default([]),
     specs: labelRecord(120).default({}),
     status: z.enum(["draft", "published"]).default("draft"),

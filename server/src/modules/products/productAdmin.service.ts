@@ -50,6 +50,7 @@ export async function getAdminProduct(id: number) {
     include: {
       category: { select: { id: true, name: true, kind: true } },
       deviceModel: { select: { id: true, brand: true, name: true } },
+      brand: { select: { id: true, name: true, slug: true, logoUrl: true } },
       compatibleModels: { select: { id: true, brand: true, name: true } },
       images: { orderBy: { position: "asc" } },
       variants: {
@@ -87,6 +88,14 @@ async function checkRules(input: ProductBody, productId?: number) {
 
   if (!isDevice && input.variants.some((variant) => variant.condition === "refurbished")) {
     throw new AppError(400, "Le reconditionné est réservé aux smartphones, PC portables et montres");
+  }
+
+  // Les marques sont rangées par catégorie : « iPhone » des Smartphones ne va pas sur une coque.
+  if (input.brandId) {
+    const brand = await prisma.brand.findUnique({ where: { id: input.brandId }, select: { categoryId: true } });
+    if (!brand || brand.categoryId !== input.categoryId) {
+      throw new AppError(400, "Cette marque n'appartient pas à la catégorie");
+    }
   }
 
   // Les articles offerts : des variantes d'accessoires neuves, jamais la variante elle-même.
@@ -146,6 +155,7 @@ export async function createProduct(input: ProductBody) {
       description: input.description,
       categoryId: input.categoryId,
       deviceModelId: rules.deviceModelId,
+      brandId: input.brandId,
       specs: input.specs,
       status: input.status,
       minPrice: computeMinPrice(rules.variants),
@@ -200,6 +210,7 @@ export async function updateProduct(id: number, input: ProductBody) {
         description: input.description,
         categoryId: input.categoryId,
         deviceModelId: rules.deviceModelId,
+        brandId: input.brandId,
         specs: input.specs,
         status: input.status,
         compatibleModels: { set: rules.compatibleModelIds.map((modelId) => ({ id: modelId })) },

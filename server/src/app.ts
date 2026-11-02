@@ -7,6 +7,7 @@ import helmet from "helmet";
 import { env } from "./config/env.js";
 import { requireAuth, requireRole } from "./middlewares/auth.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
+import { brandAdminRouter } from "./modules/brands/brand.routes.js";
 import { categoryAdminRouter, categoryRouter } from "./modules/categories/category.routes.js";
 import { choiceAdminRouter } from "./modules/choices/choice.routes.js";
 import { modelAdminRouter } from "./modules/models/model.routes.js";
@@ -40,6 +41,7 @@ adminRouter.use(
   statsAdminRouter,
   productAdminRouter,
   categoryAdminRouter,
+  brandAdminRouter,
   modelAdminRouter,
   choiceAdminRouter,
   orderAdminRouter,
