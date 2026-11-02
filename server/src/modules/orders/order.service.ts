@@ -231,8 +231,8 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
   });
 }
 
+// Ce que voit le client (suivi, espace compte) : pas l'id interne, pas l'adresse.
 const orderDetailSelect = {
-  id: true,
   number: true,
   status: true,
   createdAt: true,

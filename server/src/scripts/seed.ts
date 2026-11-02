@@ -74,10 +74,10 @@ const modelId = (key: string) => {
 };
 
 // Premier passage : les produits et leurs variantes, en une écriture par produit
-// (création imbriquée). Les dates s'étalent pour que le tri « nouveautés » ait un sens.
-let minutesAgo = PRODUCTS.length * 60;
-for (const product of PRODUCTS) {
-  minutesAgo -= 60;
+// (création imbriquée). Les dates s'étalent pour que le tri « nouveautés » ait un sens :
+// le premier produit de seed-data.ts est le plus récent.
+for (const [index, product] of PRODUCTS.entries()) {
+  const minutesAgo = index * 60;
   await prisma.product.create({
     data: {
       name: product.name,

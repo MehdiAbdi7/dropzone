@@ -1,3 +1,4 @@
+import "./config/zod.js";
 import express from "express";
 import { errorHandler, notFound } from "./middlewares/errorHandler.js";
 import cookieParser from "cookie-parser";
