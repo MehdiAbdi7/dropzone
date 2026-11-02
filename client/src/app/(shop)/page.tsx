@@ -52,17 +52,18 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="border-b border-line">
-        <div className="container-page grid items-center gap-10 py-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:py-16">
-          <div className="space-y-6">
-            <h1 className="text-4xl leading-tight sm:text-5xl">
-              Neuf ou reconditionné, chaque appareil est décrit pièce par pièce.
-            </h1>
-            <p className="max-w-xl text-lg text-ink-muted">
-              Smartphones, PC portables et montres sélectionnés d&apos;Europe. Pour un reconditionné, vous voyez sa
-              note, sa batterie et tout ce qui a été changé avant de commander. Paiement à la livraison.
-            </p>
-            <form action="/produits" role="search" className="flex max-w-xl gap-2">
+      {/* La bannière : l'image entière, aux couleurs du thème (classe hero-banner de
+          globals.css). Elle porte déjà le logo, donc aucun texte par-dessus son centre.
+          Sur mobile, la recherche passe sous l'image ; à partir de md, elle se pose en
+          bas de l'image, sur un dégradé vers la couleur du fond pour rester lisible. */}
+      <section aria-label="Recherche" className="relative border-b border-line">
+        <div
+          className="hero-banner aspect-[1376/768] w-full md:max-h-[620px] md:min-h-[440px]"
+          aria-hidden="true"
+        />
+        <div className="py-6 md:absolute md:inset-x-0 md:bottom-0 md:bg-linear-to-t md:from-bg md:via-bg/80 md:to-transparent md:pb-10 md:pt-28">
+          <div className="container-page flex flex-col items-center gap-4">
+            <form action="/produits" role="search" className="flex w-full max-w-xl gap-2">
               <label htmlFor="hero-search" className="sr-only">
                 Quel modèle cherchez-vous ?
               </label>
@@ -77,7 +78,7 @@ export default async function HomePage() {
                 Chercher
               </button>
             </form>
-            <ul className="flex flex-wrap gap-2" aria-label="Modèles demandés">
+            <ul className="flex flex-wrap justify-center gap-2" aria-label="Modèles demandés">
               {POPULAR_MODELS.map((model) => (
                 <li key={model.slug}>
                   <Link href={`/produits?model=${model.slug}`} className="chip">
@@ -86,6 +87,20 @@ export default async function HomePage() {
                 </li>
               ))}
             </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-line">
+        <div className="container-page grid items-center gap-10 py-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:py-16">
+          <div className="space-y-6">
+            <h1 className="text-4xl leading-tight sm:text-5xl">
+              Neuf ou reconditionné, chaque appareil est décrit pièce par pièce.
+            </h1>
+            <p className="max-w-xl text-lg text-ink-muted">
+              Smartphones, PC portables et montres sélectionnés d&apos;Europe. Pour un reconditionné, vous voyez sa
+              note, sa batterie et tout ce qui a été changé avant de commander. Paiement à la livraison.
+            </p>
           </div>
 
           {showcase && unit ? (

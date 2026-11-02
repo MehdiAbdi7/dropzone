@@ -345,6 +345,19 @@
     color: transparent;
   }
 
+  /* La bannière de l'accueil : le fond change avec le thème. Une image de fond CSS
+     qui ne s'applique pas n'est jamais téléchargée : le visiteur ne charge que celle
+     de son thème, et le bouton de thème la change sans JavaScript. */
+  .hero-banner {
+    background-color: var(--bg);
+    background-image: url("/fond-sombre.webp");
+    background-size: cover;
+    background-position: center;
+  }
+  [data-theme="light"] .hero-banner {
+    background-image: url("/fond-clair.webp");
+  }
+
   /* Une bande qui défile au doigt (catégories sur mobile), sans barre visible. */
   .scroll-quiet {
     scrollbar-width: none;
