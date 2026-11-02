@@ -39,6 +39,12 @@ describe("GET /products", () => {
     });
   });
 
+  it("filtre les affaires : une variante en stock avec un article offert", async () => {
+    const response = await request(app).get("/products?offre=affaire");
+    expect(response.status).toBe(200);
+    expect(response.body.data.map((p: { slug: string }) => p.slug)).toEqual(["iphone-15-pro-max"]);
+  });
+
   it("trouve un modèle et les accessoires compatibles avec lui", async () => {
     const response = await request(app).get("/products?model=apple-iphone-15-pro-max");
     const slugs = response.body.data.map((p: { slug: string }) => p.slug).sort();

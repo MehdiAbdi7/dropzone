@@ -90,6 +90,10 @@ export async function listProducts(query: ProductListQuery) {
       ],
     });
   }
+  if (query.offre === "affaire") {
+    // Une affaire vendable : une variante encore en stock qui offre au moins un article.
+    filters.push({ variants: { some: { stock: { gt: 0 }, gifts: { some: {} } } } });
+  }
   const where: Prisma.ProductWhereInput = { status: "published", AND: filters };
 
   const [total, products] = await prisma.$transaction([

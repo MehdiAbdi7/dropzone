@@ -10,6 +10,7 @@ export const productListQuerySchema = z.object({
   q: z.string().trim().min(1).max(100).optional(),
   condition: z.enum(["neuf", "reconditionne"]).optional(),
   model: slug.optional(),
+  offre: z.enum(["affaire"]).optional(),
   sort: z.enum(["nouveautes", "prix-croissant", "prix-decroissant"]).default("nouveautes"),
   ...paginationQuery,
 });
