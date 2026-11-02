@@ -8,7 +8,7 @@ import type { Category, ProductCard } from "@/types/api";
 
 export const metadata: Metadata = { title: "Produits" };
 
-const PARAMS = ["category", "q", "condition", "model", "offre", "sort", "page"] as const;
+const PARAMS = ["category", "brand", "q", "condition", "model", "offre", "sort", "page"] as const;
 
 export default async function CatalogPage({ searchParams }: PageProps<"/produits">) {
   const query = await searchParams;
@@ -27,6 +27,9 @@ export default async function CatalogPage({ searchParams }: PageProps<"/produits
   ]);
 
   const category = categories?.find((item) => item.slug === params.get("category"));
+  // `?.` aussi sur brands : une réponse de /categories mise en cache avant l'ajout des
+  // marques (jusqu'à 5 minutes) n'en a pas.
+  const brand = category?.brands?.find((item) => item.slug === params.get("brand"));
   const search = params.get("q");
   const title = search
     ? `Résultats pour « ${search} »`
@@ -34,7 +37,9 @@ export default async function CatalogPage({ searchParams }: PageProps<"/produits
       ? "Les affaires du moment"
       : params.get("condition") === "reconditionne"
         ? "Reconditionnés disponibles"
-        : (category?.name ?? "Tous les produits");
+        : category
+          ? `${category.name}${brand ? ` ${brand.name}` : ""}`
+          : "Tous les produits";
 
   // Les liens de pagination gardent les filtres et changent seulement la page.
   const pageHref = (page: number) => {

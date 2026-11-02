@@ -10,12 +10,21 @@ export type Options = Record<string, string>;
 export type Pagination = { page: number; limit: number; total: number; pages: number };
 export type Page<T> = { data: T[]; pagination: Pagination };
 
+// Une marque telle que la Boutique la voit : seulement celles qui ont des produits publiés.
+export type Brand = {
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  productCount: number;
+};
+
 export type Category = {
   id: number;
   name: string;
   slug: string;
   kind: ProductKind;
   productCount: number;
+  brands: Brand[];
 };
 
 export type ProductCard = {

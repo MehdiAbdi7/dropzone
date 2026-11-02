@@ -1,6 +1,8 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import BrandLogo from "@/components/ui/BrandLogo";
+import { GiftIcon } from "@/components/ui/icons";
 import type { Category } from "@/types/api";
 
 // Les filtres du catalogue vivent dans l'URL : une recherche se partage, se met en
@@ -18,63 +20,108 @@ export default function CatalogFilters({ categories }: { categories: Category[] 
     } else {
       params.delete(key);
     }
+    // Les marques appartiennent à une catégorie : en changer retire la marque.
+    if (key === "category") {
+      params.delete("brand");
+    }
     params.delete("page"); // un nouveau filtre repart de la page 1
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
   const condition = searchParams.get("condition") ?? "";
+  const brand = searchParams.get("brand") ?? "";
+  const deals = searchParams.get("offre") === "affaire";
+  // La rangée des marques n'existe qu'une fois la catégorie choisie.
+  const brands = categories.find((category) => category.slug === searchParams.get("category"))?.brands ?? [];
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <label className="min-w-44 flex-1 sm:flex-none">
-        <span className="label">Catégorie</span>
-        <select
-          className="input"
-          value={searchParams.get("category") ?? ""}
-          onChange={(event) => update("category", event.target.value)}
-        >
-          <option value="">Toutes</option>
-          {categories.map((category) => (
-            <option key={category.slug} value={category.slug}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-      </label>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="min-w-44 flex-1 sm:flex-none">
+          <span className="label">Catégorie</span>
+          <select
+            className="input"
+            value={searchParams.get("category") ?? ""}
+            onChange={(event) => update("category", event.target.value)}
+          >
+            <option value="">Toutes</option>
+            {categories.map((category) => (
+              <option key={category.slug} value={category.slug}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <fieldset>
-        <legend className="label">État</legend>
-        <div className="flex gap-2">
-          {[
-            { value: "", label: "Tous" },
-            { value: "neuf", label: "Neuf" },
-            { value: "reconditionne", label: "Reconditionné" },
-          ].map((option) => (
+        <fieldset>
+          <legend className="label">État et offres</legend>
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { value: "", label: "Tous" },
+              { value: "neuf", label: "Neuf" },
+              { value: "reconditionne", label: "Reconditionné" },
+            ].map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                className="chip"
+                aria-pressed={condition === option.value}
+                onClick={() => update("condition", option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+            <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
+            {/* À part : s'allume et s'éteint seule, et se combine avec l'état. */}
             <button
-              key={option.label}
               type="button"
-              className="chip"
-              aria-pressed={condition === option.value}
-              onClick={() => update("condition", option.value)}
+              className="chip chip-deal"
+              aria-pressed={deals}
+              onClick={() => update("offre", deals ? "" : "affaire")}
             >
-              {option.label}
+              <GiftIcon size={16} />
+              Affaires
             </button>
-          ))}
-        </div>
-      </fieldset>
+          </div>
+        </fieldset>
 
-      <label className="ml-auto min-w-44">
-        <span className="label">Trier par</span>
-        <select
-          className="input"
-          value={searchParams.get("sort") ?? "nouveautes"}
-          onChange={(event) => update("sort", event.target.value === "nouveautes" ? "" : event.target.value)}
-        >
-          <option value="nouveautes">Nouveautés</option>
-          <option value="prix-croissant">Prix croissant</option>
-          <option value="prix-decroissant">Prix décroissant</option>
-        </select>
-      </label>
+        <label className="ml-auto min-w-44">
+          <span className="label">Trier par</span>
+          <select
+            className="input"
+            value={searchParams.get("sort") ?? "nouveautes"}
+            onChange={(event) => update("sort", event.target.value === "nouveautes" ? "" : event.target.value)}
+          >
+            <option value="nouveautes">Nouveautés</option>
+            <option value="prix-croissant">Prix croissant</option>
+            <option value="prix-decroissant">Prix décroissant</option>
+          </select>
+        </label>
+      </div>
+
+      {brands.length > 0 ? (
+        <fieldset className="min-w-0">
+          <legend className="label">Marque</legend>
+          {/* Sur mobile, la rangée défile au doigt au lieu de s'empiler sur plusieurs lignes. */}
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
+            <button type="button" className="chip shrink-0" aria-pressed={!brand} onClick={() => update("brand", "")}>
+              Toutes
+            </button>
+            {brands.map((item) => (
+              <button
+                key={item.slug}
+                type="button"
+                className="chip shrink-0"
+                aria-pressed={brand === item.slug}
+                onClick={() => update("brand", item.slug)}
+              >
+                <BrandLogo url={item.logoUrl} />
+                {item.name}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
     </div>
   );
 }
