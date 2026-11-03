@@ -4,8 +4,8 @@ import type { Variant } from "@/types/api";
 import BatteryGauge from "./BatteryGauge";
 import GiftList from "./GiftList";
 
-// L'argument du vendeur, quand un défaut se cache facilement.
-function defectTip(defect: string): string | null {
+// L'argument du vendeur, quand un défaut se cache facilement (repris par la radiographie).
+export function defectTip(defect: string): string | null {
   if (/arrière|cadre|coins/i.test(defect)) {
     return "invisible avec une coque";
   }
