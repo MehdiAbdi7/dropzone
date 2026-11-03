@@ -131,10 +131,11 @@ for (const [index, product] of PRODUCTS.entries()) {
       createdAt: new Date(Date.now() - minutesAgo * 60_000),
       images: { create: [{ url: product.image, position: 0 }] },
       variants: {
-        // Une variante avec des cadeaux est toujours une affaire (même règle que l'API).
-        create: product.variants.map(({ gifts, ...variant }) => ({
+        // Une affaire dit toujours si elle a sa boîte (CHECK) : sans boîte si le seed ne
+        // dit rien ; un neuf scellé ne le dit jamais.
+        create: product.variants.map(({ gifts: _gifts, ...variant }) => ({
           ...variant,
-          isDeal: variant.isDeal ?? (gifts?.length ?? 0) > 0,
+          withBox: variant.condition === "refurbished" ? (variant.withBox ?? false) : null,
         })),
       },
     },

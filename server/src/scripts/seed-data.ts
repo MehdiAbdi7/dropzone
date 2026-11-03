@@ -11,13 +11,15 @@ export type SeedVariant = {
   grade?: number;
   batteryHealth?: number;
   replacedParts?: string[];
+  // Les pièces changées qui ne sont pas d'origine (les autres le sont).
+  compatibleParts?: string[];
   defects?: string[];
   limitations?: string[];
-  // Une affaire (« Prix exceptionnel ») et ses détails. Une variante avec des cadeaux
-  // en est toujours une (seed.ts l'impose).
-  isDeal?: boolean;
-  dealNote?: string;
-  // Les articles offerts, désignés par leur SKU.
+  // Une affaire : avec sa boîte d'origine (sans boîte si rien n'est dit, voir seed.ts),
+  // et les détails du gérant pour le client.
+  withBox?: boolean;
+  details?: string;
+  // Les articles offerts, désignés par leur SKU (neuf scellé ou affaire).
   gifts?: { sku: string; quantity?: number }[];
 };
 
@@ -76,8 +78,16 @@ const recond = (
   price: number,
   grade: number,
   batteryHealth: number,
-  // Un reconditionné est unique : stock 1, ou 0 s'il est déjà vendu.
-  { stock = 1, ...details }: Partial<Pick<SeedVariant, "replacedParts" | "defects" | "limitations" | "gifts" | "stock">> = {},
+  // Une affaire est unique : stock 1, ou 0 si elle est déjà vendue.
+  {
+    stock = 1,
+    ...details
+  }: Partial<
+    Pick<
+      SeedVariant,
+      "replacedParts" | "compatibleParts" | "defects" | "limitations" | "withBox" | "details" | "gifts" | "stock"
+    >
+  > = {},
 ): SeedVariant => ({
   sku,
   options,
@@ -116,12 +126,10 @@ export const PRODUCTS: SeedProduct[] = [
       neuf("IP18PM-256-NOIR", { Stockage: "256 Go", Couleur: "Noir" }, 335000, 1),
       neuf("IP18PM-512-ARG", { Stockage: "512 Go", Couleur: "Argent" }, 385000, 1),
       neuf("IP18PM-256-GLAC", { Stockage: "256 Go", Couleur: "Glacier" }, 335000, 0),
-      // Une affaire : un neuf vendu sans boîte, à part du choix des options.
-      {
-        ...neuf("IP18PM-256-BORD-SB", { Stockage: "256 Go", Couleur: "Bordeaux" }, 310000, 1),
-        isDeal: true,
-        dealNote: "Neuf, batterie 100 %, juste sans boîte",
-      },
+      // Un neuf vendu sans boîte n'est pas un neuf scellé : c'est une affaire, avec sa radiographie.
+      recond("IP18PM-256-BORD-SB", { Stockage: "256 Go", Couleur: "Bordeaux" }, 310000, 10, 100, {
+        details: "Neuf, batterie 100 %, juste sans boîte",
+      }),
       recond("IP18PM-R-001", { Stockage: "256 Go", Couleur: "Noir" }, 289000, 10, 100),
       recond("IP18PM-R-002", { Stockage: "256 Go", Couleur: "Bordeaux" }, 275000, 9, 97, {
         replacedParts: ["Écran"],
@@ -152,7 +160,7 @@ export const PRODUCTS: SeedProduct[] = [
     category: "smartphones",
     model: "Apple|iPhone 15 Pro Max",
     description:
-      "Le plus grand iPhone de la gamme 15 : châssis en titane, puce A17 Pro et zoom optique 5x. Disponible neuf sous blister ou reconditionné, chaque appareil testé et décrit pièce par pièce.",
+      "Le plus grand iPhone de la gamme 15 : châssis en titane, puce A17 Pro et zoom optique 5x. Disponible en neuf scellé ou en affaire, chaque affaire testée et décrite pièce par pièce.",
     specs: {
       Écran: "6,7 pouces Super Retina XDR, 120 Hz",
       Puce: "A17 Pro",
@@ -165,11 +173,10 @@ export const PRODUCTS: SeedProduct[] = [
       neuf("IP15PM-256-NAT", { Stockage: "256 Go", Couleur: "Titane naturel", RAM: "8 Go" }, 245000, 3),
       neuf("IP15PM-256-NOIR", { Stockage: "256 Go", Couleur: "Titane noir", RAM: "8 Go" }, 245000, 2),
       neuf("IP15PM-512-BLEU", { Stockage: "512 Go", Couleur: "Titane bleu", RAM: "8 Go" }, 289000, 0),
-      {
-        ...recond("IP15PM-R-001", { Stockage: "256 Go", Couleur: "Titane naturel" }, 199000, 10, 80),
-        isDeal: true,
-        dealNote: "Comme neuf, vendu avec sa boîte d'origine",
-      },
+      recond("IP15PM-R-001", { Stockage: "256 Go", Couleur: "Titane naturel" }, 199000, 10, 80, {
+        withBox: true,
+        details: "Comme neuf, vendu avec sa boîte d'origine",
+      }),
       recond("IP15PM-R-002", { Stockage: "256 Go", Couleur: "Titane noir" }, 185000, 8, 95, {
         defects: ["Cache arrière fissuré"],
         gifts: CHARGER_AND_BUDS,
@@ -179,6 +186,7 @@ export const PRODUCTS: SeedProduct[] = [
       }),
       recond("IP15PM-R-004", { Stockage: "256 Go", Couleur: "Titane bleu" }, 149000, 9, 91, {
         replacedParts: ["Écran"],
+        compatibleParts: ["Écran"],
         limitations: ["Wi-Fi seulement (ne lit pas les cartes SIM)"],
       }),
       recond("IP15PM-R-005", { Stockage: "256 Go", Couleur: "Titane noir" }, 189000, 9, 90, { stock: 0 }),
@@ -189,7 +197,7 @@ export const PRODUCTS: SeedProduct[] = [
     category: "smartphones",
     model: "Apple|iPhone 14 Pro",
     description:
-      "Dynamic Island, écran toujours allumé et capteur principal de 48 Mpx. Uniquement en reconditionné : chaque appareil a sa propre fiche d'état.",
+      "Dynamic Island, écran toujours allumé et capteur principal de 48 Mpx. Uniquement en affaire : chaque appareil a sa propre fiche d'état.",
     specs: { Écran: "6,1 pouces Super Retina XDR, 120 Hz", Puce: "A16 Bionic", Batterie: "3 200 mAh", Connecteur: "Lightning" },
     image: "/products/phone.svg",
     variants: [
@@ -197,6 +205,7 @@ export const PRODUCTS: SeedProduct[] = [
       recond("IP14P-R-002", { Stockage: "256 Go", Couleur: "Noir" }, 139000, 10, 92),
       recond("IP14P-R-003", { Stockage: "128 Go", Couleur: "Argent" }, 99000, 8, 84, {
         replacedParts: ["Batterie"],
+        compatibleParts: ["Batterie"],
         limitations: ["Face ID ne fonctionne pas"],
       }),
     ],
@@ -269,6 +278,7 @@ export const PRODUCTS: SeedProduct[] = [
       recond("PX8P-R-001", { Stockage: "128 Go", Couleur: "Noir", RAM: "12 Go" }, 95000, 9, 90),
       recond("PX8P-R-002", { Stockage: "256 Go", Couleur: "Bleu", RAM: "12 Go" }, 89000, 7, 87, {
         replacedParts: ["Écran", "Cache arrière"],
+        compatibleParts: ["Cache arrière"],
         defects: ["Coins marqués"],
       }),
     ],

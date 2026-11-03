@@ -33,52 +33,40 @@ describe("computeMinPrice", () => {
 });
 
 describe("buildConditionReport", () => {
-  const empty = { grade: null, batteryHealth: null, replacedParts: [], defects: [], limitations: [] };
+  const sealed = {
+    condition: "new" as const,
+    grade: null,
+    batteryHealth: null,
+    replacedParts: [],
+    compatibleParts: [],
+    defects: [],
+    limitations: [],
+    withBox: null,
+    details: null,
+  };
+  const deal = { ...sealed, condition: "refurbished" as const, grade: 10, batteryHealth: 80, withBox: false };
 
-  it("ne renvoie rien pour un neuf", () => {
-    expect(buildConditionReport({ condition: "new", ...empty, isDeal: false, dealNote: null })).toBeNull();
+  it("ne renvoie rien pour un neuf scellé", () => {
+    expect(buildConditionReport(sealed)).toBeNull();
   });
 
-  it("résume la fiche d'état d'un reconditionné", () => {
+  it("résume une affaire sans boîte, avec l'origine de chaque pièce changée", () => {
     const report = buildConditionReport({
-      condition: "refurbished",
+      ...deal,
       grade: 9,
       batteryHealth: 87,
       replacedParts: ["Batterie", "Caméra arrière"],
-      defects: [],
+      compatibleParts: ["Caméra arrière"],
       limitations: ["Wi-Fi seulement"],
-      isDeal: false,
-      dealNote: null,
     });
     expect(report).toBe(
-      "Note 9/10 · Batterie 87 % · Remplacé : Batterie, Caméra arrière · Défauts : aucun · Limitations : Wi-Fi seulement",
+      "Note 9/10 · Batterie 87 % · Remplacé : Batterie (d'origine), Caméra arrière (compatible) · Défauts : aucun · Limitations : Wi-Fi seulement · Sans boîte",
     );
   });
-});
 
-describe("buildConditionReport pour une affaire", () => {
-  const empty = { grade: null, batteryHealth: null, replacedParts: [], defects: [], limitations: [] };
-
-  it("garde les détails d'une affaire neuve", () => {
-    expect(
-      buildConditionReport({ condition: "new", ...empty, isDeal: true, dealNote: "Neuf, batterie 100 %, juste sans boîte" }),
-    ).toBe("Affaire : Neuf, batterie 100 %, juste sans boîte");
-    expect(buildConditionReport({ condition: "new", ...empty, isDeal: true, dealNote: null })).toBe("Affaire");
-  });
-
-  it("ajoute les détails de l'affaire à la fiche d'un reconditionné", () => {
-    const report = buildConditionReport({
-      condition: "refurbished",
-      grade: 10,
-      batteryHealth: 80,
-      replacedParts: [],
-      defects: [],
-      limitations: [],
-      isDeal: true,
-      dealNote: "Comme neuf",
-    });
-    expect(report).toBe(
-      "Note 10/10 · Batterie 80 % · Remplacé : rien · Défauts : aucun · Limitations : aucune · Affaire : Comme neuf",
+  it("dit la boîte d'origine et ajoute les détails du gérant", () => {
+    expect(buildConditionReport({ ...deal, withBox: true, details: "Comme neuf" })).toBe(
+      "Note 10/10 · Batterie 80 % · Remplacé : rien · Défauts : aucun · Limitations : aucune · Avec sa boîte d'origine · Détails : Comme neuf",
     );
   });
 });

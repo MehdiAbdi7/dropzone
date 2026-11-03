@@ -8,10 +8,10 @@ const slug = z.string().trim().regex(/^[a-z0-9-]{1,120}$/);
 export const productListQuerySchema = z.object({
   category: slug.optional(),
   q: z.string().trim().min(1).max(100).optional(),
-  condition: z.enum(["neuf", "reconditionne"]).optional(),
+  // « affaire » est le mot du magasin ; « reconditionne » reste accepté (anciens liens).
+  condition: z.enum(["neuf", "affaire", "reconditionne"]).optional(),
   model: slug.optional(),
   brand: slug.optional(),
-  offre: z.enum(["affaire"]).optional(),
   // `sortie` : du modèle le plus récent au plus ancien (pages des marques de la Boutique).
   sort: z.enum(["nouveautes", "prix-croissant", "prix-decroissant", "sortie"]).default("nouveautes"),
   ...paginationQuery,
@@ -65,15 +65,18 @@ const variantSchema = z
     grade: z.number().int().min(1).max(10).nullable().default(null),
     batteryHealth: z.number().int().min(0).max(100).nullable().default(null),
     replacedParts: labelList,
+    // Les pièces changées qui ne sont pas d'origine.
+    compatibleParts: labelList,
     defects: labelList,
     limitations: labelList,
-    // L'affaire, posée par le gérant ; les détails vides sont rangés comme « pas de détails ».
-    isDeal: z.boolean().default(false),
-    dealNote: z
+    // Avec ou sans sa boîte d'origine : obligatoire pour une affaire (voir plus bas).
+    withBox: z.boolean().nullable().default(null),
+    // Les détails du gérant ; des détails vides sont rangés comme « pas de détails ».
+    details: z
       .string()
       .trim()
       .max(200)
-      .transform((note) => note || null)
+      .transform((text) => text || null)
       .nullable()
       .default(null),
     gifts: z
@@ -87,15 +90,22 @@ const variantSchema = z
       .default([]),
   })
   .superRefine((variant, ctx) => {
-    // Une seule vérité : sans affaire, ni cadeaux ni détails d'affaire.
-    if (!variant.isDeal && variant.gifts.length > 0) {
-      ctx.addIssue({ code: "custom", path: ["gifts"], message: "Des articles offerts demandent une affaire" });
-    }
-    if (!variant.isDeal && variant.dealNote) {
-      ctx.addIssue({ code: "custom", path: ["dealNote"], message: "Des détails demandent une affaire" });
-    }
+    // Un neuf scellé n'a rien à décrire ; ses articles offerts restent permis.
     if (variant.condition !== "refurbished") {
+      if (variant.details) {
+        ctx.addIssue({ code: "custom", path: ["details"], message: "Un neuf scellé n'a pas de détails" });
+      }
       return;
+    }
+    if (variant.withBox === null) {
+      ctx.addIssue({ code: "custom", path: ["withBox"], message: "Dites si l'affaire a sa boîte d'origine" });
+    }
+    if (variant.compatibleParts.some((part) => !variant.replacedParts.includes(part))) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["compatibleParts"],
+        message: "Une pièce compatible doit être une pièce changée",
+      });
     }
     if (variant.stock > 1) {
       ctx.addIssue({ code: "custom", path: ["stock"], message: "Un reconditionné est unique : stock 0 ou 1" });

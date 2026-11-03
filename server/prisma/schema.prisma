@@ -154,28 +154,31 @@ model Product {
 }
 
 model ProductVariant {
-  id            Int           @id @default(autoincrement())
-  productId     Int           @map("product_id")
-  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
-  sku           String        @unique
-  options       Json          @default("{}")
-  price         Int
-  stock         Int
-  condition     Condition     @default(new)
-  // La fiche d'état d'un reconditionné (vide pour un neuf).
-  grade         Int?
-  batteryHealth Int?          @map("battery_health")
-  replacedParts String[]      @default([]) @map("replaced_parts")
-  defects       String[]      @default([])
-  limitations   String[]      @default([])
-  // Une affaire, posée par le gérant (« Prix exceptionnel ») : la seule source de vérité.
-  // Les détails pour le client (« Neuf, batterie 100 %, juste sans boîte ») sont facultatifs.
-  isDeal        Boolean       @default(false) @map("is_deal")
-  dealNote      String?       @map("deal_note")
-  // Les articles offerts avec cette variante (seulement sur une affaire).
-  gifts         VariantGift[] @relation("DealVariant")
+  id              Int           @id @default(autoincrement())
+  productId       Int           @map("product_id")
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku             String        @unique
+  options         Json          @default("{}")
+  price           Int
+  stock           Int
+  condition       Condition     @default(new)
+  // La fiche d'état d'une affaire (`refurbished`), vide pour un neuf scellé (`new`).
+  grade           Int?
+  batteryHealth   Int?          @map("battery_health")
+  replacedParts   String[]      @default([]) @map("replaced_parts")
+  // Les pièces changées qui ne sont pas d'origine (CHECK : une partie de replacedParts).
+  compatibleParts String[]      @default([]) @map("compatible_parts")
+  defects         String[]      @default([])
+  limitations     String[]      @default([])
+  // Avec ou sans sa boîte d'origine : obligatoire pour une affaire, null pour un neuf
+  // scellé, qui l'a par définition (CHECK dans la migration).
+  withBox         Boolean?      @map("with_box")
+  // Les détails du gérant pour le client (« Comme neuf, vendu avec sa boîte d'origine »).
+  details         String?
+  // Les articles offerts avec cette variante (neuf scellé ou affaire).
+  gifts           VariantGift[] @relation("DealVariant")
   // Les affaires dans lesquelles cette variante est offerte.
-  giftedIn      VariantGift[] @relation("GiftVariant")
+  giftedIn        VariantGift[] @relation("GiftVariant")
 
   @@index([productId])
   @@map("product_variants")

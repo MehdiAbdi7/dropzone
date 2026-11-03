@@ -93,7 +93,7 @@ export async function createCatalog() {
             batteryHealth: 95,
             defects: ["Cache arrière fissuré"],
             // Une affaire avec un chargeur offert (le cadeau est ajouté plus bas).
-            isDeal: true,
+            withBox: false,
           },
           {
             sku: "IP-R-WIFI",
@@ -103,8 +103,17 @@ export async function createCatalog() {
             grade: 9,
             batteryHealth: 91,
             limitations: ["Wi-Fi seulement (ne lit pas les cartes SIM)"],
+            withBox: false,
           },
-          { sku: "IP-R-SOLD", price: 120000, stock: 0, condition: "refurbished", grade: 9, batteryHealth: 90 },
+          {
+            sku: "IP-R-SOLD",
+            price: 120000,
+            stock: 0,
+            condition: "refurbished",
+            grade: 9,
+            batteryHealth: 90,
+            withBox: false,
+          },
         ],
       },
     },

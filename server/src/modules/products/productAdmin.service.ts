@@ -120,8 +120,17 @@ async function checkRules(input: ProductBody, productId?: number) {
     if (variant.condition === "refurbished") {
       return variant;
     }
-    // Un neuf n'a pas de fiche d'état : on vide ce que le formulaire aurait pu envoyer.
-    return { ...variant, grade: null, batteryHealth: null, replacedParts: [], defects: [], limitations: [] };
+    // Un neuf scellé n'a pas de fiche d'état : on vide ce que le formulaire aurait pu envoyer.
+    return {
+      ...variant,
+      grade: null,
+      batteryHealth: null,
+      replacedParts: [],
+      compatibleParts: [],
+      defects: [],
+      limitations: [],
+      withBox: null,
+    };
   });
 
   return {

@@ -61,22 +61,20 @@ describe("GET /products", () => {
     expect(response.body.pagination).toEqual({ page: 1, limit: 12, total: 3, pages: 1 });
   });
 
-  it("filtre les reconditionnés disponibles et signale les affaires", async () => {
-    const response = await request(app).get("/products?condition=reconditionne");
+  it("filtre les affaires disponibles, sous le nouveau nom comme sous l'ancien", async () => {
+    const response = await request(app).get("/products?condition=affaire");
     expect(response.body.data).toHaveLength(1);
     expect(response.body.data[0]).toMatchObject({
       slug: "iphone-15-pro-max",
       hasNew: true,
       hasRefurbished: true,
-      hasDeal: true,
       brand: "Apple",
     });
-  });
-
-  it("filtre les affaires : une variante en stock avec un article offert", async () => {
-    const response = await request(app).get("/products?offre=affaire");
-    expect(response.status).toBe(200);
-    expect(response.body.data.map((p: { slug: string }) => p.slug)).toEqual(["iphone-15-pro-max"]);
+    // Plus de marque « affaire » posée sur une variante : la famille est l'état lui-même.
+    expect(response.body.data[0]).not.toHaveProperty("hasDeal");
+    expect(response.body.data[0]).not.toHaveProperty("dealFrom");
+    const legacy = await request(app).get("/products?condition=reconditionne");
+    expect(legacy.body.data.map((p: { slug: string }) => p.slug)).toEqual(["iphone-15-pro-max"]);
   });
 
   it("trouve un modèle et les accessoires compatibles avec lui", async () => {
@@ -145,7 +143,15 @@ describe("Le parcours de la Boutique", () => {
   async function addIphone(
     name: string,
     releaseYear: number | null,
-    variants: { sku: string; price: number; stock: number; condition?: "new" | "refurbished"; grade?: number; batteryHealth?: number }[],
+    variants: {
+      sku: string;
+      price: number;
+      stock: number;
+      condition?: "new" | "refurbished";
+      grade?: number;
+      batteryHealth?: number;
+      withBox?: boolean;
+    }[],
   ) {
     const phones = await prisma.category.findUniqueOrThrow({ where: { slug: "smartphones" } });
     const brand = await prisma.brand.findFirstOrThrow({ where: { categoryId: phones.id, slug: "iphone" } });
@@ -183,7 +189,7 @@ describe("Le parcours de la Boutique", () => {
   it("range les modèles du plus récent au plus ancien, le plus cher d'abord la même année", async () => {
     await addIphone("iPhone 16 Pro", 2024, [
       { sku: "IP16P-NEW", price: 300000, stock: 1 },
-      { sku: "IP16P-R", price: 90000, stock: 1, condition: "refurbished", grade: 9, batteryHealth: 90 },
+      { sku: "IP16P-R", price: 90000, stock: 1, condition: "refurbished", grade: 9, batteryHealth: 90, withBox: false },
     ]);
     await addIphone("iPhone 16", 2024, [{ sku: "IP16-NEW", price: 200000, stock: 1 }]);
     await addIphone("iPhone X", null, [{ sku: "IPX-NEW", price: 50000, stock: 1 }]);
@@ -214,49 +220,29 @@ describe("Le parcours de la Boutique", () => {
   });
 });
 
-describe("Les affaires « prix exceptionnel »", () => {
-  const slugs = (response: request.Response) => response.body.data.map((product: { slug: string }) => product.slug);
-  const find = (response: request.Response, slug: string) =>
-    response.body.data.find((product: { slug: string }) => product.slug === slug);
-
-  // Une affaire sans cadeau : c'est la marque posée par le gérant qui compte.
-  async function addChargerDeal(stock: number) {
-    const charger = await prisma.product.findUniqueOrThrow({ where: { slug: "chargeur-usb-c-20-w" } });
-    await prisma.productVariant.create({
-      data: { productId: charger.id, sku: "CHG-20W-SB", price: 1500, stock, isDeal: true, dealNote: "Sans boîte" },
+describe("Neuf scellé et affaires", () => {
+  it("donne la boîte, les pièces compatibles et les détails d'une affaire dans la fiche", async () => {
+    await prisma.productVariant.update({
+      where: { sku: "IP-R-DEAL" },
+      data: { replacedParts: ["Écran", "Batterie"], compatibleParts: ["Écran"], withBox: true, details: "Comme neuf" },
     });
-  }
-
-  it("met dans les affaires un appareil marqué affaire, même sans cadeau", async () => {
-    await addChargerDeal(2);
-    const response = await request(app).get("/products?offre=affaire");
-    expect(slugs(response)).toContain("chargeur-usb-c-20-w");
-    expect(find(response, "chargeur-usb-c-20-w")).toMatchObject({ hasDeal: true, dealFrom: 1500, dealIn: "new" });
+    const response = await request(app).get("/products/iphone-15-pro-max");
+    const bySku = (sku: string) => response.body.data.variants.find((v: { sku: string }) => v.sku === sku);
+    expect(bySku("IP-R-DEAL")).toMatchObject({ withBox: true, compatibleParts: ["Écran"], details: "Comme neuf" });
+    expect(bySku("IP-NEW-256")).toMatchObject({ withBox: null, compatibleParts: [], details: null });
+    expect(bySku("IP-R-DEAL")).not.toHaveProperty("isDeal");
   });
 
-  it("donne l'état de l'affaire et son prix sur une carte", async () => {
-    const response = await request(app).get("/products?category=smartphones");
-    expect(find(response, "iphone-15-pro-max")).toMatchObject({ dealFrom: 185000, dealIn: "refurbished" });
-    const phone = await prisma.product.findUniqueOrThrow({ where: { slug: "iphone-15-pro-max" } });
-    await prisma.productVariant.create({
-      data: { productId: phone.id, sku: "IP-NEW-SB", price: 230000, stock: 1, isDeal: true },
-    });
-    const both = await request(app).get("/products?category=smartphones");
-    expect(find(both, "iphone-15-pro-max")).toMatchObject({ dealFrom: 185000, dealIn: "both" });
+  // Les deux CHECK de la migration : la base refuse même si le code a un bug.
+  it("la base refuse une affaire qui ne dit pas si elle a sa boîte", async () => {
+    await expect(
+      prisma.productVariant.update({ where: { sku: "IP-R-WIFI" }, data: { withBox: null } }),
+    ).rejects.toThrow();
   });
 
-  it("ne garde pas une affaire épuisée", async () => {
-    await addChargerDeal(0);
-    const response = await request(app).get("/products?offre=affaire");
-    expect(slugs(response)).not.toContain("chargeur-usb-c-20-w");
-    const all = await request(app).get("/products?category=accessoires");
-    expect(find(all, "chargeur-usb-c-20-w")).toMatchObject({ hasDeal: false, dealFrom: null, dealIn: null });
-  });
-
-  it("donne la marque d'affaire et les détails dans la fiche", async () => {
-    await addChargerDeal(2);
-    const response = await request(app).get("/products/chargeur-usb-c-20-w");
-    const deal = response.body.data.variants.find((v: { sku: string }) => v.sku === "CHG-20W-SB");
-    expect(deal).toMatchObject({ isDeal: true, dealNote: "Sans boîte" });
+  it("la base refuse une pièce compatible qui n'a pas été changée", async () => {
+    await expect(
+      prisma.productVariant.update({ where: { sku: "IP-R-WIFI" }, data: { compatibleParts: ["Caméra"] } }),
+    ).rejects.toThrow();
   });
 });

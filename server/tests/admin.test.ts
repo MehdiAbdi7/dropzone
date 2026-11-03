@@ -34,6 +34,7 @@ describe("Produits", () => {
     grade: 9,
     batteryHealth: 94,
     defects: ["Rayures légères sur l'écran"],
+    withBox: false,
   };
 
   const body = () => ({
@@ -45,7 +46,7 @@ describe("Produits", () => {
     status: "published",
     variants: [
       { sku: "S24U-256", options: { Stockage: "256 Go" }, price: 215000, stock: 3 },
-      { ...refurbished, isDeal: true, gifts: [{ giftVariantId: catalog.chargerVariant.id }] },
+      { ...refurbished, gifts: [{ giftVariantId: catalog.chargerVariant.id }] },
     ],
   });
 
@@ -81,37 +82,58 @@ describe("Produits", () => {
     const phoneVariant = await prisma.productVariant.findUniqueOrThrow({ where: { sku: "IP-NEW-256" } });
     const response = await admin.post("/admin/products").send({
       ...body(),
-      variants: [{ ...refurbished, isDeal: true, gifts: [{ giftVariantId: phoneVariant.id }] }],
+      variants: [{ ...refurbished, gifts: [{ giftVariantId: phoneVariant.id }] }],
     });
     expect(response.status).toBe(400);
   });
 
-  it("refuse des articles offerts ou des détails sur un appareil qui n'est pas une affaire", async () => {
-    const withGifts = await admin.post("/admin/products").send({
+  const sealed = { sku: "S24U-256", options: { Stockage: "256 Go" }, price: 215000, stock: 3 };
+
+  it("accepte un article offert sur un neuf scellé", async () => {
+    const response = await admin.post("/admin/products").send({
       ...body(),
-      variants: [{ ...refurbished, gifts: [{ giftVariantId: catalog.chargerVariant.id }] }],
+      variants: [{ ...sealed, gifts: [{ giftVariantId: catalog.chargerVariant.id }] }],
     });
-    expect(withGifts.status).toBe(400);
-    const withNote = await admin.post("/admin/products").send({
-      ...body(),
-      variants: [{ ...refurbished, dealNote: "Comme neuf" }],
-    });
-    expect(withNote.status).toBe(400);
+    expect(response.status).toBe(201);
   });
 
-  it("met un appareil en affaire avec ses détails (détails vides = aucun)", async () => {
+  it("refuse des détails sur un neuf scellé", async () => {
+    const response = await admin.post("/admin/products").send({
+      ...body(),
+      variants: [{ ...sealed, details: "Sans boîte" }],
+    });
+    expect(response.status).toBe(400);
+  });
+
+  it("refuse une affaire sans dire si elle a sa boîte", async () => {
+    const response = await admin.post("/admin/products").send({
+      ...body(),
+      variants: [{ ...refurbished, withBox: null }],
+    });
+    expect(response.status).toBe(400);
+  });
+
+  it("refuse une pièce compatible qui n'a pas été changée", async () => {
+    const response = await admin.post("/admin/products").send({
+      ...body(),
+      variants: [{ ...refurbished, replacedParts: ["Batterie"], compatibleParts: ["Caméra"] }],
+    });
+    expect(response.status).toBe(400);
+  });
+
+  it("range la boîte, les pièces compatibles et les détails d'une affaire (détails vides = aucun)", async () => {
     const created = await admin.post("/admin/products").send({
       ...body(),
       variants: [
-        { sku: "S24U-256-SB", options: { Stockage: "256 Go" }, price: 189000, stock: 1, isDeal: true, dealNote: " Neuf, juste sans boîte " },
-        { ...refurbished, isDeal: true, dealNote: "   " },
+        sealed,
+        { ...refurbished, withBox: true, replacedParts: ["Écran", "Batterie"], compatibleParts: ["Écran"], details: "   " },
       ],
     });
     expect(created.status).toBe(201);
     const detail = await admin.get(`/admin/products/${created.body.data.id}`);
     const bySku = (sku: string) => detail.body.data.variants.find((v: { sku: string }) => v.sku === sku);
-    expect(bySku("S24U-256-SB")).toMatchObject({ isDeal: true, dealNote: "Neuf, juste sans boîte" });
-    expect(bySku("S24U-R-001")).toMatchObject({ isDeal: true, dealNote: null });
+    expect(bySku("S24U-R-001")).toMatchObject({ withBox: true, compatibleParts: ["Écran"], details: null });
+    expect(bySku("S24U-256")).toMatchObject({ withBox: null, compatibleParts: [], details: null });
   });
 
   it("refuse un modèle qui n'est pas de la bonne sorte", async () => {
