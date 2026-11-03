@@ -26,6 +26,9 @@ export default function ModelPicker({
   const [adding, setAdding] = useState(false);
   const [brand, setBrand] = useState("");
   const [name, setName] = useState("");
+  // L'année de sortie, obligatoire : elle range le modèle dans la Boutique.
+  const [year, setYear] = useState("");
+  const yearOk = /^\d{4}$/.test(year);
 
   const ofKind = models.filter((model) => model.kind === kind);
   const selected = models.find((model) => model.id === value);
@@ -36,11 +39,12 @@ export default function ModelPicker({
 
   async function add() {
     try {
-      const model = await createModel({ brand: brand.trim(), name: name.trim(), kind }).unwrap();
+      const model = await createModel({ brand: brand.trim(), name: name.trim(), kind, releaseYear: Number(year) }).unwrap();
       onChange(model);
       setAdding(false);
       setBrand("");
       setName("");
+      setYear("");
     } catch {
       // Le message s'affiche sous le formulaire d'ajout.
     }
@@ -91,17 +95,32 @@ export default function ModelPicker({
       </div>
 
       {adding ? (
-        <div className="grid gap-3 rounded-lg border border-line p-3 sm:grid-cols-[1fr_2fr_auto] sm:items-end">
+        <div className="grid gap-3 rounded-lg border border-line p-3 sm:grid-cols-[1fr_2fr_7rem_auto] sm:items-end">
           <Field id="new-brand" label="Marque">
             <input id="new-brand" className="input" value={brand} onChange={(event) => setBrand(event.target.value)} />
           </Field>
           <Field id="new-name" label="Nom du modèle">
             <input id="new-name" className="input" value={name} onChange={(event) => setName(event.target.value)} />
           </Field>
-          <button type="button" className="btn btn-primary" onClick={add} disabled={isLoading || !brand.trim() || !name.trim()}>
+          <Field id="new-year" label="Année de sortie">
+            <input
+              id="new-year"
+              className="input"
+              inputMode="numeric"
+              placeholder="2026"
+              value={year}
+              onChange={(event) => setYear(event.target.value.trim())}
+            />
+          </Field>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={add}
+            disabled={isLoading || !brand.trim() || !name.trim() || !yearOk}
+          >
             Ajouter
           </button>
-          {error ? <p className="field-error sm:col-span-3">{errorMessage(error)}</p> : null}
+          {error ? <p className="field-error sm:col-span-4">{errorMessage(error)}</p> : null}
         </div>
       ) : (
         <button type="button" className="text-sm font-semibold text-blue-ink underline" onClick={() => setAdding(true)}>

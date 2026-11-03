@@ -88,6 +88,8 @@ export type DeviceModel = {
   name: string;
   slug: string;
   kind: ProductKind;
+  // L'année de sortie : la Boutique range les modèles du plus récent au plus ancien.
+  releaseYear: number | null;
   usage: number;
 };
 
@@ -266,8 +268,14 @@ const adminApi = api.injectEndpoints({
       transformResponse: data<DeviceModel[]>,
       providesTags: ["Models"],
     }),
-    createModel: build.mutation<DeviceModel, { brand: string; name: string; kind: ProductKind }>({
+    createModel: build.mutation<DeviceModel, { brand: string; name: string; kind: ProductKind; releaseYear: number }>({
       query: (body) => ({ url: "/admin/models", method: "POST", body }),
+      transformResponse: data<DeviceModel>,
+      invalidatesTags: ["Models"],
+    }),
+    // Corriger l'année d'un modèle : elle change sa place dans la Boutique.
+    updateModel: build.mutation<DeviceModel, { id: number; releaseYear: number }>({
+      query: ({ id, releaseYear }) => ({ url: `/admin/models/${id}`, method: "PATCH", body: { releaseYear } }),
       transformResponse: data<DeviceModel>,
       invalidatesTags: ["Models"],
     }),
@@ -332,6 +340,7 @@ export const {
   useDeleteBrandMutation,
   useModelsQuery,
   useCreateModelMutation,
+  useUpdateModelMutation,
   useDeleteModelMutation,
   useChoicesQuery,
   useCreateChoiceMutation,
