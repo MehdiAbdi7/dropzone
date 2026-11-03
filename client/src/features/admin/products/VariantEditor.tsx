@@ -21,7 +21,8 @@ type Props = {
 };
 
 // Une variante du formulaire : neuf ou reconditionné, ses options à cocher, son
-// prix et son stock, la fiche d'état d'un reconditionné, et ses articles offerts.
+// prix et son stock, la fiche d'état d'un reconditionné, et l'affaire (détails et
+// articles offerts, seulement quand l'interrupteur est allumé).
 export default function VariantEditor({
   variant,
   index,
@@ -166,7 +167,41 @@ export default function VariantEditor({
         </div>
       ) : null}
 
-      <GiftEditor variant={variant} giftOptions={giftOptions} onChange={(gifts) => set({ gifts })} />
+      <div className="space-y-4 border-t border-line pt-5">
+        <label className="flex min-h-11 items-center gap-2 font-display font-bold">
+          <input
+            type="checkbox"
+            role="switch"
+            className="size-5"
+            checked={variant.isDeal}
+            // Éteindre l'affaire vide ses détails et ses cadeaux : l'API les refuserait.
+            onChange={(event) =>
+              set(event.target.checked ? { isDeal: true } : { isDeal: false, dealNote: "", gifts: [] })
+            }
+          />
+          Faire une affaire avec cet appareil
+        </label>
+        {variant.isDeal ? (
+          <>
+            <Field
+              id={id("deal-note")}
+              label="Détails pour le client (facultatif)"
+              hint={`${variant.dealNote.length}/200 caractères`}
+            >
+              <textarea
+                id={id("deal-note")}
+                className="input"
+                rows={2}
+                maxLength={200}
+                placeholder="Neuf, batterie 100 %, juste sans boîte"
+                value={variant.dealNote}
+                onChange={(event) => set({ dealNote: event.target.value })}
+              />
+            </Field>
+            <GiftEditor variant={variant} giftOptions={giftOptions} onChange={(gifts) => set({ gifts })} />
+          </>
+        ) : null}
+      </div>
     </fieldset>
   );
 }
@@ -186,8 +221,8 @@ function GiftEditor({
   const available = giftOptions.filter((option) => !variant.gifts.some((gift) => gift.giftVariantId === option.id));
 
   return (
-    <div className="space-y-3 border-t border-line pt-5">
-      <p className="font-display font-bold">Affaire : articles offerts</p>
+    <div className="space-y-3">
+      <p className="label">Articles offerts (facultatif)</p>
       {variant.gifts.length === 0 ? <p className="text-sm text-ink-muted">Aucun article offert.</p> : null}
       <ul className="space-y-2">
         {variant.gifts.map((gift) => {

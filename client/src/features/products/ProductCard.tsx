@@ -21,6 +21,9 @@ function stateLabel(product: ProductCardData): string | null {
 // `href` : une autre page que la fiche (la liste des reconditionnés mène à leur radiographie).
 export default function ProductCard({ product, sizes, href }: { product: ProductCardData; sizes: string; href?: string }) {
   const state = stateLabel(product);
+  // `?? null` : une réponse mise en cache avant les affaires (jusqu'à 5 minutes) n'a pas
+  // ce champ, et la carte afficherait « NaN DA ».
+  const dealFrom = product.dealFrom ?? null;
 
   return (
     <Link
@@ -40,7 +43,13 @@ export default function ProductCard({ product, sizes, href }: { product: Product
         <h3 className="line-clamp-2 text-sm leading-snug group-hover:text-blue-ink sm:text-[0.95rem]">{product.name}</h3>
         {state ? <p className="text-xs text-ink-muted">{state}</p> : null}
         <div className="mt-auto flex items-end justify-between gap-2 pt-2">
-          {product.inStock ? (
+          {dealFrom !== null ? (
+            // Une affaire en stock : son prix à la place du « À partir de », sans ancien prix barré.
+            <p className="leading-tight">
+              <span className="block text-xs font-bold text-red">Prix exceptionnel</span>
+              <span className="font-display text-base font-bold whitespace-nowrap">{formatPrice(dealFrom)}</span>
+            </p>
+          ) : product.inStock ? (
             <p className="leading-tight">
               <span className="block text-xs text-ink-muted">À partir de</span>
               <span className="font-display text-base font-bold whitespace-nowrap">{formatPrice(product.minPrice)}</span>

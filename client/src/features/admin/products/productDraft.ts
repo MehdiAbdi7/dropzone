@@ -16,6 +16,9 @@ export type VariantDraft = {
   replacedParts: string[];
   defects: string[];
   limitations: string[];
+  // L'affaire : posée par le gérant ; détails et cadeaux n'existent qu'avec elle.
+  isDeal: boolean;
+  dealNote: string;
   gifts: { giftVariantId: number; quantity: number }[];
 };
 
@@ -47,6 +50,8 @@ export function emptyVariant(condition: Condition = "new"): VariantDraft {
     replacedParts: [],
     defects: [],
     limitations: [],
+    isDeal: false,
+    dealNote: "",
     gifts: [],
   };
 }
@@ -89,6 +94,8 @@ export function draftFromProduct(product: AdminProduct): ProductDraft {
       replacedParts: variant.replacedParts,
       defects: variant.defects,
       limitations: variant.limitations,
+      isDeal: variant.isDeal,
+      dealNote: variant.dealNote ?? "",
       gifts: variant.gifts,
     })),
   };
@@ -123,6 +130,9 @@ export function bodyFromDraft(draft: ProductDraft): ProductBody {
       replacedParts: variant.replacedParts,
       defects: variant.defects,
       limitations: variant.limitations,
+      isDeal: variant.isDeal,
+      // Un champ vide part tel quel : l'API le range comme « pas de détails » (null).
+      dealNote: variant.dealNote,
       gifts: variant.gifts,
     })),
   };

@@ -37,6 +37,8 @@ export type AdminVariant = {
   replacedParts: string[];
   defects: string[];
   limitations: string[];
+  isDeal: boolean;
+  dealNote: string | null;
   gifts: { giftVariantId: number; quantity: number }[];
 };
 
