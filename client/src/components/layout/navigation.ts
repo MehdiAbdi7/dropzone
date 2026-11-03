@@ -2,7 +2,7 @@
 // `key` sert à savoir quel lien souligner.
 export const NAV_LINKS = [
   { key: "accueil", href: "/", label: "Accueil" },
-  { key: "boutique", href: "/produits", label: "Boutique" },
+  { key: "boutique", href: "/boutique", label: "Boutique" },
   { key: "categories", href: "/#categories", label: "Catégories" },
   { key: "reconditionnes", href: "/produits?condition=reconditionne", label: "Reconditionnés" },
   { key: "affaires", href: "/produits?offre=affaire", label: "Affaires" },
@@ -25,7 +25,8 @@ export function activeNavKey(pathname: string, params: URLSearchParams): NavKey 
       return "reconditionnes";
     }
   }
-  if (pathname.startsWith("/produits")) {
+  // Le parcours guidé et les fiches produit font partie de la Boutique.
+  if (pathname.startsWith("/boutique") || pathname.startsWith("/produits")) {
     return "boutique";
   }
   if (pathname.startsWith("/suivi")) {

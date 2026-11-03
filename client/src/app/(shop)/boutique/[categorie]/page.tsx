@@ -1,0 +1,72 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { DEVICE_KINDS } from "@/config/catalog";
+import Breadcrumb from "@/features/shop/Breadcrumb";
+import ChoiceTile from "@/features/shop/ChoiceTile";
+import { publicFetch } from "@/lib/publicFetch";
+import type { Category } from "@/types/api";
+
+// Le même appel sert à generateMetadata et à la page : Next le déduplique.
+async function getCategory(slug: string) {
+  const categories = await publicFetch<Category[]>("/categories", 300);
+  return { categories, category: categories?.find((item) => item.slug === slug) };
+}
+
+export async function generateMetadata({ params }: PageProps<"/boutique/[categorie]">): Promise<Metadata> {
+  const { category } = await getCategory((await params).categorie);
+  return { title: category?.name ?? "Boutique" };
+}
+
+// Étape 2 du parcours : les marques de la catégorie, plus « Autres » pour les produits sans marque.
+export default async function ShopCategoryPage({ params }: PageProps<"/boutique/[categorie]">) {
+  const { categories, category } = await getCategory((await params).categorie);
+  if (!categories) {
+    return (
+      <div className="container-page py-8">
+        <p role="alert" className="card p-6">
+          La boutique ne répond pas pour le moment. Rechargez la page dans quelques secondes.
+        </p>
+      </div>
+    );
+  }
+  if (!category) {
+    notFound();
+  }
+
+  const unit = DEVICE_KINDS.includes(category.kind) ? "modèle" : "produit";
+  const count = (n: number) => `${n} ${unit}${n > 1 ? "s" : ""}`;
+
+  return (
+    <div className="container-page space-y-6 py-8">
+      <Breadcrumb items={[{ label: "Boutique", href: "/boutique" }, { label: category.name }]} />
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-3xl">{category.name}</h1>
+          <p className="text-ink-muted">Choisissez une marque.</p>
+        </div>
+        <Link href={`/produits?category=${category.slug}`} className="text-sm font-semibold text-blue-ink underline">
+          Tout voir
+        </Link>
+      </header>
+
+      <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
+        {category.brands.map((brand) => (
+          <li key={brand.slug} className="flex">
+            <ChoiceTile
+              href={`/boutique/${category.slug}/${brand.slug}`}
+              label={brand.name}
+              logoUrl={brand.logoUrl}
+              hint={count(brand.productCount)}
+            />
+          </li>
+        ))}
+        {category.hasUnbranded ? (
+          <li className="flex">
+            <ChoiceTile href={`/boutique/${category.slug}/autres`} label="Autres" hint="Sans marque" />
+          </li>
+        ) : null}
+      </ul>
+    </div>
+  );
+}

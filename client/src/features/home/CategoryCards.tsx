@@ -1,16 +1,27 @@
 import Link from "next/link";
 import ProductImage from "@/components/ui/ProductImage";
 import { ArrowRightIcon } from "@/components/ui/icons";
+import type { ProductKind } from "@/types/api";
 
-// Les six entrées de la boutique. Les slugs sont ceux des catégories de l'API
-// (seed) ; Reconditionnés est un filtre du catalogue, pas une catégorie.
+// L'image de chaque sorte de catégorie, partagée par l'accueil et la Boutique
+// (à remplacer par les photos de Mehdi, ici seulement).
+export const KIND_IMAGES: Record<ProductKind, string> = {
+  phone: "/products/phone.svg",
+  laptop: "/products/laptop.svg",
+  watch: "/products/watch.svg",
+  accessory: "/products/charger.svg",
+  audiovisual: "/products/speaker.svg",
+};
+
+// Les six entrées de l'accueil. Les slugs sont ceux des catégories de l'API (seed) ;
+// elles mènent dans le parcours de la Boutique. Reconditionnés est un filtre du catalogue.
 const CATEGORIES = [
-  { label: "Smartphones", href: "/produits?category=smartphones", image: "/products/phone.svg" },
-  { label: "PC portables", href: "/produits?category=ordinateurs-portables", image: "/products/laptop.svg" },
-  { label: "Montres", href: "/produits?category=montres-connectees", image: "/products/watch.svg" },
-  { label: "Accessoires", href: "/produits?category=accessoires", image: "/products/charger.svg" },
-  { label: "Audiovisuel", href: "/produits?category=audiovisuel", image: "/products/speaker.svg" },
-  { label: "Reconditionnés", href: "/produits?condition=reconditionne", image: "/products/phone.svg" },
+  { label: "Smartphones", href: "/boutique/smartphones", image: KIND_IMAGES.phone },
+  { label: "PC portables", href: "/boutique/ordinateurs-portables", image: KIND_IMAGES.laptop },
+  { label: "Montres", href: "/boutique/montres-connectees", image: KIND_IMAGES.watch },
+  { label: "Accessoires", href: "/boutique/accessoires", image: KIND_IMAGES.accessory },
+  { label: "Audiovisuel", href: "/boutique/audiovisuel", image: KIND_IMAGES.audiovisual },
+  { label: "Reconditionnés", href: "/produits?condition=reconditionne", image: KIND_IMAGES.phone },
 ];
 
 export default function CategoryCards() {
