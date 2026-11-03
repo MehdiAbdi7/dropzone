@@ -70,6 +70,8 @@ function lowestInStock(variants: { price: number; stock: number }[]): number | n
   return inStock.length > 0 ? Math.min(...inStock.map((variant) => variant.price)) : null;
 }
 
+const RELEASE_SORT_MAX = 500;
+
 type ReleaseSortable = { id: number; deviceModel: { releaseYear: number | null } | null; variants: { price: number }[] };
 
 // Du modèle le plus récent au plus ancien (sans année à la fin), puis, la même année, le
@@ -140,9 +142,10 @@ export async function listProducts(query: ProductListQuery) {
   let total: number;
   let products: Prisma.ProductGetPayload<{ select: typeof select }>[];
   if (query.sort === "sortie") {
-    // Tri en JavaScript : on lit tout le filtre (quelques dizaines de modèles par marque),
-    // on trie, puis on découpe la page.
-    const all = (await prisma.product.findMany({ where, select })).sort(byRelease);
+    // Tri en JavaScript : on lit tout le filtre (une catégorie, imposée par le schéma, et
+    // au plus RELEASE_SORT_MAX produits pour que la lecture reste bornée), on trie, puis on
+    // découpe la page.
+    const all = (await prisma.product.findMany({ where, select, take: RELEASE_SORT_MAX })).sort(byRelease);
     const { skip, take } = paginate(query.page, query.limit);
     total = all.length;
     products = all.slice(skip, skip + take);

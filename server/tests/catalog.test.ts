@@ -186,6 +186,10 @@ describe("Le parcours de la Boutique", () => {
     expect(response.body.pagination.total).toBe(4);
   });
 
+  it("refuse le tri par sortie sans catégorie (il lit tout le filtre en mémoire)", async () => {
+    expect((await request(app).get("/products?sort=sortie")).status).toBe(400);
+  });
+
   it("liste les produits sans marque d'une catégorie avec la marque « autres »", async () => {
     expect(slugs(await request(app).get("/products?category=accessoires&brand=autres"))).toEqual([
       "coque-antichoc-iphone-15-pro-max",

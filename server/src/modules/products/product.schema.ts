@@ -15,6 +15,10 @@ export const productListQuerySchema = z.object({
   // `sortie` : du modèle le plus récent au plus ancien (pages des marques de la Boutique).
   sort: z.enum(["nouveautes", "prix-croissant", "prix-decroissant", "sortie"]).default("nouveautes"),
   ...paginationQuery,
+}).refine((query) => query.sort !== "sortie" || query.category, {
+  // Ce tri lit tout le filtre en mémoire : limité à une catégorie, jamais au catalogue entier.
+  message: "Le tri par sortie demande une catégorie",
+  path: ["sort"],
 });
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;
 
