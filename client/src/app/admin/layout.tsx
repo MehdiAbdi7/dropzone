@@ -5,7 +5,9 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import AdminNav from "@/features/admin/AdminNav";
 import { getCurrentUser } from "@/lib/serverFetch";
 
-export const metadata: Metadata = { title: { default: "Back-office", template: "%s · Back-office DropZone" } };
+export const metadata: Metadata = {
+  title: { default: "Back-office", template: "%s · Back-office DropZone" },
+};
 
 // Deuxième couche : un client connecté n'entre pas. La troisième, l'API, refuse
 // de toute façon toute route /admin sans le rôle admin (403).
@@ -30,7 +32,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           <ThemeToggle />
         </div>
       </aside>
-      <main id="contenu" className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
+      <main id="contenu" className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8 hero-glow">
         {children}
       </main>
     </div>

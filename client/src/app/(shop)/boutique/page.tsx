@@ -16,15 +16,18 @@ export default async function ShopPage() {
       <Breadcrumb items={[{ label: "Boutique" }]} />
       <header className="space-y-1">
         <h1 className="text-3xl">Que cherchez-vous ?</h1>
-        <p className="text-ink-muted">Choisissez une catégorie, puis une marque et un modèle.</p>
+        <p className="text-ink-muted">
+          Choisissez une catégorie, puis une marque et un modèle.
+        </p>
       </header>
 
       {!categories ? (
         <p role="alert" className="card p-6">
-          La boutique ne répond pas pour le moment. Rechargez la page dans quelques secondes.
+          La boutique ne répond pas pour le moment. Rechargez la page dans
+          quelques secondes.
         </p>
       ) : (
-        <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+        <ul className="grid grid-cols-3 gap-3 sm:gap-4 lg:grid-cols-5">
           {categories.map((category) => (
             <li key={category.slug} className="flex">
               <ChoiceTile

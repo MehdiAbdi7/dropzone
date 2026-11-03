@@ -6,7 +6,7 @@ export default function ShopLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       <Header />
-      <main id="contenu" className="flex-1">
+      <main id="contenu" className="flex-1 hero-glow">
         {children}
       </main>
       <Footer />

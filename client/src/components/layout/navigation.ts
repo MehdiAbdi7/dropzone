@@ -3,24 +3,26 @@
 export const NAV_LINKS = [
   { key: "accueil", href: "/", label: "Accueil" },
   { key: "boutique", href: "/boutique", label: "Boutique" },
-  { key: "categories", href: "/#categories", label: "Catégories" },
-  { key: "reconditionnes", href: "/produits?condition=reconditionne", label: "Reconditionnés" },
-  { key: "affaires", href: "/produits?offre=affaire", label: "Affaires" },
+  {
+    key: "reconditionnes",
+    href: "/produits?condition=reconditionne",
+    label: "Reconditionnés",
+  },
   { key: "suivi", href: "/suivi", label: "Suivi" },
 ] as const;
 
 export type NavKey = (typeof NAV_LINKS)[number]["key"];
 
-// Le lien de la page en cours. Reconditionnés et Affaires sont des filtres du
-// catalogue : on regarde donc aussi l'adresse après le « ? ».
-export function activeNavKey(pathname: string, params: URLSearchParams): NavKey | null {
+// Le lien de la page en cours. Reconditionnés est un filtre du catalogue : on
+// regarde donc aussi l'adresse après le « ? ».
+export function activeNavKey(
+  pathname: string,
+  params: URLSearchParams,
+): NavKey | null {
   if (pathname === "/") {
     return "accueil";
   }
   if (pathname === "/produits") {
-    if (params.get("offre") === "affaire") {
-      return "affaires";
-    }
     if (params.get("condition") === "reconditionne") {
       return "reconditionnes";
     }
