@@ -1,6 +1,6 @@
 // Le catalogue de démo, inspiré de ce que DropZone vend sur Instagram. Les prix sont
-// des exemples. Les images sont des illustrations servies par le front (client/public),
-// en attendant les vraies photos envoyées depuis le back-office (Cloudinary).
+// des exemples. Les images sont des illustrations servies par le front (client/public)
+// ou des photos préparées par `npm run photos` (Cloudinary), en attendant les autres.
 
 export type SeedVariant = {
   sku: string;
@@ -87,8 +87,49 @@ const recond = (
 
 const CHARGER_AND_BUDS = [{ sku: "CHG-20W-BLANC" }, { sku: "BUDS-DZ-NOIR" }];
 
+// Les deux iPhone 18 Pro partagent la même photo, réduite à la vraie hauteur de chacun.
+const CLOUDINARY = "https://res.cloudinary.com/nscawk7d/image/upload";
+
 export const PRODUCTS: SeedProduct[] = [
   // ---------- Smartphones ----------
+  {
+    name: "iPhone 18 Pro Max",
+    category: "smartphones",
+    model: "Apple|iPhone 18 Pro Max",
+    description:
+      "Le plus grand iPhone de la gamme 18 : écran de 6,9 pouces, puce A20 Pro et zoom de qualité optique 8x. Neuf sous blister.",
+    specs: {
+      Écran: "6,9 pouces OLED, jusqu'à 120 Hz",
+      Puce: "A20 Pro",
+      "Appareil photo": "48 Mpx, zoom de qualité optique 8x",
+      Connecteur: "USB-C",
+    },
+    image: `${CLOUDINARY}/v1793715036/dropzone/products/iphone-18-pro-max.webp`,
+    variants: [
+      neuf("IP18PM-256-BORD", { Stockage: "256 Go", Couleur: "Bordeaux" }, 335000, 2),
+      neuf("IP18PM-256-NOIR", { Stockage: "256 Go", Couleur: "Noir" }, 335000, 3),
+      neuf("IP18PM-512-ARG", { Stockage: "512 Go", Couleur: "Argent" }, 385000, 1),
+    ],
+  },
+  {
+    name: "iPhone 18 Pro",
+    category: "smartphones",
+    model: "Apple|iPhone 18 Pro",
+    description:
+      "La puce A20 Pro et le zoom de qualité optique 8x du Pro Max, dans un format plus compact avec un écran de 6,3 pouces. Neuf sous blister.",
+    specs: {
+      Écran: "6,3 pouces OLED, jusqu'à 120 Hz",
+      Puce: "A20 Pro",
+      "Appareil photo": "48 Mpx, zoom de qualité optique 8x",
+      Connecteur: "USB-C",
+    },
+    image: `${CLOUDINARY}/v1793715037/dropzone/products/iphone-18-pro.webp`,
+    variants: [
+      neuf("IP18P-256-BORD", { Stockage: "256 Go", Couleur: "Bordeaux" }, 295000, 2),
+      neuf("IP18P-256-GLAC", { Stockage: "256 Go", Couleur: "Glacier" }, 295000, 2),
+      neuf("IP18P-512-NOIR", { Stockage: "512 Go", Couleur: "Noir" }, 345000, 1),
+    ],
+  },
   {
     name: "iPhone 15 Pro Max",
     category: "smartphones",

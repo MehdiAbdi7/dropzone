@@ -3,7 +3,7 @@
 //   npm run photos -- dropzone/test   (pour essayer sans toucher aux vraies)
 //
 // Lit les photos de client/design-sources/photos (ignoré par Git), nommées comme le
-// champ `photo` de PHONES (iphone-15-pro-max.jpg…). Toutes au même angle : dos et face.
+// champ `photo` de PHONES (iphone-18-pro-max.jpg…). Toutes au même angle : dos et face.
 //
 // L'échelle réelle : chaque image finale a la même toile transparente, où 1 px vaut
 // toujours la même longueur. Le téléphone y est réduit à sa hauteur officielle et posé
@@ -24,8 +24,8 @@ const CANVAS = { width: 1000, height: 1200, mm: 170 };
 // Un produit : son nom sur Cloudinary, la photo qu'il utilise et sa hauteur officielle.
 // Deux modèles au même dessin partagent la photo : le Pro reprend celle du Pro Max.
 const PHONES: { name: string; photo: string; heightMm: number }[] = [
-  { name: "iphone-15-pro-max", photo: "iphone-15-pro-max", heightMm: 159.9 },
-  { name: "iphone-15-pro", photo: "iphone-15-pro-max", heightMm: 146.6 },
+  { name: "iphone-18-pro-max", photo: "iphone-18-pro-max", heightMm: 163.4 },
+  { name: "iphone-18-pro", photo: "iphone-18-pro-max", heightMm: 150.0 },
 ];
 
 if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) {
