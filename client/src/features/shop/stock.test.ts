@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Options, Variant } from "@/types/api";
-import { conditionSummary, initialSelection, optionChoices, optionKeys, selectOption, splitDeals } from "./stock";
+import { conditionSummary, initialSelection, optionChoices, optionKeys, selectOption } from "./stock";
 
 const variant = (options: Options, stock: number, price = 335000, condition: Variant["condition"] = "new"): Variant => ({
   sku: `${options.Couleur ?? "X"}-${options.Stockage ?? "X"}-${price}-${condition}`,
@@ -11,19 +11,12 @@ const variant = (options: Options, stock: number, price = 335000, condition: Var
   grade: condition === "new" ? null : 9,
   batteryHealth: condition === "new" ? null : 95,
   replacedParts: [],
+  compatibleParts: [],
   defects: [],
   limitations: [],
-  isDeal: false,
-  dealNote: null,
+  withBox: condition === "new" ? null : false,
+  details: null,
   gifts: [],
-});
-
-// Un appareil que le gérant a mis en affaire.
-const deal = (options: Options, stock: number, price: number, condition: Variant["condition"] = "new"): Variant => ({
-  ...variant(options, stock, price, condition),
-  sku: `AFFAIRE-${options.Couleur ?? "X"}-${price}`,
-  isDeal: true,
-  dealNote: "Neuf, batterie 100 %, juste sans boîte",
 });
 
 // L'exemple de Mehdi : 3 Bordeaux (2 en 256 Go, 1 en 512 Go), 1 Noir, 1 Argent, Glacier épuisé.
@@ -115,37 +108,5 @@ describe("conditionSummary", () => {
       refurbishedFrom: null,
       refurbishedCount: 0,
     });
-  });
-});
-
-describe("splitDeals", () => {
-  it("met l'affaire sans boîte à part, sans changer les chiffres du choix du neuf", () => {
-    const sansBoite = deal({ Stockage: "256 Go", Couleur: "Bordeaux" }, 1, 310000);
-    const { deals, regular } = splitDeals([...iphone18ProMax, sansBoite]);
-    expect(deals).toEqual([sansBoite]);
-    expect(valuesOf(optionChoices(regular, keys, {}), "Couleur")).toContainEqual({ value: "Bordeaux", stock: 3 });
-  });
-
-  it("ne met pas dans les puces une couleur qui n'existe qu'en affaire", () => {
-    const orange = deal({ Stockage: "256 Go", Couleur: "Orange" }, 1, 300000);
-    const { regular } = splitDeals([...iphone18ProMax, orange]);
-    const colors = valuesOf(optionChoices(regular, keys, {}), "Couleur")?.map((item) => item.value);
-    expect(colors).not.toContain("Orange");
-  });
-
-  // Une affaire vendue garde les options d'un neuf normal : dans le choix du neuf, elle
-  // ferait une deuxième variante « Bordeaux, 256 Go » épuisée.
-  it("oublie une affaire épuisée, des deux côtés", () => {
-    const sold = deal({ Stockage: "256 Go", Couleur: "Bordeaux" }, 0, 310000);
-    const { deals, regular } = splitDeals([...iphone18ProMax, sold]);
-    expect(deals).toEqual([]);
-    expect(regular).toEqual(iphone18ProMax);
-  });
-
-  // Un accessoire d'une seule variante, mis en affaire puis vendu : la fiche doit encore
-  // dire « Rupture de stock », pas montrer une page sans achat.
-  it("garde une affaire vendue dans le choix habituel quand il n'y a rien d'autre", () => {
-    const sold = deal({}, 0, 1500);
-    expect(splitDeals([sold])).toEqual({ deals: [], regular: [sold] });
   });
 });

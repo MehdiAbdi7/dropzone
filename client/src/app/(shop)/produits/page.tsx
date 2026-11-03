@@ -78,17 +78,11 @@ export default async function CatalogPage({ searchParams }: PageProps<"/produits
         </div>
       ) : (
         <>
-          {/* La liste des reconditionnés mène droit à leur radiographie, sans repasser par
-              « neuf ou reconditionné » ; celle des affaires, à la page où est l'affaire. */}
+          {/* La liste des affaires mène droit à leur radiographie, sans repasser par
+              « neuf scellé ou affaire ». */}
           <ProductGrid
             products={result.data}
-            linkTo={
-              params.get("condition") === "reconditionne"
-                ? "refurbished"
-                : params.get("offre") === "affaire"
-                  ? "deal"
-                  : undefined
-            }
+            linkTo={params.get("condition") === "reconditionne" ? "refurbished" : undefined}
           />
           {result.pagination.pages > 1 ? (
             <nav aria-label="Pages" className="flex flex-wrap justify-center gap-2">

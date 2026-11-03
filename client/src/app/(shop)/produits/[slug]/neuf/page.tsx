@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { DEVICE_KINDS } from "@/config/catalog";
-import NewOffers from "@/features/shop/NewOffers";
+import NewPicker from "@/features/shop/NewPicker";
 import ProductHeader from "@/features/shop/ProductHeader";
 import { getProduct } from "@/lib/products";
 
@@ -10,8 +10,8 @@ export async function generateMetadata({ params }: PageProps<"/produits/[slug]/n
   return { title: product ? `${product.name} neuf` : "Produit introuvable" };
 }
 
-// Étape 5a du parcours : le neuf. Les affaires neuves en haut, puis couleur et stockage,
-// avec ce qui reste dans chaque option.
+// Étape 5a du parcours : le neuf scellé, couleur puis stockage, avec ce qui reste dans
+// chaque option.
 export default async function NewProductPage({ params }: PageProps<"/produits/[slug]/neuf">) {
   const { slug } = await params;
   const product = await getProduct(slug);
@@ -28,12 +28,7 @@ export default async function NewProductPage({ params }: PageProps<"/produits/[s
   return (
     <div className="container-page py-8">
       <ProductHeader product={product} step="Neuf">
-        <NewOffers
-          variants={fresh}
-          kind={product.category.kind}
-          image={product.images[0]?.url ?? null}
-          regularTitle="Ou choisissez votre neuf"
-        />
+        <NewPicker variants={fresh} kind={product.category.kind} />
       </ProductHeader>
     </div>
   );

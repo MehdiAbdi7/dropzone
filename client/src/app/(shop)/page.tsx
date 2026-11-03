@@ -69,10 +69,9 @@ export default async function HomePage() {
     publicFetchPage<ProductCard>("/products?offre=affaire&limit=1", 60),
   ]);
 
-  // Un vrai reconditionné du stock, montré avec sa fiche d'état complète :
-  // de préférence un smartphone vendu en affaire, le cas le plus parlant.
-  const candidates = refurbished?.data ?? [];
-  const showcaseSlug = (candidates.find((product) => product.hasDeal) ?? candidates[0])?.slug;
+  // Une vraie affaire du stock, montrée avec sa fiche d'état complète (le smartphone le
+  // plus récent qui en a une).
+  const showcaseSlug = refurbished?.data[0]?.slug;
   const showcase = showcaseSlug ? await publicFetch<ProductDetail>(`/products/${showcaseSlug}`, 60) : null;
   const refurbishedUnits = showcase?.variants.filter((variant) => variant.condition === "refurbished") ?? [];
   // En vitrine : une affaire sans limitation, l'exemple le plus rassurant.

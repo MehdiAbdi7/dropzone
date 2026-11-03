@@ -8,9 +8,9 @@ import type { ProductKind, Variant } from "@/types/api";
 import DeviceDiagram from "./DeviceDiagram";
 import { zonesOf } from "./diagramZones";
 
-// La carte d'un reconditionné, la « radiographie » : le prix et la couleur (et, pour une
-// affaire, le badge et les détails du gérant), les limitations
-// en rouge en haut (ce qui empêche un usage), le schéma avec sa légende, l'état et la
+// La carte d'une affaire, la « radiographie » : le prix, la couleur et la boîte, les
+// détails du gérant, les limitations en rouge en haut (ce qui empêche un usage), le
+// schéma avec sa légende (chaque pièce changée, d'origine ou compatible), l'état et la
 // batterie, les articles offerts, puis l'ajout au panier de cet appareil précis.
 export default function RefurbishedCard({ variant, kind }: { variant: Variant; kind: ProductKind }) {
   const { Couleur: color, ...otherOptions } = variant.options;
@@ -23,12 +23,6 @@ export default function RefurbishedCard({ variant, kind }: { variant: Variant; k
     <article className="card neon-edge grid gap-4 p-5 pl-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          {variant.isDeal ? (
-            <p className="flex items-center gap-2">
-              <span className="badge badge-deal">Affaire</span>
-              <span className="text-sm font-bold text-red">Prix exceptionnel</span>
-            </p>
-          ) : null}
           <p className="font-display text-2xl font-bold">
             {formatPrice(variant.price)} <span className="text-sm font-semibold text-ink-muted">TTC</span>
           </p>
@@ -47,6 +41,7 @@ export default function RefurbishedCard({ variant, kind }: { variant: Variant; k
               </span>
             ))}
           </p>
+          <p className="text-sm font-semibold">{variant.withBox ? "Avec sa boîte d'origine" : "Sans boîte"}</p>
         </div>
         <p className="flex flex-col items-center leading-none" aria-label={`État ${variant.grade} sur 10`}>
           <span className="font-display text-3xl font-bold tabular-nums">
@@ -57,8 +52,8 @@ export default function RefurbishedCard({ variant, kind }: { variant: Variant; k
         </p>
       </header>
 
-      {/* Les détails du gérant sur l'affaire (« Comme neuf, vendu avec sa boîte d'origine »). */}
-      {variant.isDeal && variant.dealNote ? <p className="break-words font-semibold">{variant.dealNote}</p> : null}
+      {/* Les détails du gérant (« Comme neuf, vendu avec sa boîte d'origine »). */}
+      {variant.details ? <p className="break-words font-semibold">{variant.details}</p> : null}
 
       {variant.limitations.length > 0 ? (
         <div role="note" className="rounded-lg border border-red bg-red-soft p-3 text-sm">
@@ -84,7 +79,10 @@ export default function RefurbishedCard({ variant, kind }: { variant: Variant; k
                 <li key={part} className="flex items-baseline gap-2">
                   <span aria-hidden="true" className="inline-block size-3 shrink-0 rounded-sm border-2 border-blue bg-blue-soft" />
                   <span>
-                    {part} <span className="text-ink-muted">: pièce changée</span>
+                    {part}{" "}
+                    <span className="text-ink-muted">
+                      : pièce changée, {variant.compatibleParts.includes(part) ? "compatible" : "d'origine"}
+                    </span>
                   </span>
                 </li>
               ))}

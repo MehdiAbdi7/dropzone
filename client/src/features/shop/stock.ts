@@ -69,18 +69,6 @@ export function selectOption(
   return next;
 }
 
-// Les affaires en stock, proposées à part, et le reste pour le choix habituel : ses
-// chiffres ne comptent pas les exemplaires en affaire. Une affaire épuisée ne va nulle
-// part : elle a souvent les options d'un neuf normal (« Bordeaux, 256 Go ») et ferait
-// une deuxième variante identique, vendue, dans le choix du neuf. Sauf s'il n'y a rien
-// d'autre (un accessoire d'une seule variante) : le choix habituel la garde alors, pour
-// afficher « Rupture de stock » plutôt qu'une page sans achat.
-export function splitDeals(variants: Variant[]): { deals: Variant[]; regular: Variant[] } {
-  const deals = variants.filter((variant) => variant.isDeal && variant.stock > 0);
-  const regular = variants.filter((variant) => !variant.isDeal);
-  return { deals, regular: deals.length === 0 && regular.length === 0 ? variants : regular };
-}
-
 // Les chiffres des deux cartes « Neuf » et « Reconditionné » (mêmes règles que l'API).
 export function conditionSummary(variants: Variant[]): {
   newFrom: number | null;
