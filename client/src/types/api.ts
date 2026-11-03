@@ -82,6 +82,8 @@ export type ProductDetail = {
   specs: Options;
   minPrice: number;
   category: { name: string; slug: string; kind: ProductKind };
+  // La marque de la Boutique, pour le fil d'Ariane ; null = rangé dans « Autres ».
+  brand: { name: string; slug: string } | null;
   deviceModel: ModelRef | null;
   compatibleModels: ModelRef[];
   images: { id: number; url: string }[];

@@ -192,6 +192,8 @@ export async function getProductBySlug(slug: string) {
       specs: true,
       minPrice: true,
       category: { select: { name: true, slug: true, kind: true } },
+      // La marque de la Boutique (« iPhone »), pour le fil d'Ariane ; null = carte « Autres ».
+      brand: { select: { name: true, slug: true } },
       deviceModel: { select: { brand: true, name: true, slug: true } },
       compatibleModels: {
         select: { brand: true, name: true, slug: true },

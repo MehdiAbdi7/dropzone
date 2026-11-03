@@ -128,6 +128,14 @@ describe("GET /products/:slug", () => {
     const response = await request(app).get("/products/galaxy-z-flip6");
     expect(response.status).toBe(404);
   });
+
+  it("donne la marque de la Boutique, pour le fil d'Ariane (null sans marque)", async () => {
+    expect((await request(app).get("/products/iphone-15-pro-max")).body.data.brand).toEqual({
+      name: "iPhone",
+      slug: "iphone",
+    });
+    expect((await request(app).get("/products/coque-antichoc-iphone-15-pro-max")).body.data.brand).toBeNull();
+  });
 });
 
 describe("Le parcours de la Boutique", () => {
