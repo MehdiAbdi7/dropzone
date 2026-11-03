@@ -105,8 +105,6 @@ describe("conditionSummary", () => {
       newStock: 5,
       refurbishedFrom: 275000,
       refurbishedCount: 2,
-      newDealFrom: null,
-      refurbishedDealFrom: null,
     });
   });
 
@@ -116,19 +114,7 @@ describe("conditionSummary", () => {
       newStock: 0,
       refurbishedFrom: null,
       refurbishedCount: 0,
-      newDealFrom: null,
-      refurbishedDealFrom: null,
     });
-  });
-
-  it("donne le prix des affaires en stock de chaque état", () => {
-    const variants = [
-      ...iphone18ProMax,
-      deal({ Stockage: "256 Go", Couleur: "Bordeaux" }, 1, 310000),
-      deal({ Stockage: "256 Go", Couleur: "Noir" }, 0, 290000),
-      deal({ Stockage: "256 Go", Couleur: "Bleu" }, 1, 199000, "refurbished"),
-    ];
-    expect(conditionSummary(variants)).toMatchObject({ newDealFrom: 310000, refurbishedDealFrom: 199000 });
   });
 });
 

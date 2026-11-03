@@ -14,8 +14,6 @@ export default function ModelCard({ product, sizes }: { product: ProductCard; si
         <ProductImage src={product.image} alt="" sizes={sizes} />
         {soldOut ? (
           <span className="badge badge-out absolute left-2 top-2">Épuisé</span>
-        ) : product.hasDeal ? (
-          <span className="badge badge-deal absolute left-2 top-2">Affaire</span>
         ) : null}
       </div>
       <div className="flex flex-1 flex-col gap-1 px-1 pb-0.5">

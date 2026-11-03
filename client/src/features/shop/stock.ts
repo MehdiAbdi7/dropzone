@@ -87,8 +87,6 @@ export function conditionSummary(variants: Variant[]): {
   newStock: number;
   refurbishedFrom: number | null;
   refurbishedCount: number;
-  newDealFrom: number | null;
-  refurbishedDealFrom: number | null;
 } {
   const lowest = (list: Variant[]) => {
     const inStock = list.filter((variant) => variant.stock > 0);
@@ -96,14 +94,10 @@ export function conditionSummary(variants: Variant[]): {
   };
   const fresh = variants.filter((variant) => variant.condition === "new");
   const refurbished = variants.filter((variant) => variant.condition === "refurbished");
-  const deals = (list: Variant[]) => list.filter((variant) => variant.isDeal);
   return {
     newFrom: lowest(fresh),
     newStock: fresh.reduce((sum, variant) => sum + variant.stock, 0),
     refurbishedFrom: lowest(refurbished),
     refurbishedCount: refurbished.filter((variant) => variant.stock > 0).length,
-    // La ligne « Affaire : prix exceptionnel de … » de chaque carte.
-    newDealFrom: lowest(deals(fresh)),
-    refurbishedDealFrom: lowest(deals(refurbished)),
   };
 }

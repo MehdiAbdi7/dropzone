@@ -14,7 +14,6 @@ function ChoiceCard({
   title,
   price,
   detail,
-  deal,
   disabled,
 }: {
   href: string;
@@ -24,8 +23,6 @@ function ChoiceCard({
   // Le prix de départ (null : rien en stock) et la ligne de quantité.
   price: { prefix: string; value: number } | null;
   detail: string;
-  // Le prix de l'affaire la moins chère de cet état, ou null.
-  deal: number | null;
   disabled: boolean;
 }) {
   const body = (
@@ -43,11 +40,6 @@ function ChoiceCard({
           </p>
         ) : null}
         <p className="text-sm text-ink-muted">{detail}</p>
-        {deal !== null ? (
-          <p className="text-sm font-bold text-red">
-            Affaire : prix exceptionnel de <span className="whitespace-nowrap">{formatPrice(deal)}</span>
-          </p>
-        ) : null}
       </div>
     </>
   );
@@ -82,7 +74,6 @@ export default function ConditionChoice({ slug, image, variants }: { slug: strin
         title="Jamais utilisé"
         price={summary.newFrom !== null ? { prefix: newPrices.size > 1 ? "À partir de " : "", value: summary.newFrom } : null}
         detail={summary.newFrom !== null ? `${summary.newStock} en stock` : "Aucun neuf en stock"}
-        deal={summary.newDealFrom}
         disabled={summary.newFrom === null}
       />
       <ChoiceCard
@@ -93,7 +84,6 @@ export default function ConditionChoice({ slug, image, variants }: { slug: strin
         title="Testé et décrit pièce par pièce"
         price={summary.refurbishedFrom !== null ? { prefix: "À partir de ", value: summary.refurbishedFrom } : null}
         detail={summary.refurbishedFrom !== null ? `${n} appareil${n > 1 ? "s" : ""}` : "Aucun reconditionné en stock"}
-        deal={summary.refurbishedDealFrom}
         disabled={summary.refurbishedFrom === null}
       />
     </section>
