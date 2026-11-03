@@ -97,7 +97,7 @@ export const PRODUCTS: SeedProduct[] = [
     category: "smartphones",
     model: "Apple|iPhone 18 Pro Max",
     description:
-      "Le plus grand iPhone de la gamme 18 : écran de 6,9 pouces, puce A20 Pro et zoom de qualité optique 8x. Neuf sous blister.",
+      "Le plus grand iPhone de la gamme 18 : écran de 6,9 pouces, puce A20 Pro et zoom de qualité optique 8x.",
     specs: {
       Écran: "6,9 pouces OLED, jusqu'à 120 Hz",
       Puce: "A20 Pro",
@@ -123,7 +123,7 @@ export const PRODUCTS: SeedProduct[] = [
     category: "smartphones",
     model: "Apple|iPhone 18 Pro",
     description:
-      "La puce A20 Pro et le zoom de qualité optique 8x du Pro Max, dans un format plus compact avec un écran de 6,3 pouces. Neuf sous blister.",
+      "La puce A20 Pro et le zoom de qualité optique 8x du Pro Max, dans un format plus compact avec un écran de 6,3 pouces.",
     specs: {
       Écran: "6,3 pouces OLED, jusqu'à 120 Hz",
       Puce: "A20 Pro",

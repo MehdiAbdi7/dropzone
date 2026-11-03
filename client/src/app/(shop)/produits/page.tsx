@@ -78,7 +78,11 @@ export default async function CatalogPage({ searchParams }: PageProps<"/produits
         </div>
       ) : (
         <>
-          <ProductGrid products={result.data} />
+          {/* La liste des reconditionnés mène droit à leur radiographie, sans repasser par « neuf ou reconditionné ». */}
+          <ProductGrid
+            products={result.data}
+            hrefSuffix={params.get("condition") === "reconditionne" ? "/reconditionne" : undefined}
+          />
           {result.pagination.pages > 1 ? (
             <nav aria-label="Pages" className="flex flex-wrap justify-center gap-2">
               {Array.from({ length: result.pagination.pages }, (_, index) => index + 1).map((page) => (

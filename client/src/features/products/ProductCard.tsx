@@ -18,12 +18,13 @@ function stateLabel(product: ProductCardData): string | null {
 // Toute la carte est un seul lien vers la fiche : il faut choisir une variante (ou
 // un appareil reconditionné) avant d'ajouter au panier. La pastille du panier en
 // bas à droite n'est donc qu'un repère visuel, pas un deuxième lien vers la même page.
-export default function ProductCard({ product, sizes }: { product: ProductCardData; sizes: string }) {
+// `href` : une autre page que la fiche (la liste des reconditionnés mène à leur radiographie).
+export default function ProductCard({ product, sizes, href }: { product: ProductCardData; sizes: string; href?: string }) {
   const state = stateLabel(product);
 
   return (
     <Link
-      href={`/produits/${product.slug}`}
+      href={href ?? `/produits/${product.slug}`}
       className="card group flex w-full flex-col gap-3 p-2.5 transition-[border-color,box-shadow] hover:border-blue-ink hover:shadow-[var(--shadow)] sm:p-3"
     >
       <div className="relative aspect-square overflow-hidden rounded-[10px] bg-surface-2">
