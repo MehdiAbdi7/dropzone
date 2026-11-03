@@ -11,7 +11,8 @@
     "typecheck": "tsc",
     "test": "vitest",
     "seed": "tsx src/scripts/seed.ts",
-    "create-admin": "tsx src/scripts/createAdmin.ts"
+    "create-admin": "tsx src/scripts/createAdmin.ts",
+    "photos": "tsx src/scripts/productPhotos.ts"
   },
   "type": "module",
   "engines": {
