@@ -40,6 +40,16 @@ export const OPTION_FIELDS: Record<ProductKind, { key: string; group: ChoiceGrou
 // PostgreSQL range un objet JSONB par longueur de clé, pas dans l'ordre d'écriture :
 // l'ordre d'affichage des options et des caractéristiques est donc fixé ici.
 export const OPTION_ORDER = ["Stockage", "RAM", "Processeur", "Clavier", "Taille", "Couleur", "Connectivité"];
+
+// L'ordre des choix du neuf dans la Boutique : ce que le client choisit d'abord.
+// La couleur pour un téléphone ou une montre ; la puissance pour un PC.
+export const OPTION_ORDER_BY_KIND: Record<ProductKind, string[]> = {
+  phone: ["Couleur", "Stockage", "RAM"],
+  watch: ["Couleur", "Taille", "Connectivité"],
+  laptop: ["Processeur", "RAM", "Stockage", "Clavier", "Couleur"],
+  accessory: ["Couleur"],
+  audiovisual: ["Couleur"],
+};
 export const SPEC_ORDER = [
   "Écran",
   "Puce",

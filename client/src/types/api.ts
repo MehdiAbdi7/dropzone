@@ -25,6 +25,8 @@ export type Category = {
   kind: ProductKind;
   productCount: number;
   brands: Brand[];
+  // Des produits publiés sans marque : la Boutique ajoute une carte « Autres ».
+  hasUnbranded: boolean;
 };
 
 export type ProductCard = {
@@ -39,6 +41,11 @@ export type ProductCard = {
   hasNew: boolean;
   hasRefurbished: boolean;
   hasDeal: boolean;
+  // Le prix le plus bas en stock de chaque état (null s'il n'y en a pas) et ce qui reste.
+  newFrom: number | null;
+  refurbishedFrom: number | null;
+  newStock: number;
+  refurbishedCount: number;
 };
 
 export type Gift = {
