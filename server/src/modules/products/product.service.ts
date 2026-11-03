@@ -39,22 +39,30 @@ type ConditionFields = {
   replacedParts: string[];
   defects: string[];
   limitations: string[];
+  isDeal: boolean;
+  dealNote: string | null;
 };
 
-// La fiche d'état en une ligne, recopiée dans la commande :
-// « Note 9/10 · Batterie 87 % · Remplacé : batterie · Défauts : aucun · Limitations : aucune ».
+// Ce qui a été vendu, en une ligne recopiée dans la commande : la fiche d'état d'un
+// reconditionné (« Note 9/10 · Batterie 87 % · Remplacé : batterie · Défauts : aucun ·
+// Limitations : aucune »), puis, pour une affaire, les détails du gérant
+// (« Affaire : Neuf, batterie 100 %, juste sans boîte »). Un neuf normal n'a rien.
 export function buildConditionReport(variant: ConditionFields): string | null {
-  if (variant.condition === "new") {
-    return null;
+  const parts: string[] = [];
+  if (variant.condition === "refurbished") {
+    const list = (items: string[], empty: string) => (items.length > 0 ? items.join(", ") : empty);
+    parts.push(
+      `Note ${variant.grade}/10`,
+      `Batterie ${variant.batteryHealth} %`,
+      `Remplacé : ${list(variant.replacedParts, "rien")}`,
+      `Défauts : ${list(variant.defects, "aucun")}`,
+      `Limitations : ${list(variant.limitations, "aucune")}`,
+    );
   }
-  const list = (items: string[], empty: string) => (items.length > 0 ? items.join(", ") : empty);
-  return [
-    `Note ${variant.grade}/10`,
-    `Batterie ${variant.batteryHealth} %`,
-    `Remplacé : ${list(variant.replacedParts, "rien")}`,
-    `Défauts : ${list(variant.defects, "aucun")}`,
-    `Limitations : ${list(variant.limitations, "aucune")}`,
-  ].join(" · ");
+  if (variant.isDeal) {
+    parts.push(variant.dealNote ? `Affaire : ${variant.dealNote}` : "Affaire");
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 // `sortie` n'est pas ici : il se trie en JavaScript (voir byRelease).
@@ -68,6 +76,20 @@ const SORTS: Record<Exclude<ProductListQuery["sort"], "sortie">, Prisma.ProductO
 function lowestInStock(variants: { price: number; stock: number }[]): number | null {
   const inStock = variants.filter((variant) => variant.stock > 0);
   return inStock.length > 0 ? Math.min(...inStock.map((variant) => variant.price)) : null;
+}
+
+// L'état où sont les affaires en stock d'un produit : la carte de la page Affaires
+// mène à la page Neuf, à la page Reconditionné, ou au choix des deux (étape 4).
+function dealSide(deals: { condition: Condition }[]): "new" | "refurbished" | "both" | null {
+  const hasNew = deals.some((variant) => variant.condition === "new");
+  const hasRefurbished = deals.some((variant) => variant.condition === "refurbished");
+  if (hasNew && hasRefurbished) {
+    return "both";
+  }
+  if (hasNew) {
+    return "new";
+  }
+  return hasRefurbished ? "refurbished" : null;
 }
 
 const RELEASE_SORT_MAX = 500;
@@ -121,8 +143,8 @@ export async function listProducts(query: ProductListQuery) {
     });
   }
   if (query.offre === "affaire") {
-    // Une affaire vendable : une variante encore en stock qui offre au moins un article.
-    filters.push({ variants: { some: { stock: { gt: 0 }, gifts: { some: {} } } } });
+    // Une affaire vendable : une variante encore en stock que le gérant a mise en affaire.
+    filters.push({ variants: { some: { stock: { gt: 0 }, isDeal: true } } });
   }
   const where: Prisma.ProductWhereInput = { status: "published", AND: filters };
   const select = {
@@ -134,9 +156,7 @@ export async function listProducts(query: ProductListQuery) {
     deviceModel: { select: { brand: true, releaseYear: true } },
     brand: { select: { name: true } },
     images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
-    variants: {
-      select: { condition: true, price: true, stock: true, gifts: { select: { id: true }, take: 1 } },
-    },
+    variants: { select: { condition: true, price: true, stock: true, isDeal: true } },
   } satisfies Prisma.ProductSelect;
 
   let total: number;
@@ -160,6 +180,7 @@ export async function listProducts(query: ProductListQuery) {
     const available = variants.filter((variant) => variant.stock > 0);
     const fresh = variants.filter((variant) => variant.condition === "new");
     const refurbished = variants.filter((variant) => variant.condition === "refurbished");
+    const deals = available.filter((variant) => variant.isDeal);
     return {
       ...product,
       // La petite ligne de la carte : le fabricant du modèle (« Apple » au-dessus
@@ -169,7 +190,10 @@ export async function listProducts(query: ProductListQuery) {
       inStock: available.length > 0,
       hasNew: available.some((variant) => variant.condition === "new"),
       hasRefurbished: available.some((variant) => variant.condition === "refurbished"),
-      hasDeal: available.some((variant) => variant.gifts.length > 0),
+      hasDeal: deals.length > 0,
+      // « Prix exceptionnel » sur la carte : l'affaire la moins chère en stock.
+      dealFrom: lowestInStock(deals),
+      dealIn: dealSide(deals),
       // Les deux lignes de prix de la carte d'un modèle, et les chiffres de l'étape « neuf ou reconditionné ».
       newFrom: lowestInStock(fresh),
       refurbishedFrom: lowestInStock(refurbished),
@@ -216,6 +240,8 @@ export async function getProductBySlug(slug: string) {
           replacedParts: true,
           defects: true,
           limitations: true,
+          isDeal: true,
+          dealNote: true,
           gifts: {
             select: {
               quantity: true,

@@ -36,7 +36,7 @@ describe("buildConditionReport", () => {
   const empty = { grade: null, batteryHealth: null, replacedParts: [], defects: [], limitations: [] };
 
   it("ne renvoie rien pour un neuf", () => {
-    expect(buildConditionReport({ condition: "new", ...empty })).toBeNull();
+    expect(buildConditionReport({ condition: "new", ...empty, isDeal: false, dealNote: null })).toBeNull();
   });
 
   it("résume la fiche d'état d'un reconditionné", () => {
@@ -47,9 +47,38 @@ describe("buildConditionReport", () => {
       replacedParts: ["Batterie", "Caméra arrière"],
       defects: [],
       limitations: ["Wi-Fi seulement"],
+      isDeal: false,
+      dealNote: null,
     });
     expect(report).toBe(
       "Note 9/10 · Batterie 87 % · Remplacé : Batterie, Caméra arrière · Défauts : aucun · Limitations : Wi-Fi seulement",
+    );
+  });
+});
+
+describe("buildConditionReport pour une affaire", () => {
+  const empty = { grade: null, batteryHealth: null, replacedParts: [], defects: [], limitations: [] };
+
+  it("garde les détails d'une affaire neuve", () => {
+    expect(
+      buildConditionReport({ condition: "new", ...empty, isDeal: true, dealNote: "Neuf, batterie 100 %, juste sans boîte" }),
+    ).toBe("Affaire : Neuf, batterie 100 %, juste sans boîte");
+    expect(buildConditionReport({ condition: "new", ...empty, isDeal: true, dealNote: null })).toBe("Affaire");
+  });
+
+  it("ajoute les détails de l'affaire à la fiche d'un reconditionné", () => {
+    const report = buildConditionReport({
+      condition: "refurbished",
+      grade: 10,
+      batteryHealth: 80,
+      replacedParts: [],
+      defects: [],
+      limitations: [],
+      isDeal: true,
+      dealNote: "Comme neuf",
+    });
+    expect(report).toBe(
+      "Note 10/10 · Batterie 80 % · Remplacé : rien · Défauts : aucun · Limitations : aucune · Affaire : Comme neuf",
     );
   });
 });

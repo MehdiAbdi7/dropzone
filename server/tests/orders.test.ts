@@ -50,6 +50,27 @@ describe("POST /orders/preview", () => {
     expect(response.body.data.lines[0].problem).toBe("Il n'en reste que 1");
   });
 
+  it("garde les détails d'une affaire neuve dans la ligne, jusqu'à la commande", async () => {
+    const phone = await prisma.product.findUniqueOrThrow({ where: { slug: "iphone-15-pro-max" } });
+    await prisma.productVariant.create({
+      data: {
+        productId: phone.id,
+        sku: "IP-NEW-SB",
+        price: 230000,
+        stock: 1,
+        isDeal: true,
+        dealNote: "Neuf, batterie 100 %, juste sans boîte",
+      },
+    });
+    const items = [{ sku: "IP-NEW-SB", quantity: 1 }];
+    const preview = await request(app).post("/orders/preview").send({ items });
+    expect(preview.body.data.lines[0].conditionReport).toBe("Affaire : Neuf, batterie 100 %, juste sans boîte");
+
+    await previewThenOrder(items);
+    const order = await prisma.order.findUniqueOrThrow({ where: { number: 1001 }, include: { items: true } });
+    expect(order.items[0].conditionReport).toBe("Affaire : Neuf, batterie 100 %, juste sans boîte");
+  });
+
   it("ajoute les frais de livraison sous 10 000 DA", async () => {
     const response = await request(app)
       .post("/orders/preview")

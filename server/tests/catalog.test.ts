@@ -213,3 +213,50 @@ describe("Le parcours de la Boutique", () => {
     ]);
   });
 });
+
+describe("Les affaires « prix exceptionnel »", () => {
+  const slugs = (response: request.Response) => response.body.data.map((product: { slug: string }) => product.slug);
+  const find = (response: request.Response, slug: string) =>
+    response.body.data.find((product: { slug: string }) => product.slug === slug);
+
+  // Une affaire sans cadeau : c'est la marque posée par le gérant qui compte.
+  async function addChargerDeal(stock: number) {
+    const charger = await prisma.product.findUniqueOrThrow({ where: { slug: "chargeur-usb-c-20-w" } });
+    await prisma.productVariant.create({
+      data: { productId: charger.id, sku: "CHG-20W-SB", price: 1500, stock, isDeal: true, dealNote: "Sans boîte" },
+    });
+  }
+
+  it("met dans les affaires un appareil marqué affaire, même sans cadeau", async () => {
+    await addChargerDeal(2);
+    const response = await request(app).get("/products?offre=affaire");
+    expect(slugs(response)).toContain("chargeur-usb-c-20-w");
+    expect(find(response, "chargeur-usb-c-20-w")).toMatchObject({ hasDeal: true, dealFrom: 1500, dealIn: "new" });
+  });
+
+  it("donne l'état de l'affaire et son prix sur une carte", async () => {
+    const response = await request(app).get("/products?category=smartphones");
+    expect(find(response, "iphone-15-pro-max")).toMatchObject({ dealFrom: 185000, dealIn: "refurbished" });
+    const phone = await prisma.product.findUniqueOrThrow({ where: { slug: "iphone-15-pro-max" } });
+    await prisma.productVariant.create({
+      data: { productId: phone.id, sku: "IP-NEW-SB", price: 230000, stock: 1, isDeal: true },
+    });
+    const both = await request(app).get("/products?category=smartphones");
+    expect(find(both, "iphone-15-pro-max")).toMatchObject({ dealFrom: 185000, dealIn: "both" });
+  });
+
+  it("ne garde pas une affaire épuisée", async () => {
+    await addChargerDeal(0);
+    const response = await request(app).get("/products?offre=affaire");
+    expect(slugs(response)).not.toContain("chargeur-usb-c-20-w");
+    const all = await request(app).get("/products?category=accessoires");
+    expect(find(all, "chargeur-usb-c-20-w")).toMatchObject({ hasDeal: false, dealFrom: null, dealIn: null });
+  });
+
+  it("donne la marque d'affaire et les détails dans la fiche", async () => {
+    await addChargerDeal(2);
+    const response = await request(app).get("/products/chargeur-usb-c-20-w");
+    const deal = response.body.data.variants.find((v: { sku: string }) => v.sku === "CHG-20W-SB");
+    expect(deal).toMatchObject({ isDeal: true, dealNote: "Sans boîte" });
+  });
+});
