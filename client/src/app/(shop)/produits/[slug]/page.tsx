@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { DEVICE_KINDS, SPEC_ORDER } from "@/config/catalog";
 import ProductGrid from "@/features/products/ProductGrid";
 import ConditionChoice from "@/features/shop/ConditionChoice";
-import NewPicker from "@/features/shop/NewPicker";
+import NewOffers from "@/features/shop/NewOffers";
 import ProductHeader from "@/features/shop/ProductHeader";
 import { formatPrice, orderedEntries } from "@/lib/format";
 import { getProduct } from "@/lib/products";
@@ -60,7 +60,12 @@ export default async function ProductPage({ params }: PageProps<"/produits/[slug
         {isDevice ? (
           <ConditionChoice slug={product.slug} image={product.images[0]?.url ?? null} variants={product.variants} />
         ) : (
-          <NewPicker variants={product.variants} kind={product.category.kind} />
+          <NewOffers
+            variants={product.variants}
+            kind={product.category.kind}
+            image={product.images[0]?.url ?? null}
+            regularTitle="Ou au prix habituel"
+          />
         )}
 
         {specs.length > 0 ? (
