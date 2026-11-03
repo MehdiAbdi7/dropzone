@@ -369,17 +369,6 @@
     cursor: not-allowed;
     text-decoration: line-through;
   }
-  /* La puce Affaires des filtres : rouge (5,3:1 sur blanc, 5,2:1 sur surface en sombre). */
-  .chip-deal {
-    border-color: var(--red);
-    color: var(--red);
-  }
-  .chip-deal[aria-pressed="true"] {
-    background: var(--red);
-    border-color: var(--red);
-    color: var(--on-red);
-  }
-
   /* Les badges des cartes produit. */
   .badge {
     display: inline-flex;
@@ -393,10 +382,6 @@
   .badge-refurb {
     background: var(--blue-soft);
     color: var(--blue-ink);
-  }
-  .badge-deal {
-    background: var(--red);
-    color: var(--on-red);
   }
   .badge-out {
     background: var(--surface-2);

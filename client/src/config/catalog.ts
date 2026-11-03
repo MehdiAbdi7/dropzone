@@ -86,11 +86,11 @@ export const KIND_LABELS: Record<ProductKind, string> = {
 };
 
 export const CONDITION_LABELS: Record<Condition, string> = {
-  new: "Neuf",
-  refurbished: "Reconditionné",
+  new: "Neuf scellé",
+  refurbished: "Affaire",
 };
 
-// Les trois familles de la fiche d'état d'un reconditionné.
+// Les trois familles de la fiche d'état d'une affaire.
 export const FAMILIES = [
   { field: "limitations", group: "limitation", label: "Limitations" },
   { field: "replacedParts", group: "replaced_part", label: "Pièces remplacées" },

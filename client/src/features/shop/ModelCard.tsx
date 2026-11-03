@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ProductImage from "@/components/ui/ProductImage";
+import { CONDITION_LABELS } from "@/config/catalog";
 import { formatPrice } from "@/lib/format";
 import type { ProductCard } from "@/types/api";
 
@@ -23,12 +24,12 @@ export default function ModelCard({ product, sizes }: { product: ProductCard; si
         <div className="mt-auto space-y-0.5 pt-1 text-xs text-ink-muted">
           {product.newFrom !== null ? (
             <p>
-              Neuf dès <span className="font-display text-sm font-bold whitespace-nowrap text-ink">{formatPrice(product.newFrom)}</span>
+              {CONDITION_LABELS.new} dès <span className="font-display text-sm font-bold whitespace-nowrap text-ink">{formatPrice(product.newFrom)}</span>
             </p>
           ) : null}
           {product.refurbishedFrom !== null ? (
             <p>
-              Reconditionné dès{" "}
+              {CONDITION_LABELS.refurbished} dès{" "}
               <span className="font-display text-sm font-bold whitespace-nowrap text-ink">
                 {formatPrice(product.refurbishedFrom)}
               </span>

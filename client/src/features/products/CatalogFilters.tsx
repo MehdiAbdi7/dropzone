@@ -2,7 +2,6 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import BrandLogo from "@/components/ui/BrandLogo";
-import { GiftIcon } from "@/components/ui/icons";
 import type { Category } from "@/types/api";
 
 // Les filtres du catalogue vivent dans l'URL : une recherche se partage, se met en
@@ -30,7 +29,6 @@ export default function CatalogFilters({ categories }: { categories: Category[] 
 
   const condition = searchParams.get("condition") ?? "";
   const brand = searchParams.get("brand") ?? "";
-  const deals = searchParams.get("offre") === "affaire";
   // La rangée des marques n'existe qu'une fois la catégorie choisie.
   const brands = categories.find((category) => category.slug === searchParams.get("category"))?.brands ?? [];
 
@@ -54,12 +52,12 @@ export default function CatalogFilters({ categories }: { categories: Category[] 
         </label>
 
         <fieldset>
-          <legend className="label">État et offres</legend>
+          <legend className="label">État</legend>
           <div className="flex flex-wrap items-center gap-2">
             {[
               { value: "", label: "Tous" },
-              { value: "neuf", label: "Neuf" },
-              { value: "reconditionne", label: "Reconditionné" },
+              { value: "neuf", label: "Neuf scellé" },
+              { value: "affaire", label: "Affaire" },
             ].map((option) => (
               <button
                 key={option.label}
@@ -71,17 +69,6 @@ export default function CatalogFilters({ categories }: { categories: Category[] 
                 {option.label}
               </button>
             ))}
-            <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
-            {/* À part : s'allume et s'éteint seule, et se combine avec l'état. */}
-            <button
-              type="button"
-              className="chip chip-deal"
-              aria-pressed={deals}
-              onClick={() => update("offre", deals ? "" : "affaire")}
-            >
-              <GiftIcon size={16} />
-              Affaires
-            </button>
           </div>
         </fieldset>
 

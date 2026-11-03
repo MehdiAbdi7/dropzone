@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import ProductImage from "@/components/ui/ProductImage";
+import { CONDITION_LABELS } from "@/config/catalog";
 import { formatPrice } from "@/lib/format";
 import type { Variant } from "@/types/api";
 import { conditionSummary } from "./stock";
@@ -58,7 +59,7 @@ function ChoiceCard({
   );
 }
 
-// Étape 4 du parcours : neuf ou reconditionné, avec le prix de départ et ce qui reste.
+// Étape 4 du parcours : neuf scellé ou affaire, avec le prix de départ et ce qui reste.
 export default function ConditionChoice({ slug, image, variants }: { slug: string; image: string | null; variants: Variant[] }) {
   const summary = conditionSummary(variants);
   // « À partir de » seulement s'il y a plusieurs prix neufs en stock ; sinon le prix seul.
@@ -66,24 +67,24 @@ export default function ConditionChoice({ slug, image, variants }: { slug: strin
   const n = summary.refurbishedCount;
 
   return (
-    <section aria-label="Neuf ou reconditionné" className="grid grid-cols-2 gap-3 sm:gap-4">
+    <section aria-label="Neuf scellé ou affaire" className="grid grid-cols-2 gap-3 sm:gap-4">
       <ChoiceCard
         href={`/produits/${slug}/neuf`}
         image={image}
-        badge={<span className="badge bg-blue text-on-brand">Neuf</span>}
-        title="Jamais utilisé"
+        badge={<span className="badge bg-blue text-on-brand">{CONDITION_LABELS.new}</span>}
+        title="Dans sa boîte scellée"
         price={summary.newFrom !== null ? { prefix: newPrices.size > 1 ? "À partir de " : "", value: summary.newFrom } : null}
-        detail={summary.newFrom !== null ? `${summary.newStock} en stock` : "Aucun neuf en stock"}
+        detail={summary.newFrom !== null ? `${summary.newStock} en stock` : "Aucun neuf scellé en stock"}
         disabled={summary.newFrom === null}
       />
       <ChoiceCard
-        href={`/produits/${slug}/reconditionne`}
+        href={`/produits/${slug}/affaire`}
         image={image}
         // Fond plein (et non le bleu léger des cartes produit) : le badge passe sur la photo.
-        badge={<span className="badge bg-ink text-surface">Reconditionné</span>}
+        badge={<span className="badge bg-ink text-surface">{CONDITION_LABELS.refurbished}</span>}
         title="Testé et décrit pièce par pièce"
         price={summary.refurbishedFrom !== null ? { prefix: "À partir de ", value: summary.refurbishedFrom } : null}
-        detail={summary.refurbishedFrom !== null ? `${n} appareil${n > 1 ? "s" : ""}` : "Aucun reconditionné en stock"}
+        detail={summary.refurbishedFrom !== null ? `${n} appareil${n > 1 ? "s" : ""}` : "Aucune affaire en stock"}
         disabled={summary.refurbishedFrom === null}
       />
     </section>

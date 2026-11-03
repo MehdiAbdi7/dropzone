@@ -17,9 +17,9 @@ export default function TermsPage() {
       <section className="space-y-2">
         <h2 className="text-xl">Produits et prix</h2>
         <p>
-          Les prix sont en dinars algériens, toutes taxes comprises. Un appareil reconditionné est un appareil unique :
-          sa fiche indique sa note d&apos;état, la santé de sa batterie, les pièces remplacées, ses défauts visibles et
-          ses limitations de fonctionnement. Les limitations doivent être acceptées avant la commande.
+          Les prix sont en dinars algériens, toutes taxes comprises. Une affaire est un appareil unique :
+          sa fiche indique sa note d&apos;état, la santé de sa batterie, les pièces remplacées (d&apos;origine ou
+          compatibles), ses défauts visibles, sa boîte d&apos;origine ou non, et ses limitations de fonctionnement. Les limitations doivent être acceptées avant la commande.
         </p>
       </section>
 

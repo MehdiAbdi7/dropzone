@@ -52,7 +52,7 @@ export default function MobileMenu() {
               Mon compte
             </Link>
             <ThemeToggle withLabel />
-            <Link href="/produits?offre=affaire" className="btn btn-primary w-full">
+            <Link href="/produits?condition=affaire" className="btn btn-primary w-full">
               Voir les affaires
             </Link>
           </div>

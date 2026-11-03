@@ -19,7 +19,7 @@ export default function ProductGrid({
         <li key={product.id} className="flex">
           <ProductCard
             product={product}
-            href={linkTo === "refurbished" ? `/produits/${product.slug}/reconditionne` : undefined}
+            href={linkTo === "refurbished" ? `/produits/${product.slug}/affaire` : undefined}
             sizes={wide ? "(min-width: 1024px) 180px, (min-width: 768px) 33vw, 50vw" : "(min-width: 1024px) 280px, (min-width: 768px) 33vw, 50vw"}
           />
         </li>

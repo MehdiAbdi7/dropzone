@@ -5,6 +5,7 @@ import { defectTip } from "@/features/products/ConditionReport";
 import GiftList from "@/features/products/GiftList";
 import { formatPrice } from "@/lib/format";
 import type { ProductKind, Variant } from "@/types/api";
+import { boxLabel, partOrigin } from "./dealLabels";
 import DeviceDiagram from "./DeviceDiagram";
 import { zonesOf } from "./diagramZones";
 
@@ -18,6 +19,7 @@ export default function RefurbishedCard({ variant, kind }: { variant: Variant; k
   const zones = zonesOf(variant, kind);
   const diagramKind = kind === "laptop" || kind === "watch" ? kind : "phone";
   const pristine = variant.replacedParts.length === 0 && variant.defects.length === 0;
+  const box = boxLabel(variant.withBox);
 
   return (
     <article className="card neon-edge grid gap-4 p-5 pl-6">
@@ -41,7 +43,7 @@ export default function RefurbishedCard({ variant, kind }: { variant: Variant; k
               </span>
             ))}
           </p>
-          <p className="text-sm font-semibold">{variant.withBox ? "Avec sa boîte d'origine" : "Sans boîte"}</p>
+          {box ? <p className="text-sm font-semibold">{box}</p> : null}
         </div>
         <p className="flex flex-col items-center leading-none" aria-label={`État ${variant.grade} sur 10`}>
           <span className="font-display text-3xl font-bold tabular-nums">
@@ -75,17 +77,17 @@ export default function RefurbishedCard({ variant, kind }: { variant: Variant; k
             <p className="font-semibold">Aucune pièce changée, aucun défaut.</p>
           ) : (
             <ul className="space-y-1.5">
-              {variant.replacedParts.map((part) => (
-                <li key={part} className="flex items-baseline gap-2">
-                  <span aria-hidden="true" className="inline-block size-3 shrink-0 rounded-sm border-2 border-blue bg-blue-soft" />
-                  <span>
-                    {part}{" "}
-                    <span className="text-ink-muted">
-                      : pièce changée, {variant.compatibleParts.includes(part) ? "compatible" : "d'origine"}
+              {variant.replacedParts.map((part) => {
+                const origin = partOrigin(variant, part);
+                return (
+                  <li key={part} className="flex items-baseline gap-2">
+                    <span aria-hidden="true" className="inline-block size-3 shrink-0 rounded-sm border-2 border-blue bg-blue-soft" />
+                    <span>
+                      {part} <span className="text-ink-muted">: pièce changée{origin ? `, ${origin}` : ""}</span>
                     </span>
-                  </span>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
               {variant.defects.map((defect) => {
                 const tip = defectTip(defect);
                 return (

@@ -86,7 +86,7 @@ describe("initialSelection et selectOption", () => {
 });
 
 describe("conditionSummary", () => {
-  it("résume le neuf et le reconditionné en stock", () => {
+  it("résume le neuf scellé et les affaires en stock", () => {
     const variants = [
       ...iphone18ProMax,
       variant({ Stockage: "256 Go", Couleur: "Noir" }, 1, 289000, "refurbished"),

@@ -1,17 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import CatalogFilters from "@/features/products/CatalogFilters";
 import ProductGrid from "@/features/products/ProductGrid";
+import { legacyCatalogRedirect } from "@/lib/legacyRedirect";
 import { publicFetch, publicFetchPage } from "@/lib/publicFetch";
 import type { Category, ProductCard } from "@/types/api";
 
 export const metadata: Metadata = { title: "Produits" };
 
-const PARAMS = ["category", "brand", "q", "condition", "model", "offre", "sort", "page"] as const;
+const PARAMS = ["category", "brand", "q", "condition", "model", "sort", "page"] as const;
 
 export default async function CatalogPage({ searchParams }: PageProps<"/produits">) {
   const query = await searchParams;
+  // Les anciennes adresses (« reconditionne », l'ancienne page Affaires) renvoient vers
+  // les nouvelles, filtres compris.
+  const legacy = legacyCatalogRedirect(
+    new URLSearchParams(Object.entries(query).flatMap(([key, value]) => (typeof value === "string" ? [[key, value]] : []))),
+  );
+  if (legacy) {
+    redirect(legacy);
+  }
   // On ne transmet à l'API que les paramètres connus, en texte simple.
   const params = new URLSearchParams();
   for (const key of PARAMS) {
@@ -33,13 +43,11 @@ export default async function CatalogPage({ searchParams }: PageProps<"/produits
   const search = params.get("q");
   const title = search
     ? `Résultats pour « ${search} »`
-    : params.get("offre") === "affaire"
+    : params.get("condition") === "affaire"
       ? "Les affaires du moment"
-      : params.get("condition") === "reconditionne"
-        ? "Reconditionnés disponibles"
-        : category
-          ? `${category.name}${brand ? ` ${brand.name}` : ""}`
-          : "Tous les produits";
+      : category
+        ? `${category.name}${brand ? ` ${brand.name}` : ""}`
+        : "Tous les produits";
 
   // Les liens de pagination gardent les filtres et changent seulement la page.
   const pageHref = (page: number) => {
@@ -82,7 +90,7 @@ export default async function CatalogPage({ searchParams }: PageProps<"/produits
               « neuf scellé ou affaire ». */}
           <ProductGrid
             products={result.data}
-            linkTo={params.get("condition") === "reconditionne" ? "refurbished" : undefined}
+            linkTo={params.get("condition") === "affaire" ? "refurbished" : undefined}
           />
           {result.pagination.pages > 1 ? (
             <nav aria-label="Pages" className="flex flex-wrap justify-center gap-2">

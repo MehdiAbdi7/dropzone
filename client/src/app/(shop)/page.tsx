@@ -31,7 +31,7 @@ const TOP_GUARANTEES: Guarantee[] = [
   { icon: <GlobeIcon />, title: "Sélectionnés d'Europe", text: "Smartphones, PC et montres" },
   { icon: <TruckIcon />, title: "Livraison dans les 58 wilayas", text: `Offerte dès ${formatPrice(FREE_SHIPPING_FROM)}` },
   { icon: <CashIcon />, title: "Paiement à la livraison", text: "Vous payez en recevant" },
-  { icon: <ClipboardCheckIcon />, title: "Reconditionnés décrits", text: "Note, batterie, pièces et défauts" },
+  { icon: <ClipboardCheckIcon />, title: "Affaires décrites", text: "Note, batterie, pièces et défauts" },
 ];
 
 const BOTTOM_GUARANTEES: Guarantee[] = [
@@ -52,7 +52,7 @@ const FAMILIES = [
     title: "Pièces remplacées",
     icon: <SwapIcon />,
     tone: "bg-blue-soft text-blue-ink",
-    text: "Caméra, batterie ou écran changés : ils fonctionnent, mais ne sont pas d'origine. On vous le dit.",
+    text: "Caméra, batterie ou écran changés : d'origine ou compatibles, on vous le dit pièce par pièce.",
   },
   {
     title: "Défauts visibles",
@@ -65,8 +65,8 @@ const FAMILIES = [
 export default async function HomePage() {
   const [latest, refurbished, deals] = await Promise.all([
     publicFetchPage<ProductCard>("/products?limit=6", 60),
-    publicFetchPage<ProductCard>("/products?category=smartphones&condition=reconditionne&limit=12", 60),
-    publicFetchPage<ProductCard>("/products?offre=affaire&limit=1", 60),
+    publicFetchPage<ProductCard>("/products?category=smartphones&condition=affaire&limit=12", 60),
+    publicFetchPage<ProductCard>("/products?condition=affaire&limit=1", 60),
   ]);
 
   // Une vraie affaire du stock, montrée avec sa fiche d'état complète (le smartphone le
@@ -91,19 +91,19 @@ export default async function HomePage() {
             <p className="text-sm font-bold tracking-[0.14em] text-red uppercase">Sélectionnés d&apos;Europe</p>
             <h1 id="hero-title" className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-[3.5rem]">
               Le bon appareil.
-              <span className="text-gradient block w-fit pb-1">Neuf ou reconditionné.</span>
+              <span className="text-gradient block w-fit pb-1">Neuf scellé ou en affaire.</span>
             </h1>
             <p className="max-w-lg text-lg text-ink-muted">
-              Smartphones, PC portables et montres importés d&apos;Europe. Chaque reconditionné est testé et décrit
-              pièce par pièce : note, batterie, pièces changées.
+              Smartphones, PC portables et montres importés d&apos;Europe. Chaque affaire est testée et décrite
+              pièce par pièce : note, batterie, pièces changées et boîte.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link href="/produits" className="btn btn-primary">
                 Voir la boutique
                 <ArrowRightIcon size={18} />
               </Link>
-              <Link href="/produits?condition=reconditionne" className="btn btn-outline">
-                Les reconditionnés
+              <Link href="/produits?condition=affaire" className="btn btn-outline">
+                Les affaires
               </Link>
             </div>
             {/* Une simple form GET : chercher marche même sans JavaScript. */}
@@ -175,12 +175,13 @@ export default async function HomePage() {
             <div className="relative z-10 space-y-4">
               <p className="text-sm font-bold tracking-[0.14em] text-red uppercase">Les affaires du moment</p>
               <h2 id="deals-title" className="text-3xl font-extrabold tracking-tight sm:text-4xl">
-                Un appareil, <span className="text-gradient">des accessoires offerts</span>
+                Testées et <span className="text-gradient">décrites pièce par pièce</span>
               </h2>
               <p className="max-w-md text-ink-muted">
-                Chargeur, écouteurs ou coque : choisis par le magasin et offerts avec certains appareils.
+                Note, batterie, pièces d&apos;origine ou compatibles, avec ou sans boîte : chaque affaire a sa
+                radiographie, et certaines ont des accessoires offerts.
               </p>
-              <Link href="/produits?offre=affaire" className="btn btn-primary">
+              <Link href="/produits?condition=affaire" className="btn btn-primary">
                 Voir les affaires
                 <ArrowRightIcon size={18} />
               </Link>
@@ -200,7 +201,7 @@ export default async function HomePage() {
               </h2>
               <span className="rule-gradient w-10" aria-hidden="true" />
             </div>
-            <p className="mt-1 text-ink-muted">Les derniers arrivages, neufs et reconditionnés.</p>
+            <p className="mt-1 text-ink-muted">Les derniers arrivages, neufs scellés et affaires.</p>
           </div>
           <Link href="/produits" className="btn btn-outline btn-small btn-pill">
             Tout voir
@@ -216,13 +217,13 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* 6. Ce qui distingue DropZone : la fiche d'état d'un reconditionné, avec un vrai exemple. */}
+      {/* 6. Ce qui distingue DropZone : la fiche d'une affaire, avec un vrai exemple. */}
       <section aria-labelledby="families-title" className="container-page pb-14">
         <div className={`grid gap-8 ${showcase && unit ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start" : ""}`}>
           <div className="space-y-5">
             <div>
               <h2 id="families-title" className="text-2xl sm:text-3xl">
-                Ce que dit la fiche d&apos;un reconditionné
+                Ce que dit la fiche d&apos;une affaire
               </h2>
               <p className="mt-2 max-w-xl text-ink-muted">
                 Avant de commander, vous voyez la note, la batterie et tout ce qui a été changé. Trois familles,
@@ -249,7 +250,7 @@ export default async function HomePage() {
               <p className="text-sm text-ink-muted">
                 En stock en ce moment :{" "}
                 <Link href={`/produits/${showcase.slug}`} className="font-semibold text-ink underline">
-                  {showcase.name} reconditionné
+                  {showcase.name} en affaire
                 </Link>
               </p>
               <ConditionReport

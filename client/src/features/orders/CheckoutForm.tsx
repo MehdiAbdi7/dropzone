@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Field from "@/components/ui/Field";
+import { CONDITION_LABELS } from "@/config/catalog";
 import { clearCart } from "@/features/cart/cartSlice";
 import CartSummary from "@/features/cart/CartSummary";
 import { WILAYAS } from "@/config/wilayas";
@@ -157,7 +158,7 @@ export default function CheckoutForm({ user }: { user: User | null }) {
         {needsLimitations ? (
           <section aria-labelledby="limits" className="space-y-3 rounded-lg border border-red bg-red-soft p-4">
             <h2 id="limits" className="text-lg text-red">
-              Limitations des appareils reconditionnés
+              Limitations des affaires
             </h2>
             <ul className="list-disc space-y-1 pl-5 text-sm">
               {preview.limitations.map((item) => (
@@ -168,7 +169,7 @@ export default function CheckoutForm({ user }: { user: User | null }) {
             </ul>
             <label className="flex items-start gap-3 text-sm font-semibold">
               <input type="checkbox" {...register("acceptLimitations")} className="mt-1 size-5 accent-[var(--red)]" />
-              J&apos;ai compris les limitations des appareils reconditionnés de ma commande.
+              J&apos;ai compris les limitations des affaires de ma commande.
             </label>
             {errors.acceptLimitations ? <p className="field-error">{errors.acceptLimitations.message}</p> : null}
           </section>
@@ -193,7 +194,7 @@ export default function CheckoutForm({ user }: { user: User | null }) {
                   <span className="text-ink-muted">
                     {line.isGift
                       ? " (offert)"
-                      : ` (${line.condition === "refurbished" ? "reconditionné" : "neuf"}${
+                      : ` (${CONDITION_LABELS[line.condition].toLowerCase()}${
                           Object.keys(line.options).length ? `, ${formatOptions(line.options)}` : ""
                         })`}
                   </span>

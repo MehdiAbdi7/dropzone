@@ -21,7 +21,7 @@ const CATEGORIES = [
   { label: "Montres", href: "/boutique/montres-connectees", image: KIND_IMAGES.watch },
   { label: "Accessoires", href: "/boutique/accessoires", image: KIND_IMAGES.accessory },
   { label: "Audiovisuel", href: "/boutique/audiovisuel", image: KIND_IMAGES.audiovisual },
-  { label: "Reconditionnés", href: "/produits?condition=reconditionne", image: KIND_IMAGES.phone },
+  { label: "Affaires", href: "/produits?condition=affaire", image: KIND_IMAGES.phone },
 ];
 
 export default function CategoryCards() {

@@ -1,18 +1,19 @@
 import Link from "next/link";
 import ProductImage from "@/components/ui/ProductImage";
 import { CartIcon } from "@/components/ui/icons";
+import { CONDITION_LABELS } from "@/config/catalog";
 import { formatPrice } from "@/lib/format";
 import type { ProductCard as ProductCardData } from "@/types/api";
 
 // La ligne d'état, d'après les variantes encore en stock.
 function stateLabel(product: ProductCardData): string | null {
   if (product.hasNew && product.hasRefurbished) {
-    return "Neuf et reconditionné";
+    return "Neuf scellé et affaires";
   }
   if (product.hasRefurbished) {
-    return "Reconditionné";
+    return CONDITION_LABELS.refurbished;
   }
-  return product.hasNew ? "Neuf" : null;
+  return product.hasNew ? CONDITION_LABELS.new : null;
 }
 
 // Toute la carte est un seul lien vers la fiche : il faut choisir une variante (ou
@@ -30,7 +31,7 @@ export default function ProductCard({ product, sizes, href }: { product: Product
       <div className="relative aspect-square overflow-hidden rounded-[10px] bg-surface-2">
         <ProductImage src={product.image} alt="" sizes={sizes} />
         <div className="absolute left-2 top-2 flex flex-wrap gap-1.5">
-          {product.hasRefurbished ? <span className="badge badge-refurb">Reconditionné</span> : null}
+          {product.hasRefurbished ? <span className="badge badge-refurb">{CONDITION_LABELS.refurbished}</span> : null}
           {!product.inStock ? <span className="badge badge-out">Rupture</span> : null}
         </div>
       </div>

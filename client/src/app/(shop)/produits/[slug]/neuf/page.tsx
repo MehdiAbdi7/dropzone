@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { DEVICE_KINDS } from "@/config/catalog";
+import { CONDITION_LABELS, DEVICE_KINDS } from "@/config/catalog";
 import NewPicker from "@/features/shop/NewPicker";
 import ProductHeader from "@/features/shop/ProductHeader";
 import { getProduct } from "@/lib/products";
 
 export async function generateMetadata({ params }: PageProps<"/produits/[slug]/neuf">): Promise<Metadata> {
   const product = await getProduct((await params).slug);
-  return { title: product ? `${product.name} neuf` : "Produit introuvable" };
+  return { title: product ? `${product.name} neuf scellé` : "Produit introuvable" };
 }
 
 // Étape 5a du parcours : le neuf scellé, couleur puis stockage, avec ce qui reste dans
@@ -27,7 +27,7 @@ export default async function NewProductPage({ params }: PageProps<"/produits/[s
 
   return (
     <div className="container-page py-8">
-      <ProductHeader product={product} step="Neuf">
+      <ProductHeader product={product} step={CONDITION_LABELS.new}>
         <NewPicker variants={fresh} kind={product.category.kind} />
       </ProductHeader>
     </div>

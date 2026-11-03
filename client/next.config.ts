@@ -11,6 +11,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // L'ancienne page des reconditionnés d'un modèle (avant le 03/11) : aucun lien partagé
+  // ne tombe sur une page 404. Les anciens filtres du catalogue sont redirigés par la page.
+  async redirects() {
+    return [
+      {
+        source: "/produits/:slug/reconditionne",
+        destination: "/produits/:slug/affaire",
+        permanent: true,
+      },
+    ];
+  },
   // Les photos envoyées depuis le back-office sont servies par Cloudinary.
   images: {
     remotePatterns: [{ protocol: "https", hostname: "res.cloudinary.com" }],

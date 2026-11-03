@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CONDITION_LABELS } from "@/config/catalog";
 import { useCartPreviewQuery } from "@/features/orders/ordersApi";
 import { formatOptions, formatPrice } from "@/lib/format";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -107,7 +108,7 @@ function CartRow({ line, gifts }: { line: CartLine; gifts: CartLine[] }) {
             {line.name}
           </Link>
           <p className="text-sm text-ink-muted">
-            {line.condition === "refurbished" ? "Reconditionné" : "Neuf"}
+            {CONDITION_LABELS[line.condition]}
             {options ? `, ${options}` : ""}
           </p>
           {line.conditionReport ? <p className="text-sm">{line.conditionReport}</p> : null}
