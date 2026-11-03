@@ -155,4 +155,11 @@ describe("splitDeals", () => {
     expect(deals).toEqual([]);
     expect(regular).toEqual(iphone18ProMax);
   });
+
+  // Un accessoire d'une seule variante, mis en affaire puis vendu : la fiche doit encore
+  // dire « Rupture de stock », pas montrer une page sans achat.
+  it("garde une affaire vendue dans le choix habituel quand il n'y a rien d'autre", () => {
+    const sold = deal({}, 0, 1500);
+    expect(splitDeals([sold])).toEqual({ deals: [], regular: [sold] });
+  });
 });
