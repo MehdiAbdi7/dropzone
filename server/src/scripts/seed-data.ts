@@ -13,7 +13,11 @@ export type SeedVariant = {
   replacedParts?: string[];
   defects?: string[];
   limitations?: string[];
-  // Les articles offerts, désignés par leur SKU (une « affaire »).
+  // Une affaire (« Prix exceptionnel ») et ses détails. Une variante avec des cadeaux
+  // en est toujours une (seed.ts l'impose).
+  isDeal?: boolean;
+  dealNote?: string;
+  // Les articles offerts, désignés par leur SKU.
   gifts?: { sku: string; quantity?: number }[];
 };
 
@@ -112,6 +116,12 @@ export const PRODUCTS: SeedProduct[] = [
       neuf("IP18PM-256-NOIR", { Stockage: "256 Go", Couleur: "Noir" }, 335000, 1),
       neuf("IP18PM-512-ARG", { Stockage: "512 Go", Couleur: "Argent" }, 385000, 1),
       neuf("IP18PM-256-GLAC", { Stockage: "256 Go", Couleur: "Glacier" }, 335000, 0),
+      // Une affaire : un neuf vendu sans boîte, à part du choix des options.
+      {
+        ...neuf("IP18PM-256-BORD-SB", { Stockage: "256 Go", Couleur: "Bordeaux" }, 310000, 1),
+        isDeal: true,
+        dealNote: "Neuf, batterie 100 %, juste sans boîte",
+      },
       recond("IP18PM-R-001", { Stockage: "256 Go", Couleur: "Noir" }, 289000, 10, 100),
       recond("IP18PM-R-002", { Stockage: "256 Go", Couleur: "Bordeaux" }, 275000, 9, 97, {
         replacedParts: ["Écran"],
@@ -155,7 +165,11 @@ export const PRODUCTS: SeedProduct[] = [
       neuf("IP15PM-256-NAT", { Stockage: "256 Go", Couleur: "Titane naturel", RAM: "8 Go" }, 245000, 3),
       neuf("IP15PM-256-NOIR", { Stockage: "256 Go", Couleur: "Titane noir", RAM: "8 Go" }, 245000, 2),
       neuf("IP15PM-512-BLEU", { Stockage: "512 Go", Couleur: "Titane bleu", RAM: "8 Go" }, 289000, 0),
-      recond("IP15PM-R-001", { Stockage: "256 Go", Couleur: "Titane naturel" }, 199000, 10, 80),
+      {
+        ...recond("IP15PM-R-001", { Stockage: "256 Go", Couleur: "Titane naturel" }, 199000, 10, 80),
+        isDeal: true,
+        dealNote: "Comme neuf, vendu avec sa boîte d'origine",
+      },
       recond("IP15PM-R-002", { Stockage: "256 Go", Couleur: "Titane noir" }, 185000, 8, 95, {
         defects: ["Cache arrière fissuré"],
         gifts: CHARGER_AND_BUDS,

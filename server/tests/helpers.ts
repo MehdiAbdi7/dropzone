@@ -92,6 +92,8 @@ export async function createCatalog() {
             grade: 8,
             batteryHealth: 95,
             defects: ["Cache arrière fissuré"],
+            // Une affaire avec un chargeur offert (le cadeau est ajouté plus bas).
+            isDeal: true,
           },
           {
             sku: "IP-R-WIFI",

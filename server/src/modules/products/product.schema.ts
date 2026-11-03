@@ -67,6 +67,15 @@ const variantSchema = z
     replacedParts: labelList,
     defects: labelList,
     limitations: labelList,
+    // L'affaire, posée par le gérant ; les détails vides sont rangés comme « pas de détails ».
+    isDeal: z.boolean().default(false),
+    dealNote: z
+      .string()
+      .trim()
+      .max(200)
+      .transform((note) => note || null)
+      .nullable()
+      .default(null),
     gifts: z
       .array(
         z.object({
@@ -78,6 +87,13 @@ const variantSchema = z
       .default([]),
   })
   .superRefine((variant, ctx) => {
+    // Une seule vérité : sans affaire, ni cadeaux ni détails d'affaire.
+    if (!variant.isDeal && variant.gifts.length > 0) {
+      ctx.addIssue({ code: "custom", path: ["gifts"], message: "Des articles offerts demandent une affaire" });
+    }
+    if (!variant.isDeal && variant.dealNote) {
+      ctx.addIssue({ code: "custom", path: ["dealNote"], message: "Des détails demandent une affaire" });
+    }
     if (variant.condition !== "refurbished") {
       return;
     }

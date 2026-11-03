@@ -168,7 +168,11 @@ model ProductVariant {
   replacedParts String[]      @default([]) @map("replaced_parts")
   defects       String[]      @default([])
   limitations   String[]      @default([])
-  // Les articles offerts quand on achète cette variante (une « affaire »).
+  // Une affaire, posée par le gérant (« Prix exceptionnel ») : la seule source de vérité.
+  // Les détails pour le client (« Neuf, batterie 100 %, juste sans boîte ») sont facultatifs.
+  isDeal        Boolean       @default(false) @map("is_deal")
+  dealNote      String?       @map("deal_note")
+  // Les articles offerts avec cette variante (seulement sur une affaire).
   gifts         VariantGift[] @relation("DealVariant")
   // Les affaires dans lesquelles cette variante est offerte.
   giftedIn      VariantGift[] @relation("GiftVariant")
