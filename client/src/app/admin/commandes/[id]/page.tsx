@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import { STATUS_LABELS } from "@/config/catalog";
+import { CONDITION_LABELS, STATUS_LABELS } from "@/config/catalog";
 import { useAdminOrderQuery, useChangeStatusMutation } from "@/features/admin/adminApi";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatOptions, formatPrice } from "@/lib/format";
@@ -93,7 +93,7 @@ export default function AdminOrderPage() {
           <p>Livraison : {order.shippingFee === 0 ? "offerte" : formatPrice(order.shippingFee)}</p>
           <p className="font-display text-xl font-bold">À encaisser : {formatPrice(order.total)}</p>
           {order.limitationsAccepted ? (
-            <p className="mt-2 font-semibold text-red">Le client a accepté les limitations des reconditionnés.</p>
+            <p className="mt-2 font-semibold text-red">Le client a accepté les limitations des affaires.</p>
           ) : null}
         </section>
       </div>
@@ -106,7 +106,7 @@ export default function AdminOrderPage() {
                 {item.quantity} × {item.name} <span className="font-normal text-ink-muted">({item.sku})</span>
               </p>
               <p className="text-ink-muted">
-                {item.isGift ? "Article offert" : item.condition === "refurbished" ? "Reconditionné" : "Neuf"}
+                {item.isGift ? "Article offert" : CONDITION_LABELS[item.condition]}
                 {Object.keys(item.options).length ? `, ${formatOptions(item.options)}` : ""}
               </p>
               {item.conditionReport ? <p className="mt-1">{item.conditionReport}</p> : null}

@@ -14,13 +14,20 @@ export type VariantDraft = {
   grade: string;
   batteryHealth: string;
   replacedParts: string[];
+  // Pour chaque pièce changée, le choix du gérant. Une pièce absente n'a pas encore
+  // été choisie : pas de valeur par défaut, « d'origine » par erreur serait une fausse
+  // promesse au client.
+  partOrigins: Record<string, PartOrigin>;
   defects: string[];
   limitations: string[];
-  // L'affaire : posée par le gérant ; détails et cadeaux n'existent qu'avec elle.
-  isDeal: boolean;
-  dealNote: string;
+  // Une affaire : avec ou sans sa boîte d'origine, et les détails pour le client.
+  withBox: boolean;
+  details: string;
+  // Les articles offerts, sur un neuf scellé comme sur une affaire.
   gifts: { giftVariantId: number; quantity: number }[];
 };
+
+export type PartOrigin = "origine" | "compatible";
 
 export type ProductDraft = {
   name: string;
@@ -48,12 +55,31 @@ export function emptyVariant(condition: Condition = "new"): VariantDraft {
     grade: "",
     batteryHealth: "",
     replacedParts: [],
+    partOrigins: {},
     defects: [],
     limitations: [],
-    isDeal: false,
-    dealNote: "",
+    withBox: false,
+    details: "",
     gifts: [],
   };
+}
+
+// Les pièces changées d'une affaire dont le gérant n'a pas dit si elles sont d'origine
+// ou compatibles : le formulaire refuse l'envoi tant qu'il en reste.
+export function missingPartOrigins(variant: VariantDraft): string[] {
+  if (variant.condition !== "refurbished") {
+    return [];
+  }
+  return variant.replacedParts.filter((part) => !variant.partOrigins[part]);
+}
+
+// Les pièces changées cochées dans le formulaire ; une pièce décochée perd son choix,
+// pour qu'elle ne revienne pas « compatible » si on la recoche plus tard.
+export function withReplacedParts(variant: VariantDraft, replacedParts: string[]): VariantDraft {
+  const partOrigins = Object.fromEntries(
+    Object.entries(variant.partOrigins).filter(([part]) => replacedParts.includes(part)),
+  );
+  return { ...variant, replacedParts, partOrigins };
 }
 
 export function emptyDraft(): ProductDraft {
@@ -92,10 +118,15 @@ export function draftFromProduct(product: AdminProduct): ProductDraft {
       grade: variant.grade === null ? "" : String(variant.grade),
       batteryHealth: variant.batteryHealth === null ? "" : String(variant.batteryHealth),
       replacedParts: variant.replacedParts,
+      // Une pièce enregistrée a déjà été choisie : compatible si elle est dans la liste,
+      // sinon d'origine.
+      partOrigins: Object.fromEntries(
+        variant.replacedParts.map((part) => [part, variant.compatibleParts.includes(part) ? "compatible" : "origine"]),
+      ),
       defects: variant.defects,
       limitations: variant.limitations,
-      isDeal: variant.isDeal,
-      dealNote: variant.dealNote ?? "",
+      withBox: variant.withBox ?? false,
+      details: variant.details ?? "",
       gifts: variant.gifts,
     })),
   };
@@ -117,24 +148,29 @@ export function bodyFromDraft(draft: ProductDraft): ProductBody {
       draft.specs.filter((row) => row.key.trim() && row.value.trim()).map((row) => [row.key.trim(), row.value.trim()]),
     ),
     status: draft.status,
-    variants: draft.variants.map((variant) => ({
-      id: variant.id,
-      sku: variant.sku,
-      condition: variant.condition,
-      // Une option non choisie n'est pas envoyée.
-      options: Object.fromEntries(Object.entries(variant.options).filter(([, value]) => value)),
-      price: toNumber(variant.price),
-      stock: toNumber(variant.stock),
-      grade: toNullable(variant.grade),
-      batteryHealth: toNullable(variant.batteryHealth),
-      replacedParts: variant.replacedParts,
-      defects: variant.defects,
-      limitations: variant.limitations,
-      isDeal: variant.isDeal,
-      // Un champ vide part tel quel : l'API le range comme « pas de détails » (null).
-      dealNote: variant.dealNote,
-      gifts: variant.gifts,
-    })),
+    variants: draft.variants.map((variant) => {
+      const deal = variant.condition === "refurbished";
+      return {
+        id: variant.id,
+        sku: variant.sku,
+        condition: variant.condition,
+        // Une option non choisie n'est pas envoyée.
+        options: Object.fromEntries(Object.entries(variant.options).filter(([, value]) => value)),
+        price: toNumber(variant.price),
+        stock: toNumber(variant.stock),
+        grade: toNullable(variant.grade),
+        batteryHealth: toNullable(variant.batteryHealth),
+        replacedParts: variant.replacedParts,
+        defects: variant.defects,
+        limitations: variant.limitations,
+        // Un neuf scellé n'a ni boîte à dire, ni pièce, ni détails : l'API les refuserait.
+        compatibleParts: deal ? variant.replacedParts.filter((part) => variant.partOrigins[part] === "compatible") : [],
+        withBox: deal ? variant.withBox : null,
+        // Un champ vide part tel quel : l'API le range comme « pas de détails » (null).
+        details: deal ? variant.details : "",
+        gifts: variant.gifts,
+      };
+    }),
   };
 }
 

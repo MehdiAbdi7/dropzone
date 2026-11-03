@@ -1,15 +1,15 @@
 import { formatOptions, formatPrice } from "@/lib/format";
 import type { Gift } from "@/types/api";
 
-// Les articles offerts d'une affaire : « Offert », avec le prix normal barré pour
-// montrer la valeur du cadeau. Un cadeau épuisé est annoncé, pas caché.
+// Les articles offerts avec un appareil, neuf scellé ou affaire : « Offert », avec le
+// prix normal barré pour montrer la valeur du cadeau. Un cadeau épuisé est annoncé, pas caché.
 export default function GiftList({ gifts }: { gifts: Gift[] }) {
   if (gifts.length === 0) {
     return null;
   }
   return (
     <div className="rounded-lg border border-red/40 bg-red-soft p-3">
-      <p className="text-sm font-bold text-red">Affaire : offert avec cet appareil</p>
+      <p className="text-sm font-bold text-red">Offert avec cet appareil</p>
       <ul className="mt-2 space-y-1 text-sm">
         {gifts.map((gift) => (
           <li key={gift.sku} className="flex flex-wrap items-baseline justify-between gap-x-3">

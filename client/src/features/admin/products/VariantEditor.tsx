@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Field from "@/components/ui/Field";
-import { FAMILIES, OPTION_FIELDS } from "@/config/catalog";
+import { CONDITION_LABELS, FAMILIES, OPTION_FIELDS } from "@/config/catalog";
 import { formatPrice } from "@/lib/format";
 import type { ProductKind } from "@/types/api";
 import type { GiftOption } from "../adminApi";
 import ChoicePicker from "./ChoicePicker";
-import type { VariantDraft } from "./productDraft";
+import { type PartOrigin, type VariantDraft, withReplacedParts } from "./productDraft";
 
 type Props = {
   variant: VariantDraft;
@@ -20,9 +20,9 @@ type Props = {
   onSuggestSku: () => void;
 };
 
-// Une variante du formulaire : neuf ou reconditionné, ses options à cocher, son
-// prix et son stock, la fiche d'état d'un reconditionné, et l'affaire (détails et
-// articles offerts, seulement quand l'interrupteur est allumé).
+// Une variante du formulaire : neuf scellé ou affaire, ses options à cocher, son prix et
+// son stock, la fiche d'une affaire (état, pièces d'origine ou compatibles, boîte,
+// détails), et ses articles offerts.
 export default function VariantEditor({
   variant,
   index,
@@ -62,7 +62,7 @@ export default function VariantEditor({
                 aria-pressed={variant.condition === condition}
                 onClick={() => set({ condition, stock: condition === "refurbished" ? "1" : variant.stock })}
               >
-                {condition === "new" ? "Neuf" : "Reconditionné"}
+                {CONDITION_LABELS[condition]}
               </button>
             ))}
           </div>
@@ -155,53 +155,82 @@ export default function VariantEditor({
             </Field>
           </div>
           {FAMILIES.map((family) => (
-            <ChoicePicker
-              key={family.field}
-              multiple
-              group={family.group}
-              label={family.label}
-              value={variant[family.field]}
-              onChange={(values) => set({ [family.field]: values })}
-            />
+            <Fragment key={family.field}>
+              <ChoicePicker
+                multiple
+                group={family.group}
+                label={family.label}
+                value={variant[family.field]}
+                // Une pièce décochée perd aussi son choix « d'origine / compatible ».
+                onChange={(values) =>
+                  family.field === "replacedParts"
+                    ? onChange(withReplacedParts(variant, values))
+                    : set({ [family.field]: values })
+                }
+              />
+              {family.field === "replacedParts" && variant.replacedParts.length > 0 ? (
+                <PartOriginPicker variant={variant} onChange={(partOrigins) => set({ partOrigins })} />
+              ) : null}
+            </Fragment>
           ))}
+          <label className="flex min-h-11 items-center gap-2 text-sm font-semibold">
+            <input
+              type="checkbox"
+              className="size-5"
+              checked={variant.withBox}
+              onChange={(event) => set({ withBox: event.target.checked })}
+            />
+            Vendu avec sa boîte d&apos;origine
+          </label>
+          <Field id={id("details")} label="Détails pour le client (facultatif)" hint={`${variant.details.length}/200 caractères`}>
+            <textarea
+              id={id("details")}
+              className="input"
+              rows={2}
+              maxLength={200}
+              placeholder="Comme neuf, vendu avec sa boîte d'origine"
+              value={variant.details}
+              onChange={(event) => set({ details: event.target.value })}
+            />
+          </Field>
         </div>
       ) : null}
 
-      <div className="space-y-4 border-t border-line pt-5">
-        <label className="flex min-h-11 items-center gap-2 font-display font-bold">
-          <input
-            type="checkbox"
-            role="switch"
-            className="size-5"
-            checked={variant.isDeal}
-            // Éteindre l'affaire vide ses détails et ses cadeaux : l'API les refuserait.
-            onChange={(event) =>
-              set(event.target.checked ? { isDeal: true } : { isDeal: false, dealNote: "", gifts: [] })
-            }
-          />
-          Faire une affaire avec cet appareil
-        </label>
-        {variant.isDeal ? (
-          <>
-            <Field
-              id={id("deal-note")}
-              label="Détails pour le client (facultatif)"
-              hint={`${variant.dealNote.length}/200 caractères`}
+      <GiftEditor variant={variant} giftOptions={giftOptions} onChange={(gifts) => set({ gifts })} />
+    </fieldset>
+  );
+}
+
+const ORIGIN_LABELS: Record<PartOrigin, string> = { origine: "D'origine", compatible: "Compatible" };
+
+// Pour chaque pièce changée : d'origine ou compatible. Rien n'est choisi au départ ; le
+// formulaire refuse l'envoi tant qu'une pièce n'a pas son choix.
+function PartOriginPicker({
+  variant,
+  onChange,
+}: {
+  variant: VariantDraft;
+  onChange: (partOrigins: VariantDraft["partOrigins"]) => void;
+}) {
+  return (
+    <fieldset className="space-y-2">
+      <legend className="label">Origine des pièces changées</legend>
+      {variant.replacedParts.map((part) => (
+        <div key={part} role="group" aria-label={part} className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="min-w-28 font-semibold">{part}</span>
+          {(["origine", "compatible"] as const).map((origin) => (
+            <button
+              key={origin}
+              type="button"
+              className="chip"
+              aria-pressed={variant.partOrigins[part] === origin}
+              onClick={() => onChange({ ...variant.partOrigins, [part]: origin })}
             >
-              <textarea
-                id={id("deal-note")}
-                className="input"
-                rows={2}
-                maxLength={200}
-                placeholder="Neuf, batterie 100 %, juste sans boîte"
-                value={variant.dealNote}
-                onChange={(event) => set({ dealNote: event.target.value })}
-              />
-            </Field>
-            <GiftEditor variant={variant} giftOptions={giftOptions} onChange={(gifts) => set({ gifts })} />
-          </>
-        ) : null}
-      </div>
+              {ORIGIN_LABELS[origin]}
+            </button>
+          ))}
+        </div>
+      ))}
     </fieldset>
   );
 }
@@ -221,8 +250,8 @@ function GiftEditor({
   const available = giftOptions.filter((option) => !variant.gifts.some((gift) => gift.giftVariantId === option.id));
 
   return (
-    <div className="space-y-3">
-      <p className="label">Articles offerts (facultatif)</p>
+    <div className="space-y-3 border-t border-line pt-5">
+      <p className="font-display font-bold">Articles offerts</p>
       {variant.gifts.length === 0 ? <p className="text-sm text-ink-muted">Aucun article offert.</p> : null}
       <ul className="space-y-2">
         {variant.gifts.map((gift) => {

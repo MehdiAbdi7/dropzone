@@ -35,10 +35,11 @@ export type AdminVariant = {
   grade: number | null;
   batteryHealth: number | null;
   replacedParts: string[];
+  compatibleParts: string[];
   defects: string[];
   limitations: string[];
-  isDeal: boolean;
-  dealNote: string | null;
+  withBox: boolean | null;
+  details: string | null;
   gifts: { giftVariantId: number; quantity: number }[];
 };
 

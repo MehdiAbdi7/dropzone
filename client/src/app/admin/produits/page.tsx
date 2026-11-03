@@ -60,7 +60,7 @@ export default function AdminProductsPage() {
               <th scope="col">Catégorie</th>
               <th scope="col">Statut</th>
               <th scope="col">Neufs en stock</th>
-              <th scope="col">Reconditionnés</th>
+              <th scope="col">Affaires</th>
               <th scope="col">À partir de</th>
             </tr>
           </thead>

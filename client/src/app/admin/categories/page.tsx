@@ -35,7 +35,7 @@ export default function AdminCategoriesPage() {
     <div className="max-w-3xl space-y-6">
       <h1 className="text-3xl">Catégories</h1>
       <p className="text-ink-muted">
-        La sorte décide du formulaire produit : modèle d&apos;appareil, options proposées et reconditionné autorisé.
+        La sorte décide du formulaire produit : modèle d&apos;appareil, options proposées et affaires autorisées.
       </p>
 
       <ul className="card divide-y divide-line">

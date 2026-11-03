@@ -17,7 +17,14 @@ import {
 } from "../adminApi";
 import CompatibleModelsPicker from "./CompatibleModelsPicker";
 import ModelPicker from "./ModelPicker";
-import { bodyFromDraft, emptyVariant, isDeviceKind, suggestSku, type ProductDraft } from "./productDraft";
+import {
+  bodyFromDraft,
+  emptyVariant,
+  isDeviceKind,
+  missingPartOrigins,
+  suggestSku,
+  type ProductDraft,
+} from "./productDraft";
 import VariantEditor from "./VariantEditor";
 
 // Le formulaire produit, rempli dans l'ordre où le vendeur pense :
@@ -39,6 +46,7 @@ export default function ProductForm({
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
+  const [missingOrigins, setMissingOrigins] = useState<string[]>([]);
   const { data: categories = [] } = useCategoriesQuery();
   const { data: allBrands = [] } = useBrandsQuery();
   const { data: giftOptionsAll = [] } = useGiftOptionsQuery();
@@ -81,6 +89,13 @@ export default function ProductForm({
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    // Rien ne part tant qu'une pièce changée n'a pas son origine : pas de valeur par défaut.
+    const missing = [...new Set(draft.variants.flatMap((variant) => missingPartOrigins(variant)))];
+    if (missing.length > 0) {
+      setMissingOrigins(missing);
+      return;
+    }
+    setMissingOrigins([]);
     const body = bodyFromDraft(draft);
     try {
       if (productId) {
@@ -269,7 +284,7 @@ export default function ProductForm({
                   className="btn btn-secondary"
                   onClick={() => set({ variants: [...draft.variants, emptyVariant("refurbished")] })}
                 >
-                  Ajouter un reconditionné
+                  Ajouter une affaire
                 </button>
               ) : null}
             </div>
@@ -298,7 +313,11 @@ export default function ProductForm({
           {isLoading ? "Enregistrement…" : productId ? "Enregistrer les modifications" : "Créer le produit"}
         </button>
         <div aria-live="polite" className="text-sm">
-          {error ? (
+          {missingOrigins.length > 0 ? (
+            <p className="font-semibold text-red">
+              Dites si chaque pièce changée est d&apos;origine ou compatible : {missingOrigins.join(", ")}.
+            </p>
+          ) : error ? (
             <div className="text-red">
               <p className="font-semibold">{errorMessage(error)}</p>
               {serverErrors.length > 0 ? (
