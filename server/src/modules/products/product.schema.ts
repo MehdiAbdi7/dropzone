@@ -12,7 +12,8 @@ export const productListQuerySchema = z.object({
   model: slug.optional(),
   brand: slug.optional(),
   offre: z.enum(["affaire"]).optional(),
-  sort: z.enum(["nouveautes", "prix-croissant", "prix-decroissant"]).default("nouveautes"),
+  // `sortie` : du modèle le plus récent au plus ancien (pages des marques de la Boutique).
+  sort: z.enum(["nouveautes", "prix-croissant", "prix-decroissant", "sortie"]).default("nouveautes"),
   ...paginationQuery,
 });
 export type ProductListQuery = z.infer<typeof productListQuerySchema>;

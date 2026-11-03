@@ -1,6 +1,8 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 import app from "../src/app.js";
+import { prisma } from "../src/config/db.js";
+import { slugify } from "../src/utils/slugify.js";
 import { createCatalog, resetDb } from "./helpers.js";
 
 beforeEach(async () => {
@@ -125,5 +127,77 @@ describe("GET /products/:slug", () => {
   it("répond 404 pour un brouillon", async () => {
     const response = await request(app).get("/products/galaxy-z-flip6");
     expect(response.status).toBe(404);
+  });
+});
+
+describe("Le parcours de la Boutique", () => {
+  const slugs = (response: request.Response) => response.body.data.map((product: { slug: string }) => product.slug);
+
+  // Un iPhone publié de plus, avec son modèle (année facultative) et ses variantes.
+  async function addIphone(
+    name: string,
+    releaseYear: number | null,
+    variants: { sku: string; price: number; stock: number; condition?: "new" | "refurbished"; grade?: number; batteryHealth?: number }[],
+  ) {
+    const phones = await prisma.category.findUniqueOrThrow({ where: { slug: "smartphones" } });
+    const brand = await prisma.brand.findFirstOrThrow({ where: { categoryId: phones.id, slug: "iphone" } });
+    const model = await prisma.deviceModel.create({
+      data: { brand: "Apple", name, slug: slugify(`apple ${name}`), kind: "phone", releaseYear },
+    });
+    await prisma.product.create({
+      data: {
+        name,
+        slug: slugify(name),
+        description: "Test",
+        categoryId: phones.id,
+        deviceModelId: model.id,
+        brandId: brand.id,
+        status: "published",
+        minPrice: Math.min(...variants.map((variant) => variant.price)),
+        variants: { create: variants },
+      },
+    });
+  }
+
+  it("donne le prix « dès » et le stock de chaque état", async () => {
+    const response = await request(app).get("/products?category=smartphones&brand=iphone");
+    expect(response.body.data[0]).toEqual(
+      expect.objectContaining({
+        slug: "iphone-15-pro-max",
+        newFrom: 245000,
+        refurbishedFrom: 150000,
+        newStock: 3,
+        refurbishedCount: 2,
+      }),
+    );
+  });
+
+  it("range les modèles du plus récent au plus ancien, le plus cher d'abord la même année", async () => {
+    await addIphone("iPhone 16 Pro", 2024, [
+      { sku: "IP16P-NEW", price: 300000, stock: 1 },
+      { sku: "IP16P-R", price: 90000, stock: 1, condition: "refurbished", grade: 9, batteryHealth: 90 },
+    ]);
+    await addIphone("iPhone 16", 2024, [{ sku: "IP16-NEW", price: 200000, stock: 1 }]);
+    await addIphone("iPhone X", null, [{ sku: "IPX-NEW", price: 50000, stock: 1 }]);
+    const response = await request(app).get("/products?category=smartphones&brand=iphone&sort=sortie");
+    expect(response.status).toBe(200);
+    // Le 16 Pro passe devant le 16 malgré son prix « dès » plus bas : on compare le prix le plus haut.
+    expect(slugs(response)).toEqual(["iphone-16-pro", "iphone-16", "iphone-15-pro-max", "iphone-x"]);
+    expect(response.body.pagination.total).toBe(4);
+  });
+
+  it("liste les produits sans marque d'une catégorie avec la marque « autres »", async () => {
+    expect(slugs(await request(app).get("/products?category=accessoires&brand=autres"))).toEqual([
+      "coque-antichoc-iphone-15-pro-max",
+    ]);
+    expect(slugs(await request(app).get("/products?category=smartphones&brand=nokia"))).toEqual([]);
+  });
+
+  it("signale les catégories qui ont des produits sans marque", async () => {
+    const response = await request(app).get("/categories");
+    expect(response.body.data).toEqual([
+      expect.objectContaining({ slug: "smartphones", hasUnbranded: false }),
+      expect.objectContaining({ slug: "accessoires", hasUnbranded: true }),
+    ]);
   });
 });

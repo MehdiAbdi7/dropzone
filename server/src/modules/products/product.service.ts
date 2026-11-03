@@ -57,11 +57,31 @@ export function buildConditionReport(variant: ConditionFields): string | null {
   ].join(" · ");
 }
 
-const SORTS: Record<ProductListQuery["sort"], Prisma.ProductOrderByWithRelationInput[]> = {
+// `sortie` n'est pas ici : il se trie en JavaScript (voir byRelease).
+const SORTS: Record<Exclude<ProductListQuery["sort"], "sortie">, Prisma.ProductOrderByWithRelationInput[]> = {
   nouveautes: [{ createdAt: "desc" }, { id: "desc" }],
   "prix-croissant": [{ minPrice: "asc" }, { id: "asc" }],
   "prix-decroissant": [{ minPrice: "desc" }, { id: "desc" }],
 };
+
+// Le prix le plus bas parmi les variantes en stock d'un état, ou null s'il n'y en a pas.
+function lowestInStock(variants: { price: number; stock: number }[]): number | null {
+  const inStock = variants.filter((variant) => variant.stock > 0);
+  return inStock.length > 0 ? Math.min(...inStock.map((variant) => variant.price)) : null;
+}
+
+type ReleaseSortable = { id: number; deviceModel: { releaseYear: number | null } | null; variants: { price: number }[] };
+
+// Du modèle le plus récent au plus ancien (sans année à la fin), puis, la même année, le
+// plus cher d'abord. « Le plus cher » = la variante la plus chère, même épuisée : le prix
+// « dès » ferait passer un Pro Max qui a un reconditionné bon marché derrière un modèle
+// d'entrée de gamme. Prisma ne trie pas sur le maximum d'une relation, d'où ce tri ici.
+function byRelease(a: ReleaseSortable, b: ReleaseSortable): number {
+  const yearA = a.deviceModel?.releaseYear ?? -Infinity;
+  const yearB = b.deviceModel?.releaseYear ?? -Infinity;
+  const highest = (product: ReleaseSortable) => Math.max(0, ...product.variants.map((variant) => variant.price));
+  return yearB - yearA || highest(b) - highest(a) || b.id - a.id;
+}
 
 export async function listProducts(query: ProductListQuery) {
   const filters: Prisma.ProductWhereInput[] = [];
@@ -78,7 +98,10 @@ export async function listProducts(query: ProductListQuery) {
       ],
     });
   }
-  if (query.brand) {
+  if (query.brand === "autres") {
+    // La carte « Autres » de la Boutique : les produits sans marque (de la catégorie choisie).
+    filters.push({ brandId: null });
+  } else if (query.brand) {
     // Avec `category`, c'est la marque de cette catégorie (les deux filtres s'ajoutent).
     filters.push({ brand: { slug: query.brand } });
   }
@@ -100,31 +123,40 @@ export async function listProducts(query: ProductListQuery) {
     filters.push({ variants: { some: { stock: { gt: 0 }, gifts: { some: {} } } } });
   }
   const where: Prisma.ProductWhereInput = { status: "published", AND: filters };
+  const select = {
+    id: true,
+    name: true,
+    slug: true,
+    minPrice: true,
+    category: { select: { name: true, slug: true } },
+    deviceModel: { select: { brand: true, releaseYear: true } },
+    brand: { select: { name: true } },
+    images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
+    variants: {
+      select: { condition: true, price: true, stock: true, gifts: { select: { id: true }, take: 1 } },
+    },
+  } satisfies Prisma.ProductSelect;
 
-  const [total, products] = await prisma.$transaction([
-    prisma.product.count({ where }),
-    prisma.product.findMany({
-      where,
-      orderBy: SORTS[query.sort],
-      ...paginate(query.page, query.limit),
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        minPrice: true,
-        category: { select: { name: true, slug: true } },
-        deviceModel: { select: { brand: true } },
-        brand: { select: { name: true } },
-        images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
-        variants: {
-          select: { condition: true, stock: true, gifts: { select: { id: true }, take: 1 } },
-        },
-      },
-    }),
-  ]);
+  let total: number;
+  let products: Prisma.ProductGetPayload<{ select: typeof select }>[];
+  if (query.sort === "sortie") {
+    // Tri en JavaScript : on lit tout le filtre (quelques dizaines de modèles par marque),
+    // on trie, puis on découpe la page.
+    const all = (await prisma.product.findMany({ where, select })).sort(byRelease);
+    const { skip, take } = paginate(query.page, query.limit);
+    total = all.length;
+    products = all.slice(skip, skip + take);
+  } else {
+    [total, products] = await prisma.$transaction([
+      prisma.product.count({ where }),
+      prisma.product.findMany({ where, orderBy: SORTS[query.sort], ...paginate(query.page, query.limit), select }),
+    ]);
+  }
 
   const data = products.map(({ variants, images, deviceModel, brand, ...product }) => {
     const available = variants.filter((variant) => variant.stock > 0);
+    const fresh = variants.filter((variant) => variant.condition === "new");
+    const refurbished = variants.filter((variant) => variant.condition === "refurbished");
     return {
       ...product,
       // La petite ligne de la carte : le fabricant du modèle (« Apple » au-dessus
@@ -135,6 +167,11 @@ export async function listProducts(query: ProductListQuery) {
       hasNew: available.some((variant) => variant.condition === "new"),
       hasRefurbished: available.some((variant) => variant.condition === "refurbished"),
       hasDeal: available.some((variant) => variant.gifts.length > 0),
+      // Les deux lignes de prix de la carte d'un modèle, et les chiffres de l'étape « neuf ou reconditionné ».
+      newFrom: lowestInStock(fresh),
+      refurbishedFrom: lowestInStock(refurbished),
+      newStock: fresh.reduce((sum, variant) => sum + variant.stock, 0),
+      refurbishedCount: refurbished.filter((variant) => variant.stock > 0).length,
     };
   });
 

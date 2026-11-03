@@ -23,10 +23,17 @@ export async function getCategories(_req: Request, res: Response) {
       },
     },
   });
+  // Les catégories qui ont des produits publiés sans marque : la Boutique leur ajoute une carte « Autres ».
+  const unbranded = await prisma.product.groupBy({
+    by: ["categoryId"],
+    where: { status: "published", brandId: null },
+  });
+  const withUnbranded = new Set(unbranded.map((group) => group.categoryId));
   res.json({
     data: categories.map(({ _count, brands, ...category }) => ({
       ...category,
       productCount: _count.products,
+      hasUnbranded: withUnbranded.has(category.id),
       // Une marque sans produit publié n'aurait qu'une liste vide derrière sa puce.
       brands: brands
         .filter((brand) => brand._count.products > 0)
