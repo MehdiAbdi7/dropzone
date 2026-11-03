@@ -103,6 +103,9 @@ model DeviceModel {
   name               String
   slug               String      @unique
   kind               ProductKind
+  // L'année de sortie : la Boutique range les modèles du plus récent au plus ancien.
+  // Facultative pour les modèles créés avant ; ceux sans année passent à la fin.
+  releaseYear        Int?        @map("release_year")
   products           Product[]   @relation("ProductDeviceModel")
   compatibleProducts Product[]   @relation("ProductCompatibleModels")
   createdAt          DateTime    @default(now()) @map("created_at")

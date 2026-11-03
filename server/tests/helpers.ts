@@ -23,10 +23,10 @@ export async function createCatalog() {
     data: { name: "Accessoires", slug: "accessoires", kind: "accessory" },
   });
   const iphone = await prisma.deviceModel.create({
-    data: { brand: "Apple", name: "iPhone 15 Pro Max", slug: "apple-iphone-15-pro-max", kind: "phone" },
+    data: { brand: "Apple", name: "iPhone 15 Pro Max", slug: "apple-iphone-15-pro-max", kind: "phone", releaseYear: 2023 },
   });
   const galaxy = await prisma.deviceModel.create({
-    data: { brand: "Samsung", name: "Galaxy S24 Ultra", slug: "samsung-galaxy-s24-ultra", kind: "phone" },
+    data: { brand: "Samsung", name: "Galaxy S24 Ultra", slug: "samsung-galaxy-s24-ultra", kind: "phone", releaseYear: 2024 },
   });
   // Les marques : iPhone (logo Apple) et Samsung dans Smartphones, Anker (sans logo de
   // bibliothèque) dans Accessoires. Seul le brouillon est Samsung.

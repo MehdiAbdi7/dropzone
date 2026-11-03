@@ -122,12 +122,31 @@ describe("Produits", () => {
 
 describe("Modèles, listes et catégories", () => {
   it("ajoute un modèle, refuse le doublon, refuse la suppression d'un modèle utilisé", async () => {
-    const created = await admin.post("/admin/models").send({ brand: "Samsung", name: "Galaxy S20+", kind: "phone" });
+    const s20 = { brand: "Samsung", name: "Galaxy S20+", kind: "phone", releaseYear: 2020 };
+    const created = await admin.post("/admin/models").send(s20);
     expect(created.status).toBe(201);
     expect(created.body.data.slug).toBe("samsung-galaxy-s20-plus");
-    const duplicate = await admin.post("/admin/models").send({ brand: "Samsung", name: "Galaxy S20+", kind: "phone" });
+    const duplicate = await admin.post("/admin/models").send(s20);
     expect(duplicate.status).toBe(409);
     expect((await admin.delete(`/admin/models/${catalog.iphone.id}`)).status).toBe(409);
+  });
+
+  it("demande l'année de sortie d'un nouveau modèle", async () => {
+    const model = { brand: "Apple", name: "iPhone 18 Pro", kind: "phone" };
+    expect((await admin.post("/admin/models").send(model)).status).toBe(400);
+    expect((await admin.post("/admin/models").send({ ...model, releaseYear: 1999 })).status).toBe(400);
+    const created = await admin.post("/admin/models").send({ ...model, releaseYear: 2026 });
+    expect(created.status).toBe(201);
+    expect(created.body.data.releaseYear).toBe(2026);
+  });
+
+  it("corrige l'année de sortie d'un modèle", async () => {
+    const updated = await admin.patch(`/admin/models/${catalog.iphone.id}`).send({ releaseYear: 2025 });
+    expect(updated.status).toBe(200);
+    const list = await admin.get("/admin/models");
+    expect(list.body.data.find((model: { id: number }) => model.id === catalog.iphone.id).releaseYear).toBe(2025);
+    expect((await admin.patch("/admin/models/999999").send({ releaseYear: 2025 })).status).toBe(404);
+    expect((await admin.patch(`/admin/models/${catalog.iphone.id}`).send({ releaseYear: 1999 })).status).toBe(400);
   });
 
   it("range les valeurs des listes par groupe", async () => {

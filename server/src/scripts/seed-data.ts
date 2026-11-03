@@ -105,10 +105,17 @@ export const PRODUCTS: SeedProduct[] = [
       Connecteur: "USB-C",
     },
     image: `${CLOUDINARY}/v1793715036/dropzone/products/iphone-18-pro-max.webp`,
+    // L'exemple de Mehdi : 3 Bordeaux (2 en 256 Go, 1 en 512 Go), 1 Noir, 1 Argent, Glacier épuisé.
     variants: [
       neuf("IP18PM-256-BORD", { Stockage: "256 Go", Couleur: "Bordeaux" }, 335000, 2),
-      neuf("IP18PM-256-NOIR", { Stockage: "256 Go", Couleur: "Noir" }, 335000, 3),
+      neuf("IP18PM-512-BORD", { Stockage: "512 Go", Couleur: "Bordeaux" }, 385000, 1),
+      neuf("IP18PM-256-NOIR", { Stockage: "256 Go", Couleur: "Noir" }, 335000, 1),
       neuf("IP18PM-512-ARG", { Stockage: "512 Go", Couleur: "Argent" }, 385000, 1),
+      neuf("IP18PM-256-GLAC", { Stockage: "256 Go", Couleur: "Glacier" }, 335000, 0),
+      recond("IP18PM-R-001", { Stockage: "256 Go", Couleur: "Noir" }, 289000, 10, 100),
+      recond("IP18PM-R-002", { Stockage: "256 Go", Couleur: "Bordeaux" }, 275000, 9, 97, {
+        replacedParts: ["Écran"],
+      }),
     ],
   },
   {
