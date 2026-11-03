@@ -41,6 +41,10 @@ export type ProductCard = {
   hasNew: boolean;
   hasRefurbished: boolean;
   hasDeal: boolean;
+  // L'affaire la moins chère en stock (« Prix exceptionnel »), et l'état où sont les
+  // affaires : la carte de la page Affaires mène à la page Neuf, Reconditionné, ou aux deux.
+  dealFrom: number | null;
+  dealIn: "new" | "refurbished" | "both" | null;
   // Le prix le plus bas en stock de chaque état (null s'il n'y en a pas) et ce qui reste.
   newFrom: number | null;
   refurbishedFrom: number | null;
@@ -69,6 +73,9 @@ export type Variant = {
   replacedParts: string[];
   defects: string[];
   limitations: string[];
+  // Mise en affaire par le gérant, avec ses détails pour le client (« juste sans boîte »).
+  isDeal: boolean;
+  dealNote: string | null;
   gifts: Gift[];
 };
 

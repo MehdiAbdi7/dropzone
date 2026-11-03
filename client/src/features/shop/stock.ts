@@ -69,12 +69,25 @@ export function selectOption(
   return next;
 }
 
+// Les affaires en stock, proposées à part, et le reste pour le choix habituel : ses
+// chiffres ne comptent pas les exemplaires en affaire. Une affaire épuisée ne va nulle
+// part : elle a souvent les options d'un neuf normal (« Bordeaux, 256 Go ») et ferait
+// une deuxième variante identique, vendue, dans le choix du neuf.
+export function splitDeals(variants: Variant[]): { deals: Variant[]; regular: Variant[] } {
+  return {
+    deals: variants.filter((variant) => variant.isDeal && variant.stock > 0),
+    regular: variants.filter((variant) => !variant.isDeal),
+  };
+}
+
 // Les chiffres des deux cartes « Neuf » et « Reconditionné » (mêmes règles que l'API).
 export function conditionSummary(variants: Variant[]): {
   newFrom: number | null;
   newStock: number;
   refurbishedFrom: number | null;
   refurbishedCount: number;
+  newDealFrom: number | null;
+  refurbishedDealFrom: number | null;
 } {
   const lowest = (list: Variant[]) => {
     const inStock = list.filter((variant) => variant.stock > 0);
@@ -82,10 +95,14 @@ export function conditionSummary(variants: Variant[]): {
   };
   const fresh = variants.filter((variant) => variant.condition === "new");
   const refurbished = variants.filter((variant) => variant.condition === "refurbished");
+  const deals = (list: Variant[]) => list.filter((variant) => variant.isDeal);
   return {
     newFrom: lowest(fresh),
     newStock: fresh.reduce((sum, variant) => sum + variant.stock, 0),
     refurbishedFrom: lowest(refurbished),
     refurbishedCount: refurbished.filter((variant) => variant.stock > 0).length,
+    // La ligne « Affaire : prix exceptionnel de … » de chaque carte.
+    newDealFrom: lowest(deals(fresh)),
+    refurbishedDealFrom: lowest(deals(refurbished)),
   };
 }
