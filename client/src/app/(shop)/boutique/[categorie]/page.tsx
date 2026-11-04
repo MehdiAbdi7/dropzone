@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DEVICE_KINDS } from "@/config/catalog";
 import Breadcrumb from "@/features/shop/Breadcrumb";
@@ -40,14 +39,10 @@ export default async function ShopCategoryPage({ params }: PageProps<"/boutique/
   return (
     <div className="container-page space-y-6 py-8">
       <Breadcrumb items={[{ label: "Boutique", href: "/boutique" }, { label: category.name }]} />
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-3xl">{category.name}</h1>
-          <p className="text-ink-muted">Choisissez une marque.</p>
-        </div>
-        <Link href={`/produits?category=${category.slug}`} className="text-sm font-semibold text-blue-ink underline">
-          Tout voir
-        </Link>
+      {/* Pas de « Tout voir » : la liste de tous les produits n'existe plus, on choisit une marque. */}
+      <header className="space-y-1">
+        <h1 className="text-3xl">{category.name}</h1>
+        <p className="text-ink-muted">Choisissez une marque.</p>
       </header>
 
       <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">

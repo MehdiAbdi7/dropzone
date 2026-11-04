@@ -28,8 +28,8 @@ export default function CartView() {
     return (
       <div className="card space-y-4 p-8 text-center">
         <p className="text-lg font-semibold">Votre panier est vide.</p>
-        <Link href="/produits" className="btn btn-primary">
-          Voir les produits
+        <Link href="/boutique" className="btn btn-primary">
+          Aller à la Boutique
         </Link>
       </div>
     );

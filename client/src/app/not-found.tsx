@@ -9,8 +9,8 @@ export default function NotFound() {
       <p className="max-w-md text-ink-muted">
         Le produit a peut-être été vendu ou retiré. Cherchez le modèle dans le catalogue.
       </p>
-      <Link href="/produits" className="btn btn-primary">
-        Voir le catalogue
+      <Link href="/boutique" className="btn btn-primary">
+        Aller à la Boutique
       </Link>
     </main>
   );

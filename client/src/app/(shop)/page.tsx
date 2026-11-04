@@ -98,7 +98,7 @@ export default async function HomePage() {
               pièce par pièce : note, batterie, pièces changées et boîte.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/produits" className="btn btn-primary">
+              <Link href="/boutique" className="btn btn-primary">
                 Voir la boutique
                 <ArrowRightIcon size={18} />
               </Link>
@@ -203,8 +203,8 @@ export default async function HomePage() {
             </div>
             <p className="mt-1 text-ink-muted">Les derniers arrivages, neufs scellés et affaires.</p>
           </div>
-          <Link href="/produits" className="btn btn-outline btn-small btn-pill">
-            Tout voir
+          <Link href="/boutique" className="btn btn-outline btn-small btn-pill">
+            Aller à la Boutique
             <ArrowRightIcon size={16} />
           </Link>
         </div>

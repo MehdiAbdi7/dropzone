@@ -4,23 +4,24 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import CatalogFilters from "@/features/products/CatalogFilters";
 import ProductGrid from "@/features/products/ProductGrid";
-import { legacyCatalogRedirect } from "@/lib/legacyRedirect";
+import { catalogRedirect } from "@/lib/legacyRedirect";
 import { publicFetch, publicFetchPage } from "@/lib/publicFetch";
 import type { Category, ProductCard } from "@/types/api";
 
-export const metadata: Metadata = { title: "Produits" };
+export const metadata: Metadata = { title: "Affaires et recherche" };
 
 const PARAMS = ["category", "brand", "q", "condition", "model", "sort", "page"] as const;
 
 export default async function CatalogPage({ searchParams }: PageProps<"/produits">) {
   const query = await searchParams;
-  // Les anciennes adresses (« reconditionne », l'ancienne page Affaires) renvoient vers
-  // les nouvelles, filtres compris.
-  const legacy = legacyCatalogRedirect(
+  // La page de tous les produits n'existe plus : seules les affaires, la recherche et les
+  // accessoires d'un modèle restent ici ; le reste part vers la Boutique. Les anciennes
+  // adresses (« reconditionne », l'ancienne page Affaires) renvoient vers les nouvelles.
+  const target = catalogRedirect(
     new URLSearchParams(Object.entries(query).flatMap(([key, value]) => (typeof value === "string" ? [[key, value]] : []))),
   );
-  if (legacy) {
-    redirect(legacy);
+  if (target) {
+    redirect(target);
   }
   // On ne transmet à l'API que les paramètres connus, en texte simple.
   const params = new URLSearchParams();
@@ -36,18 +37,14 @@ export default async function CatalogPage({ searchParams }: PageProps<"/produits
     publicFetch<Category[]>("/categories", 300),
   ]);
 
-  const category = categories?.find((item) => item.slug === params.get("category"));
-  // `?.` aussi sur brands : une réponse de /categories mise en cache avant l'ajout des
-  // marques (jusqu'à 5 minutes) n'en a pas.
-  const brand = category?.brands?.find((item) => item.slug === params.get("brand"));
+  // Les catégories servent aux filtres ; la liste elle-même n'existe plus que pour la
+  // recherche, les affaires et les accessoires d'un modèle (catalogRedirect).
   const search = params.get("q");
   const title = search
     ? `Résultats pour « ${search} »`
     : params.get("condition") === "affaire"
       ? "Les affaires du moment"
-      : category
-        ? `${category.name}${brand ? ` ${brand.name}` : ""}`
-        : "Tous les produits";
+      : "Le modèle et ses accessoires";
 
   // Les liens de pagination gardent les filtres et changent seulement la page.
   const pageHref = (page: number) => {
@@ -80,8 +77,8 @@ export default async function CatalogPage({ searchParams }: PageProps<"/produits
         <div className="card space-y-3 p-8 text-center">
           <p className="text-lg font-semibold">Aucun produit ne correspond.</p>
           <p className="text-ink-muted">Essayez un autre modèle, ou retirez un filtre.</p>
-          <Link href="/produits" className="btn btn-secondary">
-            Voir tout le catalogue
+          <Link href="/boutique" className="btn btn-secondary">
+            Aller à la Boutique
           </Link>
         </div>
       ) : (

@@ -52,8 +52,8 @@ export default function AccountView() {
         ) : orders.length === 0 ? (
           <p className="text-ink-muted">
             Aucune commande pour l&apos;instant.{" "}
-            <Link href="/produits" className="text-blue-ink underline">
-              Voir les produits
+            <Link href="/boutique" className="text-blue-ink underline">
+              Aller à la Boutique
             </Link>
           </p>
         ) : (

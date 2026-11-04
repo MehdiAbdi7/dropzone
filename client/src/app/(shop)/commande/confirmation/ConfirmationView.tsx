@@ -41,7 +41,7 @@ export default function ConfirmationView({ number }: { number: string | undefine
         <Link href={`/suivi?numero=${number ?? ""}`} className="btn btn-primary">
           Suivre ma commande
         </Link>
-        <Link href="/produits" className="btn btn-secondary">
+        <Link href="/boutique" className="btn btn-secondary">
           Continuer mes achats
         </Link>
       </div>
