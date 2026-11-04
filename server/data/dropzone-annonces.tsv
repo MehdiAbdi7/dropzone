@@ -1,0 +1,213 @@
+date	code	type	modele	cpu	ram	stockage	ecran	gpu	prix_da	reference	garantie	etat	batterie	origine	sim	neuf
+2026-11-03	DfRYGVSDQIp	pc	Lenovo ThinkPad L13 2-in-1 Gen 3	Core 5 120U	16 Go DDR5	512 Go SSD NVMe	13,3 WUXGA tactile	Intel Graphics	165000	61119	3 mois				neuf
+2026-11-02	DfOyxZYDUIZ	pc	Dell Pro Max 16 MC16250	Core Ultra 7 265H	32 Go DDR5 5600	1 To SSD NVMe	16 WUXGA	RTX PRO 2000 Blackwell 8 Go	288000	41249	3 mois
+2026-11-01	DfMnbrIjUpW	pc	Lenovo LOQ 15IAX9E	i7-12650HX	32 Go DDR5 4800	1 To SSD NVMe	15,6 144 Hz	RTX 4050	204000	61128	3 mois
+2026-10-31	DfJpq9RiHRm	pc	Microsoft Surface Pro 7+	i5-1135G7	8 Go LPDDR4x	256 Go SSD	12,3 tactile 2K	Iris Xe	77000	100144	3 mois
+2026-10-31	DfKSCSOtJDu	tel	iPhone 13			128 Go			58000		6 mois	9/10		EU
+2026-10-30	DfHmnLECKIn	pc	ASUS Zenbook 15 OLED	Ryzen 7 7735U	16 Go LPDDR5 6400	256 Go SSD NVMe	15,6 OLED 2.8K 120 Hz	Radeon	128000	20453	3 mois
+2026-10-30	DfIaqOttl-u	tel	iPhone 17			256 Go			228000		12 mois	coffret				neuf
+2026-10-30	DfIFCXftygD	tel	iPhone 14 Pro Max			256 Go			128000		6 mois	comme-neuf	88 %	EU
+2026-10-30	DfHE3c5iBVY	pc	Dell Latitude 7400	i7-8665U	8 Go DDR4	256 Go SSD NVMe	14 FHD tactile	UHD 620	68000	41240	3 mois
+2026-10-29	DfFvfHxtYWy	tel	iPhone 11								6 mois	comme-neuf	83 à 95 %	CA
+2026-10-29	DfFQBKDtn0c	tab	iPad mini 6			256 Go			79000		6 mois	comme-neuf	90 %	EU
+2026-10-29	DfEfhEmiAqB	pc	ASUS Zenbook 14 OLED UX3402ZA	i7-1260P	16 Go LPDDR5	512 Go SSD NVMe	14 OLED 2.8K 90 Hz	Iris Xe	118000	20457	3 mois
+2026-10-28	DfC5Ww-NhX8	tel	(modèle non nommé, iPhone)			1 To			166000		6 mois	comme-neuf			2SIM
+2026-10-28	DfCLRSDtw9a	tel	Galaxy S24		8 Go	256 Go			82000		6 mois	comme-neuf			2SIM
+2026-10-28	DfB7RKXCEhz	pc	ASUS ZenBook (GTX 1650 Ti)	i7-10870H	16 Go DDR4	256 Go SSD + 1 To HDD	15,6 FHD	GTX 1650 Ti	119000	20474	3 mois
+2026-10-27	DfAou3hN95k	tel	Galaxy S21 Ultra		8 Go	256 Go			53000		6 mois	comme-neuf
+2026-10-27	De_WjtpCGdD	pc	Gigabyte G5	i5-10500H	16 Go DDR4	512 Go SSD NVMe	15,6	RTX 3060	148000	51254	3 mois
+2026-10-26	De9a-eJtTQM	tel	iPhone 16			128 Go			161000		6 mois	comme-neuf	100 %	CA
+2026-10-26	De8xrBWiO2a	pc	ASUS ROG Strix SCAR 15 G533QS	Ryzen 9 5900HX	32 Go DDR4 3200	1 To SSD NVMe	15,6 300 Hz	RTX 3080	288000	20475	3 mois
+2026-10-25	De6eeVuiBGd	pc	Acer Nitro V 16	Ryzen 7 260	16 Go DDR5 5600	512 Go SSD NVMe	16 WUXGA 180 Hz		265000	30219	3 mois
+2026-10-24	De5DDH_iNCr	tab	Galaxy Tab S11		12 Go	512 Go			189000		6 mois	comme-neuf		EU
+2026-10-23	De2xSovovog	tab	Galaxy Tab S10 Ultra		12 Go	256 Go			189000		6 mois	comme-neuf	98 %	EU	1SIM
+2026-10-23	De1cdw9jblj	pc	Dell Latitude 5440	i5-1335U	16 Go DDR4 3200	512 Go SSD NVMe	14 FHD	Iris Xe	109000	40716	3 mois
+2026-10-21	Dev4mDsjUa9	pc	Dell Latitude 5540	i5-1335U	16 Go DDR4 3200	512 Go SSD NVMe	15,6	Iris Xe	109000	40879	3 mois
+2026-10-20	DetT2ECjaij	pc	HP ProBook 455 G10	Ryzen 5 7530U	16 Go DDR4 3200	256 Go SSD NVMe	15,6	Radeon	104000	51106	3 mois
+2026-10-19	DerMksdtQ9s	tel	iPhone 15			128 Go			115000		6 mois	comme-neuf	77 à 92 %	EU+JP+CA
+2026-10-19	DeqvAKHDZnz	pc	ASUS ExpertBook BM1403CDA	Ryzen 5 7535U	16 Go DDR5 4800	256 Go SSD NVMe	14 FHD	Radeon 660M	99000	61113	3 mois
+2026-10-18	DepbFHCtLWh	tel	iPhone 16 Pro Max			256 ou 512 Go			229000		6 mois	comme-neuf	92 à 100 %	EU	1SIM
+2026-10-18	DepD1motcPB	tel	iPhone 14 Pro Max			128 ou 256 Go			129000		6 mois	comme-neuf		EU
+2026-10-18	DeofAAaDbR_	pc	Lenovo ThinkPad T14s Gen 3	i7-1265U	16 Go LPDDR5 4800	256 Go SSD NVMe	14 WUXGA	Iris Xe	124000	61014	3 mois
+2026-10-17	DelmoXrDVk-	pc	ASUS E510KA	Celeron N4500	8 Go DDR4	256 Go SSD	15,6	UHD	69000	20473	3 mois				neuf
+2026-10-16	DekQHYbtbuK	tel	Galaxy S25 Ultra			256 Go			169000		6 mois	comme-neuf		EU	2SIM
+2026-10-16	DejACAoDQhU	pc	Lenovo ThinkPad X1 Carbon Gen 10	i5-1245U	32 Go LPDDR5 5200	256 Go SSD NVMe	14 WUXGA	Iris Xe	119000	60691	3 mois
+2026-10-15	DegaviIjdUV	pc	Honor MagicBook NBD-WXX9	i7-1165G7	16 Go DDR4 3200	512 Go SSD NVMe	FHD	Iris Xe	99000	70053	3 mois
+2026-10-15	DehehBxNzbj	tel	(modèle non nommé, « affaire »)			256 Go			154000		6 mois		86 %
+2026-10-14	Ded1ViqDRMy	pc	HP Elite Dragonfly Chromebook 2-in-1	i5-1245U	16 Go	256 Go SSD	13,5 tactile	Iris Xe	79000	90027	3 mois
+2026-10-13	DebPWCGjXye	pc	HP EliteBook 645 G11	Ryzen 5 PRO 7535U	16 Go DDR5 4800	256 Go SSD NVMe	14 WUXGA	Radeon 660M	108000	51200	3 mois
+2026-10-12	DeYs3dbjQTa	pc	Dell Latitude 5440	i5-1345U	16 Go DDR4 3200	256 Go SSD NVMe	14 FHD	Iris Xe	99000	41009	3 mois
+2026-10-11	DeWoIfQDaLd	pc	Apple MacBook Pro 16 M4 Max (2024)	M4 Max 14 cœurs	36 Go	1 To SSD	16 Liquid Retina XDR		670000		3 mois		91 % (174 cycles)
+2026-10-09	DeQ965ODVM3	pc	ASUS X515J	i7-1165G7	8 Go DDR4 3200	512 Go SSD NVMe	15,6	Iris Xe	88000	60925	3 mois
+2026-10-08	DePSgKPNe6e	tel	iPhone 15 Pro Max						175000		6 mois
+2026-10-08	DeOaVTejfv4	pc	Dell Latitude 7440	i7-1370P	32 Go LPDDR5 4800	512 Go SSD NVMe	14 FHD+	Iris Xe	129000	41165	3 mois
+2026-10-07	DeL1hufDcHu	pc	Apple MacBook Air 13,6 M2 (2022) Gris sidéral	M2 8 cœurs	8 Go	512 Go SSD	13,6 Liquid Retina		165000		3 mois		100 % (15 cycles)
+2026-10-07	DeL1b4gjVOh	pc	ASUS Vivobook 14 X1404VA	i7-1355U	16 Go DDR4 3200	256 Go SSD NVMe	14 FHD	Iris Xe	108000	61002	3 mois
+2026-10-05	DeGr1tlDVyt	pc	MSI Modern 14	i5-10210U	16 Go DDR4 2667	512 Go SSD NVMe	14 FHD	UHD	69000	20465	3 mois
+2026-10-04	DeEGAVDje2k	pc	HP Pavilion x360 2-in-1	i5-1235U	16 Go DDR4 3200	512 Go SSD NVMe	14 FHD tactile	Iris Xe	89000		3 mois		100 %
+2026-10-03	DeB15jdDU23	pc	HP Victus 15-fa2046nf	i5-14500HX	16 Go DDR5 5600	512 Go SSD NVMe	15,6	RTX 3050	198000		3 mois				neuf
+2026-10-02	Dd-9dM1DQhb	pc	Dell Pro 16	Core Ultra 5 225U	16 Go DDR5 5600	256 Go SSD	16 WUXGA	Intel Graphics	148000	41087	3 mois		100 %
+2026-10-01	Dd8YslRjY8M	pc	HP ProBook 440	i5-1335U	16 Go DDR4 3200	512 Go SSD NVMe	14 FHD	UHD	118000	50845	3 mois
+2026-09-30	Dd5zWgCDZiL	pc	Acer Aspire A515-58P	i5-1335U	16 Go DDR5 4800	512 Go SSD NVMe	15,6	Iris Xe	95000	30213	3 mois				neuf
+2026-09-29	Dd3vZAht6ps	tel	Vivo X200 Ultra		16 Go				163000		6 mois	comme-neuf
+2026-09-29	Dd3OmDcjTmA	pc	HP EliteBook 645 G11	Ryzen 5 PRO 7535U	16 Go DDR5 4800	256 Go SSD NVMe	14 WUXGA	Radeon	113000	51225	3 mois
+2026-09-28	Dd0pyz9jQu_	pc	HP ZBook Fury 15 G7	i7-10850H	32 Go DDR4 2667	512 Go SSD NVMe + 1 To HDD	15,6		148000	51147	3 mois
+2026-09-26	Ddvs5dJDdAs	pc	Dell Pro 14 Plus	Core Ultra 5 235U	16 Go DDR5 5600	512 Go SSD	14 FHD+	Intel Graphics	143000	41186	3 mois
+2026-09-25	Dds7bEijfc1	pc	HP EliteBook 845 G10	Ryzen 7 PRO 7840U	32 Go DDR5 5600	512 Go SSD NVMe	14 WUXGA	Radeon 780M	148000	51145	3 mois
+2026-09-25	Dds7VUTDRYX	pc	Lenovo ThinkPad X1 Carbon	i7-1265U	16 Go DDR5 5200	256 Go SSD	14 WUXGA	Iris Xe	138000	61101	3 mois
+2026-09-24	DdrTBnJNDeU	tel	iPhone 12 Pro Max						79000		6 mois			US
+2026-09-24	DdqWoTpjeze	pc	Microsoft Surface Laptop 4	Ryzen 5 Surface Edition	16 Go DDR4 4266	256 Go SSD	13,5	Radeon	75000	100130	3 mois
+2026-09-23	DdomFxItUBO	tel	iPhone XR			128 Go			37000		6 mois	comme-neuf
+2026-09-22	DdldnbtNWM4	tel	iPhone 18 Pro Max											1SIM ou 2SIM	neuf
+2026-09-22	DdlM9LzDQY0	pc	Lenovo ThinkPad T14s (Ultra 7)	Core Ultra 7 165U	32 Go LPDDR5X 6400	512 Go SSD	14 WUXGA	Intel Graphics	155000	61097	3 mois
+2026-09-22	DdlM-tOjYfm	pc	HP ProBook 450 G9	i5-1235U	8 Go DDR4 3200	256 Go SSD	15,6	Intel Graphics	92000	51181	3 mois
+2026-09-20	DdgDWGIDcaB	pc	Microsoft Surface Pro 6	i5-8250U	8 Go LPDDR3	256 Go SSD	12,3 tactile	UHD 620	63000	100143	3 mois
+2026-09-19	DdeBW9eDYNS	pc	HP EliteBook 840 G7	i5-10210U	8 Go DDR4 2667	256 Go SSD	14 FHD tactile	UHD	69000	51215	3 mois
+2026-09-17	DdYVnTDjffU	pc	Apple MacBook Pro 13,3 M2 (2022) Gris sidéral	M2 8 cœurs	8 Go	256 Go SSD	13,3 Retina		168000		3 mois		86 % (291 cycles)
+2026-09-16	DdVw2EBjd8c	pc	Apple MacBook Air 13,3 (2020, Intel) Gris sidéral		8 Go LPDDR4X	256 Go SSD	13,3 Retina		79000		3 mois		79 % (195 cycles)
+2026-09-15	DdTKztojc6Z	pc	Dell Pro 13 Plus PB13250 2-in-1	Core Ultra 5 235U	16 Go DDR5 5600	512 Go SSD NVMe	13 tactile	Intel Graphics	159000	41110	3 mois		100 %
+2026-09-14	DdQnOk1DbRW	pc	Lenovo Yoga Slim 7x	Snapdragon X Plus X1P-64100	32 Go LPDDR5X 8448	512 Go SSD NVMe	14 tactile	Adreno X1-85	138000	61099	3 mois		100 %
+2026-09-13	DdOBNI5DaLm	pc	HP Victus 15 (Ryzen)	Ryzen 5 5600H	16 Go DDR4 3200	512 Go SSD NVMe	15,6	RTX 3050 4 Go	155000	51231	3 mois
+2026-09-12	DdL6r-bDXEg	pc	HP Victus 16	i5-11400H	8 Go DDR4 3200	512 Go SSD NVMe	16	RTX 3060 6 Go	168000	51230	3 mois
+2026-09-10	DdGS4zDDR5t	pc	Lenovo ThinkPad X1 Carbon (Ultra 7)	Core Ultra 7 155U	16 Go LPDDR5X 6400	512 Go SSD NVMe	14 WUXGA	Intel Graphics	169000	61037	3 mois
+2026-09-08	DdBIr4XDYdy	pc	Lenovo ThinkPad X13 Gen 4	Ryzen 7 PRO 7840U	32 Go LPDDR5X 6400	512 Go SSD NVMe	13,3	Radeon 780M	135000	61098	3 mois
+2026-09-08	DdBIJxTDXL9	pc	HP EliteBook 840 G10	i7-1365U	8 Go DDR5 5200	512 Go SSD NVMe	14 WQXGA 120 Hz	Intel UHD	123000	51057	3 mois
+2026-09-07	Dc-lsFHDTkd	pc	HP EliteBook 830 G11	Core Ultra 5 135U	16 Go LPDDR5X 7467	256 Go SSD NVMe	13,3	Intel Graphics	128000	51143	3 mois
+2026-09-06	Dc8XXFfjaL7	pc	MSI GF63 Thin 11SC	i5-11400H	16 Go DDR4 3200	512 Go SSD NVMe	15,6	UHD	128000	20409	3 mois
+2026-09-04	Dc22EXbjUDF	pc	HP EliteBook 630 G11		16 Go DDR5 5600	256 Go SSD NVMe	13,3		118000		3 mois
+2026-09-03	Dc0RVEiDQr3	pc	Apple MacBook Air 13,3 M1 (2020) Gris sidéral	M1	8 Go	256 Go SSD	13,3 Retina		103000		3 mois		83 % (550 cycles)
+2026-09-02	DcxtoXGDVJ7	pc	Lenovo ThinkPad X1 Carbon (i5-1235U)	i5-1235U	16 Go LPDDR5 5200	512 Go SSD NVMe	14 WUXGA	Iris Xe	109000	61096	3 mois
+2026-09-01	Dcv45H-DYbn	pc	Microsoft Surface Laptop for Business 7	Core Ultra 7 268V	32 Go LPDDR5X 8533	512 Go SSD NVMe	13,8 tactile	Arc	195000	100140	3 mois
+2026-09-01	DcvHvG-jf87	pc	HP EliteBook 640 G11	Core Ultra 5 135U	16 Go DDR5 5600	512 Go SSD NVMe	14 WUXGA	Intel Graphics	118000	51095	3 mois
+2026-08-31	DcskFg5DWC3	pc	Samsung Galaxy Book3	i7-1355U	16 Go LPDDR4x 4267	512 Go SSD NVMe	15,6	Iris Xe	129000		3 mois
+2026-08-30	Dcp_U42DT7w	pc	Dell Pro 13 Premium	Core Ultra 5 236V	16 Go LPDDR5X 8533	512 Go SSD NVMe	13	Arc	143000		3 mois				neuf
+2026-08-29	DcoBFI7jR7S	pc	Apple MacBook Air 13,3 (2018) Or rose		8 Go LPDDR3	128 Go SSD	13,3 Retina		88000		3 mois		56 % (314 cycles)
+2026-08-29	Dcnw794DRof	pc	Microsoft Surface Laptop 7	Core Ultra 5 238V	32 Go LPDDR5x 8533	512 Go SSD NVMe	13,8	Arc 130V	185000	100141	3 mois
+2026-08-28	Dck1tOfDTcK	pc	Dell Latitude 3540	i3-1215U	8 Go DDR4 3200	512 Go SSD NVMe	15,6	UHD	88000	40727	3 mois				neuf
+2026-08-27	DciQUb0jeGk	pc	Apple MacBook Air 13,6 M2 (2022) Minuit	M2 8 cœurs	8 Go	512 Go SSD	13,6 Liquid Retina		168000		3 mois		92 % (242 cycles)
+2026-08-26	DcfsEtPjdVW	pc	Apple MacBook Air 13,3 M1 (2020) Gris sidéral	M1 8 cœurs	8 Go	256 Go SSD	13,3 Retina		105000		3 mois		87 % (382 cycles)
+2026-08-25	DcdGM2TDRDu	pc	HP ZBook Firefly 15 G8	i7-1165G7	8 Go DDR4 3200	256 Go SSD NVMe	15,6	Iris Xe		51174	3 mois
+2026-08-24	DcahVQQDbke	pc	Lenovo ThinkPad L13 Yoga Gen 4	i5-1345U	16 Go DDR5 4800	512 Go SSD NVMe	13,3 tactile	Iris Xe	103000	61093	3 mois
+2026-08-23	DcX8m8QDfpi	pc	HP EliteBook 8 Flip G1i 13	Core Ultra 5 235U	32 Go LPDDR5x 7467	512 Go SSD NVMe	13 tactile	Intel Graphics		51217	3 mois
+2026-08-22	DcVy_P7jUkj	pc	HP ZBook Fury 15 G7	i7-10850H	32 Go DDR4 2667	1 To SSD NVMe	15,6	UHD	129000	51208	3 mois
+2026-08-21	DcS0EyTjZTt	pc	Toshiba Tecra A40	i5-1240P	16 Go DDR4 3200	512 Go SSD NVMe	14 FHD	UHD	93000	80042	3 mois
+2026-08-20	DcQPWW8DU7m	pc	ASUS Vivobook 14 (Snapdragon X)	Snapdragon X X1-26-100	16 Go LPDDR5X 8448	512 Go SSD NVMe	14 WUXGA	Adreno X1-45	99000	20437	3 mois
+2026-08-19	DcNqj2NjYlQ	pc	HP EliteBook Dragonfly 2-in-1	i7-1165G7	16 Go LPDDR4x 4267	512 Go SSD NVMe	13,3 tactile	Iris Xe	113000	51205	3 mois
+2026-08-18	DcLaqygtD9K	tel	iPhone 11 Pro						43000		6 mois			DZ
+2026-08-18	DcLEj5BjUlu	pc	Microsoft Surface Pro 7+	i5-1135G7	16 Go LPDDR4x 4267	256 Go SSD	12,3 tactile	Iris Xe	79000	100138	3 mois
+2026-08-18	(vidéo)	tel	Vivo X300 Pro 5G			512 Go					6 mois
+2026-08-17	DcIg-erDbxi	pc	HP EliteBook 840 G11	Core Ultra 5 135U	16 Go DDR5 5600	256 Go SSD NVMe	14 WUXGA	Intel Graphics	128000		3 mois
+2026-08-16	DcF8MBRjXPD	pc	ASUS Vivobook OLED (Ryzen 7 5800HS)	Ryzen 7 5800HS	16 Go DDR4 3200	512 Go SSD NVMe	15,6 OLED	Radeon	138000	20455	3 mois
+2026-08-15	DcDse5tjc61	pc	Dell Precision 3581	i7-13800H	16 Go DDR5 4800	512 Go SSD NVMe	15,6	RTX A500 4 Go	129000	41102	3 mois
+2026-08-15	DcDT4MVDYRU	pc	Dell Pro 14 Plus	Core Ultra 5 235U	32 Go DDR5 5600	256 Go SSD NVMe	14 FHD+	Intel Graphics	139000		3 mois
+2026-08-14	DcAyhqejYW_	pc	ASUS X515E	i5-1135G7	8 Go DDR4 3200	256 Go SSD NVMe	15,6	Iris Xe	74000		3 mois
+2026-08-13	Db-NyBKjSVm	pc	Dell Precision 3490	Core Ultra 5 135H	32 Go DDR5 5600	512 Go SSD NVMe	14 FHD	Intel Graphics	139000		3 mois
+2026-08-12	Db7o9eqDYwv	pc	Lenovo ThinkPad T14 Gen 5	Ryzen 5 PRO 8540U	16 Go DDR5 5600	512 Go SSD NVMe	14 WUXGA	Radeon 740M	118000		3 mois
+2026-08-11	Db5EL8LjSAu	pc	Microsoft Surface Pro 9 5G	Microsoft SQ3	16 Go LPDDR4x	256 Go SSD NVMe	13 tactile 120 Hz	Adreno 8cx Gen 3	128000		3 mois
+2026-08-10	Db2dEODDa3v	pc	Dell XPS 13 9310	i7-1065G7	16 Go LPDDR4x 3733	512 Go SSD NVMe	13,4	Iris Plus	89000		3 mois
+2026-08-09	Dbz6j3RDVsa	pc	HP EliteBook x360 1040 G10	i5-1345U	16 Go LPDDR5 4800	512 Go SSD NVMe	14 WUXGA tactile	Iris Xe	109000		3 mois
+2026-08-08	DbxmpnRDaxu	pc	Acer Nitro V15	Ryzen 7 7735HS	16 Go DDR5 4800	512 Go SSD NVMe	15,6	RTX 4060 8 Go	209000		3 mois
+2026-08-07	Dbuuq7mDenk	pc	Apple MacBook Pro 13,3 (2020, Intel) Gris sidéral		8 Go	256 Go SSD	13,3 Retina		99000		3 mois		77 % (62 cycles)
+2026-08-06	DbsJ2bYjZ4W	pc	ASUS ExpertBook (Ryzen 5 7535U)	Ryzen 5 7535U	8 Go DDR5 4800	256 Go SSD NVMe	14 FHD	Radeon	99000		3 mois
+2026-08-05	Dbpkjm0Da2I	pc	ASUS TUF Gaming F17 (i5-11400H)	i5-11400H	16 Go DDR4 3200	512 Go SSD NVMe	17,3 FHD 144 Hz	UHD	139000		3 mois
+2026-08-04	Dbm_u4MjZ5J	pc	Lenovo ThinkPad T14s Gen 6	Core Ultra 5 235U	32 Go LPDDR5X 7467	512 Go SSD NVMe	14 WUXGA tactile	Intel Graphics	148000		3 mois
+2026-08-03	DbkZ0tCjfp2	pc	Dell Latitude 7350	Core Ultra 5 135U	16 Go LPDDR5X 6400	512 Go SSD NVMe	13,3 FHD+	Intel Graphics	119000		3 mois
+2026-08-02	Dbh1AgEjSI9	pc	HP EliteBook 840 G8	i7-1165G7	8 Go DDR4 2400	512 Go SSD NVMe	14 FHD	Iris Xe	89000		3 mois
+2026-08-01	DbgqEBHDU5y	pc	HP EliteBook 640 G11	Core Ultra 5 135U	16 Go DDR5 5600	512 Go SSD NVMe	14 FHD	Intel Graphics	119000		3 mois
+2026-08-01	Dbfy3-tjcPk	pc	HP OmniBook X Flip 14	Core Ultra 7 258V	32 Go LPDDR5X 8533	1 To SSD NVMe	14 tactile	Arc 140V	178000		3 mois
+2026-07-26	DbQUGlmNMfD	tel	iPhone 16 Pro Max			256 Go			204000		6 mois		88 %
+2026-07-25	DbOI1rGtrg5	tel	iPhone 13 (rose)						78000				86 %
+2026-07-24	DbKm-XiDeEe	pc	Apple MacBook Pro 13 (2017) Gris sidéral		8 Go	128 Go SSD	13,3 Retina		55000		3 mois		95,1 % (721 cycles)
+2026-07-23	DbIAbyaDVvQ	pc	Lenovo ThinkPad T14 Gen 2	Ryzen 5 PRO 5650U	16 Go DDR4 3200	256 Go SSD NVMe	14 FHD	Radeon	75000		3 mois
+2026-07-23	(vidéo)	tel	iPhone 15 Pro Max								6 mois
+2026-07-22	DbFcRv4jYVG	pc	Lenovo ThinkPad X1 Yoga Gen 6	i7-1185G7	16 Go LPDDR4X 4267	256 Go SSD NVMe	14 WUXGA tactile	Iris Xe	115000		3 mois
+2026-07-21	DbC5x8tDQPT	pc	Apple MacBook Air 13,6 M3 (2024) Minuit	M3 8 cœurs	8 Go	256 Go SSD	13,6 Liquid Retina		188000		3 mois		98 % (126 cycles)
+2026-07-21	DbC3dopDdd8	pc	Dell Precision 7560	i7-11850H	32 Go DDR4 3200	512 Go SSD NVMe	15,6	UHD	153000		3 mois
+2026-07-19	Da9wKR3jTtF	pc	Lenovo IdeaPad Duet 5i	i5-1235U	8 Go LPDDR4X 4267	256 Go SSD NVMe	12 tactile	Iris Xe	99000		3 mois
+2026-07-18	Da7rfVLjVjo	pc	ASUS ROG Zephyrus G14	Ryzen 9 4900HS	16 Go DDR4 3200	512 Go SSD NVMe	14 FHD 120 Hz	RTX 2060 Max-Q 6 Go	149000		3 mois
+2026-07-17	Da4miXgjUfH	pc	Lenovo ThinkPad X1 Yoga Gen 6	i7-1185G7	16 Go LPDDR4X 4267	256 Go SSD NVMe	14 WUXGA tactile	Iris Xe	109000		3 mois
+2026-07-16	Da2Bxo0jZdq	pc	Apple MacBook Air 13,6 M3 (2024) Minuit	M3 8 cœurs	8 Go	256 Go SSD	13,6 Liquid Retina		190000		3 mois		100 % (44 cycles)
+2026-07-15	DazdCBMjYzn	pc	ASUS ExpertBook (i7-1260P)	i7-1260P	16 Go DDR4 3200	512 Go SSD NVMe	14 FHD	UHD	108000		3 mois
+2026-07-14	Daw4JVIDWy6	pc	HP EliteBook x360 830 G10	i5-1335U	16 Go LPDDR5 4800	512 Go SSD NVMe	13,3 tactile	Iris Xe	114000		3 mois
+2026-07-13	DauTYinjdMu	pc	Dell Precision 5560	i7-11850H	32 Go DDR4 3200	512 Go SSD NVMe	15,6	RTX A2000 4 Go	163000		3 mois
+2026-07-12	Darup9iDW4h	pc	Microsoft Surface Pro 12 pouces (Copilot+)	Snapdragon X Plus X1P-42-100	16 Go LPDDR5X 8448	512 Go SSD NVMe	12 tactile 90 Hz	Adreno X1-45	210000		3 mois
+2026-07-11	DapG92ljejv	pc	Apple MacBook Pro 13,3 M2 (2022) Gris sidéral	M2 8 cœurs	8 Go	256 Go SSD	13,3 Retina		168000		3 mois		88 % (453 cycles)
+2026-07-10	Danz_KijQHg	pc	HP EliteBook 845 G9	Ryzen 7 PRO 6850U	8 Go DDR5 4800	512 Go SSD NVMe	14 FHD	Radeon 680M	108000		3 mois
+2026-07-09	DalTLUjjeHd	pc	Apple MacBook Pro 15 (2018) Gris sidéral		16 Go	512 Go SSD	15,4 Retina		99000		3 mois		(139 cycles)
+2026-07-08	DahaQ_sjejx	pc	Lenovo ThinkBook 15	Core Ultra 5 125U	8 Go DDR5 5600	256 Go SSD NVMe	15,6	Intel Graphics	119000		3 mois		91 %
+2026-07-07	Dae0TcgDVVi	pc	Apple MacBook Pro « M3 15,4 pouces » (2024) Minuit, à vérifier	M3 8 cœurs	8 Go	256 Go SSD	15,4 Liquid Retina XDR 120 Hz		228000		3 mois		94 % (144 cycles)
+2026-07-06	DadfqNsDfcY	pc	Apple MacBook Pro 13,3 (2020, Intel) Gris sidéral		8 Go	256 Go SSD	13,3 Retina		108000		3 mois		(626 cycles)
+2026-07-05	DaaSNRJjaR5	pc	ASUS Vivobook 14 (i7-1355U)	i7-1355U	16 Go DDR4 3200	1 To SSD NVMe	14 FHD	Iris Xe	118000		3 mois
+2026-07-05	DaaJpAnjQGJ	pc	ASUS TUF Gaming F17 (RTX 3050)	i5-11400H	16 Go DDR4 3200	512 Go SSD NVMe	17,3	RTX 3050 4 Go	139000		3 mois		86 %
+2026-07-04	DaXs4IdjZwW	pc	Dell Precision 3581	i5-13600H	16 Go DDR5 5200	512 Go SSD NVMe	15,6	RTX A500 4 Go	138000		3 mois		93 %
+2026-07-03	DaVIBH_DbYK	pc	Microsoft Surface Pro 8	i5-1145G7	8 Go LPDDR4x 4267	256 Go SSD NVMe	13 tactile 120 Hz	Iris Xe	98000		3 mois
+2026-07-02	DaSxrJcjZVX	pc	HP OMEN 16-wf1039nf						288000		3 mois
+2026-07-01	DaQFZIAjbTE	pc	Apple MacBook Pro 14 M3 (2024) Gris sidéral	M3 8 cœurs	8 Go	512 Go SSD	14,2 Liquid Retina XDR		235000		3 mois		96 % (98 cycles)
+2026-07-01	DaP-dHyjQOB	pc	MSI GF63 Thin (i7-8750H)	i7-8750H	24 Go DDR4 2667	256 Go SSD NVMe + 1 To SATA	15,6	GTX 1050 4 Go	99000		3 mois		89 %
+2026-06-30	DaNglihDbqF	pc	Apple MacBook Air 13,6 M4 (2025) Argent	M4 10 cœurs	16 Go	512 Go SSD	13,6 Liquid Retina		199000		3 mois		99 % (100 cycles)
+2026-06-29	DaKu1bQDTWQ	pc	ASUS ExpertBook 14 (Core Ultra 5 226V)	Core Ultra 5 226V	16 Go LPDDR5X 8533	512 Go SSD NVMe	14 WQXGA 144 Hz	Arc 130V	149000		3 mois				neuf
+2026-06-27	DaFyNc-jdOC	pc	ASUS Vivobook 14 X1404VA	i5-1334U	12 Go DDR4	256 Go SSD NVMe	14 FHD	Iris Xe	115000		3 mois
+2026-06-26	DaDOjy4jUu8	pc	Microsoft Surface Laptop 5	i5-1245U	16 Go LPDDR5X 5200	256 Go SSD NVMe	13,5 tactile	Iris Xe	89000		3 mois
+2026-06-25	DaApvsmDSBC	pc	ASUS ExpertBook 15 (i7-1355U)	i7-1355U	16 Go DDR4 3200	512 Go SSD NVMe	15,6	UHD	109000		3 mois
+2026-06-24	DZ-DznJDe0q	pc	Apple MacBook Pro 16 M1 Pro (2021) Gris sidéral	M1 Pro 10 cœurs	16 Go	512 Go SSD	16,2 Liquid Retina XDR		218000		3 mois		80 % (138 cycles)
+2026-06-23	DZ7gKB_jU44	pc	Dell Latitude 5350 2-in-1	i5-1345U	16 Go DDR5 4800	512 Go SSD NVMe	13,3 tactile	Iris Xe	118000		3 mois
+2026-06-22	DZ47W8pjTJd	pc	Dell Pro 16 Plus	Core Ultra 5 235U	16 Go DDR5 5600	512 Go SSD NVMe	16 FHD+	Intel Graphics	143000		3 mois
+2026-06-21	DZ2XrBtjXsI	pc	Apple MacBook Pro 14 M3 Pro (2024) Argent	M3 Pro 11 ou 12 cœurs	18 Go	512 Go SSD	14,2 Liquid Retina XDR		270000		3 mois		100 % (40 cycles)
+2026-06-21	DZ17-blDXQi	pc	Dell Precision 5690	Core Ultra 5 135H	16 Go LPDDR5X 7467	512 Go SSD NVMe	16	Arc	168000		3 mois				quasi-neuf
+2026-06-20	DZzy6IwjeFI	pc	HP 250 G10	i5-1334U	8 Go DDR4 3200	512 Go SSD NVMe	15,6	UHD	108000		3 mois
+2026-06-19	DZxM9DajTcP	pc	Dell Precision 3571	i9-12900H	32 Go DDR5 4800	512 Go SSD NVMe	15,6	T600 4 Go	163000		3 mois
+2026-06-18	DZuoItQDYk5	pc	ASUS Vivobook 15	Core 5 120U	16 Go DDR4 3200	512 Go SSD NVMe	15,6	Intel Graphics	109000		3 mois
+2026-06-17	DZsCxfgDRsq	pc	Acer Swift SF514-56T	i7-1260P	16 Go LPDDR5 4800	512 Go SSD NVMe	14 WUXGA tactile	Iris Xe	118000		3 mois
+2026-06-16	DZpg5Scja-E	pc	Lenovo ThinkPad P17	i7-10850H	32 Go DDR4 2933	1 To SSD NVMe	17,3	RTX 3000 6 Go	148000		3 mois
+2026-06-15	DZm5xSPjRNq	pc	Lenovo Yoga Slim 7 Pro OLED	Ryzen 5 5600H	16 Go DDR4 3200	512 Go SSD NVMe	14 OLED 2.5K	Radeon	85000		3 mois
+2026-06-14	DZkY-aaDThw	pc	Lenovo Legion 5 15IRX10	i7-13650HX	32 Go DDR5	512 Go SSD NVMe	15,1	RTX 5070 8 Go	340000		3 mois				neuf
+2026-06-14	DZj_HmLDe1Q	pc	ASUS Zenbook 14 OLED (i9, RTX 3050)	i9-13900H	32 Go LPDDR5 4800	512 Go SSD NVMe	14 OLED 2.8K 120 Hz	RTX 3050 4 Go	168000		3 mois
+2026-06-13	DZhsyqijbSN	pc	Dell Precision 3561	i7-11850H	16 Go DDR4 3200	512 Go SSD NVMe	15,6 FHD	T1200 4 Go	118000		3 mois
+2026-06-12	DZfTXt6jV_6	pc	Apple MacBook Air 13,3 (2020, Intel) Gris sidéral		8 Go	256 Go SSD	13,3 Retina		88000				(378 cycles)
+2026-06-11	DZcmCs6DTNR	pc	HP ZBook Power G10	i5-13600H	32 Go DDR5 5200	512 Go SSD NVMe	15,6		149000		3 mois
+2026-06-10	DZZ_fidjTQ_	tab	iPad 10e génération (2022)	A14		64 Go	10,9 Liquid Retina		78000		3 mois	10/10	100 %
+2026-06-09	DZXb1wPDXtM	pc	HP Pavilion Gaming 15	Ryzen 5 4600H	8 Go DDR4 3200	512 Go SSD NVMe	15,6 FHD	GTX 1650 4 Go	105000		3 mois
+2026-06-08	DZVG1aItxTk	tel	iPhone 11			64 Go			49500		6 mois	comme-neuf	84 à 93 %	EU
+2026-06-08	DZU4LB4jY99	pc	Lenovo IdeaPad Gaming 3	i5-9300H	8 Go DDR4	256 Go SSD NVMe	15,6 FHD	GTX 1650 4 Go	99000		3 mois
+2026-06-08	DZU3CoWNXMd	tel	Honor 200		12 Go	512 Go			59000		3 mois	comme-neuf		EU	2SIM
+2026-06-07	DZSVEQytRkJ	tel	iPhone 17 Pro Max (orange, bleu)			256 Go			352000		12 mois			EU		neuf
+2026-06-07	DZSFYvstT_r	tel	iPhone 13 Pro			128 Go			87500		3 mois	comme-neuf	73 %
+2026-06-07	DZR3i0jDQU9	pc	ASUS TUF Gaming F17 (RTX 3050)	i5-11400H	16 Go DDR4 3200	512 Go SSD NVMe	17,3	RTX 3050 4 Go	148000		3 mois
+2026-06-06	DZP-GVNNtPf	tel	iPhone 16			128 Go			148000		6 mois	comme-neuf		EU
+2026-06-06	DZPyDTitDBj	tel	Galaxy S22+			256 Go			68000		3 mois	comme-neuf		EU	2SIM
+2026-06-06	DZPvwdRjS2t	pc	Dell Pro 16 Plus	Core Ultra 5 235U	16 Go DDR5 5600	256 Go SSD NVMe	16 FHD+	Intel Graphics	148000		3 mois
+2026-06-06	DZPiRKmN7fr	tel	Huawei P30 Pro			128 Go			32000		3 mois	comme-neuf		EU	2SIM
+2026-06-04	DZKlCFajT-1	pc	Dell XPS 15 9500	i7-10750H	16 Go DDR4 2933	1 To SSD NVMe	15,6	GTX 1650 Ti 4 Go	128000		3 mois
+2026-06-04	DZLLFOXtDAV	tel	Galaxy A56			128 Go			69000		3 mois	comme-neuf		EU	2SIM
+2026-06-04	DZKlAR9jUtJ	pc	ASUS ROG G17 (RTX 2080)	i7-9750H	32 Go DDR4 2666	1 To SSD NVMe	17,3	RTX 2080 8 Go	149000		3 mois
+2026-06-04	DZKbuNDN5qZ	tel	Galaxy XCover 7			128 Go			33000		3 mois	comme-neuf		EU	2SIM
+2026-06-03	DZIlhyfN5N6	tel	Galaxy S23 Ultra			256 Go			125000		3 mois	comme-neuf		EU	2SIM
+2026-06-03	DZIUHentNI6	tel	Galaxy A55			128 ou 256 Go			50000		3 mois	comme-neuf		EU	2SIM
+2026-06-03	DZIAMzoNUJR	tel	Galaxy S24 Ultra			256 Go			163000		3 mois	comme-neuf		EU	2SIM
+2026-06-03	DZHzwxeDc-0	pc	Lenovo LOQ 15AHP10		16 Go DDR5 5600	512 Go SSD NVMe	15,6	RTX 5050 8 Go	238000		3 mois		100 %			neuf
+2026-06-03	DZHjLePjWgJ	pc	Lenovo Legion 5 82JU	Ryzen 5 5600H	16 Go DDR4 3200	512 Go + 1 To SSD NVMe	15,6	RTX 3070 8 Go	218000		3 mois	10/10
+2026-06-01	DZCpNJHtk3x	tel	Galaxy S23			128 Go			73000		3 mois	comme-neuf		EU	2SIM
+2026-05-31	DZAxFmatsnq	tel	Galaxy A15			128 Go			25000		3 mois	comme-neuf		EU	2SIM
+2026-05-31	DZAZQyWN55E	tel	iPhone 16 Pro			128 Go			188000		3 mois		92 à 100 %	EU
+2026-05-31	DZAU-4xDdBc	tel	Honor Magic 8 Pro			512 Go			234000		6 mois			EU		neuf
+2026-05-31	DZAPrGyjalR	tel	Galaxy S23 Ultra			256 Go			125000		3 mois	comme-neuf		EU	2SIM
+2026-05-30	DY9p4TLDX-s	pc	Apple MacBook Pro 13,3 M1 (2020) Gris sidéral	M1 8 cœurs	8 Go	256 Go SSD	13,3 Retina		135000		3 mois		90 % (215 cycles)
+2026-05-30	DY9bXeAjR2b	pc	Lenovo ThinkPad P15 Gen 1	i7-10850H	16 Go DDR4 2933	512 Go SSD NVMe	15,6 FHD	Quadro T1000 4 Go	128000		3 mois
+2026-05-25	DYw2RvnjQ3q	pc	HP ZBook X G1i 16	Core Ultra 9 285H	32 Go DDR5 5600	512 Go SSD NVMe	16	RTX PRO 1000 Blackwell 8 Go	298000		3 mois
+2026-05-24	DYuGmQWjRp8	tab	iPad Air 11 M2 (2024)	M2		128 Go	11 Liquid Retina		108000		3 mois		91 % (196 cycles)
+2026-05-23	DYrvhqbje6s	pc	Acer Aspire 17 A5	i5-1335U	16 Go DDR5 4800	512 Go SSD NVMe	17,3	Iris Xe	109000		3 mois				neuf
+2026-05-22	DYpLRhyjd6h	tab	iPad A16 (2025)	A16		128 Go	11 Liquid Retina		79000		3 mois		100 % (52 cycles)
+2026-05-21	DYmIWfJjdeU	tab	iPad 10e génération (2022)	A14		64 Go	10,9 Liquid Retina		78000		3 mois		100 % (44 cycles)
+2026-05-20	DYkEiMRDSh3	pc	Dell Precision 5680	i7-13700H	32 Go DDR5 6000	1 To SSD NVMe	16 WUXGA	RTX A2000 8 Go	199000		3 mois
+2026-05-19	DYhY0qdDfsW	pc	ASUS ROG Strix GL503V	i7-7700HQ	12 Go DDR4 2400	256 Go SSD	15,6	GTX 1060 6 Go	95000		3 mois
+2026-05-18	DYeXfgsjTOV	pc	Acer Nitro V15 (RTX 4050)	Ryzen 5 7535HS	16 Go DDR5	512 Go SSD NVMe	15,6	RTX 4050 6 Go	179000		3 mois
+2026-05-17	DYb0G9_DVAD	pc	ASUS ROG Strix G15 G513RW				15,6 QHD 165 Hz		229000		3 mois
+2026-05-16	DYZk0itjYbx	tab	iPad Pro 12,9 (2020, 4e gén.) 4G	A12Z		256 Go	12,9 Liquid Retina		98000		3 mois		91 %
+2026-05-16	DYZkVK-DR7G	pc	ASUS TUF Gaming F17 (i7-12700H)	i7-12700H	16 Go DDR4	512 Go SSD NVMe	17,3	RTX 4060 8 Go	208000		3 mois				quasi-neuf
+2026-05-16	DYZNd7MDXF6	pc	HP OMEN 15 (Ryzen 5 5600H)	Ryzen 5 5600H	16 Go DDR4	512 Go SSD NVMe	15,6	RTX 3060	169000		3 mois		100 %			quasi-neuf
+2026-05-13	DYSRQG3jUQY	pc	ASUS ROG Strix G16 G614JI			1 To	16 WUXGA		299000		3 mois
+2026-05-08	DYFWa1qjeCm	pc	Lenovo ThinkPad X1 Carbon (Ultra 7 155U)	Core Ultra 7 155U	16 Go LPDDR5X	512 Go SSD NVMe	14 WUXGA	Intel Graphics	188000		3 mois
+2026-05-07	DYCtIWIjYWE	pc	ASUS Vivobook 14 (Snapdragon X)	Snapdragon X	16 Go LPDDR5X	512 Go SSD NVMe	14 WUXGA	Adreno X1-45	119000		3 mois
+2026-05-05	DX9kl7sDTgE	pc	Microsoft Surface Pro 11e édition for Business	Core Ultra 5 236V	16 Go LPDDR5X	256 Go SSD NVMe	13 PixelSense Flow	Arc 130V	238000		3 mois
+2026-05-04	DX6-pq1DeKO	pc	Microsoft Surface Pro 11e édition for Business	Core Ultra 7 266V	16 Go LPDDR5X	512 Go SSD NVMe	13 PixelSense Flow	Arc 140V	270000		3 mois
+2026-05-03	DX3vGXjjU8W	pc	Acer Nitro V15 (RTX 4060)	Ryzen 7 7735HS	16 Go DDR5	512 Go SSD NVMe	15,6	RTX 4060 8 Go	209000		3 mois				quasi-neuf
