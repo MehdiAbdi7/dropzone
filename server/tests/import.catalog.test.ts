@@ -174,6 +174,16 @@ describe("importDropzone : le premier import", () => {
     expect(await labels("connectivity")).toEqual(expect.arrayContaining(["Wi-Fi", "Wi-Fi + Cellular"]));
   });
 
+  // Sinon, une base refaite (mise en ligne) perdrait les photos de Mehdi.
+  it("met la vraie photo d'un modèle photographié, et l'illustration aux autres", async () => {
+    const iphone17ProMax = row({ code: "C-IP17PM", modele: "iPhone 17 Pro Max", stockage: "256 Go", prix_da: "352000", garantie: "12 mois", origine: "EU", neuf: "neuf" });
+    await importDropzone(prisma, [...rows(), iphone17ProMax]);
+    const imageOf = async (code: string) =>
+      (await prisma.productImage.findFirstOrThrow({ where: { productId: (await variant(code)).productId } })).url;
+    expect(await imageOf("C-IP17PM")).toMatch(/\/dropzone\/products\/iphone-17-pro-max\.webp$/);
+    expect(await imageOf("C-S24")).toBe("/products/phone.svg");
+  });
+
   it("retire les montres, sans effacer la commande qui en citait une", async () => {
     const report = await importDropzone(prisma, rows());
     expect(report.removed).toMatchObject({ categories: 1, products: 1 });

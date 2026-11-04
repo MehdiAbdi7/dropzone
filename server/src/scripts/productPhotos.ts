@@ -1,6 +1,9 @@
 // Photos des téléphones : détourage, échelle réelle et envoi sur Cloudinary.
 //   npm run photos                    (images rangées dans dropzone/products)
 //   npm run photos -- dropzone/test   (pour essayer sans toucher aux vraies)
+//   npm run photos -- dropzone/products iphone-17-pro-max
+//                                     (seulement les produits de cette photo : le détourage
+//                                      des autres, déjà payé, n'est pas refait)
 //
 // Lit les photos de client/design-sources/photos (ignoré par Git), nommées comme le
 // champ `photo` de PHONES (iphone-18-pro-max.jpg…). Toutes au même angle : dos et face.
@@ -23,9 +26,13 @@ const CANVAS = { width: 1000, height: 1200, mm: 170 };
 
 // Un produit : son nom sur Cloudinary, la photo qu'il utilise et sa hauteur officielle.
 // Deux modèles au même dessin partagent la photo : le Pro reprend celle du Pro Max.
+// Hauteurs du 17 Pro et du 17 Pro Max : fiches techniques d'Apple (support.apple.com,
+// 125090 et 125091), lues le 04/11.
 const PHONES: { name: string; photo: string; heightMm: number }[] = [
   { name: "iphone-18-pro-max", photo: "iphone-18-pro-max", heightMm: 163.4 },
   { name: "iphone-18-pro", photo: "iphone-18-pro-max", heightMm: 150.0 },
+  { name: "iphone-17-pro-max", photo: "iphone-17-pro-max", heightMm: 163.4 },
+  { name: "iphone-17-pro", photo: "iphone-17-pro-max", heightMm: 150.0 },
 ];
 
 if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) {
@@ -34,6 +41,7 @@ if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API
 }
 
 const folder = process.argv[2] ?? "dropzone/products";
+const only = process.argv[3];
 const files = await readdir(PHOTOS_DIR);
 
 // 1. Le détourage, une fois par photo : le résultat recadré au plus près du téléphone
@@ -77,7 +85,7 @@ async function cutOut(photo: string): Promise<UploadApiResponse | null> {
 const cutouts = new Map<string, UploadApiResponse | null>();
 const urls: Record<string, string> = {};
 
-for (const phone of PHONES) {
+for (const phone of PHONES.filter((one) => !only || one.photo === only)) {
   if (!cutouts.has(phone.photo)) {
     cutouts.set(phone.photo, await cutOut(phone.photo));
   }

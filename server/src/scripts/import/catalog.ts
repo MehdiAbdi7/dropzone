@@ -57,6 +57,14 @@ const IMAGES: Record<Listing["kind"], string> = {
   laptop: "/products/laptop.svg",
 };
 
+// Les vraies photos (npm run photos : détourées, à l'échelle réelle), par modèle. Un
+// produit créé par l'import la reçoit, pour qu'une base refaite ne la perde pas.
+const CLOUDINARY = "https://res.cloudinary.com/nscawk7d/image/upload";
+const PHOTOS: Record<string, string> = {
+  "Apple|iPhone 17 Pro Max": `${CLOUDINARY}/v1793821024/dropzone/products/iphone-17-pro-max.webp`,
+  "Apple|iPhone 17 Pro": `${CLOUDINARY}/v1793821025/dropzone/products/iphone-17-pro.webp`,
+};
+
 // La liste du back-office de chaque option de variante.
 const OPTION_GROUPS: Record<string, ChoiceGroup> = {
   Stockage: "storage",
@@ -330,7 +338,7 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
         deviceModelId,
         specs,
         status: "published",
-        images: { create: [{ url: IMAGES[first.kind], position: 0 }] },
+        images: { create: [{ url: PHOTOS[`${maker}|${name}`] ?? IMAGES[first.kind], position: 0 }] },
       },
       select: { id: true },
     });
