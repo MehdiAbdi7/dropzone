@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import ProductImage from "@/components/ui/ProductImage";
 import { CONDITION_LABELS } from "@/config/catalog";
+import { warrantyRange } from "@/config/warranty";
 import { formatPrice } from "@/lib/format";
 import type { Variant } from "@/types/api";
 import { conditionSummary } from "./stock";
@@ -15,6 +16,7 @@ function ChoiceCard({
   title,
   price,
   detail,
+  warranty,
   disabled,
 }: {
   href: string;
@@ -24,6 +26,8 @@ function ChoiceCard({
   // Le prix de départ (null : rien en stock) et la ligne de quantité.
   price: { prefix: string; value: number } | null;
   detail: string;
+  // « Garantie 6 mois », ou rien si aucune variante en stock ne la dit.
+  warranty: string | null;
   disabled: boolean;
 }) {
   const body = (
@@ -41,6 +45,7 @@ function ChoiceCard({
           </p>
         ) : null}
         <p className="text-sm text-ink-muted">{detail}</p>
+        {warranty ? <p className="text-sm font-semibold">{warranty}</p> : null}
       </div>
     </>
   );
@@ -75,6 +80,7 @@ export default function ConditionChoice({ slug, image, variants }: { slug: strin
         title="Dans sa boîte scellée"
         price={summary.newFrom !== null ? { prefix: newPrices.size > 1 ? "À partir de " : "", value: summary.newFrom } : null}
         detail={summary.newFrom !== null ? `${summary.newStock} en stock` : "Aucun neuf scellé en stock"}
+        warranty={warrantyRange(variants.filter((v) => v.condition === "new"))}
         disabled={summary.newFrom === null}
       />
       <ChoiceCard
@@ -85,6 +91,7 @@ export default function ConditionChoice({ slug, image, variants }: { slug: strin
         title="Testé et décrit pièce par pièce"
         price={summary.refurbishedFrom !== null ? { prefix: "À partir de ", value: summary.refurbishedFrom } : null}
         detail={summary.refurbishedFrom !== null ? `${n} appareil${n > 1 ? "s" : ""}` : "Aucune affaire en stock"}
+        warranty={warrantyRange(variants.filter((v) => v.condition === "refurbished"))}
         disabled={summary.refurbishedFrom === null}
       />
     </section>

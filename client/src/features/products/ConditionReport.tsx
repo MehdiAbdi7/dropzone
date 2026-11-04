@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { formatOptions, formatPrice } from "@/lib/format";
+import { dealFacts } from "@/features/shop/dealLabels";
 import type { Variant } from "@/types/api";
 import BatteryGauge from "./BatteryGauge";
 import GiftList from "./GiftList";
@@ -22,18 +23,28 @@ export default function ConditionReport({ variant, action }: { variant: Variant;
     <article className="card neon-edge grid gap-4 p-5 pl-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-5">
-          <p className="flex flex-col items-center leading-none" aria-label={`Note d'état ${variant.grade} sur 10`}>
-            <span className="font-display text-4xl font-bold tabular-nums">
-              {variant.grade}
-              <span className="text-lg text-ink-muted">/10</span>
-            </span>
-            <span className="mt-1 text-xs text-ink-muted">état</span>
-          </p>
+          {/* Une annonce importée sans note : on le dit, on n'invente pas de chiffre. */}
+          {typeof variant.grade === "number" ? (
+            <p className="flex flex-col items-center leading-none" aria-label={`Note d'état ${variant.grade} sur 10`}>
+              <span className="font-display text-4xl font-bold tabular-nums">
+                {variant.grade}
+                <span className="text-lg text-ink-muted">/10</span>
+              </span>
+              <span className="mt-1 text-xs text-ink-muted">état</span>
+            </p>
+          ) : (
+            <p className="max-w-24 text-center text-xs font-semibold text-ink-muted">Note non précisée</p>
+          )}
           <div className="space-y-2">
             {Object.keys(variant.options).length > 0 ? (
               <p className="font-semibold">{formatOptions(variant.options)}</p>
             ) : null}
-            {variant.batteryHealth !== null ? <BatteryGauge value={variant.batteryHealth} /> : null}
+            {typeof variant.batteryHealth === "number" ? (
+              <BatteryGauge value={variant.batteryHealth} />
+            ) : (
+              <p className="text-sm text-ink-muted">Batterie : non mesurée</p>
+            )}
+            {dealFacts(variant).length > 0 ? <p className="text-sm text-ink-muted">{dealFacts(variant).join(" · ")}</p> : null}
           </div>
         </div>
         <p className="font-display text-2xl font-bold">{formatPrice(variant.price)}</p>

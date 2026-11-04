@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { CONDITION_LABELS, STATUS_LABELS } from "@/config/catalog";
+import { warrantyLabel } from "@/config/warranty";
 import { useAdminOrderQuery, useChangeStatusMutation } from "@/features/admin/adminApi";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatOptions, formatPrice } from "@/lib/format";
@@ -110,6 +111,9 @@ export default function AdminOrderPage() {
                 {Object.keys(item.options).length ? `, ${formatOptions(item.options)}` : ""}
               </p>
               {item.conditionReport ? <p className="mt-1">{item.conditionReport}</p> : null}
+              {warrantyLabel(item.warrantyMonths) ? (
+                <p className="mt-1 font-semibold">{warrantyLabel(item.warrantyMonths)}</p>
+              ) : null}
             </div>
             <p className="font-semibold">{item.isGift ? "Offert" : formatPrice(item.unitPrice * item.quantity)}</p>
           </div>

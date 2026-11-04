@@ -5,7 +5,7 @@ import { defectTip } from "@/features/products/ConditionReport";
 import GiftList from "@/features/products/GiftList";
 import { formatPrice } from "@/lib/format";
 import type { ProductKind, Variant } from "@/types/api";
-import { boxLabel, partOrigin } from "./dealLabels";
+import { boxLabel, dealFacts, partOrigin } from "./dealLabels";
 import DeviceDiagram from "./DeviceDiagram";
 import { zonesOf } from "./diagramZones";
 
@@ -20,6 +20,7 @@ export default function RefurbishedCard({ variant, kind }: { variant: Variant; k
   const diagramKind = kind === "tablet" || kind === "laptop" || kind === "watch" ? kind : "phone";
   const pristine = variant.replacedParts.length === 0 && variant.defects.length === 0;
   const box = boxLabel(variant.withBox);
+  const facts = dealFacts(variant);
 
   return (
     <article className="card neon-edge grid gap-4 p-5 pl-6">
@@ -44,14 +45,21 @@ export default function RefurbishedCard({ variant, kind }: { variant: Variant; k
             ))}
           </p>
           {box ? <p className="text-sm font-semibold">{box}</p> : null}
+          {/* La garantie, l'origine et la référence à donner au téléphone. */}
+          {facts.length > 0 ? <p className="text-sm text-ink-muted">{facts.join(" · ")}</p> : null}
         </div>
-        <p className="flex flex-col items-center leading-none" aria-label={`État ${variant.grade} sur 10`}>
-          <span className="font-display text-3xl font-bold tabular-nums">
-            {variant.grade}
-            <span className="text-base text-ink-muted">/10</span>
-          </span>
-          <span className="mt-1 text-xs text-ink-muted">état</span>
-        </p>
+        {/* Une annonce sans note (souvent un PC) : on le dit, on n'invente pas de chiffre. */}
+        {typeof variant.grade === "number" ? (
+          <p className="flex flex-col items-center leading-none" aria-label={`État ${variant.grade} sur 10`}>
+            <span className="font-display text-3xl font-bold tabular-nums">
+              {variant.grade}
+              <span className="text-base text-ink-muted">/10</span>
+            </span>
+            <span className="mt-1 text-xs text-ink-muted">état</span>
+          </p>
+        ) : (
+          <p className="max-w-24 text-center text-xs font-semibold text-ink-muted">Note non précisée</p>
+        )}
       </header>
 
       {/* Les détails du gérant (« Comme neuf, vendu avec sa boîte d'origine »). */}
@@ -102,7 +110,11 @@ export default function RefurbishedCard({ variant, kind }: { variant: Variant; k
               })}
             </ul>
           )}
-          {variant.batteryHealth !== null ? <BatteryGauge value={variant.batteryHealth} /> : null}
+          {typeof variant.batteryHealth === "number" ? (
+            <BatteryGauge value={variant.batteryHealth} />
+          ) : (
+            <p className="text-ink-muted">Batterie : non mesurée</p>
+          )}
         </div>
       </div>
 

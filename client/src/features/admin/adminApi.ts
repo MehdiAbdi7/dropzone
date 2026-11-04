@@ -208,6 +208,8 @@ export type AdminOrder = {
     options: Options;
     condition: Condition;
     conditionReport: string | null;
+    // La garantie au jour de la commande (null pour un accessoire ou une commande d'avant).
+    warrantyMonths?: number | null;
     unitPrice: number;
     quantity: number;
     isGift: boolean;

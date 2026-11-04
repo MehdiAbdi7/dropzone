@@ -6,6 +6,7 @@ import AddToCartButton from "@/features/cart/AddToCartButton";
 import GiftList from "@/features/products/GiftList";
 import { formatPrice } from "@/lib/format";
 import type { ProductKind, Variant } from "@/types/api";
+import { dealFacts } from "./dealLabels";
 import { initialSelection, optionChoices, optionKeys, selectOption } from "./stock";
 
 // Ce qui reste, écrit sur chaque puce. La première option compte tout le stock
@@ -66,6 +67,10 @@ export default function NewPicker({ variants, kind }: { variants: Variant[]; kin
           <p className="font-display text-3xl font-bold">
             {formatPrice(current.price)} <span className="text-base font-semibold text-ink-muted">TTC</span>
           </p>
+          {/* La garantie de l'appareil choisi, son origine et la référence du magasin. */}
+          {dealFacts(current).length > 0 ? (
+            <p className="text-sm font-semibold">{dealFacts(current).join(" · ")}</p>
+          ) : null}
           <GiftList gifts={current.gifts} />
           <AddToCartButton variant={current} />
         </div>

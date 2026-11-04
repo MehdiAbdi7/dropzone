@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { CONDITION_LABELS } from "@/config/catalog";
+import { warrantyLabel } from "@/config/warranty";
 import { useCartPreviewQuery } from "@/features/orders/ordersApi";
 import { formatOptions, formatPrice } from "@/lib/format";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -112,6 +113,9 @@ function CartRow({ line, gifts }: { line: CartLine; gifts: CartLine[] }) {
             {options ? `, ${options}` : ""}
           </p>
           {line.conditionReport ? <p className="text-sm">{line.conditionReport}</p> : null}
+          {warrantyLabel(line.warrantyMonths) ? (
+            <p className="text-sm font-semibold">{warrantyLabel(line.warrantyMonths)}</p>
+          ) : null}
         </div>
         <p className="font-display text-lg font-bold">{formatPrice(line.lineTotal)}</p>
       </div>

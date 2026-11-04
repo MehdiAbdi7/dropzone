@@ -1,4 +1,5 @@
 import { CONDITION_LABELS, STATUS_LABELS, STATUS_STEPS } from "@/config/catalog";
+import { warrantyLabel } from "@/config/warranty";
 import { formatDate, formatOptions, formatPrice } from "@/lib/format";
 import type { OrderDetail } from "@/types/api";
 
@@ -48,6 +49,9 @@ export default function OrderDetailView({ order }: { order: OrderDetail }) {
                 {Object.keys(item.options).length ? `, ${formatOptions(item.options)}` : ""}
               </p>
               {item.conditionReport ? <p className="mt-1">{item.conditionReport}</p> : null}
+              {warrantyLabel(item.warrantyMonths) ? (
+                <p className="mt-1 font-semibold">{warrantyLabel(item.warrantyMonths)}</p>
+              ) : null}
             </div>
             <p className="font-semibold">{item.isGift ? "Offert" : formatPrice(item.unitPrice * item.quantity)}</p>
           </div>
