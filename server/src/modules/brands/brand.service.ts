@@ -2,18 +2,11 @@ import { findLibraryLogo } from "../../config/brandLogos.js";
 import { uploadToCloudinary } from "../../config/cloudinary.js";
 import { prisma } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
-import { slugify } from "../../utils/slugify.js";
+import { requireSlug } from "../../utils/slugify.js";
 import type { BrandPatch } from "./brand.schema.js";
 
-// Le slug sert dans l'URL de la Boutique (?brand=samsung) : un nom sans lettre
-// latine (tout en arabe) donnerait un slug vide.
-function brandSlug(name: string): string {
-  const slug = slugify(name);
-  if (!slug) {
-    throw new AppError(400, "Le nom de la marque doit contenir des lettres latines ou des chiffres");
-  }
-  return slug;
-}
+// Le slug sert dans l'URL de la Boutique (/boutique/smartphones/samsung).
+const brandSlug = (name: string) => requireSlug(name, "Le nom de la marque doit contenir des lettres latines ou des chiffres");
 
 // Toutes les marques, même sans produit : le back-office en a besoin pour les gérer.
 export async function listAdminBrands() {

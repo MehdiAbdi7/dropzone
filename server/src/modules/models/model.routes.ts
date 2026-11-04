@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../../config/db.js";
 import { validate } from "../../middlewares/validate.js";
+import { AppError } from "../../utils/AppError.js";
 import { escapeLike } from "../../utils/escapeLike.js";
 import { modelSlug } from "./modelSlug.js";
 
@@ -22,7 +23,13 @@ const bodySchema = z.object({
   kind: deviceKind,
   releaseYear,
 });
-const patchSchema = z.object({ releaseYear });
+// Corriger l'année, ou choisir la couleur de la lueur de l'affiche (null = automatique).
+const patchSchema = z
+  .object({
+    releaseYear: releaseYear.optional(),
+    posterColor: z.string().trim().min(1).max(40).nullable().optional(),
+  })
+  .refine((body) => Object.keys(body).length > 0, { error: "Rien à modifier" });
 const idSchema = z.object({ id: z.coerce.number().int().positive() });
 
 async function getModels(_req: Request, res: Response) {
@@ -66,12 +73,19 @@ async function postModel(req: Request, res: Response) {
   res.status(201).json({ data: model });
 }
 
-// Corriger l'année : une année fausse rangerait mal le modèle. Id inconnu : P2025 → 404.
+// Une année fausse rangerait mal le modèle. La lueur est une couleur de la liste
+// « Couleurs », pour rester d'accord avec les pastilles. Id inconnu : P2025 → 404.
 async function patchModel(req: Request, res: Response) {
-  const { releaseYear } = req.body as z.infer<typeof patchSchema>;
+  const { releaseYear, posterColor } = req.body as z.infer<typeof patchSchema>;
+  if (posterColor) {
+    const known = await prisma.choice.findUnique({ where: { group_label: { group: "color", label: posterColor } } });
+    if (!known) {
+      throw new AppError(400, "Choisissez une couleur de la liste « Couleurs »");
+    }
+  }
   const model = await prisma.deviceModel.update({
     where: { id: Number(req.params.id) },
-    data: { releaseYear },
+    data: { releaseYear, posterColor },
   });
   res.json({ data: model });
 }
