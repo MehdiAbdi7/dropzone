@@ -18,6 +18,26 @@ describe("seriesNameOf : la série d'un modèle d'après son nom", () => {
     ["HP", "laptop", "EliteBook 840 G8", "EliteBook"],
     ["Lenovo", "laptop", "ThinkPad T14 Gen 3", "ThinkPad"],
     ["Microsoft", "laptop", "Surface Laptop 5", "Surface Laptop"],
+    // Le vrai catalogue de DropZone (partie B) : tablettes et nouveaux fabricants.
+    ["Apple", "tablet", "iPad Air 11 pouces (M2)", "iPad Air"],
+    ["Apple", "tablet", "iPad Pro 12,9 pouces (4e génération)", "iPad Pro"],
+    ["Apple", "tablet", "iPad mini (6e génération)", "iPad mini"],
+    ["Apple", "tablet", "iPad (10e génération)", "iPad"],
+    ["Samsung", "tablet", "Galaxy Tab S10 Ultra", "Galaxy Tab S10"],
+    ["Samsung", "phone", "Galaxy XCover 7", "Galaxy XCover"],
+    ["Honor", "phone", "Honor 200", "Honor 200"],
+    ["Honor", "phone", "Magic8 Pro", "Honor Magic8"],
+    ["Vivo", "phone", "X200 Ultra", "Vivo X200"],
+    ["Huawei", "phone", "P30 Pro", "Huawei P30"],
+    ["Dell", "laptop", "Pro 14 Plus", "Dell Pro"],
+    ["Dell", "laptop", "Pro Max 16", "Dell Pro Max"],
+    ["HP", "laptop", "250 G10", "HP 250"],
+    ["HP", "laptop", "Elite Dragonfly G3", "Elite Dragonfly"],
+    ["Acer", "laptop", "Nitro V 15", "Nitro"],
+    ["MSI", "laptop", "Modern 14", "Modern"],
+    ["Toshiba", "laptop", "Tecra A40", "Tecra"],
+    ["Honor", "laptop", "MagicBook 14", "MagicBook"],
+    ["Samsung", "laptop", "Galaxy Book3", "Galaxy Book"],
   ] as const)("%s %s « %s » → « %s »", (maker, kind, name, expected) => {
     expect(seriesNameOf(maker, kind, name)).toBe(expected);
   });

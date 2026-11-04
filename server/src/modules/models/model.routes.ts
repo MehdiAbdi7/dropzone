@@ -9,7 +9,7 @@ import { modelSlug } from "./modelSlug.js";
 
 // Les modèles d'appareils (« Apple iPhone 15 Pro Max ») proposés dans le formulaire produit.
 // Pas de service : aucune règle métier, seulement des lectures et des écritures simples.
-const deviceKind = z.enum(["phone", "laptop", "watch"]);
+const deviceKind = z.enum(["phone", "tablet", "laptop", "watch"]);
 
 const listQuerySchema = z.object({
   kind: deviceKind.optional(),

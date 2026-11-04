@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const productKindSchema = z.enum(["phone", "laptop", "watch", "accessory", "audiovisual"]);
+export const productKindSchema = z.enum(["phone", "tablet", "laptop", "watch", "accessory", "audiovisual"]);
 
 export const categoryBodySchema = z.object({
   name: z.string().trim().min(2).max(60),

@@ -19,6 +19,8 @@ export type SeedVariant = {
   // et les détails du gérant pour le client.
   withBox?: boolean;
   details?: string;
+  // La garantie en mois ; sans elle, celle de DropZone pour le type et l'état (seed.ts).
+  warrantyMonths?: number;
   // Les articles offerts, désignés par leur SKU (neuf scellé ou affaire).
   gifts?: { sku: string; quantity?: number }[];
 };
@@ -39,30 +41,24 @@ export type SeedProduct = {
   variants: SeedVariant[];
 };
 
+// Ce que DropZone vend (relevé Instagram du 04/11) : pas de montres ni d'audiovisuel.
+// Les accessoires restent, pour les articles offerts avec les appareils.
 export const CATEGORIES = [
   { name: "Smartphones", kind: "phone" },
+  { name: "Tablettes", kind: "tablet" },
   { name: "Ordinateurs portables", kind: "laptop" },
-  { name: "Montres connectées", kind: "watch" },
   { name: "Accessoires", kind: "accessory" },
-  { name: "Audiovisuel", kind: "audiovisual" },
 ] as const;
 
 // Les marques de chaque catégorie, dans l'ordre des puces de la Boutique. Seulement
 // celles qui ont des produits dans ce seed : une marque vide n'aurait aucune puce.
+// L'import des annonces (`npm run import:dropzone`) ajoute les autres.
 export const BRANDS: { category: string; name: string; makerName?: string }[] = [
   { category: "smartphones", name: "iPhone", makerName: "Apple" },
   { category: "smartphones", name: "Samsung", makerName: "Samsung" },
-  { category: "smartphones", name: "Google", makerName: "Google" },
-  { category: "smartphones", name: "Xiaomi", makerName: "Xiaomi" },
   { category: "ordinateurs-portables", name: "MacBook", makerName: "Apple" },
-  { category: "ordinateurs-portables", name: "Dell", makerName: "Dell" },
   { category: "ordinateurs-portables", name: "HP", makerName: "HP" },
-  { category: "ordinateurs-portables", name: "Lenovo", makerName: "Lenovo" },
-  { category: "montres-connectees", name: "Apple Watch", makerName: "Apple" },
-  { category: "montres-connectees", name: "Samsung", makerName: "Samsung" },
   { category: "accessoires", name: "Apple" },
-  { category: "audiovisuel", name: "JBL" },
-  { category: "audiovisuel", name: "GoPro" },
 ];
 
 const neuf = (sku: string, options: Record<string, string>, price: number, stock: number): SeedVariant => ({
@@ -267,43 +263,6 @@ export const PRODUCTS: SeedProduct[] = [
       neuf("A55-256-NOIR", { Stockage: "256 Go", Couleur: "Noir", RAM: "8 Go" }, 76000, 4),
     ],
   },
-  {
-    name: "Google Pixel 8 Pro",
-    category: "smartphones",
-    model: "Google|Pixel 8 Pro",
-    description: "Le meilleur de la photo selon Google, avec 7 ans de mises à jour Android.",
-    specs: { Écran: "6,7 pouces LTPO OLED, 120 Hz", Processeur: "Tensor G3", Batterie: "5 050 mAh" },
-    image: "/products/phone.svg",
-    variants: [
-      recond("PX8P-R-001", { Stockage: "128 Go", Couleur: "Noir", RAM: "12 Go" }, 95000, 9, 90),
-      recond("PX8P-R-002", { Stockage: "256 Go", Couleur: "Bleu", RAM: "12 Go" }, 89000, 7, 87, {
-        replacedParts: ["Écran", "Cache arrière"],
-        compatibleParts: ["Cache arrière"],
-        defects: ["Coins marqués"],
-      }),
-    ],
-  },
-  {
-    name: "Xiaomi Redmi Note 13 Pro",
-    category: "smartphones",
-    model: "Xiaomi|Redmi Note 13 Pro",
-    description: "Capteur de 200 Mpx et charge 67 W pour un petit budget.",
-    specs: { Écran: "6,67 pouces AMOLED, 120 Hz", Batterie: "5 100 mAh", Charge: "67 W" },
-    image: "/products/phone.svg",
-    variants: [
-      neuf("RN13P-256-NOIR", { Stockage: "256 Go", Couleur: "Noir", RAM: "8 Go" }, 52000, 7),
-      neuf("RN13P-512-VIOLET", { Stockage: "512 Go", Couleur: "Violet", RAM: "12 Go" }, 61000, 3),
-    ],
-  },
-  {
-    name: "Samsung Galaxy Z Flip6",
-    category: "smartphones",
-    model: "Samsung|Galaxy Z Flip6",
-    description: "Arrivage en préparation.",
-    status: "draft",
-    image: "/products/phone.svg",
-    variants: [neuf("ZFLIP6-256-BLEU", { Stockage: "256 Go", Couleur: "Bleu", RAM: "12 Go" }, 175000, 0)],
-  },
 
   // ---------- Ordinateurs portables ----------
   {
@@ -348,32 +307,6 @@ export const PRODUCTS: SeedProduct[] = [
     ],
   },
   {
-    name: "Dell Latitude 5430",
-    category: "ordinateurs-portables",
-    model: "Dell|Latitude 5430",
-    description: "Le PC professionnel robuste, idéal pour le bureau et les études.",
-    specs: { Écran: "14 pouces Full HD", Ports: "USB-C, HDMI, Ethernet" },
-    image: "/products/laptop.svg",
-    variants: [
-      recond(
-        "LAT5430-R-001",
-        { Processeur: "Intel Core i5 (12e gén.)", RAM: "16 Go", Stockage: "256 Go", Clavier: "QWERTZ (DE)" },
-        69000,
-        8,
-        83,
-        { defects: ["Usure du repose-poignets"] },
-      ),
-      recond(
-        "LAT5430-R-002",
-        { Processeur: "Intel Core i7 (12e gén.)", RAM: "16 Go", Stockage: "512 Go", Clavier: "AZERTY (FR)" },
-        84000,
-        9,
-        90,
-        { replacedParts: ["Clavier"] },
-      ),
-    ],
-  },
-  {
     name: "HP EliteBook 840 G8",
     category: "ordinateurs-portables",
     model: "HP|EliteBook 840 G8",
@@ -388,58 +321,6 @@ export const PRODUCTS: SeedProduct[] = [
         9,
         88,
       ),
-    ],
-  },
-  {
-    name: "Lenovo ThinkPad T14 Gen 3",
-    category: "ordinateurs-portables",
-    model: "Lenovo|ThinkPad T14 Gen 3",
-    description: "Le clavier ThinkPad réputé, une autonomie solide et une garantie constructeur.",
-    specs: { Écran: "14 pouces WUXGA", Poids: "1,37 kg" },
-    image: "/products/laptop.svg",
-    variants: [
-      neuf(
-        "T14G3-R5-16-512",
-        { Processeur: "AMD Ryzen 5", RAM: "16 Go", Stockage: "512 Go", Clavier: "AZERTY (FR)", Couleur: "Noir" },
-        119000,
-        3,
-      ),
-    ],
-  },
-
-  // ---------- Montres connectées ----------
-  {
-    name: "Apple Watch Series 9",
-    category: "montres-connectees",
-    model: "Apple|Apple Watch Series 9",
-    description: "Écran plus lumineux, double toucher et suivi complet de la santé.",
-    specs: { Puce: "S9 SiP", Autonomie: "jusqu'à 18 h", Étanchéité: "50 m" },
-    image: "/products/watch.svg",
-    variants: [
-      neuf("AW9-41-GPS-MINUIT", { Taille: "41 mm", Couleur: "Minuit", Connectivité: "GPS" }, 69000, 3),
-      neuf("AW9-45-GPS-ARGENT", { Taille: "45 mm", Couleur: "Argent", Connectivité: "GPS" }, 75000, 2),
-      recond("AW9-R-001", { Taille: "45 mm", Couleur: "Minuit", Connectivité: "GPS" }, 52000, 9, 93),
-    ],
-  },
-  {
-    name: "Apple Watch Ultra 2",
-    category: "montres-connectees",
-    model: "Apple|Apple Watch Ultra 2",
-    description: "Boîtier en titane de 49 mm, jusqu'à 36 heures d'autonomie, pensée pour le sport.",
-    specs: { Boîtier: "Titane 49 mm", Autonomie: "jusqu'à 36 h", Étanchéité: "100 m" },
-    image: "/products/watch.svg",
-    variants: [neuf("AWU2-49-CELL", { Taille: "49 mm", Couleur: "Titane naturel", Connectivité: "GPS + Cellular" }, 149000, 1)],
-  },
-  {
-    name: "Samsung Galaxy Watch6",
-    category: "montres-connectees",
-    model: "Samsung|Galaxy Watch6",
-    description: "La montre Wear OS de Samsung, avec suivi du sommeil et de la composition corporelle.",
-    specs: { Autonomie: "jusqu'à 40 h", Étanchéité: "5 ATM" },
-    image: "/products/watch.svg",
-    variants: [
-      neuf("GW6-40-NOIR", { Taille: "40 mm", Couleur: "Graphite", Connectivité: "Bluetooth" }, 39000, 4),
-      neuf("GW6-44-ARGENT", { Taille: "44 mm", Couleur: "Argent", Connectivité: "Bluetooth" }, 43000, 2),
     ],
   },
 
@@ -518,28 +399,5 @@ export const PRODUCTS: SeedProduct[] = [
     description: "Coque rigide avec béquille pour regarder des vidéos en paysage.",
     image: "/products/case.svg",
     variants: [neuf("COQ-S24U-BEQ", { Couleur: "Noir" }, 2600, 6)],
-  },
-
-  // ---------- Audiovisuel (neuf uniquement) ----------
-  {
-    name: "GoPro HERO12 Black",
-    category: "audiovisuel",
-    brand: "GoPro",
-    description: "Vidéo 5,3K, stabilisation HyperSmooth 6.0 et étanchéité jusqu'à 10 m.",
-    specs: { Vidéo: "5,3K à 60 i/s", Étanchéité: "10 m" },
-    image: "/products/camera.svg",
-    variants: [neuf("GOPRO-12", {}, 69000, 2)],
-  },
-  {
-    name: "Enceinte JBL Flip 6",
-    category: "audiovisuel",
-    brand: "JBL",
-    description: "Enceinte Bluetooth étanche IP67, 12 heures d'autonomie.",
-    specs: { Autonomie: "12 h", Étanchéité: "IP67" },
-    image: "/products/speaker.svg",
-    variants: [
-      neuf("JBL-FLIP6-NOIR", { Couleur: "Noir" }, 21000, 5),
-      neuf("JBL-FLIP6-ROUGE", { Couleur: "Rouge" }, 21000, 3),
-    ],
   },
 ];

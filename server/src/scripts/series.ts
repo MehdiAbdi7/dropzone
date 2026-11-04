@@ -17,6 +17,12 @@ const RULES: Record<string, Partial<Record<ProductKind, Rule[]>>> = {
       [/^iPhone X/, "iPhone X"],
       [/^iPhone SE/, "iPhone SE"],
     ],
+    tablet: [
+      [/^iPad Pro/, "iPad Pro"],
+      [/^iPad Air/, "iPad Air"],
+      [/^iPad mini/, "iPad mini"],
+      [/^iPad/, "iPad"],
+    ],
     laptop: [
       [/^MacBook Air/, "MacBook Air"],
       [/^MacBook Pro/, "MacBook Pro"],
@@ -28,8 +34,33 @@ const RULES: Record<string, Partial<Record<ProductKind, Rule[]>>> = {
       [/^Galaxy S(\d+)/, (m) => `Galaxy S${m[1]}`],
       [/^Galaxy Z (?:Flip|Fold)(\d+)/, (m) => `Galaxy Z${m[1]}`],
       [/^Galaxy A/, "Galaxy A"],
+      [/^Galaxy XCover/, "Galaxy XCover"],
     ],
+    tablet: [[/^Galaxy Tab S(\d+)/, (m) => `Galaxy Tab S${m[1]}`]],
+    laptop: [[/^Galaxy Book/, "Galaxy Book"]],
     watch: [[/^Galaxy Watch/, "Galaxy Watch"]],
+  },
+  // Le nom du fabricant devant la série, pour que le bouton de l'affiche se lise bien :
+  // « Acheter un Vivo X200 », pas « Acheter un X200 ».
+  Honor: {
+    phone: [
+      [/^Honor (\d+)/, (m) => `Honor ${m[1]}`],
+      [/^Magic(\d+)/, (m) => `Honor Magic${m[1]}`],
+    ],
+  },
+  Vivo: { phone: [[/^X(\d+)/, (m) => `Vivo X${m[1]}`]] },
+  Huawei: { phone: [[/^P(\d+)/, (m) => `Huawei P${m[1]}`]] },
+  Dell: {
+    laptop: [
+      [/^Pro Max\b/, "Dell Pro Max"],
+      [/^Pro\b/, "Dell Pro"],
+    ],
+  },
+  HP: {
+    laptop: [
+      [/^Elite Dragonfly/, "Elite Dragonfly"],
+      [/^(\d{3}) G\d+/, (m) => `HP ${m[1]}`],
+    ],
   },
   Google: { phone: [[/^Pixel (\d+)/, (m) => `Pixel ${m[1]}`]] },
   Xiaomi: {
@@ -54,7 +85,7 @@ const RULES: Record<string, Partial<Record<ProductKind, Rule[]>>> = {
 };
 
 // Les autres PC portables : le premier mot du nom est la gamme (Latitude, EliteBook, ThinkPad…).
-const LAPTOP_MAKERS = new Set(["Asus", "Dell", "HP", "Lenovo"]);
+const LAPTOP_MAKERS = new Set(["Asus", "Dell", "HP", "Lenovo", "Acer", "MSI", "Gigabyte", "Toshiba", "Honor"]);
 
 export function seriesNameOf(maker: string, kind: ProductKind, modelName: string): string | null {
   for (const [pattern, series] of RULES[maker]?.[kind] ?? []) {

@@ -18,6 +18,9 @@ export const choiceGroupSchema = z.enum([
   "replaced_part",
   "defect",
   "limitation",
+  "sim",
+  "gpu",
+  "origin",
 ]);
 
 const bodySchema = z.object({

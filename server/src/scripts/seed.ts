@@ -8,6 +8,7 @@ import { env } from "../config/env.js";
 import type { ChoiceGroup } from "../generated/prisma/client.js";
 import { modelSlug } from "../modules/models/modelSlug.js";
 import { computeMinPrice } from "../modules/products/product.service.js";
+import { defaultWarrantyMonths } from "../modules/products/warranty.js";
 import { slugify } from "../utils/slugify.js";
 import { CHOICES, DEVICE_MODELS } from "./device-models.js";
 import { fillSeries } from "./series.js";
@@ -106,6 +107,15 @@ await prisma.choice.createMany({
   ),
 });
 
+// La sorte d'une catégorie du seed, d'après son slug (« ordinateurs-portables » → laptop).
+const kindOf = (categorySlug: string) => {
+  const category = CATEGORIES.find((entry) => slugify(entry.name) === categorySlug);
+  if (!category) {
+    throw new Error(`Catégorie inconnue dans seed-data.ts : ${categorySlug}`);
+  }
+  return category.kind;
+};
+
 const modelId = (key: string) => {
   const id = models.get(key);
   if (!id) {
@@ -134,11 +144,13 @@ for (const [index, product] of PRODUCTS.entries()) {
       createdAt: new Date(Date.now() - minutesAgo * 60_000),
       images: { create: [{ url: product.image, position: 0 }] },
       variants: {
-        // Une affaire dit toujours si elle a sa boîte (CHECK) : sans boîte si le seed ne
-        // dit rien ; un neuf scellé ne le dit jamais.
+        // Une affaire du seed dit si elle a sa boîte : sans boîte si rien n'est dit ; un
+        // neuf scellé ne le dit jamais (CHECK). Chaque appareil a sa garantie.
         create: product.variants.map(({ gifts: _gifts, ...variant }) => ({
           ...variant,
           withBox: variant.condition === "refurbished" ? (variant.withBox ?? false) : null,
+          warrantyMonths:
+            variant.warrantyMonths ?? defaultWarrantyMonths(kindOf(product.category), variant.condition ?? "new"),
         })),
       },
     },

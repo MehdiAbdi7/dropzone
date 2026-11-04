@@ -1,6 +1,6 @@
 // La liste des modèles d'appareils proposée dans le formulaire produit.
 // Le back-office permet d'en ajouter d'autres (bouton « Ajouter un modèle »).
-type Kind = "phone" | "laptop" | "watch";
+type Kind = "phone" | "tablet" | "laptop" | "watch";
 
 // Chaque modèle avec son année de lancement mondial (la Boutique range les modèles
 // du plus récent au plus ancien). Pour Xiaomi, l'année de la version globale, celle
@@ -78,6 +78,20 @@ export const DEVICE_MODELS = [
   ]),
   ...list("Microsoft", "laptop", [["Surface Laptop 4", 2021], ["Surface Laptop 5", 2022], ["Surface Laptop 6", 2024]]),
   ...list("Asus", "laptop", [["ZenBook 14 OLED", 2022], ["ROG Strix G16", 2023], ["TUF Gaming F15", 2022]]),
+  // Les tablettes, sous les noms d'Apple et de Samsung (catégorie Tablettes, depuis le 04/11).
+  ...list("Apple", "tablet", [
+    ["iPad (9e génération)", 2021], ["iPad (10e génération)", 2022], ["iPad (A16)", 2025],
+    ["iPad mini (6e génération)", 2021], ["iPad mini (A17 Pro)", 2024],
+    ["iPad Air 11 pouces (M2)", 2024], ["iPad Air 13 pouces (M2)", 2024],
+    ["iPad Air 11 pouces (M3)", 2025], ["iPad Air 13 pouces (M3)", 2025],
+    ["iPad Pro 12,9 pouces (4e génération)", 2020], ["iPad Pro 11 pouces (M4)", 2024],
+    ["iPad Pro 13 pouces (M4)", 2024],
+  ]),
+  ...list("Samsung", "tablet", [
+    ["Galaxy Tab S9", 2023], ["Galaxy Tab S9 FE", 2023], ["Galaxy Tab S10+", 2024],
+    ["Galaxy Tab S10 Ultra", 2024], ["Galaxy Tab S10 FE", 2025], ["Galaxy Tab S11", 2025],
+    ["Galaxy Tab S11 Ultra", 2025],
+  ]),
   ...list("Apple", "watch", [
     ["Apple Watch SE (2e génération)", 2022], ["Apple Watch Series 7", 2021], ["Apple Watch Series 8", 2022],
     ["Apple Watch Series 9", 2023], ["Apple Watch Series 10", 2024], ["Apple Watch Ultra", 2022],
@@ -105,7 +119,13 @@ export const CHOICES = {
   ],
   keyboard: ["AZERTY (FR)", "AZERTY (BE)", "QWERTY (US)", "QWERTY (UK)", "QWERTZ (DE)"],
   size: ["40 mm", "41 mm", "42 mm", "44 mm", "45 mm", "46 mm", "49 mm"],
-  connectivity: ["GPS", "GPS + Cellular", "Bluetooth", "LTE"],
+  connectivity: ["GPS", "GPS + Cellular", "Bluetooth", "LTE", "Wi-Fi", "Wi-Fi + Cellular"],
+  // Une option de variante : sur un neuf scellé, le client choisit 1 ou 2 SIM.
+  sim: ["Double SIM", "Une SIM", "eSIM uniquement"],
+  // Remplie par l'import des annonces (`npm run import:dropzone`), telle qu'écrite par DropZone.
+  gpu: [],
+  // Une information, pas un choix : d'où vient l'appareil (drapeau des annonces).
+  origin: ["Europe", "Canada", "Japon", "États-Unis", "Algérie"],
   replaced_part: [
     "Écran", "Batterie", "Caméra arrière", "Caméra avant", "Cache arrière", "Haut-parleur",
     "Connecteur de charge", "Clavier", "Pavé tactile",
