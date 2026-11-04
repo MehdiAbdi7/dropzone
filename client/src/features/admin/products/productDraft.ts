@@ -111,6 +111,19 @@ export function missingBox(variant: VariantDraft): boolean {
   return variant.condition === "refurbished" && variant.withBox === null;
 }
 
+// La règle de l'API pour la garantie : 1 à 36 mois. Vérifiée avant l'envoi, pour que le
+// gérant voie tout de suite quelle variante corriger. Un champ vide passe ici : un
+// accessoire n'annonce pas forcément de garantie (l'API exige celle d'un appareil).
+export const WARRANTY_MAX = 36;
+
+export function invalidWarranty(variant: VariantDraft): boolean {
+  if (variant.warrantyMonths.trim() === "") {
+    return false;
+  }
+  const months = Number(variant.warrantyMonths);
+  return !Number.isInteger(months) || months < 1 || months > WARRANTY_MAX;
+}
+
 // Les pièces changées d'une affaire dont le gérant n'a pas dit si elles sont d'origine
 // ou compatibles : le formulaire refuse l'envoi tant qu'il en reste.
 export function missingPartOrigins(variant: VariantDraft): string[] {

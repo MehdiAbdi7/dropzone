@@ -6,6 +6,7 @@ import {
   emptyDraft,
   emptyVariant,
   fillMissingWarranties,
+  invalidWarranty,
   missingBox,
   missingPartOrigins,
   type VariantDraft,
@@ -197,6 +198,20 @@ describe("missingBox : la boîte d'une affaire importée, à corriger", () => {
   it("ne demande rien pour un neuf scellé, ni pour une affaire dont la boîte est choisie", () => {
     expect(missingBox(imported("new"))).toBe(false);
     expect(missingBox(deal({ withBox: false }))).toBe(false);
+  });
+});
+
+// Le champ acceptait 0 à 99 alors que l'API veut 1 à 36 : un « 48 » n'était refusé qu'à
+// l'envoi, par un message de l'API (décision de Mehdi du 04/11 : 1 à 36 partout).
+describe("invalidWarranty : la garantie de 1 à 36 mois, comme l'API", () => {
+  const withWarranty = (warrantyMonths: string) => ({ ...emptyVariant(), warrantyMonths });
+
+  it("refuse 0 et plus de 36 mois", () => {
+    expect(["0", "00", "37", "99"].map((months) => invalidWarranty(withWarranty(months)))).toEqual([true, true, true, true]);
+  });
+
+  it("accepte 1 à 36 mois, et un champ vide (un accessoire n'en annonce pas)", () => {
+    expect(["1", "6", "36", ""].map((months) => invalidWarranty(withWarranty(months)))).toEqual([false, false, false, false]);
   });
 });
 

@@ -21,11 +21,13 @@ import {
   bodyFromDraft,
   emptyVariant,
   fillMissingWarranties,
+  invalidWarranty,
   isDeviceKind,
   missingBox,
   missingPartOrigins,
   suggestSku,
   type ProductDraft,
+  WARRANTY_MAX,
 } from "./productDraft";
 import type { ProductKind } from "@/types/api";
 import VariantEditor from "./VariantEditor";
@@ -52,6 +54,8 @@ export default function ProductForm({
   const [missingOrigins, setMissingOrigins] = useState<string[]>([]);
   // Les SKU des affaires importées dont la boîte n'est pas encore choisie.
   const [missingBoxes, setMissingBoxes] = useState<string[]>([]);
+  // Les SKU des variantes dont la garantie sort de 1 à 36 mois.
+  const [badWarranties, setBadWarranties] = useState<string[]>([]);
   const { data: categories = [] } = useCategoriesQuery();
   const { data: allBrands = [] } = useBrandsQuery();
   const { data: giftOptionsAll = [] } = useGiftOptionsQuery();
@@ -110,9 +114,12 @@ export default function ProductForm({
     const missing = [...new Set(draft.variants.flatMap((variant) => missingPartOrigins(variant)))];
     // Ni une affaire importée dont la boîte n'est pas choisie (« Non précisée, à corriger »).
     const boxes = draft.variants.filter(missingBox).map((variant) => variant.sku);
+    // Ni une garantie hors de 1 à 36 mois, que l'API refuserait.
+    const warranties = draft.variants.filter(invalidWarranty).map((variant) => variant.sku);
     setMissingOrigins(missing);
     setMissingBoxes(boxes);
-    if (missing.length > 0 || boxes.length > 0) {
+    setBadWarranties(warranties);
+    if (missing.length > 0 || boxes.length > 0 || warranties.length > 0) {
       return;
     }
     const body = bodyFromDraft(draft);
@@ -336,7 +343,7 @@ export default function ProductForm({
           {isLoading ? "Enregistrement…" : productId ? "Enregistrer les modifications" : "Créer le produit"}
         </button>
         <div aria-live="polite" className="text-sm">
-          {missingOrigins.length > 0 || missingBoxes.length > 0 ? (
+          {missingOrigins.length > 0 || missingBoxes.length > 0 || badWarranties.length > 0 ? (
             <>
               {missingOrigins.length > 0 ? (
                 <p className="font-semibold text-red">
@@ -345,6 +352,11 @@ export default function ProductForm({
               ) : null}
               {missingBoxes.length > 0 ? (
                 <p className="font-semibold text-red">Choisissez la boîte de : {missingBoxes.join(", ")}.</p>
+              ) : null}
+              {badWarranties.length > 0 ? (
+                <p className="font-semibold text-red">
+                  La garantie va de 1 à {WARRANTY_MAX} mois : {badWarranties.join(", ")}.
+                </p>
               ) : null}
             </>
           ) : error ? (

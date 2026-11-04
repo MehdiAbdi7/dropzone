@@ -133,7 +133,8 @@ export default function VariantEditor({
       {/* La garantie (proposée selon le type et l'état), et la référence du magasin, que
           le client donne au téléphone (« 51057 »). */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field id={id("warranty")} label="Garantie (mois)">
+        {/* La règle dans le libellé : le gérant la lit avant de taper (vérifiée à l'envoi). */}
+        <Field id={id("warranty")} label="Garantie (1 à 36 mois)">
           <input
             id={id("warranty")}
             className="input"
