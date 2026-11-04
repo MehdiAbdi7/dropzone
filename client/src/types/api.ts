@@ -90,9 +90,49 @@ export type ProductDetail = {
   // La marque de la Boutique, pour le fil d'Ariane ; null = rangé dans « Autres ».
   brand: { name: string; slug: string } | null;
   deviceModel: ModelRef | null;
+  // La série du modèle, pour le fil d'Ariane ; null = pas de série (accessoire, modèle non rangé).
+  series: { name: string; slug: string } | null;
   compatibleModels: ModelRef[];
   images: { id: number; url: string }[];
   variants: Variant[];
+};
+
+// ---------- Les affiches de séries ----------
+
+// Une affiche de la page « choisis ta série ».
+export type SeriesSummary = {
+  name: string;
+  slug: string;
+  coverUrl: string | null;
+  // Les modèles qui ont un produit publié, dans l'ordre de l'affiche.
+  models: string[];
+  // Le plus bas en stock, neuf scellé ou affaire ; null = série épuisée.
+  fromPrice: number | null;
+  soldOut: boolean;
+  // De quoi faire l'affiche de secours sans couverture : photo et couleur du premier modèle.
+  fallback: { image: string | null; color: string | null };
+};
+
+// Une colonne de l'affiche d'une série.
+export type PosterModel = {
+  name: string;
+  productSlug: string;
+  image: string | null;
+  specs: [string, string][];
+  colors: { name: string; inStock: boolean }[];
+  newFrom: number | null;
+  dealFrom: number | null;
+  soldOut: boolean;
+  // Le nom de la couleur de la lueur, déjà choisie par l'API (null = lueur neutre).
+  posterColor: string | null;
+};
+
+export type SeriesPoster = {
+  name: string;
+  slug: string;
+  category: { name: string; slug: string };
+  brand: { name: string; slug: string };
+  models: PosterModel[];
 };
 
 export type CartItem = { sku: string; quantity: number };
