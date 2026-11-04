@@ -9,7 +9,7 @@ import { modelSlug } from "../../modules/models/modelSlug.js";
 import { refreshMinPrice } from "../../modules/products/product.service.js";
 import { defaultWarrantyMonths } from "../../modules/products/warranty.js";
 import { slugify } from "../../utils/slugify.js";
-import { CHOICES } from "../device-models.js";
+import { CHOICES, COLOR_HEX } from "../device-models.js";
 import { fillSeries } from "../series.js";
 import { dedupe, importSku, type Listing, parseListing, type RawRow } from "./listing.js";
 import { IGNORED, MODEL_MAP } from "./models-map.js";
@@ -278,10 +278,12 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
       if (!group) {
         throw new Error(`Option sans liste : « ${key} » (${listing.code})`);
       }
-      return { group, label };
+      // Une couleur reçoit sa teinte de départ (pastille et lueur de l'affiche), si on la connaît.
+      return { group, label, hex: group === "color" ? (COLOR_HEX[label] ?? null) : null };
     }),
     ...(listing.origin ? [{ group: "origin" as const, label: listing.origin }] : []),
   ])];
+  // skipDuplicates : une couleur déjà dans la liste garde la teinte réglée par le gérant.
   report.created.choices = (await db.choice.createMany({ data: choices, skipDuplicates: true })).count;
 
   const modelIds = new Map<string, number>();

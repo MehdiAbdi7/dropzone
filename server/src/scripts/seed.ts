@@ -10,7 +10,7 @@ import { modelSlug } from "../modules/models/modelSlug.js";
 import { computeMinPrice } from "../modules/products/product.service.js";
 import { defaultWarrantyMonths } from "../modules/products/warranty.js";
 import { slugify } from "../utils/slugify.js";
-import { CHOICES, DEVICE_MODELS } from "./device-models.js";
+import { CHOICES, COLOR_HEX, DEVICE_MODELS } from "./device-models.js";
 import { fillSeries } from "./series.js";
 import { BRANDS, CATEGORIES, PRODUCTS } from "./seed-data.js";
 
@@ -101,9 +101,10 @@ const models = new Map(
   ]),
 );
 
+// Chaque couleur avec sa teinte de départ (pastille et lueur), les autres listes sans.
 await prisma.choice.createMany({
   data: Object.entries(CHOICES).flatMap(([group, labels]) =>
-    labels.map((label) => ({ group: group as ChoiceGroup, label })),
+    labels.map((label) => ({ group: group as ChoiceGroup, label, hex: group === "color" ? (COLOR_HEX[label] ?? null) : null })),
   ),
 });
 

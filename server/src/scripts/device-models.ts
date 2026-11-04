@@ -103,6 +103,34 @@ export const DEVICE_MODELS = [
   ]),
 ];
 
+// La teinte de départ des couleurs (pastille et lueur de l'affiche), posée par le seed et
+// par l'import ; ensuite, c'est le gérant qui la règle dans Listes. Orange : mesurée sur la
+// photo de l'iPhone 17 Pro Max. Une couleur absente d'ici attend sa teinte dans Listes.
+export const COLOR_HEX: Record<string, string> = {
+  Noir: "#1d1d1f",
+  Blanc: "#f5f5f0",
+  Bleu: "#3a5f9e",
+  Rouge: "#c8102e",
+  Vert: "#4b7a5a",
+  Rose: "#f2c4ce",
+  Violet: "#6e5a8c",
+  Jaune: "#f3d65c",
+  Argent: "#d9d9de",
+  "Gris sidéral": "#535150",
+  Minuit: "#232a35",
+  "Lumière stellaire": "#ece5d8",
+  "Titane naturel": "#bfb6a8",
+  "Titane noir": "#3c3c3d",
+  "Titane bleu": "#3c4a63",
+  "Titane blanc": "#efeee9",
+  "Titane gris": "#8a8a87",
+  Graphite: "#41424c",
+  Bordeaux: "#6b1f2e",
+  Glacier: "#cfe3ee",
+  Orange: "#f47d3c",
+  "Or rose": "#e6c7c2",
+};
+
 // Les valeurs des listes à cocher, par liste (`ChoiceGroup`).
 export const CHOICES = {
   storage: ["64 Go", "128 Go", "256 Go", "512 Go", "1 To", "2 To"],

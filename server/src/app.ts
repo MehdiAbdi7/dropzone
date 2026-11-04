@@ -9,7 +9,7 @@ import { requireAuth, requireRole } from "./middlewares/auth.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { brandAdminRouter } from "./modules/brands/brand.routes.js";
 import { categoryAdminRouter, categoryRouter } from "./modules/categories/category.routes.js";
-import { choiceAdminRouter } from "./modules/choices/choice.routes.js";
+import { choiceAdminRouter, colorRouter } from "./modules/choices/choice.routes.js";
 import { modelAdminRouter } from "./modules/models/model.routes.js";
 import { orderAdminRouter, orderRouter } from "./modules/orders/order.routes.js";
 import { productAdminRouter } from "./modules/products/productAdmin.routes.js";
@@ -34,6 +34,7 @@ app.get("/health", (req, res) => {
 app.use("/categories", categoryRouter);
 app.use("/products", productRouter);
 app.use("/series", seriesRouter);
+app.use("/colors", colorRouter);
 app.use("/orders", orderRouter);
 app.use("/auth", authRouter);
 

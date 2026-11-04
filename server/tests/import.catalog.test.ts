@@ -184,6 +184,14 @@ describe("importDropzone : le premier import", () => {
     expect(await imageOf("C-S24")).toBe("/products/phone.svg");
   });
 
+  // L'annonce du 07/06 : « iPhone 17 Pro Max (orange, bleu) ». Sans teinte, sa lueur
+  // retombait sur le violet neutre.
+  it("donne sa teinte à une couleur qu'il ajoute à la liste", async () => {
+    const orange = row({ code: "C-IP17PM", modele: "iPhone 17 Pro Max (orange, bleu)", stockage: "256 Go", prix_da: "352000", neuf: "neuf" });
+    await importDropzone(prisma, [...rows(), orange]);
+    expect(await prisma.choice.findUnique({ where: { group_label: { group: "color", label: "Orange" } } })).toMatchObject({ hex: "#f47d3c" });
+  });
+
   it("retire les montres, sans effacer la commande qui en citait une", async () => {
     const report = await importDropzone(prisma, rows());
     expect(report.removed).toMatchObject({ categories: 1, products: 1 });

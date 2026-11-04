@@ -149,6 +149,9 @@ model Choice {
   id    Int         @id @default(autoincrement())
   group ChoiceGroup
   label String
+  // La teinte d'une couleur (« #f47d3c »), réglée par le gérant dans Listes : la pastille
+  // et la lueur de l'affiche la lisent. Seulement pour la liste des couleurs (CHECK).
+  hex   String?
 
   @@unique([group, label])
   @@map("choices")
