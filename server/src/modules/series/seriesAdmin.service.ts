@@ -3,7 +3,7 @@ import { prisma } from "../../config/db.js";
 import type { Condition } from "../../generated/prisma/client.js";
 import { AppError } from "../../utils/AppError.js";
 import { requireSlug } from "../../utils/slugify.js";
-import { colorsOf, resolvePosterColor } from "./series.service.js";
+import { colorsOf, compareSeries, resolvePosterColor } from "./series.service.js";
 
 // ---------- Les compteurs du Catalogue ----------
 // Le back-office compte tous les produits, brouillons compris : le gérant gère aussi ce
@@ -131,7 +131,7 @@ export async function catalogBrand(id: number) {
       const first = models.find((model) => model.products.length > 0);
       const firstProduct = first?.products[0];
       return {
-        year: Math.max(...models.map((model) => model.releaseYear ?? -Infinity)),
+        years: models.map((model) => model.releaseYear),
         tile: {
           ...one,
           modelCount: models.length,
@@ -143,7 +143,7 @@ export async function catalogBrand(id: number) {
         },
       };
     })
-    .sort((a, b) => b.year - a.year || a.tile.name.localeCompare(b.tile.name, "fr"))
+    .sort((a, b) => compareSeries({ name: a.tile.name, years: a.years }, { name: b.tile.name, years: b.years }))
     .map(({ tile }) => tile);
 
   return {

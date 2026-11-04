@@ -56,6 +56,20 @@ export function posterSpecs(specs: Record<string, string>, count = 4): [string, 
     .slice(0, count);
 }
 
+// L'ordre des séries d'une marque : la plus récente d'abord. On compare l'année la plus
+// haute de leurs modèles, puis la plus basse : l'iPhone 16e (2025) ne fait pas passer la
+// série 16 (2024 et 2025) devant la 17 (2025 seulement). Puis le nom.
+export function compareSeries(
+  a: { name: string; years: (number | null)[] },
+  b: { name: string; years: (number | null)[] },
+): number {
+  const known = (years: (number | null)[]) => years.filter((year): year is number => year !== null);
+  const [yearsA, yearsB] = [known(a.years), known(b.years)];
+  const newest = (years: number[]) => (years.length ? Math.max(...years) : -Infinity);
+  const oldest = (years: number[]) => (years.length ? Math.min(...years) : -Infinity);
+  return newest(yearsB) - newest(yearsA) || oldest(yearsB) - oldest(yearsA) || a.name.localeCompare(b.name, "fr");
+}
+
 // Ce qu'il faut lire d'une série : ses modèles dans l'ordre de l'affiche, et pour chacun
 // son produit publié (le plus ancien s'il y en a plusieurs), sa photo et ses variantes.
 const SERIES_SELECT = {
@@ -130,7 +144,7 @@ export async function listSeries(category: string, brand: string) {
     const withImage = models.find((model) => model.image);
     return [
       {
-        year: Math.max(...models.map((model) => model.releaseYear ?? -Infinity)),
+        years: models.map((model) => model.releaseYear),
         summary: {
           name: row.name,
           slug: row.slug,
@@ -144,7 +158,7 @@ export async function listSeries(category: string, brand: string) {
     ];
   });
   return series
-    .sort((a, b) => b.year - a.year || a.summary.name.localeCompare(b.summary.name, "fr"))
+    .sort((a, b) => compareSeries({ name: a.summary.name, years: a.years }, { name: b.summary.name, years: b.years }))
     .map(({ summary }) => summary);
 }
 

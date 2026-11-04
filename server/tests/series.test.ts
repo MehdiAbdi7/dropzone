@@ -100,6 +100,34 @@ describe("GET /series : les séries d'une marque", () => {
     expect(response.body.data.map((s: { slug: string }) => s.slug)).toEqual(["iphone-16", "iphone-15"]);
   });
 
+  it("à année égale, met d'abord la série la plus récente dans son ensemble (16e de 2025 ne fait pas passer la 16 devant la 17)", async () => {
+    const add = async (name: string, releaseYear: number) => {
+      const slug = name.toLowerCase().replace(/ /g, "-");
+      const model = await prisma.deviceModel.create({
+        data: { brand: "Apple", name, slug: `apple-${slug}`, kind: "phone", releaseYear },
+      });
+      await prisma.product.create({
+        data: {
+          name,
+          slug,
+          description: name,
+          categoryId: catalog.phones.id,
+          deviceModelId: model.id,
+          brandId: catalog.iphoneBrand.id,
+          status: "published",
+          variants: { create: [{ sku: slug.toUpperCase(), price: 100000, stock: 1 }] },
+        },
+      });
+    };
+    await add("iPhone 16", 2024);
+    await add("iPhone 16e", 2025);
+    await add("iPhone 17", 2025);
+    await fillSeries(prisma);
+
+    const response = await request(app).get("/series?category=smartphones&brand=iphone");
+    expect(response.body.data.map((s: { slug: string }) => s.slug)).toEqual(["iphone-17", "iphone-16", "iphone-15"]);
+  });
+
   it("n'affiche pas une série dont le seul produit est un brouillon", async () => {
     await fillSeries(prisma);
     // Le Galaxy Z Flip6 du catalogue de test est en brouillon, sur le modèle Galaxy S24 Ultra.
