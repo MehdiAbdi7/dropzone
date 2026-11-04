@@ -102,15 +102,17 @@ export function seriesNameOf(maker: string, kind: ProductKind, modelName: string
 
 // Range chaque modèle sans série dans la série de son nom, sous la marque de son fabricant
 // (une catégorie du même type). Crée la série si elle manque. Ne touche jamais un modèle
-// déjà rangé : relancer le script ne change rien au travail du gérant.
-export async function fillSeries(db: Tx): Promise<{ created: number; assigned: number }> {
+// déjà rangé : relancer le script ne change rien au travail du gérant. `onlyModelIds`
+// limite le rangement à ces modèles (l'import des annonces : seulement les siens, pas
+// ceux que le gérant a laissés sans série).
+export async function fillSeries(db: Tx, onlyModelIds?: number[]): Promise<{ created: number; assigned: number }> {
   const brands = await db.brand.findMany({
     where: { makerName: { not: null } },
     orderBy: [{ categoryId: "asc" }, { position: "asc" }],
     select: { id: true, makerName: true, category: { select: { kind: true } } },
   });
   const models = await db.deviceModel.findMany({
-    where: { seriesId: null },
+    where: { seriesId: null, ...(onlyModelIds ? { id: { in: onlyModelIds } } : {}) },
     orderBy: { id: "asc" },
     select: { id: true, brand: true, kind: true, name: true },
   });

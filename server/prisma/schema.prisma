@@ -246,6 +246,19 @@ model ProductImage {
   @@map("product_images")
 }
 
+// La mémoire de l'import des annonces (`npm run import:dropzone`) : pour chaque SKU
+// importé, les valeurs de la dernière annonce écrite. Sans lien vers la variante, exprès :
+// une ligne survit à la suppression de la variante, et l'import sait alors que le gérant
+// l'a retirée (il ne la recrée pas). Au rejeu, seuls les champs dont l'annonce a changé
+// depuis cette mémoire sont réécrits : les corrections du gérant restent.
+model ImportRecord {
+  sku       String   @id
+  snapshot  Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("import_records")
+}
+
 // ---------- Les comptes ----------
 
 model User {

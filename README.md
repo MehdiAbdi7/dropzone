@@ -45,7 +45,9 @@ Tests: `cd server && npx vitest run` (the test database receives the migrations 
 
 ### The real catalog
 
-`npm run import:dropzone` reads `server/data/dropzone-annonces.tsv`, the 212 Instagram listings of the shop (May to November 2026), and shows what it would do without writing anything. With `-- --apply` it writes, in one transaction: one product per device model, one unit per listing at its listed price, the official specs of each phone and tablet (`src/scripts/import/official-specs.ts`, with the manufacturer page read for each), and the shop's warranty. It can be run again: nothing is created twice, and a sold unit or a box fixed in the back-office is never overwritten. The mapping from listing names to device models is `src/scripts/import/models-map.ts`.
+`npm run import:dropzone` reads `server/data/dropzone-annonces.tsv`, the 212 Instagram listings of the shop (May to November 2026), and shows what it would do without writing anything. With `-- --apply` it writes, in one transaction: one product per device model, one unit per listing at its listed price, the official specs of each phone and tablet (`src/scripts/import/official-specs.ts`, with the manufacturer page read for each), and the shop's warranty. The mapping from listing names to device models is `src/scripts/import/models-map.ts`.
+
+It can be run again, and the back-office keeps the last word. The importer remembers what each listing said (`import_records` table): on a replay it only rewrites the fields a listing changed since the previous import, so a grade, battery, price, options or reference corrected in the back-office stay, and stock and box are never taken from the listings. A unit or product deleted in the back-office is not recreated, a model left out of a series is not filed again, and the sample products and categories the shop doesn't sell (watches, audiovisual) are removed on the first import only.
 
 ## Run with Docker
 

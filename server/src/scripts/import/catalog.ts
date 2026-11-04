@@ -140,50 +140,89 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
   for (const listing of parsed.filter((listing) => !unique.includes(listing))) {
     report.skipped.push({ code: listing.code, reason: "annonce republiée" });
   }
-  // Une référence déjà portée par un autre appareil : l'annonce n'est pas importée.
+  // Une référence désigne un seul appareil : déjà portée par un autre SKU en base, ou
+  // réclamée par une annonce plus récente du même relevé, l'annonce n'est pas importée.
   const listings: Listing[] = [];
-  for (const listing of unique) {
-    const taken = listing.reference
-      ? await db.productVariant.findFirst({
+  const claimed = new Set<string>();
+  for (const listing of [...unique].sort((a, b) => b.date.localeCompare(a.date))) {
+    if (listing.reference) {
+      const taken =
+        claimed.has(listing.reference) ||
+        (await db.productVariant.findFirst({
           where: { reference: listing.reference, sku: { not: importSku(listing.code) } },
           select: { id: true },
-        })
-      : null;
-    if (taken) {
-      report.skipped.push({ code: listing.code, reason: "référence déjà utilisée" });
-    } else {
-      listings.push(listing);
+        })) !== null;
+      if (taken) {
+        report.skipped.push({ code: listing.code, reason: "référence déjà utilisée" });
+        continue;
+      }
+      claimed.add(listing.reference);
     }
+    listings.push(listing);
   }
 
-  // ---------- 2. Retirer ce que DropZone ne vend pas ----------
+  // ---------- 2. Ce que l'import sait déjà : sa mémoire, et les variantes en base ----------
+  const skus = listings.map((listing) => importSku(listing.code));
+  const records = new Map(
+    (await db.importRecord.findMany({ where: { sku: { in: skus } } })).map((record) => [
+      record.sku,
+      record.snapshot as Record<string, unknown>,
+    ]),
+  );
+  const variants = new Map(
+    (await db.productVariant.findMany({ where: { sku: { in: skus } }, select: { sku: true, productId: true } })).map(
+      (variant) => [variant.sku, variant],
+    ),
+  );
+  // Le premier import : rien n'a encore été importé, ni noté dans la mémoire.
+  const firstImport =
+    (await db.importRecord.count()) === 0 &&
+    (await db.productVariant.count({ where: { sku: { startsWith: "IG-" } } })) === 0;
+  // Un exemplaire déjà importé puis supprimé dans le back-office n'est jamais recréé.
+  const live = listings.filter((listing) => {
+    const sku = importSku(listing.code);
+    if (records.has(sku) && !variants.has(sku)) {
+      report.skipped.push({ code: listing.code, reason: "supprimé dans le back-office" });
+      return false;
+    }
+    return true;
+  });
+  // Les nouvelles annonces, et celles dont l'exemplaire existe déjà.
+  const fresh = live.filter((listing) => !variants.has(importSku(listing.code)));
+  const known = live.filter((listing) => variants.has(importSku(listing.code)));
+
+  // ---------- 3. Retirer ce que DropZone ne vend pas, au premier import seulement ----------
+  // Ensuite, c'est le gérant qui décide : une catégorie ou un produit qu'il recrée reste.
   // Les produits d'abord (une marque utilisée ne se supprime pas) ; les lignes de commande
   // gardent leur copie du nom et du prix (product_id passe à NULL).
-  const removedProducts = await db.product.deleteMany({
-    where: { OR: [{ category: { slug: { in: REMOVED_CATEGORIES } } }, { slug: { in: REMOVED_PRODUCTS } }] },
-  });
-  report.removed.products = removedProducts.count;
-  const emptyBrands = await db.brand.findMany({
-    where: {
-      products: { none: {} },
-      OR: [
-        { category: { slug: { in: REMOVED_CATEGORIES } } },
-        ...REMOVED_BRANDS.map((brand) => ({ slug: brand.slug, category: { slug: brand.category } })),
-      ],
-    },
-    select: { id: true },
-  });
-  const emptyBrandIds = emptyBrands.map((brand) => brand.id);
-  // Les séries avant leurs marques (RESTRICT) ; leurs modèles repassent sans série.
-  await db.series.deleteMany({ where: { brandId: { in: emptyBrandIds } } });
-  report.removed.brands = (await db.brand.deleteMany({ where: { id: { in: emptyBrandIds } } })).count;
-  report.removed.categories = (
-    await db.category.deleteMany({ where: { slug: { in: REMOVED_CATEGORIES }, products: { none: {} } } })
-  ).count;
+  if (firstImport) {
+    const removedProducts = await db.product.deleteMany({
+      where: { OR: [{ category: { slug: { in: REMOVED_CATEGORIES } } }, { slug: { in: REMOVED_PRODUCTS } }] },
+    });
+    report.removed.products = removedProducts.count;
+    const emptyBrands = await db.brand.findMany({
+      where: {
+        products: { none: {} },
+        OR: [
+          { category: { slug: { in: REMOVED_CATEGORIES } } },
+          ...REMOVED_BRANDS.map((brand) => ({ slug: brand.slug, category: { slug: brand.category } })),
+        ],
+      },
+      select: { id: true },
+    });
+    const emptyBrandIds = emptyBrands.map((brand) => brand.id);
+    // Les séries avant leurs marques (RESTRICT) ; leurs modèles repassent sans série.
+    await db.series.deleteMany({ where: { brandId: { in: emptyBrandIds } } });
+    report.removed.brands = (await db.brand.deleteMany({ where: { id: { in: emptyBrandIds } } })).count;
+    report.removed.categories = (
+      await db.category.deleteMany({ where: { slug: { in: REMOVED_CATEGORIES }, products: { none: {} } } })
+    ).count;
+  }
 
-  // ---------- 3. Ajouter ce qui manque : catégories, marques, valeurs, modèles, séries ----------
+  // ---------- 4. Ajouter ce qui manque aux nouvelles annonces : catégories, marques,
+  // valeurs, modèles, séries ----------
   const categoryIds = new Map<Listing["kind"], number>();
-  for (const kind of [...new Set(listings.map((listing) => listing.kind))]) {
+  for (const kind of [...new Set(fresh.map((listing) => listing.kind))]) {
     const { name, slug } = CATEGORIES[kind];
     const category =
       (await db.category.findUnique({ where: { slug } })) ??
@@ -192,7 +231,7 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
   }
 
   const brandIds = new Map<string, number>();
-  for (const listing of listings) {
+  for (const listing of fresh) {
     const { maker } = MODEL_MAP[listing.modelKey];
     const categorySlug = CATEGORIES[listing.kind].slug;
     const key = `${categorySlug}|${maker}`;
@@ -224,7 +263,7 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
   const starters = (["sim", "origin", "connectivity"] as const).flatMap((group) =>
     CHOICES[group].map((label) => ({ group, label })),
   );
-  const choices = [...starters, ...listings.flatMap((listing) => [
+  const choices = [...starters, ...fresh.flatMap((listing) => [
     ...Object.entries(listing.options).map(([key, label]) => {
       const group = OPTION_GROUPS[key];
       if (!group) {
@@ -237,7 +276,7 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
   report.created.choices = (await db.choice.createMany({ data: choices, skipDuplicates: true })).count;
 
   const modelIds = new Map<string, number>();
-  for (const listing of listings) {
+  for (const listing of fresh) {
     const { maker, name, year } = MODEL_MAP[listing.modelKey];
     const slug = modelSlug(maker, name);
     if (modelIds.has(slug)) {
@@ -251,21 +290,27 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
     }
     modelIds.set(slug, model.id);
   }
-  report.created.series = (await fillSeries(db)).created;
+  // Seulement les modèles des nouvelles annonces : un modèle que le gérant a laissé sans
+  // série (ou retiré d'une série) n'est pas rangé à sa place.
+  report.created.series = (await fillSeries(db, [...modelIds.values()])).created;
 
-  // ---------- 4. Un produit par modèle ----------
+  // ---------- 5. Un produit par modèle, seulement pour de nouveaux exemplaires ----------
+  const slugOf = (listing: Listing) => modelSlug(MODEL_MAP[listing.modelKey].maker, MODEL_MAP[listing.modelKey].name);
   const byModel = new Map<string, Listing[]>();
-  for (const listing of listings) {
-    const { maker, name } = MODEL_MAP[listing.modelKey];
-    const slug = modelSlug(maker, name);
-    byModel.set(slug, [...(byModel.get(slug) ?? []), listing]);
+  for (const listing of fresh) {
+    byModel.set(slugOf(listing), [...(byModel.get(slugOf(listing)) ?? []), listing]);
   }
   const productIds = new Map<string, number>();
   for (const [slug, group] of byModel) {
     const first = group[0];
     const { maker, name } = MODEL_MAP[first.modelKey];
     const deviceModelId = modelIds.get(slug)!;
-    const existing = await db.product.findFirst({ where: { deviceModelId }, orderBy: { id: "asc" }, select: { id: true } });
+    // Le produit d'un exemplaire déjà importé du même modèle (même si le gérant a changé
+    // le modèle du produit), sinon celui du modèle : jamais de produit en double ni vide.
+    const sibling = known.find((listing) => slugOf(listing) === slug);
+    const existing = sibling
+      ? { id: variants.get(importSku(sibling.code))!.productId }
+      : await db.product.findFirst({ where: { deviceModelId }, orderBy: { id: "asc" }, select: { id: true } });
     if (existing) {
       // Les caractéristiques d'un produit qui existait déjà ne sont pas touchées.
       productIds.set(slug, existing.id);
@@ -292,11 +337,11 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
     report.created.products += 1;
   }
 
-  // ---------- 5. Une variante par annonce, cherchée par SKU ----------
-  for (const listing of listings) {
-    const { maker, name } = MODEL_MAP[listing.modelKey];
-    const productId = productIds.get(modelSlug(maker, name))!;
+  // ---------- 6. Une variante par annonce, cherchée par SKU ----------
+  const touched: number[] = [];
+  for (const listing of live) {
     const sku = importSku(listing.code);
+    // Ce que l'annonce dit de l'exemplaire, gardé aussi dans la mémoire de l'import.
     const data = {
       options: listing.options,
       price: listing.price,
@@ -308,21 +353,52 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
       warrantyMonths: listing.warrantyMonths ?? defaultWarrantyMonths(listing.kind, listing.condition),
       reference: listing.reference,
     };
-    const existing = await db.productVariant.findUnique({ where: { sku }, select: { id: true } });
-    if (existing) {
-      // Ni le stock (un exemplaire vendu reste vendu), ni la boîte (corrigée par le
-      // gérant) ; un neuf scellé n'a jamais de boîte à dire (CHECK).
-      await db.productVariant.update({
-        where: { id: existing.id },
-        data: { ...data, ...(listing.condition === "new" ? { withBox: null } : {}) },
-      });
-      report.updated.variants += 1;
-    } else {
+    const snapshot = data as Prisma.InputJsonObject;
+    const variant = variants.get(sku);
+    if (!variant) {
+      const productId = productIds.get(slugOf(listing))!;
       await db.productVariant.create({ data: { ...data, productId, sku, stock: 1, withBox: null } });
+      await db.importRecord.create({ data: { sku, snapshot } });
       report.created.variants += 1;
+      touched.push(productId);
+      continue;
     }
+    const previous = records.get(sku);
+    if (!previous) {
+      // Un exemplaire importé avant que l'import ait une mémoire : on note l'annonce sans
+      // rien réécrire (la base peut déjà contenir des corrections du gérant).
+      await db.importRecord.create({ data: { sku, snapshot } });
+      continue;
+    }
+    // Seuls les champs dont l'annonce a changé depuis l'import précédent sont réécrits :
+    // une note, une batterie, un prix ou des options corrigés par le gérant restent. Ni le
+    // stock (un exemplaire vendu reste vendu) ni la boîte ne viennent jamais du relevé.
+    const changes = Object.fromEntries(
+      Object.entries(data).filter(([key, value]) => stableJson(value) !== stableJson(previous[key] ?? null)),
+    );
+    if (Object.keys(changes).length === 0) {
+      continue;
+    }
+    await db.productVariant.update({
+      where: { sku },
+      // Un neuf scellé n'a jamais de boîte à dire (CHECK).
+      data: { ...changes, ...(changes.condition === "new" ? { withBox: null } : {}) } as Prisma.ProductVariantUpdateInput,
+    });
+    await db.importRecord.update({ where: { sku }, data: { snapshot } });
+    report.updated.variants += 1;
+    touched.push(variant.productId);
   }
 
-  await refreshMinPrice(db, [...productIds.values()]);
+  await refreshMinPrice(db, touched);
   return report;
+}
+
+// Un JSON qui ne dépend pas de l'ordre des clés : PostgreSQL range celles d'un JSONB par
+// longueur, donc des options relues de la base ne sont pas dans l'ordre de l'annonce.
+function stableJson(value: unknown): string {
+  return JSON.stringify(value, (_key, item: unknown) =>
+    item && typeof item === "object" && !Array.isArray(item)
+      ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b)))
+      : item,
+  );
 }

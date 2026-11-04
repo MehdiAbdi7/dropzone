@@ -194,11 +194,11 @@ describe("importDropzone : un relevé incohérent", () => {
 });
 
 describe("importDropzone : le rejeu", () => {
-  it("ne crée rien la deuxième fois et met à jour les exemplaires", async () => {
+  it("ne crée rien la deuxième fois, et ne touche rien quand le relevé n'a pas changé", async () => {
     await importDropzone(prisma, rows());
     const report = await importDropzone(prisma, rows());
     expect(report.created).toEqual({ brands: 0, models: 0, series: 0, choices: 0, products: 0, variants: 0 });
-    expect(report.updated.variants).toBe(5);
+    expect(report.updated.variants).toBe(0);
     expect(report.removed).toEqual({ categories: 0, products: 0, brands: 0 });
   });
 
@@ -215,5 +215,96 @@ describe("importDropzone : le rejeu", () => {
     await prisma.productVariant.update({ where: { sku: importSku("C-S24") }, data: { stock: 0, withBox: true } });
     await importDropzone(prisma, rows());
     expect(await variant("C-S24")).toMatchObject({ stock: 0, withBox: true });
+  });
+});
+
+// Le relevé décrit le passé, le back-office décrit le présent : un rejeu ne suit que ce
+// qui a changé dans le relevé depuis l'import précédent (relecture du 04/11).
+describe("importDropzone : le travail du gérant survit au rejeu", () => {
+  it("garde la note, la batterie, les détails, l'origine, la référence, le prix et les options corrigés", async () => {
+    await importDropzone(prisma, rows());
+    const corrected = {
+      grade: 8,
+      batteryHealth: 86,
+      details: "Rayure au dos",
+      origin: "Canada",
+      reference: "77777",
+      price: 79000,
+      options: { Stockage: "256 Go", RAM: "8 Go", SIM: "Double SIM", Couleur: "Noir" },
+    };
+    await prisma.productVariant.update({ where: { sku: importSku("C-S24") }, data: corrected });
+    const report = await importDropzone(prisma, rows());
+    expect(report.updated.variants).toBe(0);
+    expect(await variant("C-S24")).toMatchObject(corrected);
+  });
+
+  it("suit un prix changé dans le relevé sans effacer le reste de ce que le gérant a corrigé", async () => {
+    await importDropzone(prisma, rows());
+    await prisma.productVariant.update({ where: { sku: importSku("C-LAT7400") }, data: { grade: 9, batteryHealth: 81 } });
+    const report = await importDropzone(prisma, rows("65000"));
+    expect(report.updated.variants).toBe(1);
+    expect(await variant("C-LAT7400")).toMatchObject({ price: 65000, grade: 9, batteryHealth: 81 });
+  });
+
+  it("ne recrée pas un exemplaire ni un produit supprimés dans le back-office", async () => {
+    await importDropzone(prisma, rows());
+    await prisma.productVariant.delete({ where: { sku: importSku("C-S24") } });
+    await prisma.product.delete({ where: { id: (await variant("C-IPADMINI")).productId } });
+    const report = await importDropzone(prisma, rows());
+    expect(report.created).toMatchObject({ products: 0, variants: 0 });
+    expect(report.skipped).toEqual(
+      expect.arrayContaining([
+        { code: "C-S24", reason: "supprimé dans le back-office" },
+        { code: "C-IPADMINI", reason: "supprimé dans le back-office" },
+      ]),
+    );
+    expect(await prisma.productVariant.findUnique({ where: { sku: importSku("C-S24") } })).toBeNull();
+  });
+
+  it("ne range pas dans une série les modèles que le gérant a laissés sans série", async () => {
+    await importDropzone(prisma, rows());
+    // Un modèle retiré de sa série par le gérant, et un modèle qu'il a ajouté sans série
+    // (vu sur la copie le 04/11 : « iPhone 18 », après le renommage des séries en « … Series »).
+    await prisma.deviceModel.update({ where: { slug: "samsung-galaxy-s24" }, data: { seriesId: null } });
+    await prisma.deviceModel.create({ data: { brand: "Apple", name: "iPhone 18", slug: "apple-iphone-18", kind: "phone", releaseYear: 2026 } });
+    const report = await importDropzone(prisma, rows());
+    expect(report.created.series).toBe(0);
+    const unfiled = await prisma.deviceModel.findMany({ where: { slug: { in: ["samsung-galaxy-s24", "apple-iphone-18"] } } });
+    expect(unfiled.map((model) => model.seriesId)).toEqual([null, null]);
+  });
+
+  it("ne retire plus rien après le premier import", async () => {
+    await importDropzone(prisma, rows());
+    const watches = await prisma.category.create({ data: { name: "Montres connectées", slug: "montres-connectees", kind: "watch" } });
+    await prisma.product.create({
+      data: { name: "Google Pixel 8 Pro", slug: "google-pixel-8-pro", description: "Recréé par le gérant", categoryId: watches.id },
+    });
+    const report = await importDropzone(prisma, rows());
+    expect(report.removed).toEqual({ categories: 0, products: 0, brands: 0 });
+    expect(await prisma.product.findUnique({ where: { slug: "google-pixel-8-pro" } })).not.toBeNull();
+  });
+
+  it("ne crée pas de produit vide quand le gérant a changé le modèle d'un produit importé", async () => {
+    await importDropzone(prisma, rows());
+    const gen5 = await prisma.deviceModel.create({
+      data: { brand: "Lenovo", name: "ThinkPad L13 2-in-1 Gen 5", slug: "lenovo-thinkpad-l13-2-in-1-gen-5", kind: "laptop", releaseYear: 2024 },
+    });
+    await prisma.product.update({ where: { id: (await variant("C-L13")).productId }, data: { deviceModelId: gen5.id } });
+    const report = await importDropzone(prisma, rows());
+    expect(report.created.products).toBe(0);
+    expect(await prisma.product.count({ where: { variants: { none: {} } } })).toBe(0);
+  });
+});
+
+describe("importDropzone : la même référence deux fois dans le relevé", () => {
+  it("garde l'annonce la plus récente et écarte l'autre, sans faire échouer l'import", async () => {
+    const twice = [
+      row({ code: "C-REF-NEW", date: "2026-10-20", type: "pc", modele: "Dell Latitude 7400", prix_da: "66000", reference: "88888" }),
+      row({ code: "C-REF-OLD", date: "2026-09-01", type: "pc", modele: "Dell Latitude 7400", prix_da: "70000", reference: "88888" }),
+    ];
+    const report = await importDropzone(prisma, twice);
+    expect(report.created.variants).toBe(1);
+    expect(report.skipped).toEqual([{ code: "C-REF-OLD", reason: "référence déjà utilisée" }]);
+    expect((await variant("C-REF-NEW")).price).toBe(66000);
   });
 });
