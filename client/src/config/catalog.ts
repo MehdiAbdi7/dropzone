@@ -11,7 +11,10 @@ export type ChoiceGroup =
   | "connectivity"
   | "replaced_part"
   | "defect"
-  | "limitation";
+  | "limitation"
+  | "sim"
+  | "gpu"
+  | "origin";
 
 // Les options d'une variante, selon la sorte de produit. `key` est le texte affiché
 // au client et rangé dans `options` ; `group` est la liste où piocher les valeurs.
@@ -20,11 +23,19 @@ export const OPTION_FIELDS: Record<ProductKind, { key: string; group: ChoiceGrou
     { key: "Stockage", group: "storage" },
     { key: "Couleur", group: "color" },
     { key: "RAM", group: "ram" },
+    { key: "SIM", group: "sim" },
+  ],
+  tablet: [
+    { key: "Stockage", group: "storage" },
+    { key: "Couleur", group: "color" },
+    { key: "Connectivité", group: "connectivity" },
+    { key: "SIM", group: "sim" },
   ],
   laptop: [
     { key: "Processeur", group: "processor" },
     { key: "RAM", group: "ram" },
     { key: "Stockage", group: "storage" },
+    { key: "Carte graphique", group: "gpu" },
     { key: "Clavier", group: "keyboard" },
     { key: "Couleur", group: "color" },
   ],
@@ -39,21 +50,34 @@ export const OPTION_FIELDS: Record<ProductKind, { key: string; group: ChoiceGrou
 
 // PostgreSQL range un objet JSONB par longueur de clé, pas dans l'ordre d'écriture :
 // l'ordre d'affichage des options et des caractéristiques est donc fixé ici.
-export const OPTION_ORDER = ["Stockage", "RAM", "Processeur", "Clavier", "Taille", "Couleur", "Connectivité"];
+export const OPTION_ORDER = [
+  "Stockage",
+  "RAM",
+  "Processeur",
+  "Carte graphique",
+  "Clavier",
+  "Taille",
+  "Couleur",
+  "Connectivité",
+  "SIM",
+];
 
 // L'ordre des choix du neuf dans la Boutique : ce que le client choisit d'abord.
-// La couleur pour un téléphone ou une montre ; la puissance pour un PC.
+// La couleur pour un téléphone, une tablette ou une montre ; la puissance pour un PC.
 export const OPTION_ORDER_BY_KIND: Record<ProductKind, string[]> = {
-  phone: ["Couleur", "Stockage", "RAM"],
+  phone: ["Couleur", "Stockage", "SIM", "RAM"],
+  tablet: ["Couleur", "Stockage", "Connectivité", "SIM"],
   watch: ["Couleur", "Taille", "Connectivité"],
-  laptop: ["Processeur", "RAM", "Stockage", "Clavier", "Couleur"],
+  laptop: ["Processeur", "RAM", "Stockage", "Carte graphique", "Clavier", "Couleur"],
   accessory: ["Couleur"],
   audiovisual: ["Couleur"],
 };
+// La même liste que l'API (series.service.ts), pour les 4 lignes de l'affiche d'une série.
 export const SPEC_ORDER = [
   "Écran",
   "Puce",
   "Processeur",
+  "Carte graphique",
   "Appareil photo",
   "Batterie",
   "Charge",
@@ -69,16 +93,18 @@ export const SPEC_ORDER = [
 // Les caractéristiques proposées par défaut dans le formulaire, selon la sorte.
 export const SPEC_SUGGESTIONS: Record<ProductKind, string[]> = {
   phone: ["Écran", "Puce", "Appareil photo", "Batterie", "Connecteur"],
-  laptop: ["Écran", "Autonomie", "Poids", "Ports"],
+  tablet: ["Écran", "Puce", "Appareil photo", "Batterie"],
+  laptop: ["Écran", "Processeur", "Carte graphique", "Autonomie", "Poids", "Ports"],
   watch: ["Puce", "Autonomie", "Étanchéité"],
   accessory: [],
   audiovisual: ["Autonomie", "Étanchéité"],
 };
 
-export const DEVICE_KINDS: ProductKind[] = ["phone", "laptop", "watch"];
+export const DEVICE_KINDS: ProductKind[] = ["phone", "tablet", "laptop", "watch"];
 
 export const KIND_LABELS: Record<ProductKind, string> = {
   phone: "Smartphone",
+  tablet: "Tablette",
   laptop: "PC portable",
   watch: "Montre",
   accessory: "Accessoire",
@@ -108,6 +134,9 @@ export const CHOICE_GROUP_LABELS: Record<ChoiceGroup, string> = {
   replaced_part: "Pièces remplacées",
   defect: "Défauts visibles",
   limitation: "Limitations",
+  sim: "SIM",
+  gpu: "Cartes graphiques",
+  origin: "Pays d'origine",
 };
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {

@@ -21,21 +21,25 @@ export type Zone =
 
 // Chaque valeur des listes « Pièces remplacées » et « Défauts visibles » (CHOICES de l'API),
 // reliée à sa zone pour chaque sorte. Une valeur absente d'ici ne va que dans la légende.
+const PHONE_ZONES: Record<string, Zone> = {
+  Écran: "screen",
+  Batterie: "battery",
+  "Caméra arrière": "rearCamera",
+  "Caméra avant": "frontCamera",
+  "Cache arrière": "back",
+  "Haut-parleur": "speaker",
+  "Connecteur de charge": "port",
+  "Cache arrière fissuré": "back",
+  "Rayures légères sur l'écran": "screen",
+  "Rayures sur le cadre": "frame",
+  "Coins marqués": "corners",
+  "Pixel mort": "screen",
+};
+
 const ZONES: Partial<Record<ProductKind, Record<string, Zone>>> = {
-  phone: {
-    Écran: "screen",
-    Batterie: "battery",
-    "Caméra arrière": "rearCamera",
-    "Caméra avant": "frontCamera",
-    "Cache arrière": "back",
-    "Haut-parleur": "speaker",
-    "Connecteur de charge": "port",
-    "Cache arrière fissuré": "back",
-    "Rayures légères sur l'écran": "screen",
-    "Rayures sur le cadre": "frame",
-    "Coins marqués": "corners",
-    "Pixel mort": "screen",
-  },
+  phone: PHONE_ZONES,
+  // Une tablette se dessine comme un grand téléphone : mêmes pièces, mêmes zones.
+  tablet: PHONE_ZONES,
   laptop: {
     Écran: "screen",
     Batterie: "battery",

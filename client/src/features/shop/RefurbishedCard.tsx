@@ -17,7 +17,7 @@ export default function RefurbishedCard({ variant, kind }: { variant: Variant; k
   const { Couleur: color, ...otherOptions } = variant.options;
   const swatch = color ? swatchOf(color) : null;
   const zones = zonesOf(variant, kind);
-  const diagramKind = kind === "laptop" || kind === "watch" ? kind : "phone";
+  const diagramKind = kind === "tablet" || kind === "laptop" || kind === "watch" ? kind : "phone";
   const pristine = variant.replacedParts.length === 0 && variant.defects.length === 0;
   const box = boxLabel(variant.withBox);
 

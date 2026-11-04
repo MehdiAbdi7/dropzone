@@ -36,12 +36,13 @@ const SPEC_ORDER = [
   "Écran",
   "Puce",
   "Processeur",
+  // Juste après le processeur : sur l'affiche d'une série de PC, c'est la ligne qui compte.
+  "Carte graphique",
   "Appareil photo",
   "Batterie",
   "Autonomie",
   "RAM",
   "Stockage",
-  "Carte graphique",
   "Connecteur",
   "Ports",
 ];

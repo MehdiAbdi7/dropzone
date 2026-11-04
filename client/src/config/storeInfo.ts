@@ -4,7 +4,8 @@ const TO_PROVIDE = "Fournie par DropZone après accord";
 
 export const STORE_INFO = {
   name: "DropZone",
-  tagline: "Laptops, smartphones et audiovisuel, sélectionnés d'Europe",
+  // Ce que DropZone vend vraiment (relevé Instagram du 04/11) : pas d'audiovisuel.
+  tagline: "Laptops, smartphones et tablettes, sélectionnés d'Europe",
   town: "Kouba",
   city: "Alger",
   instagram: "https://www.instagram.com/dropzone.officiel/",
@@ -19,7 +20,9 @@ export const STORE_INFO = {
   address: `Kouba, Alger (${TO_PROVIDE.toLowerCase()} : adresse exacte)`,
   nif: TO_PROVIDE,
   commerceRegister: TO_PROVIDE,
-  warranty: TO_PROVIDE,
+  // Ce que disent les annonces : 3 mois sur un PC, 6 mois sur un téléphone d'occasion,
+  // 12 mois sur le neuf. La durée exacte est sur chaque fiche et sur la commande.
+  warranty: "De 3 à 12 mois selon l'appareil, indiquée sur sa fiche et sur la commande",
   returns: TO_PROVIDE,
   deliveryDelay: "2 à 5 jours ouvrés selon la wilaya (à confirmer par DropZone)",
   confirmation: "Le magasin vous appelle pour confirmer la commande avant l'expédition (à confirmer par DropZone).",

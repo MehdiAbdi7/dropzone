@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Field from "@/components/ui/Field";
-import { KIND_LABELS } from "@/config/catalog";
+import { DEVICE_KINDS, KIND_LABELS } from "@/config/catalog";
 import {
   useCreateModelMutation,
   useDeleteModelMutation,
@@ -12,8 +12,6 @@ import {
 } from "@/features/admin/adminApi";
 import { errorMessage } from "@/lib/errors";
 import type { ProductKind } from "@/types/api";
-
-const DEVICE_KINDS: ProductKind[] = ["phone", "laptop", "watch"];
 
 // ---------- Les modèles d'appareils ----------
 

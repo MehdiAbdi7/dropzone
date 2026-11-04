@@ -28,7 +28,7 @@ import type { ProductCard, ProductDetail } from "@/types/api";
 // Rien d'inventé : chaque garantie est un fait (règle du serveur, façon de vendre
 // du magasin, chiffre relevé sur Instagram).
 const TOP_GUARANTEES: Guarantee[] = [
-  { icon: <GlobeIcon />, title: "Sélectionnés d'Europe", text: "Smartphones, PC et montres" },
+  { icon: <GlobeIcon />, title: "Sélectionnés d'Europe", text: "Smartphones, PC et tablettes" },
   { icon: <TruckIcon />, title: "Livraison dans les 58 wilayas", text: `Offerte dès ${formatPrice(FREE_SHIPPING_FROM)}` },
   { icon: <CashIcon />, title: "Paiement à la livraison", text: "Vous payez en recevant" },
   { icon: <ClipboardCheckIcon />, title: "Affaires décrites", text: "Note, batterie, pièces et défauts" },

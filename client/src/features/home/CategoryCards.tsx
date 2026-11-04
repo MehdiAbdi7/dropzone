@@ -7,26 +7,27 @@ import type { ProductKind } from "@/types/api";
 // (à remplacer par les photos de Mehdi, ici seulement).
 export const KIND_IMAGES: Record<ProductKind, string> = {
   phone: "/products/phone.svg",
+  tablet: "/products/tablet.svg",
   laptop: "/products/laptop.svg",
   watch: "/products/watch.svg",
   accessory: "/products/charger.svg",
   audiovisual: "/products/speaker.svg",
 };
 
-// Les six entrées de l'accueil. Les slugs sont ceux des catégories de l'API (seed) ;
-// elles mènent dans le parcours de la Boutique. Reconditionnés est un filtre du catalogue.
+// Les cinq entrées de l'accueil : ce que DropZone vend (relevé Instagram du 04/11, ni
+// montres ni audiovisuel). Les slugs sont ceux des catégories de l'API ; elles mènent
+// dans le parcours de la Boutique. Affaires est un filtre du catalogue.
 const CATEGORIES = [
   { label: "Smartphones", href: "/boutique/smartphones", image: KIND_IMAGES.phone },
   { label: "PC portables", href: "/boutique/ordinateurs-portables", image: KIND_IMAGES.laptop },
-  { label: "Montres", href: "/boutique/montres-connectees", image: KIND_IMAGES.watch },
+  { label: "Tablettes", href: "/boutique/tablettes", image: KIND_IMAGES.tablet },
   { label: "Accessoires", href: "/boutique/accessoires", image: KIND_IMAGES.accessory },
-  { label: "Audiovisuel", href: "/boutique/audiovisuel", image: KIND_IMAGES.audiovisual },
   { label: "Affaires", href: "/produits?condition=affaire", image: KIND_IMAGES.phone },
 ];
 
 export default function CategoryCards() {
   return (
-    <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
+    <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
       {CATEGORIES.map((category) => (
         <li key={category.href} className="flex">
           <Link
@@ -34,7 +35,7 @@ export default function CategoryCards() {
             className="card group flex w-full flex-col items-center gap-2 p-2.5 pb-4 text-center transition-[border-color,box-shadow] hover:border-blue-ink hover:shadow-[var(--shadow)] sm:p-3 sm:pb-4"
           >
             <div className="relative aspect-square w-full overflow-hidden rounded-[10px] bg-surface-2">
-              <ProductImage src={category.image} alt="" sizes="(min-width: 1024px) 180px, (min-width: 768px) 33vw, 50vw" />
+              <ProductImage src={category.image} alt="" sizes="(min-width: 1024px) 216px, (min-width: 768px) 33vw, 50vw" />
             </div>
             <span className="font-display font-bold group-hover:text-blue-ink">{category.label}</span>
             <span className="inline-flex items-center gap-1 text-sm font-semibold text-red">

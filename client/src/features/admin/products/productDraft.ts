@@ -1,3 +1,4 @@
+import { DEVICE_KINDS } from "@/config/catalog";
 import type { Condition, Options, ProductKind, ProductStatus } from "@/types/api";
 import type { AdminProduct, ProductBody } from "../adminApi";
 
@@ -191,5 +192,4 @@ export function suggestSku(base: string, variant: VariantDraft, index: number): 
   return parts.filter(Boolean).join("-").slice(0, 40);
 }
 
-export const isDeviceKind = (kind: ProductKind | undefined) =>
-  kind === "phone" || kind === "laptop" || kind === "watch";
+export const isDeviceKind = (kind: ProductKind | undefined) => kind !== undefined && DEVICE_KINDS.includes(kind);

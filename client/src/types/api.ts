@@ -1,6 +1,6 @@
 // Les formes des réponses de l'API, telles que le front les utilise.
 
-export type ProductKind = "phone" | "laptop" | "watch" | "accessory" | "audiovisual";
+export type ProductKind = "phone" | "tablet" | "laptop" | "watch" | "accessory" | "audiovisual";
 export type Condition = "new" | "refurbished";
 export type ProductStatus = "draft" | "published";
 export type OrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
@@ -70,10 +70,15 @@ export type Variant = {
   compatibleParts: string[];
   defects: string[];
   limitations: string[];
-  // Une affaire : avec ou sans sa boîte d'origine (null pour un neuf scellé), et les
-  // détails du gérant pour le client.
+  // Une affaire : avec ou sans sa boîte d'origine (null pour un neuf scellé, ou pour une
+  // affaire importée dont l'annonce n'en parlait pas), et les détails du gérant.
   withBox: boolean | null;
   details: string | null;
+  // Facultatifs exprès : une réponse mise en cache avant le vrai catalogue (partie B)
+  // ne les a pas. La garantie en mois, l'origine (« Europe ») et la référence du magasin.
+  warrantyMonths?: number | null;
+  origin?: string | null;
+  reference?: string | null;
   gifts: Gift[];
 };
 
@@ -146,6 +151,8 @@ export type CartLine = {
   options: Options;
   condition: Condition;
   conditionReport: string | null;
+  // La garantie en mois (null pour un accessoire ; absente d'une réponse en cache).
+  warrantyMonths?: number | null;
   unitPrice: number;
   normalPrice: number;
   quantity: number;
@@ -174,6 +181,8 @@ export type OrderItem = {
   options: Options;
   condition: Condition;
   conditionReport: string | null;
+  // La garantie au jour de la commande (null pour un accessoire ou une commande d'avant).
+  warrantyMonths?: number | null;
   unitPrice: number;
   quantity: number;
   isGift: boolean;

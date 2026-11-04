@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { zonesOf } from "./diagramZones";
 
 describe("zonesOf", () => {
+  it("place les pièces d'une tablette comme celles d'un téléphone", () => {
+    expect(zonesOf({ replacedParts: ["Écran"], defects: ["Coins marqués"] }, "tablet")).toEqual({
+      replaced: ["screen"],
+      defects: ["corners"],
+      unplaced: [],
+    });
+  });
+
   it("place une pièce changée et un défaut connus, et garde le reste pour la légende", () => {
     expect(
       zonesOf({ replacedParts: ["Écran"], defects: ["Cache arrière fissuré", "Rayure inventée"] }, "phone"),
