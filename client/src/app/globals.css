@@ -429,6 +429,108 @@
   .search-toggle > summary::-webkit-details-marker {
     display: none;
   }
+
+  /* ---------- Les affiches de séries ----------
+     Toujours sombres, dans les deux thèmes : ce sont des affiches, posées sur une image. */
+
+  /* Une affiche de la page « choisis ta série » : un seul lien, l'image en fond, le texte
+     en bas sur un dégradé presque noir (le blanc y reste lisible sur toute image). */
+  .series-card {
+    position: relative;
+    display: block;
+    aspect-ratio: 4 / 4.6;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #000;
+    color: #f2f3fa;
+    outline: 1px solid rgb(255 255 255 / 0.08);
+    transition:
+      transform 0.25s,
+      box-shadow 0.25s,
+      outline-color 0.25s;
+  }
+  @media (min-width: 768px) {
+    .series-card {
+      aspect-ratio: 16 / 10;
+    }
+  }
+  .series-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgb(4 5 8 / 0.94) 0%, rgb(4 5 8 / 0.6) 38%, transparent 64%);
+    pointer-events: none;
+  }
+  .series-media {
+    position: absolute;
+    inset: 0;
+    transition: transform 0.5s;
+  }
+  a.series-card:hover,
+  a.series-card:focus-visible {
+    transform: translateY(-3px);
+    outline: 2px solid #a33bf0;
+    box-shadow:
+      0 0 0 1px rgb(61 75 255 / 0.4),
+      0 10px 30px rgb(255 46 77 / 0.22);
+  }
+  a.series-card:hover .series-media,
+  a.series-card:focus-visible .series-media {
+    transform: scale(1.05);
+  }
+  a.series-card:hover .series-cta svg,
+  a.series-card:focus-visible .series-cta svg {
+    transform: translateX(3px);
+  }
+  .series-card[aria-disabled="true"] {
+    opacity: 0.55;
+  }
+
+  /* Le bouton d'achat : le dégradé de la marque, assombri pour que le blanc y passe
+     partout l'AA (5,7:1 sur le bleu, 6,3:1 sur le violet, 5,1:1 sur le rouge). */
+  .series-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.65rem 1.1rem;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.875rem;
+    color: #fff;
+    white-space: nowrap;
+    background: linear-gradient(90deg, #1f5fd6, #7a35d6, #d61f45);
+    box-shadow: 0 4px 14px rgb(122 53 214 / 0.35);
+  }
+  .series-cta svg {
+    transition: transform 0.25s;
+  }
+
+  /* Le nom de la série en grand, en lettres creuses, sur l'affiche de secours. */
+  .series-fallback-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+    color: transparent;
+    -webkit-text-stroke: 1px rgb(255 255 255 / 0.35);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .series-card,
+    .series-media,
+    .series-cta svg {
+      transition: none;
+    }
+    a.series-card:hover,
+    a.series-card:focus-visible,
+    a.series-card:hover .series-media,
+    a.series-card:focus-visible .series-media,
+    a.series-card:hover .series-cta svg,
+    a.series-card:focus-visible .series-cta svg {
+      transform: none;
+    }
+  }
 }
 
 /* ---------- 6. Les utilitaires de la marque ---------- */

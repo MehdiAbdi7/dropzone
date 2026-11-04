@@ -4,8 +4,9 @@ import { DEVICE_KINDS } from "@/config/catalog";
 import ProductGrid from "@/features/products/ProductGrid";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import ModelCard from "@/features/shop/ModelCard";
+import SeriesCard from "@/features/shop/SeriesCard";
 import { publicFetch, publicFetchPage } from "@/lib/publicFetch";
-import type { Category, ProductCard } from "@/types/api";
+import type { Category, ProductCard, SeriesSummary } from "@/types/api";
 
 // La catégorie et la marque de l'adresse, si elles existent. « autres » = sans marque.
 async function getBrand(categorySlug: string, brandSlug: string) {
@@ -26,8 +27,16 @@ export async function generateMetadata({ params }: PageProps<"/boutique/[categor
   return { title: category && brand ? `${brand.name} · ${category.name}` : "Boutique" };
 }
 
-// Étape 3 du parcours : les modèles de la marque, du plus récent au plus ancien
-// (appareils), ou ses produits (accessoires, audiovisuel).
+const UNAVAILABLE = (
+  <div className="container-page py-8">
+    <p role="alert" className="card p-6">
+      La boutique ne répond pas pour le moment. Rechargez la page dans quelques secondes.
+    </p>
+  </div>
+);
+
+// Étape 3 du parcours : les séries de la marque en affiches (appareils), ou ses produits
+// (accessoires). La carte « Autres » (produits sans marque) garde la grille des modèles.
 export default async function ShopBrandPage({ params }: PageProps<"/boutique/[categorie]/[marque]">) {
   const { categorie, marque } = await params;
   const { categories, category, brand } = await getBrand(categorie, marque);
@@ -36,6 +45,39 @@ export default async function ShopBrandPage({ params }: PageProps<"/boutique/[ca
   }
 
   const isDevice = category ? DEVICE_KINDS.includes(category.kind) : false;
+  if (category && brand && isDevice && brand.slug !== "autres") {
+    const series = await publicFetch<SeriesSummary[]>(`/series?category=${category.slug}&brand=${brand.slug}`, 60);
+    if (!series) {
+      return UNAVAILABLE;
+    }
+    return (
+      <div className="container-page space-y-6 py-8">
+        <Breadcrumb
+          items={[
+            { label: "Boutique", href: "/boutique" },
+            { label: category.name, href: `/boutique/${category.slug}` },
+            { label: brand.name },
+          ]}
+        />
+        <header className="space-y-1">
+          <h1 className="text-3xl">{brand.name}</h1>
+          <p className="text-ink-muted">Choisis ta série, de la plus récente à la plus ancienne.</p>
+        </header>
+        {series.length === 0 ? (
+          <p className="card p-6">Aucun appareil de cette marque pour le moment.</p>
+        ) : (
+          <ul className="grid gap-4 md:grid-cols-2">
+            {series.map((one, index) => (
+              <li key={one.slug}>
+                <SeriesCard series={one} href={`/boutique/${category.slug}/${brand.slug}/${one.slug}`} priority={index === 0} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
   const result =
     category && brand
       ? await publicFetchPage<ProductCard>(
@@ -45,13 +87,7 @@ export default async function ShopBrandPage({ params }: PageProps<"/boutique/[ca
       : null;
 
   if (!category || !brand || !result) {
-    return (
-      <div className="container-page py-8">
-        <p role="alert" className="card p-6">
-          La boutique ne répond pas pour le moment. Rechargez la page dans quelques secondes.
-        </p>
-      </div>
-    );
+    return UNAVAILABLE;
   }
 
   return (
