@@ -620,6 +620,10 @@
   .poster-slide:not([data-active]) {
     opacity: 0.45;
   }
+  /* L'espace vide après le dernier modèle, mesuré en JavaScript (PosterSlider). */
+  .poster-spacer {
+    flex: none;
+  }
   .poster-single {
     width: 100%;
     max-width: 22rem;
@@ -643,6 +647,9 @@
     }
     .poster-track-fit .poster-slide {
       width: auto;
+    }
+    .poster-track-fit .poster-spacer {
+      display: none;
     }
   }
 
@@ -712,7 +719,8 @@
   }
   .poster-hint-arrow {
     display: inline-block;
-    animation: poster-go 1.2s ease-in-out infinite;
+    /* 4 allers-retours (4,8 s) : WCAG 2.2.2, pas de mouvement automatique au-delà de 5 s. */
+    animation: poster-go 1.2s ease-in-out 4;
   }
   .poster-hint-back {
     animation-direction: reverse;

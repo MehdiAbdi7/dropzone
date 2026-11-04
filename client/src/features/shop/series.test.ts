@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ctaLabel, glowColor, posterLayout, specIcon, swipeHint, withArticle } from "./series";
+import { ctaLabel, glowColor, posterLayout, specIcon, swipeHint, trackEndPadding, withArticle } from "./series";
 
 describe("withArticle", () => {
   it.each([
@@ -76,5 +76,21 @@ describe("specIcon", () => {
     ["Poids", "dot"],
   ])("%s → %s", (key, icon) => {
     expect(specIcon(key)).toBe(icon);
+  });
+});
+
+describe("trackEndPadding", () => {
+  // Sur ordinateur, 5 modèles à 30 % de la piste : sans marge de fin, la piste s'arrêtait
+  // quand le dernier modèle touchait le bord droit, et le compteur restait bloqué à « 3 / 5 ».
+  it("laisse assez de place pour que le dernier modèle vienne se caler à gauche", () => {
+    expect(trackEndPadding(1232, 370, 16)).toBe(846);
+  });
+
+  it("fait de même sur téléphone", () => {
+    expect(trackEndPadding(362, 270, 16)).toBe(76);
+  });
+
+  it("ne donne jamais de marge négative", () => {
+    expect(trackEndPadding(300, 320, 16)).toBe(0);
   });
 });
