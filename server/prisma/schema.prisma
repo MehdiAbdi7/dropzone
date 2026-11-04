@@ -92,9 +92,28 @@ model Brand {
   position   Int       @default(0)
   createdAt  DateTime  @default(now()) @map("created_at")
   products   Product[]
+  // Supprimer une marque qui a des séries est refusé (RESTRICT) : le gérant les supprime d'abord.
+  series     Series[]
 
   @@unique([categoryId, slug])
   @@map("brands")
+}
+
+// Une série d'une marque (« iPhone 18 » chez iPhone, « MacBook Air » chez MacBook) :
+// la Boutique en fait une affiche, avec tous ses modèles côte à côte.
+model Series {
+  id        Int           @id @default(autoincrement())
+  brandId   Int           @map("brand_id")
+  brand     Brand         @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  name      String
+  slug      String
+  // L'image de l'affiche, envoyée par le gérant (Cloudinary) ; sans elle, l'affiche de secours.
+  coverUrl  String?       @map("cover_url")
+  createdAt DateTime      @default(now()) @map("created_at")
+  models    DeviceModel[]
+
+  @@unique([brandId, slug])
+  @@map("series")
 }
 
 model DeviceModel {
@@ -106,12 +125,19 @@ model DeviceModel {
   // L'année de sortie : la Boutique range les modèles du plus récent au plus ancien.
   // Facultative pour les modèles créés avant ; ceux sans année passent à la fin.
   releaseYear        Int?        @map("release_year")
+  // La série du modèle (null = sans série, invisible dans la Boutique), sa place dans
+  // l'affiche et la couleur de sa lueur (un nom de la liste « Couleurs »).
+  seriesId           Int?        @map("series_id")
+  series             Series?     @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  seriesPosition     Int         @default(0) @map("series_position")
+  posterColor        String?     @map("poster_color")
   products           Product[]   @relation("ProductDeviceModel")
   compatibleProducts Product[]   @relation("ProductCompatibleModels")
   createdAt          DateTime    @default(now()) @map("created_at")
 
   @@unique([brand, name])
   @@index([kind])
+  @@index([seriesId])
   @@map("device_models")
 }
 

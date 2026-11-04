@@ -10,6 +10,7 @@ import { modelSlug } from "../modules/models/modelSlug.js";
 import { computeMinPrice } from "../modules/products/product.service.js";
 import { slugify } from "../utils/slugify.js";
 import { CHOICES, DEVICE_MODELS } from "./device-models.js";
+import { fillSeries } from "./series.js";
 import { BRANDS, CATEGORIES, PRODUCTS } from "./seed-data.js";
 
 const apply = process.argv.includes("--apply");
@@ -39,6 +40,8 @@ await prisma.variantGift.deleteMany();
 await prisma.productImage.deleteMany();
 await prisma.productVariant.deleteMany();
 await prisma.product.deleteMany();
+// Les séries avant les marques (RESTRICT) ; leurs modèles repassent sans série.
+await prisma.series.deleteMany();
 await prisma.brand.deleteMany();
 await prisma.deviceModel.deleteMany();
 await prisma.choice.deleteMany();
@@ -158,8 +161,12 @@ const gifts = PRODUCTS.flatMap((product) =>
 );
 await prisma.variantGift.createMany({ data: gifts });
 
+// Les modèles rangés en séries, pour les affiches de la Boutique.
+const series = await fillSeries(prisma);
+
 console.log(
   `Base remplie : ${CATEGORIES.length} catégories, ${BRANDS.length} marques, ${DEVICE_MODELS.length} modèles, ${choiceCount} valeurs, ` +
-    `${PRODUCTS.length} produits, ${variantCount} variantes, ${gifts.length} articles offerts.`,
+    `${PRODUCTS.length} produits, ${variantCount} variantes, ${gifts.length} articles offerts, ` +
+    `${series.created} séries (${series.assigned} modèles rangés).`,
 );
 await prisma.$disconnect();
