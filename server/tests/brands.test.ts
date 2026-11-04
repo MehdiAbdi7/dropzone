@@ -81,7 +81,7 @@ describe("Marque d'un produit", () => {
     deviceModelId: catalog.galaxy.id,
     brandId,
     status: "published",
-    variants: [{ sku: "S24U-256", price: 215000, stock: 3 }],
+    variants: [{ sku: "S24U-256", price: 215000, stock: 3, warrantyMonths: 12 }],
   });
 
   it("refuse une marque d'une autre catégorie", async () => {
