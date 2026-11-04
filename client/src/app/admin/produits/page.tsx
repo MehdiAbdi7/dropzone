@@ -27,7 +27,7 @@ export default function AdminProductsPage() {
           <input
             className="input"
             type="search"
-            placeholder="Chercher par nom…"
+            placeholder="Nom, SKU ou référence…"
             value={q}
             onChange={(event) => {
               setQ(event.target.value);

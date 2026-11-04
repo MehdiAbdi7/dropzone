@@ -7,7 +7,7 @@ import { formatPrice } from "@/lib/format";
 import type { ProductKind } from "@/types/api";
 import type { GiftOption } from "../adminApi";
 import ChoicePicker from "./ChoicePicker";
-import { type PartOrigin, type VariantDraft, withReplacedParts } from "./productDraft";
+import { type PartOrigin, type VariantDraft, withCondition, withReplacedParts } from "./productDraft";
 
 type Props = {
   variant: VariantDraft;
@@ -60,7 +60,7 @@ export default function VariantEditor({
                 type="button"
                 className="chip"
                 aria-pressed={variant.condition === condition}
-                onClick={() => set({ condition, stock: condition === "refurbished" ? "1" : variant.stock })}
+                onClick={() => onChange(withCondition(variant, kind, condition))}
               >
                 {CONDITION_LABELS[condition]}
               </button>
@@ -130,11 +130,40 @@ export default function VariantEditor({
         </Field>
       </div>
 
+      {/* La garantie (proposée selon le type et l'état), et la référence du magasin, que
+          le client donne au téléphone (« 51057 »). */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Field id={id("warranty")} label="Garantie (mois)">
+          <input
+            id={id("warranty")}
+            className="input"
+            inputMode="numeric"
+            value={variant.warrantyMonths}
+            onChange={(event) => set({ warrantyMonths: event.target.value.replace(/\D/g, "").slice(0, 2) })}
+          />
+        </Field>
+        <Field id={id("reference")} label="Référence du magasin (facultatif)">
+          <input
+            id={id("reference")}
+            className="input uppercase"
+            maxLength={20}
+            value={variant.reference}
+            onChange={(event) => set({ reference: event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "") })}
+          />
+        </Field>
+      </div>
+      <ChoicePicker
+        group="origin"
+        label="Origine (facultatif)"
+        value={variant.origin}
+        onChange={(origin) => set({ origin })}
+      />
+
       {refurbished ? (
         <div className="space-y-5 border-t border-line pt-5">
           <p className="font-display font-bold">Fiche d&apos;état</p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id={id("grade")} label="Note d'état (sur 10)">
+            <Field id={id("grade")} label="Note d'état (sur 10, facultatif)">
               <select id={id("grade")} className="input" value={variant.grade} onChange={(event) => set({ grade: event.target.value })}>
                 <option value="">Choisir…</option>
                 {Array.from({ length: 10 }, (_, i) => 10 - i).map((grade) => (
@@ -144,7 +173,7 @@ export default function VariantEditor({
                 ))}
               </select>
             </Field>
-            <Field id={id("battery")} label="Santé de la batterie (%)">
+            <Field id={id("battery")} label="Santé de la batterie (%, facultatif)">
               <input
                 id={id("battery")}
                 className="input"
@@ -173,15 +202,28 @@ export default function VariantEditor({
               ) : null}
             </Fragment>
           ))}
-          <label className="flex min-h-11 items-center gap-2 text-sm font-semibold">
-            <input
-              type="checkbox"
-              className="size-5"
-              checked={variant.withBox}
-              onChange={(event) => set({ withBox: event.target.checked })}
-            />
-            Vendu avec sa boîte d&apos;origine
-          </label>
+          <fieldset className="space-y-2">
+            <legend className="label">Boîte d&apos;origine</legend>
+            {/* Une affaire importée d'une annonce qui n'en parlait pas : à choisir avant d'enregistrer. */}
+            {variant.withBox === null ? (
+              <p role="note" className="rounded-lg border border-amber bg-amber-soft p-3 text-sm font-semibold">
+                Boîte non précisée (annonce importée) : à corriger.
+              </p>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              {([true, false] as const).map((withBox) => (
+                <button
+                  key={String(withBox)}
+                  type="button"
+                  className="chip"
+                  aria-pressed={variant.withBox === withBox}
+                  onClick={() => set({ withBox })}
+                >
+                  {withBox ? "Avec sa boîte" : "Sans boîte"}
+                </button>
+              ))}
+            </div>
+          </fieldset>
           <Field id={id("details")} label="Détails pour le client (facultatif)" hint={`${variant.details.length}/200 caractères`}>
             <textarea
               id={id("details")}

@@ -5,8 +5,10 @@ import {
   draftFromProduct,
   emptyDraft,
   emptyVariant,
+  missingBox,
   missingPartOrigins,
   type VariantDraft,
+  withCondition,
   withReplacedParts,
 } from "./productDraft";
 
@@ -96,6 +98,85 @@ describe("draftFromProduct", () => {
       partOrigins: { Écran: "compatible", Batterie: "origine" },
       details: "",
     });
+  });
+});
+
+describe("La garantie proposée par le formulaire", () => {
+  it("met celle de DropZone selon le type et l'état", () => {
+    expect(emptyVariant("refurbished", "phone").warrantyMonths).toBe("6");
+    expect(emptyVariant("new", "tablet").warrantyMonths).toBe("12");
+    expect(emptyVariant("new", "laptop").warrantyMonths).toBe("3");
+    expect(emptyVariant("new", "accessory").warrantyMonths).toBe("");
+    expect(emptyVariant().warrantyMonths).toBe("");
+  });
+
+  it("suit l'état quand le gérant passe de Neuf scellé à Affaire", () => {
+    const changed = withCondition(emptyVariant("new", "phone"), "phone", "refurbished");
+    expect(changed).toMatchObject({ condition: "refurbished", stock: "1", warrantyMonths: "6" });
+  });
+
+  it("garde une garantie tapée à la main", () => {
+    const typed = { ...emptyVariant("new", "phone"), warrantyMonths: "24" };
+    expect(withCondition(typed, "phone", "refurbished").warrantyMonths).toBe("24");
+  });
+
+  it("envoie la garantie en nombre, et null pour un champ vide", () => {
+    expect(sent(deal({ warrantyMonths: "6" })).warrantyMonths).toBe(6);
+    expect(sent(deal({ warrantyMonths: "" })).warrantyMonths).toBeNull();
+  });
+});
+
+describe("Origine et référence", () => {
+  it("les envoie telles quelles (l'API range un champ vide comme absent)", () => {
+    expect(sent(deal({ origin: "Europe", reference: "51057" }))).toMatchObject({ origin: "Europe", reference: "51057" });
+    expect(sent(deal({ origin: "", reference: "" }))).toMatchObject({ origin: "", reference: "" });
+  });
+});
+
+describe("missingBox : la boîte d'une affaire importée, à corriger", () => {
+  const imported = (condition: "new" | "refurbished") =>
+    draftFromProduct({
+      name: "Dell Latitude 5440",
+      description: "Test",
+      categoryId: 1,
+      deviceModelId: null,
+      brandId: null,
+      compatibleModels: [],
+      specs: {},
+      status: "published",
+      variants: [
+        {
+          id: 8,
+          sku: "IG-0123456789",
+          options: {},
+          price: 109000,
+          stock: 1,
+          condition,
+          grade: null,
+          batteryHealth: null,
+          replacedParts: [],
+          compatibleParts: [],
+          defects: [],
+          limitations: [],
+          withBox: null,
+          details: null,
+          warrantyMonths: 3,
+          origin: "Europe",
+          reference: "41240",
+          gifts: [],
+        },
+      ],
+    } as unknown as AdminProduct).variants[0];
+
+  it("signale une affaire dont l'annonce ne disait rien de la boîte", () => {
+    const variant = imported("refurbished");
+    expect(variant).toMatchObject({ withBox: null, warrantyMonths: "3", origin: "Europe", reference: "41240" });
+    expect(missingBox(variant)).toBe(true);
+  });
+
+  it("ne demande rien pour un neuf scellé, ni pour une affaire dont la boîte est choisie", () => {
+    expect(missingBox(imported("new"))).toBe(false);
+    expect(missingBox(deal({ withBox: false }))).toBe(false);
   });
 });
 

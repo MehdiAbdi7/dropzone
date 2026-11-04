@@ -1,4 +1,5 @@
 import { DEVICE_KINDS } from "@/config/catalog";
+import { defaultWarrantyMonths } from "@/config/warranty";
 import type { Condition, Options, ProductKind, ProductStatus } from "@/types/api";
 import type { AdminProduct, ProductBody } from "../adminApi";
 
@@ -21,9 +22,16 @@ export type VariantDraft = {
   partOrigins: Record<string, PartOrigin>;
   defects: string[];
   limitations: string[];
-  // Une affaire : avec ou sans sa boîte d'origine, et les détails pour le client.
-  withBox: boolean;
+  // Une affaire : avec (true) ou sans (false) sa boîte d'origine, et les détails pour le
+  // client. null : une affaire importée dont l'annonce ne parlait pas de la boîte ; le
+  // gérant doit choisir avant d'enregistrer (missingBox).
+  withBox: boolean | null;
   details: string;
+  // La garantie en mois (texte tant qu'on tape), l'origine (liste « Pays d'origine ») et
+  // la référence du magasin (« 51057 ») ; vides = rien.
+  warrantyMonths: string;
+  origin: string;
+  reference: string;
   // Les articles offerts, sur un neuf scellé comme sur une affaire.
   gifts: { giftVariantId: number; quantity: number }[];
 };
@@ -45,7 +53,14 @@ export type ProductDraft = {
 let counter = 0;
 export const newKey = () => `v${Date.now()}-${counter++}`;
 
-export function emptyVariant(condition: Condition = "new"): VariantDraft {
+// La garantie proposée en texte (« 6 »), vide sans sorte connue ou pour un accessoire.
+const defaultWarrantyText = (kind: ProductKind | undefined, condition: Condition) => {
+  const months = kind ? defaultWarrantyMonths(kind, condition) : null;
+  return months === null ? "" : String(months);
+};
+
+// Une variante vide ; avec la sorte du produit, la garantie de DropZone est déjà remplie.
+export function emptyVariant(condition: Condition = "new", kind?: ProductKind): VariantDraft {
   return {
     key: newKey(),
     sku: "",
@@ -61,8 +76,28 @@ export function emptyVariant(condition: Condition = "new"): VariantDraft {
     limitations: [],
     withBox: false,
     details: "",
+    warrantyMonths: defaultWarrantyText(kind, condition),
+    origin: "",
+    reference: "",
     gifts: [],
   };
+}
+
+// Neuf scellé ↔ Affaire : une affaire est unique (stock 1), et la garantie suit le nouvel
+// état seulement si elle était encore celle proposée (une durée tapée à la main reste).
+export function withCondition(variant: VariantDraft, kind: ProductKind, condition: Condition): VariantDraft {
+  const wasDefault = variant.warrantyMonths === defaultWarrantyText(kind, variant.condition);
+  return {
+    ...variant,
+    condition,
+    stock: condition === "refurbished" ? "1" : variant.stock,
+    warrantyMonths: wasDefault ? defaultWarrantyText(kind, condition) : variant.warrantyMonths,
+  };
+}
+
+// Une affaire dont la boîte n'est pas choisie (annonce importée) : l'envoi est refusé.
+export function missingBox(variant: VariantDraft): boolean {
+  return variant.condition === "refurbished" && variant.withBox === null;
 }
 
 // Les pièces changées d'une affaire dont le gérant n'a pas dit si elles sont d'origine
@@ -127,8 +162,13 @@ export function draftFromProduct(product: AdminProduct): ProductDraft {
       ),
       defects: variant.defects,
       limitations: variant.limitations,
-      withBox: variant.withBox ?? false,
+      // Une affaire importée sans boîte connue garde null (« à corriger ») ; un neuf
+      // scellé n'a pas de boîte à dire, la case reste simplement décochée.
+      withBox: variant.condition === "refurbished" ? variant.withBox : false,
       details: variant.details ?? "",
+      warrantyMonths: variant.warrantyMonths == null ? "" : String(variant.warrantyMonths),
+      origin: variant.origin ?? "",
+      reference: variant.reference ?? "",
       gifts: variant.gifts,
     })),
   };
@@ -170,6 +210,10 @@ export function bodyFromDraft(draft: ProductDraft): ProductBody {
         withBox: deal ? variant.withBox : null,
         // Un champ vide part tel quel : l'API le range comme « pas de détails » (null).
         details: deal ? variant.details : "",
+        warrantyMonths: toNullable(variant.warrantyMonths),
+        // Vides, l'origine et la référence partent telles quelles : l'API les range en null.
+        origin: variant.origin,
+        reference: variant.reference,
         gifts: variant.gifts,
       };
     }),

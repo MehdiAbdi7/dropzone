@@ -21,10 +21,12 @@ import {
   bodyFromDraft,
   emptyVariant,
   isDeviceKind,
+  missingBox,
   missingPartOrigins,
   suggestSku,
   type ProductDraft,
 } from "./productDraft";
+import { defaultWarrantyMonths } from "@/config/warranty";
 import VariantEditor from "./VariantEditor";
 
 // Le formulaire produit, rempli dans l'ordre où le vendeur pense :
@@ -47,6 +49,8 @@ export default function ProductForm({
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
   const [missingOrigins, setMissingOrigins] = useState<string[]>([]);
+  // Les SKU des affaires importées dont la boîte n'est pas encore choisie.
+  const [missingBoxes, setMissingBoxes] = useState<string[]>([]);
   const { data: categories = [] } = useCategoriesQuery();
   const { data: allBrands = [] } = useBrandsQuery();
   const { data: giftOptionsAll = [] } = useGiftOptionsQuery();
@@ -77,7 +81,13 @@ export default function ProductForm({
         draft.specs.length > 0 || !next
           ? draft.specs
           : SPEC_SUGGESTIONS[next.kind].map((key) => ({ key, value: "" })),
-      variants: device ? draft.variants : draft.variants.map((variant) => ({ ...variant, condition: "new" })),
+      variants: (device ? draft.variants : draft.variants.map((variant) => ({ ...variant, condition: "new" as const }))).map(
+        // Une garantie encore vide reçoit celle de DropZone pour cette sorte.
+        (variant) => {
+          const months = next && !variant.warrantyMonths ? defaultWarrantyMonths(next.kind, variant.condition) : null;
+          return months === null ? variant : { ...variant, warrantyMonths: String(months) };
+        },
+      ),
     });
   }
 
@@ -91,11 +101,13 @@ export default function ProductForm({
     event.preventDefault();
     // Rien ne part tant qu'une pièce changée n'a pas son origine : pas de valeur par défaut.
     const missing = [...new Set(draft.variants.flatMap((variant) => missingPartOrigins(variant)))];
-    if (missing.length > 0) {
-      setMissingOrigins(missing);
+    // Ni une affaire importée dont la boîte n'est pas choisie (« Non précisée, à corriger »).
+    const boxes = draft.variants.filter(missingBox).map((variant) => variant.sku);
+    setMissingOrigins(missing);
+    setMissingBoxes(boxes);
+    if (missing.length > 0 || boxes.length > 0) {
       return;
     }
-    setMissingOrigins([]);
     const body = bodyFromDraft(draft);
     try {
       if (productId) {
@@ -275,14 +287,18 @@ export default function ProductForm({
               />
             ))}
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn btn-secondary" onClick={() => set({ variants: [...draft.variants, emptyVariant()] })}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => set({ variants: [...draft.variants, emptyVariant("new", kind)] })}
+              >
                 Ajouter une variante neuve
               </button>
               {isDevice ? (
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => set({ variants: [...draft.variants, emptyVariant("refurbished")] })}
+                  onClick={() => set({ variants: [...draft.variants, emptyVariant("refurbished", kind)] })}
                 >
                   Ajouter une affaire
                 </button>
@@ -313,10 +329,17 @@ export default function ProductForm({
           {isLoading ? "Enregistrement…" : productId ? "Enregistrer les modifications" : "Créer le produit"}
         </button>
         <div aria-live="polite" className="text-sm">
-          {missingOrigins.length > 0 ? (
-            <p className="font-semibold text-red">
-              Dites si chaque pièce changée est d&apos;origine ou compatible : {missingOrigins.join(", ")}.
-            </p>
+          {missingOrigins.length > 0 || missingBoxes.length > 0 ? (
+            <>
+              {missingOrigins.length > 0 ? (
+                <p className="font-semibold text-red">
+                  Dites si chaque pièce changée est d&apos;origine ou compatible : {missingOrigins.join(", ")}.
+                </p>
+              ) : null}
+              {missingBoxes.length > 0 ? (
+                <p className="font-semibold text-red">Choisissez la boîte de : {missingBoxes.join(", ")}.</p>
+              ) : null}
+            </>
           ) : error ? (
             <div className="text-red">
               <p className="font-semibold">{errorMessage(error)}</p>

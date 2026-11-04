@@ -40,6 +40,10 @@ export type AdminVariant = {
   limitations: string[];
   withBox: boolean | null;
   details: string | null;
+  // La garantie en mois, l'origine (« Europe ») et la référence du magasin (« 51057 »).
+  warrantyMonths: number | null;
+  origin: string | null;
+  reference: string | null;
   gifts: { giftVariantId: number; quantity: number }[];
 };
 
