@@ -75,7 +75,7 @@ const SORTS: Record<Exclude<ProductListQuery["sort"], "sortie">, Prisma.ProductO
 };
 
 // Le prix le plus bas parmi les variantes en stock d'un état, ou null s'il n'y en a pas.
-function lowestInStock(variants: { price: number; stock: number }[]): number | null {
+export function lowestInStock(variants: { price: number; stock: number }[]): number | null {
   const inStock = variants.filter((variant) => variant.stock > 0);
   return inStock.length > 0 ? Math.min(...inStock.map((variant) => variant.price)) : null;
 }
@@ -198,7 +198,8 @@ export async function getProductBySlug(slug: string) {
       category: { select: { name: true, slug: true, kind: true } },
       // La marque de la Boutique (« iPhone »), pour le fil d'Ariane ; null = carte « Autres ».
       brand: { select: { name: true, slug: true } },
-      deviceModel: { select: { brand: true, name: true, slug: true } },
+      // La série du modèle, pour le fil d'Ariane (Boutique › … › iPhone 18 › iPhone 18 Pro Max).
+      deviceModel: { select: { brand: true, name: true, slug: true, series: { select: { name: true, slug: true } } } },
       compatibleModels: {
         select: { brand: true, name: true, slug: true },
         orderBy: [{ brand: "asc" }, { name: "asc" }],
@@ -251,8 +252,11 @@ export async function getProductBySlug(slug: string) {
     throw new AppError(404, "Produit introuvable");
   }
 
+  const { series = null, ...deviceModel } = product.deviceModel ?? {};
   return {
     ...product,
+    deviceModel: product.deviceModel ? deviceModel : null,
+    series,
     variants: product.variants.map(({ gifts, ...variant }) => ({
       ...variant,
       gifts: gifts.map(({ quantity, giftVariant }) => ({

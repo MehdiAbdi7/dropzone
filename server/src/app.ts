@@ -14,6 +14,7 @@ import { modelAdminRouter } from "./modules/models/model.routes.js";
 import { orderAdminRouter, orderRouter } from "./modules/orders/order.routes.js";
 import { productAdminRouter } from "./modules/products/productAdmin.routes.js";
 import { productRouter } from "./modules/products/product.routes.js";
+import { seriesRouter } from "./modules/series/series.routes.js";
 import { statsAdminRouter } from "./modules/stats/stats.routes.js";
 import { userAdminRouter } from "./modules/users/user.routes.js";
 
@@ -31,6 +32,7 @@ app.get("/health", (req, res) => {
 
 app.use("/categories", categoryRouter);
 app.use("/products", productRouter);
+app.use("/series", seriesRouter);
 app.use("/orders", orderRouter);
 app.use("/auth", authRouter);
 
