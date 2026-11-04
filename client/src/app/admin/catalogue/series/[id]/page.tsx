@@ -118,7 +118,11 @@ function SeriesView({ data }: { data: AdminSeriesPage }) {
               confirmLabel="Supprimer"
               onConfirm={onDelete}
             >
-              Ses {models.length} modèle{models.length > 1 ? "s" : ""} redeviendront sans série.
+              {models.length === 0
+                ? "Elle n'a aucun modèle."
+                : models.length === 1
+                  ? "Son modèle redeviendra sans série."
+                  : `Ses ${models.length} modèles redeviendront sans série.`}
             </ConfirmDialog>
           </div>
           <form
