@@ -80,7 +80,9 @@ export default async function ShopBrandPage({
             Aucun appareil de cette marque pour le moment.
           </p>
         ) : (
-          <ul className="grid gap-4 md:grid-cols-3">
+          // 2 affiches par ligne sur tablette, 3 seulement à partir de 1280 px : en
+          // paysage (16/10), une affiche plus étroite n'a pas la hauteur de son texte.
+          <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {series.map((one, index) => (
               <li key={one.slug}>
                 <SeriesCard

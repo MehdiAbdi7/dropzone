@@ -24,7 +24,7 @@ export default function SeriesCard({
       src={series.coverUrl}
       alt=""
       fill
-      sizes="(min-width: 768px) 50vw, 100vw"
+      sizes="(min-width: 1280px) 380px, (min-width: 768px) 50vw, 100vw"
       priority={priority}
       className="object-cover"
     />
@@ -46,7 +46,7 @@ export default function SeriesCard({
           <ProductImage
             src={series.fallback.image}
             alt=""
-            sizes="(min-width: 768px) 25vw, 50vw"
+            sizes="(min-width: 1280px) 190px, (min-width: 768px) 25vw, 50vw"
             priority={priority}
           />
         </div>
@@ -57,8 +57,13 @@ export default function SeriesCard({
   const body = (
     <>
       <div className="series-media">{media}</div>
-      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 p-4 md:flex-row md:items-end md:p-5">
-        <div className="min-w-0 flex-1 space-y-2">
+      {/* Le bouton reste sous le prix à toutes les tailles : à côté, il serrait les
+          modèles sur plusieurs lignes et le bloc sortait par le haut de l'affiche. */}
+      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 p-4 md:p-5">
+        <div className="min-w-0 space-y-2">
+          {/* Le titre n'est plus affiché (la couverture porte déjà le nom), mais il
+              reste pour les lecteurs d'écran : un titre par série dans la page. */}
+          <h2 className="sr-only">{series.name}</h2>
           <ul
             aria-label="Modèles de la série"
             className="flex flex-wrap gap-1.5"
@@ -82,11 +87,9 @@ export default function SeriesCard({
           ) : null}
         </div>
         {series.soldOut ? (
-          <span className="badge badge-out self-start md:self-auto">
-            Épuisé
-          </span>
+          <span className="badge badge-out self-start">Épuisé</span>
         ) : (
-          <span className="series-cta w-full md:w-auto">
+          <span className="series-cta w-full">
             {ctaLabel(series.name)}
             <ArrowRightIcon size={16} />
           </span>

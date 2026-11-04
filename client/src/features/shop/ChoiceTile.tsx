@@ -30,7 +30,14 @@ export default function ChoiceTile({
             sizes="(min-width: 1024px) 200px, (min-width: 768px) 33vw, 50vw"
           />
         ) : logoUrl ? (
-          <BrandLogo url={logoUrl} size={76} className="hover:text-blue-ink" />
+          // group-hover : le logo devient bleu dès qu'on survole la tuile (le lien porte
+          // la classe group), comme son nom, et pas seulement quand on survole le logo.
+          <BrandLogo
+            url={logoUrl}
+            size={76}
+            className="group-hover:text-blue-ink"
+          />
+
         ) : (
           <span
             aria-hidden="true"
