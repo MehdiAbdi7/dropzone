@@ -9,6 +9,7 @@ import { modelSlug } from "../../modules/models/modelSlug.js";
 import { refreshMinPrice } from "../../modules/products/product.service.js";
 import { defaultWarrantyMonths } from "../../modules/products/warranty.js";
 import { slugify } from "../../utils/slugify.js";
+import { CHOICES } from "../device-models.js";
 import { fillSeries } from "../series.js";
 import { dedupe, importSku, type Listing, parseListing, type RawRow } from "./listing.js";
 import { IGNORED, MODEL_MAP } from "./models-map.js";
@@ -218,7 +219,12 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
     brandIds.set(key, brand.id);
   }
 
-  const choices = listings.flatMap((listing) => [
+  // Les valeurs de départ des listes du vrai catalogue (une base remplie avant n'en a
+  // aucune), puis chaque valeur utilisée par une annonce.
+  const starters = (["sim", "origin", "connectivity"] as const).flatMap((group) =>
+    CHOICES[group].map((label) => ({ group, label })),
+  );
+  const choices = [...starters, ...listings.flatMap((listing) => [
     ...Object.entries(listing.options).map(([key, label]) => {
       const group = OPTION_GROUPS[key];
       if (!group) {
@@ -227,7 +233,7 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
       return { group, label };
     }),
     ...(listing.origin ? [{ group: "origin" as const, label: listing.origin }] : []),
-  ]);
+  ])];
   report.created.choices = (await db.choice.createMany({ data: choices, skipDuplicates: true })).count;
 
   const modelIds = new Map<string, number>();

@@ -165,6 +165,15 @@ describe("importDropzone : le premier import", () => {
     );
   });
 
+  it("remplit les nouvelles listes du back-office avec leurs valeurs de départ", async () => {
+    await importDropzone(prisma, rows());
+    const labels = async (group: "sim" | "origin" | "connectivity") =>
+      (await prisma.choice.findMany({ where: { group }, select: { label: true } })).map((choice) => choice.label);
+    expect(await labels("sim")).toEqual(expect.arrayContaining(["Double SIM", "Une SIM", "eSIM uniquement"]));
+    expect(await labels("origin")).toEqual(expect.arrayContaining(["Europe", "Canada", "Japon", "États-Unis", "Algérie"]));
+    expect(await labels("connectivity")).toEqual(expect.arrayContaining(["Wi-Fi", "Wi-Fi + Cellular"]));
+  });
+
   it("retire les montres, sans effacer la commande qui en citait une", async () => {
     const report = await importDropzone(prisma, rows());
     expect(report.removed).toMatchObject({ categories: 1, products: 1 });

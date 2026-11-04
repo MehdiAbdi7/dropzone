@@ -94,7 +94,7 @@ export default async function HomePage() {
               <span className="text-gradient block w-fit pb-1">Neuf scellé ou en affaire.</span>
             </h1>
             <p className="max-w-lg text-lg text-ink-muted">
-              Smartphones, PC portables et montres importés d&apos;Europe. Chaque affaire est testée et décrite
+              Smartphones, PC portables et tablettes importés d&apos;Europe. Chaque affaire est testée et décrite
               pièce par pièce : note, batterie, pièces changées et boîte.
             </p>
             <div className="flex flex-wrap gap-3">
