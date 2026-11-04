@@ -151,11 +151,12 @@ export async function priceCart(db: Tx, items: CartItemInput[]) {
 }
 
 // L'empreinte de ce que le client a vu : chaque ligne (cadeaux compris) avec sa
-// quantité et son prix. La commande renvoie l'empreinte de l'aperçu ; si le serveur
-// en calcule une autre (prix modifié, cadeau épuisé), la commande est refusée.
+// quantité, son prix, sa garantie et sa fiche d'état, tout ce que la commande recopie.
+// La commande renvoie l'empreinte de l'aperçu ; si le serveur en calcule une autre
+// (prix ou garantie modifiés, fiche réécrite, cadeau épuisé), la commande est refusée.
 function hashLines(lines: CartLine[]): string {
   const text = lines
-    .map((line) => `${line.sku}:${line.quantity}:${line.unitPrice}`)
+    .map((line) => JSON.stringify([line.sku, line.quantity, line.unitPrice, line.warrantyMonths, line.conditionReport]))
     .sort()
     .join("|");
   return createHash("sha256").update(text).digest("hex");

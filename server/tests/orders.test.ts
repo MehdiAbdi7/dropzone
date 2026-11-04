@@ -148,6 +148,16 @@ describe("POST /orders", () => {
     expect(response.status).toBe(409);
   });
 
+  it("refuse si la fiche d'état a changé depuis le récapitulatif", async () => {
+    const items = [{ sku: "IP-R-DEAL", quantity: 1 }];
+    const preview = await request(app).post("/orders/preview").send({ items });
+    await prisma.productVariant.update({ where: { sku: "IP-R-DEAL" }, data: { details: "Écran remplacé" } });
+    const response = await request(app)
+      .post("/orders")
+      .send({ items, ...customer, cartHash: preview.body.data.cartHash });
+    expect(response.status).toBe(409);
+  });
+
   it("deux clients et un seul reconditionné : une commande passe, l'autre reçoit 409", async () => {
     const items = [{ sku: "IP-R-DEAL", quantity: 1 }];
     const preview = await request(app).post("/orders/preview").send({ items });
@@ -183,6 +193,16 @@ describe("La garantie de chaque appareil", () => {
     const bySku = (sku: string) => preview.body.data.lines.find((line: { sku: string }) => line.sku === sku);
     expect(bySku("IP-R-DEAL").warrantyMonths).toBe(6);
     expect(bySku("CHG-20W").warrantyMonths).toBeNull();
+  });
+
+  it("refuse la commande si la garantie a changé depuis le récapitulatif", async () => {
+    const items = [{ sku: "IP-R-DEAL", quantity: 1 }];
+    const preview = await request(app).post("/orders/preview").send({ items });
+    await prisma.productVariant.update({ where: { sku: "IP-R-DEAL" }, data: { warrantyMonths: 3 } });
+    const response = await request(app)
+      .post("/orders")
+      .send({ items, ...customer, cartHash: preview.body.data.cartHash });
+    expect(response.status).toBe(409);
   });
 
   it("est recopiée dans la commande, qui ne change plus si la fiche change", async () => {

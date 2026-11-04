@@ -3,6 +3,7 @@
 // ligne de texte en une annonce rangée, sans toucher à la base. Ce qu'elles ne savent pas
 // lire fait échouer l'import (rien n'est perdu en silence, rien n'est inventé).
 import { createHash } from "node:crypto";
+import { REFERENCE_PATTERN } from "../../modules/products/product.schema.js";
 
 export const COLUMNS = [
   "date", "code", "type", "modele", "cpu", "ram", "stockage", "ecran", "gpu", "prix_da",
@@ -234,6 +235,19 @@ export function parseListing(row: RawRow): Listing | { skip: string } {
     }
   }
 
+  // Un prix en dinars, des chiffres et des espaces (« 58 000 ») : le reste fait échouer
+  // l'import avec l'annonce citée, au lieu d'une erreur de la base sur un NaN.
+  const price = Number(row.prix_da.replace(/\s/g, ""));
+  if (!Number.isInteger(price) || price <= 0) {
+    throw new Error(`Prix illisible « ${row.prix_da} » (${row.code})`);
+  }
+  // La règle du back-office (REFERENCE_PATTERN), en majuscules comme lui : sinon la fiche
+  // importée ne pourrait plus être enregistrée par le gérant.
+  const reference = row.reference.trim().toUpperCase() || null;
+  if (reference !== null && !REFERENCE_PATTERN.test(reference)) {
+    throw new Error(`Référence « ${row.reference} » refusée par le back-office : lettres, chiffres et tirets, 20 au plus (${row.code})`);
+  }
+
   const warranty = /^(\d+)\s*mois$/.exec(row.garantie);
   const condition = isNew ? "new" : "refurbished";
   return {
@@ -242,7 +256,7 @@ export function parseListing(row: RawRow): Listing | { skip: string } {
     kind,
     modelKey,
     condition,
-    price: Number(row.prix_da.replace(/\s/g, "")),
+    price,
     options,
     // Un neuf scellé n'a pas de fiche d'état.
     grade: isNew ? null : grade,
@@ -250,7 +264,7 @@ export function parseListing(row: RawRow): Listing | { skip: string } {
     details: isNew || details.length === 0 ? null : details.join(", "),
     origin,
     warrantyMonths: warranty ? Number(warranty[1]) : null,
-    reference: row.reference || null,
+    reference,
     screen: kind !== "phone" && row.ecran ? row.ecran : null,
     chip: kind === "tablet" && row.cpu ? row.cpu : null,
   };
@@ -260,13 +274,20 @@ const DAY = 24 * 60 * 60 * 1000;
 
 // Deux annonces identiques (même modèle, mêmes options, même prix, sans référence) à
 // 31 jours ou moins d'écart : le même appareil republié. On garde la plus récente.
+// Une note, une batterie, une origine ou des détails que les deux annonces donnent et qui
+// diffèrent : deux appareils. Une information qu'une seule donne ne contredit rien.
 export function dedupe(listings: Listing[]): Listing[] {
+  const agree = <T>(x: T | null, y: T | null) => x === null || y === null || x === y;
   const sameDevice = (a: Listing, b: Listing) =>
     a.reference === null &&
     b.reference === null &&
     a.modelKey === b.modelKey &&
     a.condition === b.condition &&
     a.price === b.price &&
+    agree(a.grade, b.grade) &&
+    agree(a.batteryHealth, b.batteryHealth) &&
+    agree(a.origin, b.origin) &&
+    agree(a.details, b.details) &&
     JSON.stringify(Object.entries(a.options).sort()) === JSON.stringify(Object.entries(b.options).sort()) &&
     Math.abs(Date.parse(a.date) - Date.parse(b.date)) <= 31 * DAY;
   const newestFirst = [...listings].sort((a, b) => b.date.localeCompare(a.date));

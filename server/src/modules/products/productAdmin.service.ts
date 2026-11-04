@@ -106,10 +106,11 @@ async function checkRules(input: ProductBody, productId?: number) {
   if (references.length > 0) {
     const taken = await prisma.productVariant.findFirst({
       where: { reference: { in: references }, ...(productId ? { productId: { not: productId } } : {}) },
-      select: { id: true },
+      select: { reference: true },
     });
     if (taken) {
-      throw new AppError(409, "Cette référence est déjà utilisée");
+      // Un envoi peut porter plusieurs références : le message dit laquelle.
+      throw new AppError(409, `La référence ${taken.reference} est déjà utilisée`);
     }
   }
 

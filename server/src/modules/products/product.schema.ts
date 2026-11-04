@@ -3,6 +3,10 @@ import { paginationQuery } from "../../utils/pagination.js";
 
 const slug = z.string().trim().regex(/^[a-z0-9-]{1,120}$/);
 
+// La référence interne du magasin (« 51057 ») : lettres, chiffres et tirets, 20 au plus.
+// Exportée pour l'import des annonces, qui doit refuser ce que le back-office refuserait.
+export const REFERENCE_PATTERN = /^[A-Z0-9-]{1,20}$/i;
+
 // ---------- Public ----------
 
 export const productListQuerySchema = z.object({
@@ -93,7 +97,7 @@ const variantSchema = z
     origin: optionalText(40),
     // La référence interne du magasin (« 51057 »), unique quand elle existe.
     reference: optionalText(20)
-      .refine((reference) => reference === null || /^[A-Z0-9-]+$/i.test(reference), {
+      .refine((reference) => reference === null || REFERENCE_PATTERN.test(reference), {
         error: "Lettres, chiffres et tirets",
       })
       .transform((reference) => reference?.toUpperCase() ?? null),

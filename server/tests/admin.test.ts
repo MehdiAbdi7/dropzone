@@ -230,7 +230,8 @@ describe("Produits", () => {
       .post("/admin/products")
       .send({ ...body(), variants: [{ ...refurbished, reference: "51057" }] });
     expect(response.status).toBe(409);
-    expect(response.body.error.message).toBe("Cette référence est déjà utilisée");
+    // Le message dit laquelle : un envoi peut porter plusieurs références.
+    expect(response.body.error.message).toBe("La référence 51057 est déjà utilisée");
   });
 
   it("garde sa propre référence quand on modifie le produit", async () => {

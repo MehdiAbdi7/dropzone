@@ -178,6 +178,16 @@ describe("parseListing : une annonce du relevé", () => {
   it("refuse un indice qu'elle ne sait pas lire, plutôt que de le perdre", () => {
     expect(() => parseListing(row({ modele: "iPhone 13", prix_da: "58000", etat: "mystère" }))).toThrow("mystère");
   });
+
+  // Sinon la fiche importée ne pourrait plus être enregistrée dans le back-office.
+  it("refuse une référence que le back-office refuserait, et l'écrit en majuscules comme lui", () => {
+    expect(() => parseListing(row({ modele: "iPhone 13", prix_da: "58000", reference: "51057 bis" }))).toThrow("51057 bis");
+    expect(parsed({ modele: "iPhone 13", prix_da: "58000", reference: "ab-12" }).reference).toBe("AB-12");
+  });
+
+  it("refuse un prix illisible avec un message qui le cite", () => {
+    expect(() => parseListing(row({ modele: "iPhone 13", prix_da: "58 000 DA" }))).toThrow("Prix illisible « 58 000 DA » (TEST)");
+  });
 });
 
 describe("dedupe : une annonce republiée", () => {
@@ -192,6 +202,25 @@ describe("dedupe : une annonce republiée", () => {
     expect(dedupe([listing("A", "2026-07-01"), listing("B", "2026-08-10")])).toHaveLength(2);
     expect(dedupe([listing("A", "2026-07-01"), listing("B", "2026-07-05", { price: 150000 })])).toHaveLength(2);
     expect(dedupe([listing("A", "2026-07-01", { reference: "1" }), listing("B", "2026-07-05", { reference: "1" })])).toHaveLength(2);
+  });
+
+  const described = { grade: 9, batteryHealth: 90, origin: "Europe", details: "Comme neuf" };
+
+  it("garde les deux quand la note, la batterie, l'origine ou les détails diffèrent : deux appareils", () => {
+    for (const extra of [{ grade: 8 }, { batteryHealth: 85 }, { origin: "Japon" }, { details: "Quasi neuf" }]) {
+      const pair = [listing("A", "2026-07-01", described), listing("B", "2026-07-05", { ...described, ...extra })];
+      expect(dedupe(pair)).toHaveLength(2);
+    }
+  });
+
+  // Les deux annonces de l'iPad 10e génération du relevé (21/05 et 10/06) : l'une donne
+  // les cycles, l'autre la note. Une information absente ne contredit rien.
+  it("ne distingue pas deux annonces dont l'une ne dit pas ce que l'autre dit", () => {
+    const pair = [
+      listing("A", "2026-07-01", { batteryHealth: 100, details: "44 cycles" }),
+      listing("B", "2026-07-05", { grade: 10, batteryHealth: 100 }),
+    ];
+    expect(dedupe(pair).map((l) => l.code)).toEqual(["B"]);
   });
 });
 
