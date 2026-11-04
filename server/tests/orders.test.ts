@@ -171,6 +171,37 @@ describe("POST /orders", () => {
   });
 });
 
+describe("La garantie de chaque appareil", () => {
+  beforeEach(async () => {
+    await prisma.productVariant.update({ where: { sku: "IP-R-DEAL" }, data: { warrantyMonths: 6 } });
+  });
+
+  it("est sur la ligne du panier, et rien sur l'article offert sans garantie", async () => {
+    const preview = await request(app)
+      .post("/orders/preview")
+      .send({ items: [{ sku: "IP-R-DEAL", quantity: 1 }] });
+    const bySku = (sku: string) => preview.body.data.lines.find((line: { sku: string }) => line.sku === sku);
+    expect(bySku("IP-R-DEAL").warrantyMonths).toBe(6);
+    expect(bySku("CHG-20W").warrantyMonths).toBeNull();
+  });
+
+  it("est recopiée dans la commande, qui ne change plus si la fiche change", async () => {
+    const response = await previewThenOrder([{ sku: "IP-R-DEAL", quantity: 1 }]);
+    expect(response.status).toBe(201);
+    await prisma.productVariant.update({ where: { sku: "IP-R-DEAL" }, data: { warrantyMonths: 12 } });
+    const order = await prisma.order.findUniqueOrThrow({ where: { number: 1001 }, include: { items: true } });
+    const line = order.items.find((item) => item.sku === "IP-R-DEAL");
+    expect(line?.warrantyMonths).toBe(6);
+  });
+
+  it("est donnée par le suivi de commande", async () => {
+    await previewThenOrder([{ sku: "IP-R-DEAL", quantity: 1 }]);
+    const found = await request(app).post("/orders/track").send({ number: 1001, phone: "0555123456" });
+    const line = found.body.data.items.find((item: { sku: string }) => item.sku === "IP-R-DEAL");
+    expect(line.warrantyMonths).toBe(6);
+  });
+});
+
 describe("Suivi et historique", () => {
   it("retrouve une commande avec le numéro et le téléphone, sans l'adresse", async () => {
     await previewThenOrder([{ sku: "COQ-IP15PM", quantity: 1 }]);

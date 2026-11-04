@@ -18,6 +18,8 @@ export type CartLine = {
   options: Prisma.JsonValue;
   condition: Condition;
   conditionReport: string | null;
+  // La garantie en mois de l'appareil ; null pour un accessoire qui n'en annonce pas.
+  warrantyMonths: number | null;
   unitPrice: number;
   // Le prix normal d'un article offert, pour l'afficher barré.
   normalPrice: number;
@@ -86,6 +88,7 @@ export async function priceCart(db: Tx, items: CartItemInput[]) {
       options: variant.options,
       condition: variant.condition,
       conditionReport: buildConditionReport(variant),
+      warrantyMonths: variant.warrantyMonths,
       unitPrice: variant.price,
       normalPrice: variant.price,
       quantity,
@@ -117,6 +120,7 @@ export async function priceCart(db: Tx, items: CartItemInput[]) {
         options: gift.giftVariant.options,
         condition: "new",
         conditionReport: null,
+        warrantyMonths: gift.giftVariant.warrantyMonths,
         unitPrice: 0,
         normalPrice: gift.giftVariant.price,
         quantity: giftQuantity,
@@ -216,6 +220,7 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
             options: line.options ?? {},
             condition: line.condition,
             conditionReport: line.conditionReport,
+            warrantyMonths: line.warrantyMonths,
             unitPrice: line.unitPrice,
             quantity: line.quantity,
             isGift: line.isGift,
@@ -249,6 +254,7 @@ const orderDetailSelect = {
       options: true,
       condition: true,
       conditionReport: true,
+      warrantyMonths: true,
       unitPrice: true,
       quantity: true,
       isGift: true,
