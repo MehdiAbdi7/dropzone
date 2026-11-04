@@ -284,6 +284,15 @@ describe("importDropzone : le travail du gérant survit au rejeu", () => {
     expect(await prisma.product.findUnique({ where: { slug: "google-pixel-8-pro" } })).not.toBeNull();
   });
 
+  // Décision de Mehdi du 04/11 : les valeurs de départ des listes, au premier import seulement.
+  it("ne recrée pas une valeur de départ que le gérant a supprimée d'une liste", async () => {
+    await importDropzone(prisma, rows());
+    await prisma.choice.deleteMany({ where: { group: "sim", label: "eSIM uniquement" } });
+    const report = await importDropzone(prisma, rows());
+    expect(report.created.choices).toBe(0);
+    expect(await prisma.choice.count({ where: { group: "sim", label: "eSIM uniquement" } })).toBe(0);
+  });
+
   it("ne crée pas de produit vide quand le gérant a changé le modèle d'un produit importé", async () => {
     await importDropzone(prisma, rows());
     const gen5 = await prisma.deviceModel.create({

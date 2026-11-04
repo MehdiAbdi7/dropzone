@@ -259,10 +259,11 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
   }
 
   // Les valeurs de départ des listes du vrai catalogue (une base remplie avant n'en a
-  // aucune), puis chaque valeur utilisée par une annonce.
-  const starters = (["sim", "origin", "connectivity"] as const).flatMap((group) =>
-    CHOICES[group].map((label) => ({ group, label })),
-  );
+  // aucune), au premier import seulement : ensuite, une valeur supprimée par le gérant ne
+  // revient pas. Puis chaque valeur dont une nouvelle annonce a besoin.
+  const starters = firstImport
+    ? (["sim", "origin", "connectivity"] as const).flatMap((group) => CHOICES[group].map((label) => ({ group, label })))
+    : [];
   const choices = [...starters, ...fresh.flatMap((listing) => [
     ...Object.entries(listing.options).map(([key, label]) => {
       const group = OPTION_GROUPS[key];
