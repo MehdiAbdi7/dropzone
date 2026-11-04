@@ -11,10 +11,15 @@ import { DEVICE_KINDS, computeMinPrice, refreshMinPrice } from "./product.servic
 const MAX_IMAGES = 6;
 
 export async function listAdminProducts(query: AdminProductListQuery) {
+  // La recherche du gérant : le nom du produit, ou le SKU ou la référence d'une variante
+  // (« 51057 », la référence qu'un client donne au téléphone).
+  const contains = query.q ? { contains: escapeLike(query.q), mode: "insensitive" as const } : null;
   const where: Prisma.ProductWhereInput = {
     status: query.status,
     category: query.category ? { slug: query.category } : undefined,
-    name: query.q ? { contains: escapeLike(query.q), mode: "insensitive" } : undefined,
+    OR: contains
+      ? [{ name: contains }, { variants: { some: { OR: [{ sku: contains }, { reference: contains }] } } }]
+      : undefined,
   };
   const [total, products] = await prisma.$transaction([
     prisma.product.count({ where }),
@@ -87,7 +92,25 @@ async function checkRules(input: ProductBody, productId?: number) {
   }
 
   if (!isDevice && input.variants.some((variant) => variant.condition === "refurbished")) {
-    throw new AppError(400, "Le reconditionné est réservé aux smartphones, PC portables et montres");
+    throw new AppError(400, "Le reconditionné est réservé aux appareils");
+  }
+
+  // Chaque appareil annonce sa garantie (3 à 12 mois chez DropZone) ; un accessoire, pas forcément.
+  if (isDevice && input.variants.some((variant) => variant.warrantyMonths === null)) {
+    throw new AppError(400, "Indiquez la garantie de chaque appareil, en mois");
+  }
+
+  // Une référence du magasin désigne un seul appareil, dans tout le catalogue. L'index
+  // unique de la base le garantit aussi ; ici, le gérant reçoit un message clair.
+  const references = input.variants.flatMap((variant) => (variant.reference ? [variant.reference] : []));
+  if (references.length > 0) {
+    const taken = await prisma.productVariant.findFirst({
+      where: { reference: { in: references }, ...(productId ? { productId: { not: productId } } : {}) },
+      select: { id: true },
+    });
+    if (taken) {
+      throw new AppError(409, "Cette référence est déjà utilisée");
+    }
   }
 
   // Les marques sont rangées par catégorie : « iPhone » des Smartphones ne va pas sur une coque.

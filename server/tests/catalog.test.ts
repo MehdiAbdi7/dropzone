@@ -233,6 +233,17 @@ describe("Neuf scellé et affaires", () => {
     expect(bySku("IP-R-DEAL")).not.toHaveProperty("isDeal");
   });
 
+  it("donne la garantie, l'origine et la référence de chaque variante dans la fiche", async () => {
+    await prisma.productVariant.update({
+      where: { sku: "IP-R-DEAL" },
+      data: { warrantyMonths: 6, origin: "Europe", reference: "51057" },
+    });
+    const response = await request(app).get("/products/iphone-15-pro-max");
+    const bySku = (sku: string) => response.body.data.variants.find((v: { sku: string }) => v.sku === sku);
+    expect(bySku("IP-R-DEAL")).toMatchObject({ warrantyMonths: 6, origin: "Europe", reference: "51057" });
+    expect(bySku("IP-NEW-256")).toMatchObject({ warrantyMonths: null, origin: null, reference: null });
+  });
+
   // Les CHECK des migrations : la base refuse même si le code a un bug.
   // Depuis le vrai catalogue (partie B), une affaire peut ne rien dire de sa boîte
   // (« Boîte non précisée », annonce importée) ; un neuf scellé, jamais.

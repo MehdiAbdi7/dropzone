@@ -6,7 +6,7 @@ import { paginate, paginationMeta } from "../../utils/pagination.js";
 import type { ProductListQuery } from "./product.schema.js";
 
 // Les catégories dont les produits ont un modèle d'appareil et peuvent être reconditionnés.
-export const DEVICE_KINDS: ProductKind[] = ["phone", "laptop", "watch"];
+export const DEVICE_KINDS: ProductKind[] = ["phone", "tablet", "laptop", "watch"];
 
 // Le prix « à partir de » : la variante la moins chère encore en stock.
 // Si tout est vendu, la moins chère tout court (la carte affiche alors « Rupture »).
@@ -42,12 +42,18 @@ type ConditionFields = {
   limitations: string[];
   withBox: boolean | null;
   details: string | null;
+  origin: string | null;
+  reference: string | null;
 };
+
+const BOX_LABELS = { true: "Avec sa boîte d'origine", false: "Sans boîte", null: "Boîte non précisée" } as const;
 
 // La fiche d'une affaire en une ligne, recopiée dans la commande pour que le client et
 // le magasin sachent ce qui a été vendu : « Note 9/10 · Batterie 87 % · Remplacé :
 // Batterie (d'origine), Écran (compatible) · Défauts : aucun · Limitations : aucune ·
-// Sans boîte », puis « · Détails : … » s'il y en a. Un neuf scellé n'a rien.
+// Sans boîte », puis l'origine, la référence et les détails s'il y en a. Ce qu'une
+// annonce importée ne dit pas est écrit tel quel (« Note non précisée »), jamais
+// inventé. Un neuf scellé n'a rien.
 export function buildConditionReport(variant: ConditionFields): string | null {
   if (variant.condition === "new") {
     return null;
@@ -57,12 +63,14 @@ export function buildConditionReport(variant: ConditionFields): string | null {
     (part) => `${part} (${variant.compatibleParts.includes(part) ? "compatible" : "d'origine"})`,
   );
   return [
-    `Note ${variant.grade}/10`,
-    `Batterie ${variant.batteryHealth} %`,
+    variant.grade === null ? "Note non précisée" : `Note ${variant.grade}/10`,
+    variant.batteryHealth === null ? "Batterie non mesurée" : `Batterie ${variant.batteryHealth} %`,
     `Remplacé : ${list(replaced, "rien")}`,
     `Défauts : ${list(variant.defects, "aucun")}`,
     `Limitations : ${list(variant.limitations, "aucune")}`,
-    variant.withBox ? "Avec sa boîte d'origine" : "Sans boîte",
+    BOX_LABELS[`${variant.withBox}`],
+    ...(variant.origin ? [`Origine : ${variant.origin}`] : []),
+    ...(variant.reference ? [`Réf. ${variant.reference}`] : []),
     ...(variant.details ? [`Détails : ${variant.details}`] : []),
   ].join(" · ");
 }
@@ -224,6 +232,9 @@ export async function getProductBySlug(slug: string) {
           compatibleParts: true,
           withBox: true,
           details: true,
+          warrantyMonths: true,
+          origin: true,
+          reference: true,
           gifts: {
             select: {
               quantity: true,

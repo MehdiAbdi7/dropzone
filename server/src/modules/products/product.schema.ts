@@ -50,6 +50,16 @@ const labelRecord = (valueMax: number) =>
 // Une des trois familles de la fiche d'état : des étiquettes copiées depuis `choices`.
 const labelList = z.array(z.string().trim().min(1).max(80)).max(15).default([]);
 
+// Un texte facultatif du formulaire : un champ vide est rangé comme « rien » (null).
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .transform((text) => text || null)
+    .nullable()
+    .default(null);
+
 const variantSchema = z
   .object({
     id: z.number().int().positive().optional(),
@@ -70,15 +80,20 @@ const variantSchema = z
     defects: labelList,
     limitations: labelList,
     // Avec ou sans sa boîte d'origine : obligatoire pour une affaire (voir plus bas).
+    // « Non précisée » (null) n'existe que pour les annonces importées : le gérant choisit.
     withBox: z.boolean().nullable().default(null),
     // Les détails du gérant ; des détails vides sont rangés comme « pas de détails ».
-    details: z
-      .string()
-      .trim()
-      .max(200)
-      .transform((text) => text || null)
-      .nullable()
-      .default(null),
+    details: optionalText(200),
+    // La garantie en mois : obligatoire pour un appareil (règle du service, qui connaît la catégorie).
+    warrantyMonths: z.number().int().min(1).max(36).nullable().default(null),
+    // Le pays d'origine, une valeur de la liste « Pays d'origine ».
+    origin: optionalText(40),
+    // La référence interne du magasin (« 51057 »), unique quand elle existe.
+    reference: optionalText(20)
+      .refine((reference) => reference === null || /^[A-Z0-9-]+$/i.test(reference), {
+        error: "Lettres, chiffres et tirets",
+      })
+      .transform((reference) => reference?.toUpperCase() ?? null),
     gifts: z
       .array(
         z.object({
@@ -110,12 +125,8 @@ const variantSchema = z
     if (variant.stock > 1) {
       ctx.addIssue({ code: "custom", path: ["stock"], message: "Un reconditionné est unique : stock 0 ou 1" });
     }
-    if (variant.grade === null) {
-      ctx.addIssue({ code: "custom", path: ["grade"], message: "Note obligatoire pour un reconditionné" });
-    }
-    if (variant.batteryHealth === null) {
-      ctx.addIssue({ code: "custom", path: ["batteryHealth"], message: "Batterie obligatoire pour un reconditionné" });
-    }
+    // La note et la batterie sont facultatives : les annonces de PC n'en donnent
+    // presque jamais, et la boutique dit alors « non précisée » plutôt que d'inventer.
   });
 
 export const productBodySchema = z
@@ -134,6 +145,10 @@ export const productBodySchema = z
     const skus = product.variants.map((variant) => variant.sku);
     if (new Set(skus).size !== skus.length) {
       ctx.addIssue({ code: "custom", path: ["variants"], message: "Deux variantes ont le même SKU" });
+    }
+    const references = product.variants.flatMap((variant) => (variant.reference ? [variant.reference] : []));
+    if (new Set(references).size !== references.length) {
+      ctx.addIssue({ code: "custom", path: ["variants"], message: "Deux variantes ont la même référence" });
     }
   });
 export type ProductBody = z.infer<typeof productBodySchema>;

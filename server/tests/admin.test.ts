@@ -35,6 +35,7 @@ describe("Produits", () => {
     batteryHealth: 94,
     defects: ["Rayures légères sur l'écran"],
     withBox: false,
+    warrantyMonths: 6,
   };
 
   const body = () => ({
@@ -45,7 +46,7 @@ describe("Produits", () => {
     specs: { Écran: "6,8 pouces" },
     status: "published",
     variants: [
-      { sku: "S24U-256", options: { Stockage: "256 Go" }, price: 215000, stock: 3 },
+      { sku: "S24U-256", options: { Stockage: "256 Go" }, price: 215000, stock: 3, warrantyMonths: 12 },
       { ...refurbished, gifts: [{ giftVariantId: catalog.chargerVariant.id }] },
     ],
   });
@@ -87,7 +88,7 @@ describe("Produits", () => {
     expect(response.status).toBe(400);
   });
 
-  const sealed = { sku: "S24U-256", options: { Stockage: "256 Go" }, price: 215000, stock: 3 };
+  const sealed = { sku: "S24U-256", options: { Stockage: "256 Go" }, price: 215000, stock: 3, warrantyMonths: 12 };
 
   it("accepte un article offert sur un neuf scellé", async () => {
     const response = await admin.post("/admin/products").send({
@@ -153,8 +154,8 @@ describe("Produits", () => {
     const response = await admin.patch(`/admin/products/${id}`).send({
       ...body(),
       variants: [
-        { id: kept.id, sku: "S24U-256", options: { Stockage: "256 Go" }, price: 209000, stock: 2 },
-        { sku: "S24U-512", options: { Stockage: "512 Go" }, price: 245000, stock: 1 },
+        { id: kept.id, sku: "S24U-256", options: { Stockage: "256 Go" }, price: 209000, stock: 2, warrantyMonths: 12 },
+        { sku: "S24U-512", options: { Stockage: "512 Go" }, price: 245000, stock: 1, warrantyMonths: 12 },
       ],
     });
     expect(response.status).toBe(200);
@@ -162,6 +163,95 @@ describe("Produits", () => {
     expect(after.body.data.variants.map((v: { sku: string }) => v.sku)).toEqual(["S24U-256", "S24U-512"]);
     expect(after.body.data.minPrice).toBe(209000);
     expect(after.body.data.slug).toBe(created.body.data.slug);
+  });
+
+  // ---------- Le vrai catalogue : garantie, origine, référence ----------
+
+  it("crée une affaire sans note ni batterie, avec sa garantie, son origine et sa référence", async () => {
+    const created = await admin.post("/admin/products").send({
+      ...body(),
+      variants: [{ ...refurbished, grade: null, batteryHealth: null, origin: "Europe", reference: "51057" }],
+    });
+    expect(created.status).toBe(201);
+    const detail = await admin.get(`/admin/products/${created.body.data.id}`);
+    expect(detail.body.data.variants[0]).toMatchObject({
+      grade: null,
+      batteryHealth: null,
+      warrantyMonths: 6,
+      origin: "Europe",
+      reference: "51057",
+    });
+  });
+
+  it("range une origine et une référence vides comme absentes", async () => {
+    const created = await admin.post("/admin/products").send({
+      ...body(),
+      variants: [{ ...refurbished, origin: "", reference: "" }],
+    });
+    expect(created.status).toBe(201);
+    const detail = await admin.get(`/admin/products/${created.body.data.id}`);
+    expect(detail.body.data.variants[0]).toMatchObject({ origin: null, reference: null });
+  });
+
+  it("refuse un appareil sans garantie", async () => {
+    const response = await admin
+      .post("/admin/products")
+      .send({ ...body(), variants: [{ ...refurbished, warrantyMonths: null }] });
+    expect(response.status).toBe(400);
+    expect(response.body.error.message).toBe("Indiquez la garantie de chaque appareil, en mois");
+  });
+
+  it("accepte un accessoire sans garantie", async () => {
+    const response = await admin.post("/admin/products").send({
+      ...body(),
+      name: "Câble USB-C 1 m",
+      categoryId: catalog.accessories.id,
+      deviceModelId: null,
+      variants: [{ sku: "CBL-1M", price: 900, stock: 4 }],
+    });
+    expect(response.status).toBe(201);
+  });
+
+  it("refuse deux variantes du même envoi avec la même référence", async () => {
+    const response = await admin.post("/admin/products").send({
+      ...body(),
+      variants: [
+        { ...refurbished, reference: "51057" },
+        { ...refurbished, sku: "S24U-R-002", reference: "51057" },
+      ],
+    });
+    expect(response.status).toBe(400);
+    expect(JSON.stringify(response.body.error)).toContain("Deux variantes ont la même référence");
+  });
+
+  it("refuse une référence déjà prise par un autre produit, avec un message clair", async () => {
+    await prisma.productVariant.update({ where: { sku: "IP-R-WIFI" }, data: { reference: "51057" } });
+    const response = await admin
+      .post("/admin/products")
+      .send({ ...body(), variants: [{ ...refurbished, reference: "51057" }] });
+    expect(response.status).toBe(409);
+    expect(response.body.error.message).toBe("Cette référence est déjà utilisée");
+  });
+
+  it("garde sa propre référence quand on modifie le produit", async () => {
+    const created = await admin
+      .post("/admin/products")
+      .send({ ...body(), variants: [{ ...refurbished, reference: "51057" }] });
+    const id = created.body.data.id;
+    const detail = await admin.get(`/admin/products/${id}`);
+    const variant = detail.body.data.variants[0];
+    const response = await admin
+      .patch(`/admin/products/${id}`)
+      .send({ ...body(), variants: [{ ...refurbished, id: variant.id, reference: "51057", price: 160000 }] });
+    expect(response.status).toBe(200);
+  });
+
+  it("cherche un produit par la référence ou le SKU d'une variante", async () => {
+    await prisma.productVariant.update({ where: { sku: "IP-R-WIFI" }, data: { reference: "51057" } });
+    const byReference = await admin.get("/admin/products?q=51057");
+    expect(byReference.body.data.map((p: { name: string }) => p.name)).toEqual(["iPhone 15 Pro Max"]);
+    const bySku = await admin.get("/admin/products?q=ip-r-deal");
+    expect(bySku.body.data.map((p: { name: string }) => p.name)).toEqual(["iPhone 15 Pro Max"]);
   });
 
   it("liste les accessoires qu'on peut offrir", async () => {
