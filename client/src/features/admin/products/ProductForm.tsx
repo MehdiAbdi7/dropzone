@@ -20,13 +20,14 @@ import ModelPicker from "./ModelPicker";
 import {
   bodyFromDraft,
   emptyVariant,
+  fillMissingWarranties,
   isDeviceKind,
   missingBox,
   missingPartOrigins,
   suggestSku,
   type ProductDraft,
 } from "./productDraft";
-import { defaultWarrantyMonths } from "@/config/warranty";
+import type { ProductKind } from "@/types/api";
 import VariantEditor from "./VariantEditor";
 
 // Le formulaire produit, rempli dans l'ordre où le vendeur pense :
@@ -67,6 +68,17 @@ export default function ProductForm({
 
   const set = (patch: Partial<ProductDraft>) => setDraft((current) => ({ ...current, ...patch }));
 
+  // Dès que la sorte de la catégorie est connue (un clic sur une catégorie, ou une fiche
+  // préremplie depuis le Catalogue une fois les catégories chargées), les garanties encore
+  // vides reçoivent celle de DropZone. Un ajustement pendant le rendu, sans useEffect.
+  const [warrantyKind, setWarrantyKind] = useState<ProductKind | undefined>(undefined);
+  if (kind !== warrantyKind) {
+    setWarrantyKind(kind);
+    if (kind) {
+      setDraft((current) => fillMissingWarranties(current, kind));
+    }
+  }
+
   function chooseCategory(id: number) {
     const next = categories.find((item) => item.id === id);
     const device = isDeviceKind(next?.kind);
@@ -81,13 +93,8 @@ export default function ProductForm({
         draft.specs.length > 0 || !next
           ? draft.specs
           : SPEC_SUGGESTIONS[next.kind].map((key) => ({ key, value: "" })),
-      variants: (device ? draft.variants : draft.variants.map((variant) => ({ ...variant, condition: "new" as const }))).map(
-        // Une garantie encore vide reçoit celle de DropZone pour cette sorte.
-        (variant) => {
-          const months = next && !variant.warrantyMonths ? defaultWarrantyMonths(next.kind, variant.condition) : null;
-          return months === null ? variant : { ...variant, warrantyMonths: String(months) };
-        },
-      ),
+      // La garantie suit au rendu suivant (fillMissingWarranties, plus haut).
+      variants: device ? draft.variants : draft.variants.map((variant) => ({ ...variant, condition: "new" as const })),
     });
   }
 

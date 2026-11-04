@@ -12,6 +12,9 @@ export const productListQuerySchema = z.object({
   condition: z.enum(["neuf", "affaire", "reconditionne"]).optional(),
   model: slug.optional(),
   brand: slug.optional(),
+  // « complete » : seulement les produits qui ont une affaire en stock dont la fiche dit la
+  // note et la batterie (la vitrine de l'accueil ; une annonce importée n'en dit souvent rien).
+  fiche: z.enum(["complete"]).optional(),
   // `sortie` : du modèle le plus récent au plus ancien (pages des marques de la Boutique).
   sort: z.enum(["nouveautes", "prix-croissant", "prix-decroissant", "sortie"]).default("nouveautes"),
   ...paginationQuery,

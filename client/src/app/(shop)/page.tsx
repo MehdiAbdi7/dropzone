@@ -19,6 +19,7 @@ import { STORE_INFO } from "@/config/storeInfo";
 import CategoryCards from "@/features/home/CategoryCards";
 import DeviceStage, { DEAL_DEVICES, HERO_DEVICES } from "@/features/home/DeviceStage";
 import Guarantees, { type Guarantee } from "@/features/home/Guarantees";
+import { showcaseUnit } from "@/features/home/showcase";
 import ConditionReport from "@/features/products/ConditionReport";
 import ProductGrid from "@/features/products/ProductGrid";
 import { formatPrice } from "@/lib/format";
@@ -63,22 +64,21 @@ const FAMILIES = [
 ];
 
 export default async function HomePage() {
-  const [latest, refurbished, deals] = await Promise.all([
+  const [latest, complete, refurbished, deals] = await Promise.all([
     publicFetchPage<ProductCard>("/products?limit=6", 60),
-    publicFetchPage<ProductCard>("/products?category=smartphones&condition=affaire&limit=12", 60),
+    // La vitrine : un smartphone dont une affaire dit sa note et sa batterie (les annonces
+    // importées n'en disent souvent rien) ; à défaut, le plus récent qui a une affaire.
+    publicFetchPage<ProductCard>("/products?category=smartphones&condition=affaire&fiche=complete&limit=1", 60),
+    publicFetchPage<ProductCard>("/products?category=smartphones&condition=affaire&limit=1", 60),
     publicFetchPage<ProductCard>("/products?condition=affaire&limit=1", 60),
   ]);
 
-  // Une vraie affaire du stock, montrée avec sa fiche d'état complète (le smartphone le
-  // plus récent qui en a une).
-  const showcaseSlug = refurbished?.data[0]?.slug;
+  // Une vraie affaire du stock, montrée avec sa fiche d'état.
+  const showcaseSlug = complete?.data[0]?.slug ?? refurbished?.data[0]?.slug;
   const showcase = showcaseSlug ? await publicFetch<ProductDetail>(`/products/${showcaseSlug}`, 60) : null;
+  // En vitrine : la fiche la plus complète, puis l'exemple le plus rassurant.
+  const unit = showcase ? showcaseUnit(showcase.variants) : null;
   const refurbishedUnits = showcase?.variants.filter((variant) => variant.condition === "refurbished") ?? [];
-  // En vitrine : une affaire sans limitation, l'exemple le plus rassurant.
-  const unit =
-    refurbishedUnits.find((variant) => variant.gifts.length > 0 && variant.limitations.length === 0) ??
-    refurbishedUnits.find((variant) => variant.limitations.length === 0) ??
-    refurbishedUnits[0];
   // Le bandeau des affaires n'apparaît que s'il y a vraiment des affaires en stock.
   const hasDeals = (deals?.pagination.total ?? 0) > 0;
 

@@ -130,6 +130,13 @@ export async function listProducts(query: ProductListQuery) {
     const condition: Condition = query.condition === "neuf" ? "new" : "refurbished";
     filters.push({ variants: { some: { condition, stock: { gt: 0 } } } });
   }
+  if (query.fiche === "complete") {
+    filters.push({
+      variants: {
+        some: { condition: "refurbished", stock: { gt: 0 }, grade: { not: null }, batteryHealth: { not: null } },
+      },
+    });
+  }
   if (query.model) {
     // Le produit de ce modèle, ou un accessoire compatible avec lui.
     filters.push({

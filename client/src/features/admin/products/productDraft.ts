@@ -95,6 +95,17 @@ export function withCondition(variant: VariantDraft, kind: ProductKind, conditio
   };
 }
 
+// Les variantes sans garantie reçoivent celle de DropZone pour cette sorte : au choix de
+// la catégorie, et quand la sorte d'une fiche préremplie (« Créer la fiche ») devient connue.
+export function fillMissingWarranties(draft: ProductDraft, kind: ProductKind): ProductDraft {
+  return {
+    ...draft,
+    variants: draft.variants.map((variant) =>
+      variant.warrantyMonths ? variant : { ...variant, warrantyMonths: defaultWarrantyText(kind, variant.condition) },
+    ),
+  };
+}
+
 // Une affaire dont la boîte n'est pas choisie (annonce importée) : l'envoi est refusé.
 export function missingBox(variant: VariantDraft): boolean {
   return variant.condition === "refurbished" && variant.withBox === null;

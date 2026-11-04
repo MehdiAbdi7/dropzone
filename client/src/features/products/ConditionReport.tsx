@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { formatOptions, formatPrice } from "@/lib/format";
-import { dealFacts } from "@/features/shop/dealLabels";
+import { boxLabel, dealFacts } from "@/features/shop/dealLabels";
 import type { Variant } from "@/types/api";
 import BatteryGauge from "./BatteryGauge";
 import GiftList from "./GiftList";
@@ -44,11 +44,16 @@ export default function ConditionReport({ variant, action }: { variant: Variant;
             ) : (
               <p className="text-sm text-ink-muted">Batterie : non mesurée</p>
             )}
+            {/* La boîte (« Boîte non précisée » pour une annonce importée), comme sur la radiographie. */}
+            {boxLabel(variant.withBox) ? <p className="text-sm font-semibold">{boxLabel(variant.withBox)}</p> : null}
             {dealFacts(variant).length > 0 ? <p className="text-sm text-ink-muted">{dealFacts(variant).join(" · ")}</p> : null}
           </div>
         </div>
         <p className="font-display text-2xl font-bold">{formatPrice(variant.price)}</p>
       </header>
+
+      {/* Les détails du gérant (« Comme neuf »), comme sur la radiographie. */}
+      {variant.details ? <p className="break-words font-semibold">{variant.details}</p> : null}
 
       {variant.limitations.length > 0 ? (
         <div role="note" className="rounded-lg border border-red bg-red-soft p-3">

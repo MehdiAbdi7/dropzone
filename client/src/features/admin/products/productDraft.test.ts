@@ -5,12 +5,32 @@ import {
   draftFromProduct,
   emptyDraft,
   emptyVariant,
+  fillMissingWarranties,
   missingBox,
   missingPartOrigins,
   type VariantDraft,
   withCondition,
   withReplacedParts,
 } from "./productDraft";
+
+// « Créer la fiche » depuis le Catalogue : la catégorie est déjà choisie, mais sa sorte
+// n'est connue qu'une fois les catégories chargées (relecture du 04/11).
+describe("fillMissingWarranties", () => {
+  it("remplit la garantie vide des variantes d'une fiche préremplie, selon leur état", () => {
+    const draft = emptyDraft({ categoryId: 1, brandId: 2, deviceModelId: 3, name: "iPhone 18 Pro" });
+    const filled = fillMissingWarranties(
+      { ...draft, variants: [...draft.variants, emptyVariant("refurbished")] },
+      "phone",
+    );
+    expect(filled.variants.map((variant) => variant.warrantyMonths)).toEqual(["12", "6"]);
+  });
+
+  it("ne touche pas une garantie déjà tapée, ni un accessoire", () => {
+    const draft = { ...emptyDraft(), variants: [{ ...emptyVariant(), warrantyMonths: "24" }] };
+    expect(fillMissingWarranties(draft, "phone").variants[0].warrantyMonths).toBe("24");
+    expect(fillMissingWarranties(emptyDraft(), "accessory").variants[0].warrantyMonths).toBe("");
+  });
+});
 
 // Une affaire du formulaire : un écran compatible et une batterie d'origine.
 const deal = (patch: Partial<VariantDraft> = {}): VariantDraft => ({

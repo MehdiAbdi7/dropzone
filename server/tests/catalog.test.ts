@@ -77,6 +77,28 @@ describe("GET /products", () => {
     expect(legacy.body.data.map((p: { slug: string }) => p.slug)).toEqual(["iphone-15-pro-max"]);
   });
 
+  // La vitrine de l'accueil : une affaire dont la fiche dit vraiment la note et la batterie
+  // (les annonces importées n'en disent souvent rien).
+  it("filtre les affaires à fiche complète, note et batterie connues", async () => {
+    const galaxyModel = await prisma.deviceModel.findUniqueOrThrow({ where: { slug: "samsung-galaxy-s24-ultra" } });
+    const phones = await prisma.category.findUniqueOrThrow({ where: { slug: "smartphones" } });
+    await prisma.product.create({
+      data: {
+        name: "Galaxy S24 Ultra importé",
+        slug: "galaxy-s24-ultra-importe",
+        description: "Annonce sans note",
+        categoryId: phones.id,
+        deviceModelId: galaxyModel.id,
+        status: "published",
+        variants: { create: [{ sku: "IG-SANS-NOTE", price: 150000, stock: 1, condition: "refurbished", batteryHealth: 90 }] },
+      },
+    });
+    const all = await request(app).get("/products?condition=affaire");
+    expect(all.body.data.map((p: { slug: string }) => p.slug).sort()).toEqual(["galaxy-s24-ultra-importe", "iphone-15-pro-max"]);
+    const complete = await request(app).get("/products?condition=affaire&fiche=complete");
+    expect(complete.body.data.map((p: { slug: string }) => p.slug)).toEqual(["iphone-15-pro-max"]);
+  });
+
   it("trouve un modèle et les accessoires compatibles avec lui", async () => {
     const response = await request(app).get("/products?model=apple-iphone-15-pro-max");
     const slugs = response.body.data.map((p: { slug: string }) => p.slug).sort();
