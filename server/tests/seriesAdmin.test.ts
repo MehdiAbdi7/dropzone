@@ -136,7 +136,7 @@ describe("Les compteurs du Catalogue", () => {
     const response = await admin.get(`/admin/catalog/brands/${catalog.iphoneBrand.id}`);
     expect(response.body.data.brand).toMatchObject({ slug: "iphone", category: { slug: "smartphones", kind: "phone" } });
     expect(response.body.data.series).toEqual([
-      expect.objectContaining({ name: "iPhone 15", coverUrl: null, modelCount: 1, newStock: 3, dealCount: 2 }),
+      expect.objectContaining({ name: "iPhone 15", coverUrl: null, modelCount: 1, modelIds: [catalog.iphone.id], newStock: 3, dealCount: 2 }),
     ]);
     expect(response.body.data.unassigned).toEqual([]);
   });

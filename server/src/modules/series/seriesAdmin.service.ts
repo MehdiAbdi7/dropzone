@@ -110,7 +110,7 @@ export async function catalogBrand(id: number) {
           coverUrl: true,
           models: {
             orderBy: [{ seriesPosition: "asc" }, { id: "asc" }],
-            select: { releaseYear: true, posterColor: true, products: MODEL_PRODUCTS },
+            select: { id: true, releaseYear: true, posterColor: true, products: MODEL_PRODUCTS },
           },
         },
       },
@@ -135,6 +135,8 @@ export async function catalogBrand(id: number) {
         tile: {
           ...one,
           modelCount: models.length,
+          // Pour ranger un modèle de plus : la liste complète, dans l'ordre de l'affiche.
+          modelIds: models.map((model) => model.id),
           ...stockOf(products.flatMap((product) => product.variants)),
           fallbackImage: products.find((product) => product.images[0])?.images[0]?.url ?? null,
           fallbackColor: first && firstProduct ? resolvePosterColor(first.posterColor, colorsOf(firstProduct.variants)) : null,

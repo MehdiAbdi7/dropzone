@@ -85,6 +85,78 @@ export type AdminBrand = {
   productCount: number;
 };
 
+// ---------- Le Catalogue (séries) ----------
+
+type Stock = { newStock: number; dealCount: number };
+
+export type AdminCatalogCategory = Stock & {
+  id: number;
+  name: string;
+  slug: string;
+  kind: ProductKind;
+  brandCount: number;
+  seriesCount: number;
+  modelCount: number;
+  productCount: number;
+};
+
+export type AdminCatalogBrand = Stock & {
+  id: number;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  seriesCount: number;
+  productCount: number;
+};
+
+export type AdminCatalogCategoryPage = {
+  category: { id: number; name: string; slug: string; kind: ProductKind };
+  brands: AdminCatalogBrand[];
+};
+
+export type AdminSeriesTile = Stock & {
+  id: number;
+  name: string;
+  slug: string;
+  coverUrl: string | null;
+  modelCount: number;
+  modelIds: number[];
+  fallbackImage: string | null;
+  fallbackColor: string | null;
+};
+
+export type AdminCatalogBrandPage = {
+  brand: { id: number; name: string; slug: string; category: { id: number; name: string; slug: string; kind: ProductKind } };
+  series: AdminSeriesTile[];
+  // Les produits en vente dont le modèle n'est rangé dans aucune série : invisibles dans la Boutique.
+  unassigned: { deviceModelId: number; name: string; productId: number }[];
+};
+
+export type AdminSeriesModel = {
+  id: number;
+  name: string;
+  releaseYear: number | null;
+  seriesPosition: number;
+  posterColor: string | null;
+  colors: string[];
+  product: (Stock & { id: number; slug: string; image: string | null; soldOutColors: string[] }) | null;
+};
+
+export type AdminSeriesPage = {
+  series: {
+    id: number;
+    name: string;
+    slug: string;
+    coverUrl: string | null;
+    brand: { id: number; name: string; slug: string };
+    category: { id: number; name: string; slug: string };
+  };
+  models: AdminSeriesModel[];
+  candidates: { id: number; name: string; releaseYear: number | null }[];
+};
+
+export type AdminSeries = { id: number; brandId: number; name: string; slug: string; coverUrl: string | null };
+
 export type DeviceModel = {
   id: number;
   brand: string;
@@ -276,11 +348,59 @@ const adminApi = api.injectEndpoints({
       transformResponse: data<DeviceModel>,
       invalidatesTags: ["Models"],
     }),
-    // Corriger l'année d'un modèle : elle change sa place dans la Boutique.
-    updateModel: build.mutation<DeviceModel, { id: number; releaseYear: number }>({
-      query: ({ id, releaseYear }) => ({ url: `/admin/models/${id}`, method: "PATCH", body: { releaseYear } }),
+    // Corriger l'année d'un modèle (sa place dans la Boutique), ou la couleur de sa lueur.
+    updateModel: build.mutation<DeviceModel, { id: number; releaseYear?: number; posterColor?: string | null }>({
+      query: ({ id, ...body }) => ({ url: `/admin/models/${id}`, method: "PATCH", body }),
       transformResponse: data<DeviceModel>,
-      invalidatesTags: ["Models"],
+      invalidatesTags: ["Models", "Series"],
+    }),
+    // ---------- Le Catalogue ----------
+    catalog: build.query<AdminCatalogCategory[], void>({
+      query: () => "/admin/catalog",
+      transformResponse: data<AdminCatalogCategory[]>,
+      providesTags: ["Series", "Categories", "Brands", "Products"],
+    }),
+    catalogCategory: build.query<AdminCatalogCategoryPage, number>({
+      query: (id) => `/admin/catalog/categories/${id}`,
+      transformResponse: data<AdminCatalogCategoryPage>,
+      providesTags: ["Series", "Categories", "Brands", "Products"],
+    }),
+    catalogBrand: build.query<AdminCatalogBrandPage, number>({
+      query: (id) => `/admin/catalog/brands/${id}`,
+      transformResponse: data<AdminCatalogBrandPage>,
+      providesTags: ["Series", "Brands", "Products", "Models"],
+    }),
+    catalogSeries: build.query<AdminSeriesPage, number>({
+      query: (id) => `/admin/catalog/series/${id}`,
+      transformResponse: data<AdminSeriesPage>,
+      providesTags: ["Series", "Products", "Models"],
+    }),
+    createSeries: build.mutation<AdminSeries, { brandId: number; name: string }>({
+      query: ({ brandId, name }) => ({ url: `/admin/brands/${brandId}/series`, method: "POST", body: { name } }),
+      transformResponse: data<AdminSeries>,
+      invalidatesTags: ["Series"],
+    }),
+    renameSeries: build.mutation<AdminSeries, { id: number; name: string }>({
+      query: ({ id, name }) => ({ url: `/admin/series/${id}`, method: "PATCH", body: { name } }),
+      transformResponse: data<AdminSeries>,
+      invalidatesTags: ["Series"],
+    }),
+    uploadSeriesCover: build.mutation<unknown, { id: number; file: File }>({
+      query: ({ id, file }) => {
+        const form = new FormData();
+        form.append("image", file);
+        return { url: `/admin/series/${id}/cover`, method: "POST", body: form };
+      },
+      invalidatesTags: ["Series"],
+    }),
+    deleteSeries: build.mutation<void, number>({
+      query: (id) => ({ url: `/admin/series/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Series", "Models"],
+    }),
+    // Toute la liste des modèles de la série, dans l'ordre de l'affiche.
+    setSeriesModels: build.mutation<void, { id: number; modelIds: number[] }>({
+      query: ({ id, modelIds }) => ({ url: `/admin/series/${id}/models`, method: "PUT", body: { modelIds } }),
+      invalidatesTags: ["Series", "Models"],
     }),
     deleteModel: build.mutation<void, number>({
       query: (id) => ({ url: `/admin/models/${id}`, method: "DELETE" }),
@@ -345,6 +465,15 @@ export const {
   useCreateModelMutation,
   useUpdateModelMutation,
   useDeleteModelMutation,
+  useCatalogQuery,
+  useCatalogCategoryQuery,
+  useCatalogBrandQuery,
+  useCatalogSeriesQuery,
+  useCreateSeriesMutation,
+  useRenameSeriesMutation,
+  useUploadSeriesCoverMutation,
+  useDeleteSeriesMutation,
+  useSetSeriesModelsMutation,
   useChoicesQuery,
   useCreateChoiceMutation,
   useDeleteChoiceMutation,

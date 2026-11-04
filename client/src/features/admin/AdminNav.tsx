@@ -6,9 +6,10 @@ import { usePathname } from "next/navigation";
 const LINKS = [
   { href: "/admin", label: "Tableau de bord" },
   { href: "/admin/commandes", label: "Commandes" },
+  // Le catalogue suit les étapes de la Boutique : catégorie, marque, série, modèle.
+  { href: "/admin/catalogue", label: "Catalogue" },
   { href: "/admin/produits", label: "Produits" },
-  { href: "/admin/modeles", label: "Modèles et listes" },
-  { href: "/admin/categories", label: "Catégories" },
+  { href: "/admin/listes", label: "Listes" },
   { href: "/admin/clients", label: "Clients" },
   { href: "/", label: "Voir la boutique" },
 ];
