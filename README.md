@@ -9,7 +9,7 @@ Unofficial demo built for DropZone. Not affiliated with or endorsed by DropZone.
 - **One product per device model**, sold new (classic variants with stock) or refurbished.
 - **Every refurbished device is unique** (stock 0 or 1, enforced by a PostgreSQL `CHECK`) and has its own condition report: grade out of 10, battery health, replaced parts, visible defects and functional limitations. Limitations are shown first and must be accepted at checkout.
 - **Deals**: a variant can come with free accessories taken from the catalogue. They become 0 DA order lines and their stock goes down in the same transaction.
-- **A checkbox-driven back-office form**: category, device model (173 models seeded, more can be added inline), options, condition report and gifts are picked from lists that grow as the shop adds values.
+- **A checkbox-driven back-office form**: category, device model (194 models seeded, more can be added inline), options, condition report and gifts are picked from lists that grow as the shop adds values.
 - **The customer always confirms what they saw**: the cart preview returns a hash of its lines; the order is refused (409) if prices, stock or gifts changed in between.
 
 ## Stack
@@ -31,6 +31,7 @@ cd server
 npm ci
 npx prisma migrate deploy
 npm run seed -- --apply
+npm run import:dropzone -- --apply   # the real catalog, see below
 ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=a-long-password npm run create-admin
 npm run dev
 
@@ -41,6 +42,10 @@ npm run dev
 ```
 
 Tests: `cd server && npx vitest run` (the test database receives the migrations automatically).
+
+### The real catalog
+
+`npm run import:dropzone` reads `server/data/dropzone-annonces.tsv`, the 212 Instagram listings of the shop (May to November 2026), and shows what it would do without writing anything. With `-- --apply` it writes, in one transaction: one product per device model, one unit per listing at its listed price, the official specs of each phone and tablet (`src/scripts/import/official-specs.ts`, with the manufacturer page read for each), and the shop's warranty. It can be run again: nothing is created twice, and a sold unit or a box fixed in the back-office is never overwritten. The mapping from listing names to device models is `src/scripts/import/models-map.ts`.
 
 ## Run with Docker
 

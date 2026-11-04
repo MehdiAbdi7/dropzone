@@ -1,0 +1,322 @@
+// L'écriture du vrai catalogue de DropZone en base, à partir du relevé de ses annonces.
+// Rejouable : tout est cherché avant d'être créé (catégories, marques, valeurs de listes,
+// modèles, séries, produits, variantes par SKU), et un rejeu ne touche jamais au stock ni
+// à la boîte d'un exemplaire : le relevé décrit le passé, le back-office décrit le présent.
+import { findLibraryLogo } from "../../config/brandLogos.js";
+import type { Tx } from "../../config/db.js";
+import type { ChoiceGroup, Prisma, ProductKind } from "../../generated/prisma/client.js";
+import { modelSlug } from "../../modules/models/modelSlug.js";
+import { refreshMinPrice } from "../../modules/products/product.service.js";
+import { defaultWarrantyMonths } from "../../modules/products/warranty.js";
+import { slugify } from "../../utils/slugify.js";
+import { fillSeries } from "../series.js";
+import { dedupe, importSku, type Listing, parseListing, type RawRow } from "./listing.js";
+import { IGNORED, MODEL_MAP } from "./models-map.js";
+import { OFFICIAL_SPECS } from "./official-specs.js";
+
+export type ImportReport = {
+  removed: { categories: number; products: number; brands: number };
+  created: { brands: number; models: number; series: number; choices: number; products: number; variants: number };
+  updated: { variants: number };
+  skipped: { code: string; reason: string }[];
+};
+
+// Ce que DropZone ne vend pas (relevé du 04/11) : retiré de la boutique et de la base.
+const REMOVED_CATEGORIES = ["montres-connectees", "audiovisuel"];
+const REMOVED_PRODUCTS = [
+  "google-pixel-8-pro",
+  "xiaomi-redmi-note-13-pro",
+  "samsung-galaxy-z-flip6",
+  "dell-latitude-5430",
+  "lenovo-thinkpad-t14-gen-3",
+];
+// Les marques devenues vides une fois ces produits retirés.
+const REMOVED_BRANDS = [{ category: "smartphones", slug: "google" }, { category: "smartphones", slug: "xiaomi" }];
+
+const CATEGORIES: Record<Listing["kind"], { name: string; slug: string }> = {
+  phone: { name: "Smartphones", slug: "smartphones" },
+  tablet: { name: "Tablettes", slug: "tablettes" },
+  laptop: { name: "Ordinateurs portables", slug: "ordinateurs-portables" },
+};
+
+// Le nom de la marque dans chaque catégorie, d'après le fabricant (« iPhone » pour Apple
+// dans Smartphones, « MacBook » dans PC portables, « Surface » pour Microsoft).
+const BRAND_NAMES: Record<string, string> = {
+  "smartphones|Apple": "iPhone",
+  "tablettes|Apple": "iPad",
+  "ordinateurs-portables|Apple": "MacBook",
+  "ordinateurs-portables|Asus": "ASUS",
+  "ordinateurs-portables|Microsoft": "Surface",
+};
+
+// L'illustration de chaque type, en attendant les photos de Mehdi (rien de DropZone).
+const IMAGES: Record<Listing["kind"], string> = {
+  phone: "/products/phone.svg",
+  tablet: "/products/tablet.svg",
+  laptop: "/products/laptop.svg",
+};
+
+// La liste du back-office de chaque option de variante.
+const OPTION_GROUPS: Record<string, ChoiceGroup> = {
+  Stockage: "storage",
+  RAM: "ram",
+  Couleur: "color",
+  SIM: "sim",
+  Connectivité: "connectivity",
+  Processeur: "processor",
+  "Carte graphique": "gpu",
+};
+
+const DESCRIPTION = "Chaque exemplaire est décrit sur sa fiche : état, batterie, origine et garantie.";
+
+// « iPhone 13 », mais « Samsung Galaxy S22+ », « Dell Latitude 5440 », « ASUS Vivobook 14 ».
+function productNameOf(maker: string, name: string): string {
+  if (maker === "Apple" || name.toLowerCase().startsWith(maker.toLowerCase())) {
+    return name;
+  }
+  return `${maker === "Asus" ? "ASUS" : maker} ${name}`;
+}
+
+// Les caractéristiques d'un PC : celles que tous ses exemplaires ont en commun, pour ne
+// jamais annoncer sur la fiche ce qu'un exemplaire n'a pas.
+function laptopSpecs(listings: Listing[]): Record<string, string> {
+  const shared = (values: (string | null | undefined)[]) =>
+    values.every((value) => value && value === values[0]) ? (values[0] as string) : null;
+  const specs: Record<string, string> = {};
+  const screen = shared(listings.map((listing) => listing.screen));
+  const processor = shared(listings.map((listing) => listing.options.Processeur));
+  const gpu = shared(listings.map((listing) => listing.options["Carte graphique"]));
+  if (screen) {
+    specs.Écran = screen;
+  }
+  if (processor) {
+    specs.Processeur = processor;
+  }
+  if (gpu) {
+    specs["Carte graphique"] = gpu;
+  }
+  return specs;
+}
+
+async function uniqueProductSlug(db: Tx, name: string): Promise<string> {
+  const base = slugify(name) || "produit";
+  let slug = base;
+  for (let n = 2; await db.product.findUnique({ where: { slug }, select: { id: true } }); n++) {
+    slug = `${base}-${n}`;
+  }
+  return slug;
+}
+
+export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportReport> {
+  const report: ImportReport = {
+    removed: { categories: 0, products: 0, brands: 0 },
+    created: { brands: 0, models: 0, series: 0, choices: 0, products: 0, variants: 0 },
+    updated: { variants: 0 },
+    skipped: [],
+  };
+
+  // ---------- 1. Lire le relevé ----------
+  const parsed: Listing[] = [];
+  for (const row of rows) {
+    const result = parseListing(row);
+    if ("skip" in result) {
+      report.skipped.push({ code: row.code, reason: result.skip });
+    } else if (result.modelKey in IGNORED) {
+      report.skipped.push({ code: row.code, reason: IGNORED[result.modelKey] });
+    } else if (!(result.modelKey in MODEL_MAP)) {
+      throw new Error(`Modèle absent de models-map.ts : « ${result.modelKey} » (${row.code})`);
+    } else {
+      parsed.push(result);
+    }
+  }
+  // Le SKU vient du code de la publication : deux annonces au même code fusionneraient.
+  const codes = parsed.map((listing) => listing.code);
+  const repeated = codes.find((code, index) => codes.indexOf(code) !== index);
+  if (repeated) {
+    throw new Error(`Deux annonces du relevé ont le même code : ${repeated}`);
+  }
+  const unique = dedupe(parsed);
+  for (const listing of parsed.filter((listing) => !unique.includes(listing))) {
+    report.skipped.push({ code: listing.code, reason: "annonce republiée" });
+  }
+  // Une référence déjà portée par un autre appareil : l'annonce n'est pas importée.
+  const listings: Listing[] = [];
+  for (const listing of unique) {
+    const taken = listing.reference
+      ? await db.productVariant.findFirst({
+          where: { reference: listing.reference, sku: { not: importSku(listing.code) } },
+          select: { id: true },
+        })
+      : null;
+    if (taken) {
+      report.skipped.push({ code: listing.code, reason: "référence déjà utilisée" });
+    } else {
+      listings.push(listing);
+    }
+  }
+
+  // ---------- 2. Retirer ce que DropZone ne vend pas ----------
+  // Les produits d'abord (une marque utilisée ne se supprime pas) ; les lignes de commande
+  // gardent leur copie du nom et du prix (product_id passe à NULL).
+  const removedProducts = await db.product.deleteMany({
+    where: { OR: [{ category: { slug: { in: REMOVED_CATEGORIES } } }, { slug: { in: REMOVED_PRODUCTS } }] },
+  });
+  report.removed.products = removedProducts.count;
+  const emptyBrands = await db.brand.findMany({
+    where: {
+      products: { none: {} },
+      OR: [
+        { category: { slug: { in: REMOVED_CATEGORIES } } },
+        ...REMOVED_BRANDS.map((brand) => ({ slug: brand.slug, category: { slug: brand.category } })),
+      ],
+    },
+    select: { id: true },
+  });
+  const emptyBrandIds = emptyBrands.map((brand) => brand.id);
+  // Les séries avant leurs marques (RESTRICT) ; leurs modèles repassent sans série.
+  await db.series.deleteMany({ where: { brandId: { in: emptyBrandIds } } });
+  report.removed.brands = (await db.brand.deleteMany({ where: { id: { in: emptyBrandIds } } })).count;
+  report.removed.categories = (
+    await db.category.deleteMany({ where: { slug: { in: REMOVED_CATEGORIES }, products: { none: {} } } })
+  ).count;
+
+  // ---------- 3. Ajouter ce qui manque : catégories, marques, valeurs, modèles, séries ----------
+  const categoryIds = new Map<Listing["kind"], number>();
+  for (const kind of [...new Set(listings.map((listing) => listing.kind))]) {
+    const { name, slug } = CATEGORIES[kind];
+    const category =
+      (await db.category.findUnique({ where: { slug } })) ??
+      (await db.category.create({ data: { name, slug, kind: kind as ProductKind } }));
+    categoryIds.set(kind, category.id);
+  }
+
+  const brandIds = new Map<string, number>();
+  for (const listing of listings) {
+    const { maker } = MODEL_MAP[listing.modelKey];
+    const categorySlug = CATEGORIES[listing.kind].slug;
+    const key = `${categorySlug}|${maker}`;
+    if (brandIds.has(key)) {
+      continue;
+    }
+    const categoryId = categoryIds.get(listing.kind)!;
+    let brand = await db.brand.findFirst({ where: { categoryId, makerName: maker }, orderBy: { position: "asc" } });
+    if (!brand) {
+      const name = BRAND_NAMES[key] ?? maker;
+      const last = await db.brand.findFirst({ where: { categoryId }, orderBy: { position: "desc" } });
+      brand = await db.brand.create({
+        data: {
+          categoryId,
+          name,
+          slug: slugify(name),
+          makerName: maker,
+          logoUrl: findLibraryLogo(name),
+          position: (last?.position ?? -1) + 1,
+        },
+      });
+      report.created.brands += 1;
+    }
+    brandIds.set(key, brand.id);
+  }
+
+  const choices = listings.flatMap((listing) => [
+    ...Object.entries(listing.options).map(([key, label]) => {
+      const group = OPTION_GROUPS[key];
+      if (!group) {
+        throw new Error(`Option sans liste : « ${key} » (${listing.code})`);
+      }
+      return { group, label };
+    }),
+    ...(listing.origin ? [{ group: "origin" as const, label: listing.origin }] : []),
+  ]);
+  report.created.choices = (await db.choice.createMany({ data: choices, skipDuplicates: true })).count;
+
+  const modelIds = new Map<string, number>();
+  for (const listing of listings) {
+    const { maker, name, year } = MODEL_MAP[listing.modelKey];
+    const slug = modelSlug(maker, name);
+    if (modelIds.has(slug)) {
+      continue;
+    }
+    // Cherché par slug : « ZenBook » et « Zenbook » sont le même modèle.
+    let model = await db.deviceModel.findUnique({ where: { slug } });
+    if (!model) {
+      model = await db.deviceModel.create({ data: { brand: maker, name, slug, kind: listing.kind, releaseYear: year } });
+      report.created.models += 1;
+    }
+    modelIds.set(slug, model.id);
+  }
+  report.created.series = (await fillSeries(db)).created;
+
+  // ---------- 4. Un produit par modèle ----------
+  const byModel = new Map<string, Listing[]>();
+  for (const listing of listings) {
+    const { maker, name } = MODEL_MAP[listing.modelKey];
+    const slug = modelSlug(maker, name);
+    byModel.set(slug, [...(byModel.get(slug) ?? []), listing]);
+  }
+  const productIds = new Map<string, number>();
+  for (const [slug, group] of byModel) {
+    const first = group[0];
+    const { maker, name } = MODEL_MAP[first.modelKey];
+    const deviceModelId = modelIds.get(slug)!;
+    const existing = await db.product.findFirst({ where: { deviceModelId }, orderBy: { id: "asc" }, select: { id: true } });
+    if (existing) {
+      // Les caractéristiques d'un produit qui existait déjà ne sont pas touchées.
+      productIds.set(slug, existing.id);
+      continue;
+    }
+    const productName = productNameOf(maker, name);
+    const specs: Prisma.InputJsonObject =
+      first.kind === "laptop" ? laptopSpecs(group) : (OFFICIAL_SPECS[`${maker}|${name}`] ?? {});
+    const product = await db.product.create({
+      data: {
+        name: productName,
+        slug: await uniqueProductSlug(db, productName),
+        description: DESCRIPTION,
+        categoryId: categoryIds.get(first.kind)!,
+        brandId: brandIds.get(`${CATEGORIES[first.kind].slug}|${maker}`)!,
+        deviceModelId,
+        specs,
+        status: "published",
+        images: { create: [{ url: IMAGES[first.kind], position: 0 }] },
+      },
+      select: { id: true },
+    });
+    productIds.set(slug, product.id);
+    report.created.products += 1;
+  }
+
+  // ---------- 5. Une variante par annonce, cherchée par SKU ----------
+  for (const listing of listings) {
+    const { maker, name } = MODEL_MAP[listing.modelKey];
+    const productId = productIds.get(modelSlug(maker, name))!;
+    const sku = importSku(listing.code);
+    const data = {
+      options: listing.options,
+      price: listing.price,
+      condition: listing.condition,
+      grade: listing.grade,
+      batteryHealth: listing.batteryHealth,
+      details: listing.details,
+      origin: listing.origin,
+      warrantyMonths: listing.warrantyMonths ?? defaultWarrantyMonths(listing.kind, listing.condition),
+      reference: listing.reference,
+    };
+    const existing = await db.productVariant.findUnique({ where: { sku }, select: { id: true } });
+    if (existing) {
+      // Ni le stock (un exemplaire vendu reste vendu), ni la boîte (corrigée par le
+      // gérant) ; un neuf scellé n'a jamais de boîte à dire (CHECK).
+      await db.productVariant.update({
+        where: { id: existing.id },
+        data: { ...data, ...(listing.condition === "new" ? { withBox: null } : {}) },
+      });
+      report.updated.variants += 1;
+    } else {
+      await db.productVariant.create({ data: { ...data, productId, sku, stock: 1, withBox: null } });
+      report.created.variants += 1;
+    }
+  }
+
+  await refreshMinPrice(db, [...productIds.values()]);
+  return report;
+}
