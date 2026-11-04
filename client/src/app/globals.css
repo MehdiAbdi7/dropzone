@@ -531,6 +531,211 @@
       transform: none;
     }
   }
+
+  /* L'affiche d'une série (SeriesPoster) : fond noir, deux lueurs des couleurs des
+     modèles sur les bords, titre au dégradé glacier, blanc, rose. */
+  .poster {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    background: #07080c;
+  }
+  .poster-backdrop {
+    position: absolute;
+    inset: 0;
+    opacity: 0.45;
+    pointer-events: none;
+  }
+  .poster-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    background: linear-gradient(90deg, #cfe3ee 0%, #ffffff 50%, #f0a3b3 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .poster-glow {
+    position: absolute;
+    inset: -6% -14% 14% -14%;
+    filter: blur(6px);
+  }
+  a.poster-column {
+    transition: background-color 0.2s;
+  }
+  a.poster-column:hover,
+  a.poster-column:focus-visible {
+    background-color: rgb(255 255 255 / 0.05);
+  }
+  a.poster-column:focus-visible {
+    outline: 2px solid #a33bf0;
+    outline-offset: 2px;
+  }
+
+  /* Les pastilles de couleur ; barrée = épuisée. */
+  .poster-swatch {
+    position: relative;
+    display: block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid rgb(255 255 255 / 0.4);
+  }
+  .poster-swatch-out {
+    opacity: 0.4;
+  }
+  .poster-swatch-out::after {
+    content: "";
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: 50%;
+    height: 1.5px;
+    background: #fff;
+    transform: rotate(-45deg);
+  }
+
+  /* La piste à glisser : un modèle par écran sur téléphone, le suivant qui dépasse à
+     droite, grisé tant qu'il n'est pas affiché. */
+  .poster-track {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 0 56px 4px 16px;
+    scrollbar-width: none;
+  }
+  .poster-track::-webkit-scrollbar {
+    display: none;
+  }
+  .poster-slide {
+    flex: none;
+    width: 78%;
+    scroll-snap-align: start;
+    scroll-margin-left: 16px;
+    transition: opacity 0.3s;
+  }
+  .poster-slide:not([data-active]) {
+    opacity: 0.45;
+  }
+  .poster-single {
+    width: 100%;
+    max-width: 22rem;
+    margin-inline: auto;
+  }
+  @media (min-width: 768px) {
+    .poster-slide {
+      width: 30%;
+    }
+    .poster-slide:not([data-active]) {
+      opacity: 1;
+    }
+    /* Jusqu'à 4 modèles : des colonnes, sans glissement. */
+    .poster-track-fit {
+      display: grid;
+      grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+      overflow: visible;
+      max-width: 1100px;
+      margin-inline: auto;
+      padding: 0 24px;
+    }
+    .poster-track-fit .poster-slide {
+      width: auto;
+    }
+  }
+
+  /* La petite poussée de l'arrivée : la piste part un peu à gauche et revient, deux fois. */
+  .poster-nudge {
+    animation: poster-nudge 1.4s ease-in-out 0.8s 2;
+  }
+  @keyframes poster-nudge {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    35% {
+      transform: translateX(-46px);
+    }
+  }
+
+  /* Les noms des modèles en haut ; celui affiché est blanc plein. */
+  .poster-chip {
+    min-height: 36px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(255 255 255 / 0.9);
+  }
+  .poster-chip[aria-current="true"] {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: #0b0c11;
+  }
+
+  /* La flèche ronde sur le bord, à mi-hauteur de la photo. */
+  .poster-arrow {
+    position: absolute;
+    top: 104px;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgb(255 255 255 / 0.35);
+    background: rgb(11 12 17 / 0.8);
+    color: #ffffff;
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+  .poster-arrow:focus-visible {
+    outline: 2px solid #a33bf0;
+    outline-offset: 2px;
+  }
+
+  /* Les tirets sous l'affiche, et la flèche du texte qui bouge doucement. */
+  .poster-dash {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background: #6b7080;
+    transition:
+      width 0.3s,
+      background-color 0.3s;
+  }
+  .poster-dash-on {
+    width: 18px;
+    background: #ffffff;
+  }
+  .poster-hint-arrow {
+    display: inline-block;
+    animation: poster-go 1.2s ease-in-out infinite;
+  }
+  .poster-hint-back {
+    animation-direction: reverse;
+  }
+  @keyframes poster-go {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(5px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .poster-nudge,
+    .poster-hint-arrow {
+      animation: none;
+    }
+    .poster-track {
+      scroll-behavior: auto;
+    }
+  }
 }
 
 /* ---------- 6. Les utilitaires de la marque ---------- */

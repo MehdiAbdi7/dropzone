@@ -22,6 +22,10 @@ export default function ProductHeader({
     product.brand
       ? { label: product.brand.name, href: `${category}/${product.brand.slug}` }
       : { label: "Autres", href: `${category}/autres` },
+    // La série, entre la marque et le modèle : Boutique › Smartphones › iPhone › iPhone 18 › …
+    ...(product.brand && product.series
+      ? [{ label: product.series.name, href: `${category}/${product.brand.slug}/${product.series.slug}` }]
+      : []),
     { label: product.name, href: `/produits/${product.slug}` },
     ...(step ? [{ label: step }] : []),
   ];
