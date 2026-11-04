@@ -4,7 +4,15 @@ import Image from "next/image";
 // Simple Icons) sont d'une seule couleur : on s'en sert comme d'un masque peint avec
 // la couleur du texte, donc ils suivent le thème et l'état sélectionné de la puce.
 // Un logo envoyé (Cloudinary) garde ses couleurs, sur un petit fond blanc.
-export default function BrandLogo({ url, size = 16 }: { url: string | null; size?: number }) {
+export default function BrandLogo({
+  url,
+  size = 16,
+  className = "",
+}: {
+  url: string | null;
+  size?: number;
+  className?: string;
+}) {
   if (!url) {
     return null;
   }
@@ -12,7 +20,7 @@ export default function BrandLogo({ url, size = 16 }: { url: string | null; size
     return (
       <span
         aria-hidden="true"
-        className="inline-block shrink-0 bg-current"
+        className={`inline-block shrink-0 bg-current ${className}`}
         style={{
           width: size,
           height: size,

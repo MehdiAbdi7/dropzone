@@ -9,22 +9,30 @@ import type { Category } from "@/types/api";
 // Le même appel sert à generateMetadata et à la page : Next le déduplique.
 async function getCategory(slug: string) {
   const categories = await publicFetch<Category[]>("/categories", 300);
-  return { categories, category: categories?.find((item) => item.slug === slug) };
+  return {
+    categories,
+    category: categories?.find((item) => item.slug === slug),
+  };
 }
 
-export async function generateMetadata({ params }: PageProps<"/boutique/[categorie]">): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps<"/boutique/[categorie]">): Promise<Metadata> {
   const { category } = await getCategory((await params).categorie);
   return { title: category?.name ?? "Boutique" };
 }
 
 // Étape 2 du parcours : les marques de la catégorie, plus « Autres » pour les produits sans marque.
-export default async function ShopCategoryPage({ params }: PageProps<"/boutique/[categorie]">) {
+export default async function ShopCategoryPage({
+  params,
+}: PageProps<"/boutique/[categorie]">) {
   const { categories, category } = await getCategory((await params).categorie);
   if (!categories) {
     return (
       <div className="container-page py-8">
         <p role="alert" className="card p-6">
-          La boutique ne répond pas pour le moment. Rechargez la page dans quelques secondes.
+          La boutique ne répond pas pour le moment. Rechargez la page dans
+          quelques secondes.
         </p>
       </div>
     );
@@ -38,14 +46,19 @@ export default async function ShopCategoryPage({ params }: PageProps<"/boutique/
 
   return (
     <div className="container-page space-y-6 py-8">
-      <Breadcrumb items={[{ label: "Boutique", href: "/boutique" }, { label: category.name }]} />
+      <Breadcrumb
+        items={[
+          { label: "Boutique", href: "/boutique" },
+          { label: category.name },
+        ]}
+      />
       {/* Pas de « Tout voir » : la liste de tous les produits n'existe plus, on choisit une marque. */}
       <header className="space-y-1">
         <h1 className="text-3xl">{category.name}</h1>
         <p className="text-ink-muted">Choisissez une marque.</p>
       </header>
 
-      <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
+      <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
         {category.brands.map((brand) => (
           <li key={brand.slug} className="flex">
             <ChoiceTile
@@ -58,7 +71,11 @@ export default async function ShopCategoryPage({ params }: PageProps<"/boutique/
         ))}
         {category.hasUnbranded ? (
           <li className="flex">
-            <ChoiceTile href={`/boutique/${category.slug}/autres`} label="Autres" hint="Sans marque" />
+            <ChoiceTile
+              href={`/boutique/${category.slug}/autres`}
+              label="Autres"
+              hint="Sans marque"
+            />
           </li>
         ) : null}
       </ul>

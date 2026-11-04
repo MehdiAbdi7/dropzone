@@ -10,7 +10,15 @@ import { ctaLabel, glowColor } from "./series";
 // l'affiche de la série. Sans couverture envoyée par le gérant, l'affiche de secours :
 // le nom en grand, en lettres creuses, sur une lueur de la couleur de la série.
 // Une série épuisée reste visible, grisée et sans lien (on la voit, on ne la clique pas).
-export default function SeriesCard({ series, href, priority }: { series: SeriesSummary; href: string; priority: boolean }) {
+export default function SeriesCard({
+  series,
+  href,
+  priority,
+}: {
+  series: SeriesSummary;
+  href: string;
+  priority: boolean;
+}) {
   const media = series.coverUrl ? (
     <Image
       src={series.coverUrl}
@@ -23,14 +31,24 @@ export default function SeriesCard({ series, href, priority }: { series: SeriesS
   ) : (
     <div
       className="absolute inset-0"
-      style={{ background: `radial-gradient(70% 90% at 80% 40%, ${glowColor(series.fallback.color)}, transparent 70%), #07080c` }}
+      style={{
+        background: `radial-gradient(70% 90% at 80% 40%, ${glowColor(series.fallback.color)}, transparent 70%), #07080c`,
+      }}
     >
-      <p aria-hidden="true" className="series-fallback-title absolute left-4 top-3 max-w-[70%] text-6xl md:text-7xl">
+      <p
+        aria-hidden="true"
+        className="series-fallback-title absolute left-4 top-3 max-w-[70%] text-6xl md:text-7xl"
+      >
         {series.name}
       </p>
       {series.fallback.image ? (
         <div className="absolute right-[4%] top-[6%] h-[58%] w-[48%]">
-          <ProductImage src={series.fallback.image} alt="" sizes="(min-width: 768px) 25vw, 50vw" priority={priority} />
+          <ProductImage
+            src={series.fallback.image}
+            alt=""
+            sizes="(min-width: 768px) 25vw, 50vw"
+            priority={priority}
+          />
         </div>
       ) : null}
     </div>
@@ -41,22 +59,32 @@ export default function SeriesCard({ series, href, priority }: { series: SeriesS
       <div className="series-media">{media}</div>
       <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 p-4 md:flex-row md:items-end md:p-5">
         <div className="min-w-0 flex-1 space-y-2">
-          <h2 className="text-2xl leading-tight font-extrabold text-white">{series.name}</h2>
-          <ul aria-label="Modèles de la série" className="flex flex-wrap gap-1.5">
+          <ul
+            aria-label="Modèles de la série"
+            className="flex flex-wrap gap-1.5"
+          >
             {series.models.map((model) => (
-              <li key={model} className="rounded-full border border-white/30 bg-black/40 px-2.5 py-1 text-xs font-semibold text-white">
+              <li
+                key={model}
+                className="rounded-full border border-white/30 bg-black/40 px-2.5 py-1 text-xs font-semibold text-white"
+              >
                 {model}
               </li>
             ))}
           </ul>
           {series.fromPrice !== null ? (
             <p className="text-sm text-white/85">
-              dès <span className="font-display text-base font-bold whitespace-nowrap text-white">{formatPrice(series.fromPrice)}</span>
+              dès{" "}
+              <span className="font-display text-base font-bold whitespace-nowrap text-white">
+                {formatPrice(series.fromPrice)}
+              </span>
             </p>
           ) : null}
         </div>
         {series.soldOut ? (
-          <span className="badge badge-out self-start md:self-auto">Épuisé</span>
+          <span className="badge badge-out self-start md:self-auto">
+            Épuisé
+          </span>
         ) : (
           <span className="series-cta w-full md:w-auto">
             {ctaLabel(series.name)}

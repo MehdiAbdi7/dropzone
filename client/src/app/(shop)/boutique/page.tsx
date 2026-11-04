@@ -27,7 +27,7 @@ export default async function ShopPage() {
           quelques secondes.
         </p>
       ) : (
-        <ul className="grid grid-cols-3 gap-3 sm:gap-4 lg:grid-cols-5">
+        <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
           {categories.map((category) => (
             <li key={category.slug} className="flex">
               <ChoiceTile

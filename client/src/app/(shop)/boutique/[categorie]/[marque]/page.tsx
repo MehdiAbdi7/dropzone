@@ -21,23 +21,30 @@ async function getBrand(categorySlug: string, brandSlug: string) {
   return { categories, category, brand };
 }
 
-export async function generateMetadata({ params }: PageProps<"/boutique/[categorie]/[marque]">): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps<"/boutique/[categorie]/[marque]">): Promise<Metadata> {
   const { categorie, marque } = await params;
   const { category, brand } = await getBrand(categorie, marque);
-  return { title: category && brand ? `${brand.name} · ${category.name}` : "Boutique" };
+  return {
+    title: category && brand ? `${brand.name} · ${category.name}` : "Boutique",
+  };
 }
 
 const UNAVAILABLE = (
   <div className="container-page py-8">
     <p role="alert" className="card p-6">
-      La boutique ne répond pas pour le moment. Rechargez la page dans quelques secondes.
+      La boutique ne répond pas pour le moment. Rechargez la page dans quelques
+      secondes.
     </p>
   </div>
 );
 
 // Étape 3 du parcours : les séries de la marque en affiches (appareils), ou ses produits
 // (accessoires). La carte « Autres » (produits sans marque) garde la grille des modèles.
-export default async function ShopBrandPage({ params }: PageProps<"/boutique/[categorie]/[marque]">) {
+export default async function ShopBrandPage({
+  params,
+}: PageProps<"/boutique/[categorie]/[marque]">) {
   const { categorie, marque } = await params;
   const { categories, category, brand } = await getBrand(categorie, marque);
   if (categories && (!category || !brand)) {
@@ -46,7 +53,10 @@ export default async function ShopBrandPage({ params }: PageProps<"/boutique/[ca
 
   const isDevice = category ? DEVICE_KINDS.includes(category.kind) : false;
   if (category && brand && isDevice && brand.slug !== "autres") {
-    const series = await publicFetch<SeriesSummary[]>(`/series?category=${category.slug}&brand=${brand.slug}`, 60);
+    const series = await publicFetch<SeriesSummary[]>(
+      `/series?category=${category.slug}&brand=${brand.slug}`,
+      60,
+    );
     if (!series) {
       return UNAVAILABLE;
     }
@@ -61,15 +71,23 @@ export default async function ShopBrandPage({ params }: PageProps<"/boutique/[ca
         />
         <header className="space-y-1">
           <h1 className="text-3xl">{brand.name}</h1>
-          <p className="text-ink-muted">Choisis ta série, de la plus récente à la plus ancienne.</p>
+          <p className="text-ink-muted">
+            Choisis ta série, de la plus récente à la plus ancienne.
+          </p>
         </header>
         {series.length === 0 ? (
-          <p className="card p-6">Aucun appareil de cette marque pour le moment.</p>
+          <p className="card p-6">
+            Aucun appareil de cette marque pour le moment.
+          </p>
         ) : (
-          <ul className="grid gap-4 md:grid-cols-2">
+          <ul className="grid gap-4 md:grid-cols-3">
             {series.map((one, index) => (
               <li key={one.slug}>
-                <SeriesCard series={one} href={`/boutique/${category.slug}/${brand.slug}/${one.slug}`} priority={index === 0} />
+                <SeriesCard
+                  series={one}
+                  href={`/boutique/${category.slug}/${brand.slug}/${one.slug}`}
+                  priority={index === 0}
+                />
               </li>
             ))}
           </ul>
@@ -112,7 +130,10 @@ export default async function ShopBrandPage({ params }: PageProps<"/boutique/[ca
         <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
           {result.data.map((product) => (
             <li key={product.id} className="flex">
-              <ModelCard product={product} sizes="(min-width: 1024px) 280px, (min-width: 768px) 33vw, 50vw" />
+              <ModelCard
+                product={product}
+                sizes="(min-width: 1024px) 280px, (min-width: 768px) 33vw, 50vw"
+              />
             </li>
           ))}
         </ul>

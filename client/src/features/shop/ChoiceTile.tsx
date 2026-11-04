@@ -22,25 +22,35 @@ export default function ChoiceTile({
 }) {
   const body = (
     <>
-      <div className="relative grid aspect-square w-full place-items-center overflow-hidden rounded-[10px] bg-surface-2">
+      <div className="relative grid aspect-square w-full place-items-center overflow-hidden rounded-field bg-surface-2">
         {image ? (
-          <ProductImage src={image} alt="" sizes="(min-width: 1024px) 200px, (min-width: 768px) 33vw, 50vw" />
+          <ProductImage
+            src={image}
+            alt=""
+            sizes="(min-width: 1024px) 200px, (min-width: 768px) 33vw, 50vw"
+          />
         ) : logoUrl ? (
-          <BrandLogo url={logoUrl} size={56} />
+          <BrandLogo url={logoUrl} size={76} className="hover:text-blue-ink" />
         ) : (
-          <span aria-hidden="true" className="font-display text-4xl font-bold text-ink-muted">
+          <span
+            aria-hidden="true"
+            className="font-display text-4xl font-bold text-ink-muted"
+          >
             {label.charAt(0)}
           </span>
         )}
       </div>
-      <span className={`font-display font-bold ${disabled ? "line-through" : "group-hover:text-blue-ink"}`}>
+      <span
+        className={`font-display font-bold ${disabled ? "line-through" : "group-hover:text-blue-ink"}`}
+      >
         {label}
       </span>
       {hint ? <span className="text-xs text-ink-muted">{hint}</span> : null}
     </>
   );
 
-  const className = "card flex w-full flex-col items-center gap-1.5 p-2.5 pb-4 text-center sm:p-3 sm:pb-4";
+  const className =
+    "card flex w-full flex-col items-center gap-1.5 p-2.5 pb-4 text-center sm:p-3 sm:pb-4";
   if (disabled) {
     return (
       <div aria-disabled="true" className={`${className} opacity-50`}>
@@ -51,7 +61,7 @@ export default function ChoiceTile({
   return (
     <Link
       href={href}
-      className={`${className} group transition-[border-color,box-shadow] hover:border-blue-ink hover:shadow-[var(--shadow)]`}
+      className={`${className} group transition-[border-color,box-shadow] hover:border-b-blue-ink hover:shadow-[var(--shadow)]`}
     >
       {body}
     </Link>
