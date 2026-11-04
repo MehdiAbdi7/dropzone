@@ -233,11 +233,15 @@ describe("Neuf scellé et affaires", () => {
     expect(bySku("IP-R-DEAL")).not.toHaveProperty("isDeal");
   });
 
-  // Les deux CHECK de la migration : la base refuse même si le code a un bug.
-  it("la base refuse une affaire qui ne dit pas si elle a sa boîte", async () => {
+  // Les CHECK des migrations : la base refuse même si le code a un bug.
+  // Depuis le vrai catalogue (partie B), une affaire peut ne rien dire de sa boîte
+  // (« Boîte non précisée », annonce importée) ; un neuf scellé, jamais.
+  it("la base refuse une boîte sur un neuf scellé, mais accepte une affaire sans boîte connue", async () => {
     await expect(
-      prisma.productVariant.update({ where: { sku: "IP-R-WIFI" }, data: { withBox: null } }),
+      prisma.productVariant.update({ where: { sku: "IP-NEW-256" }, data: { withBox: false } }),
     ).rejects.toThrow();
+    const updated = await prisma.productVariant.update({ where: { sku: "IP-R-WIFI" }, data: { withBox: null } });
+    expect(updated.withBox).toBeNull();
   });
 
   it("la base refuse une pièce compatible qui n'a pas été changée", async () => {

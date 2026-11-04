@@ -18,6 +18,7 @@ datasource db {
 // (modèle d'appareil, options proposées, reconditionné autorisé ou non).
 enum ProductKind {
   phone
+  tablet
   laptop
   watch
   accessory
@@ -46,6 +47,9 @@ enum ChoiceGroup {
   replaced_part
   defect
   limitation
+  sim
+  gpu
+  origin
 }
 
 enum Role {
@@ -196,11 +200,18 @@ model ProductVariant {
   compatibleParts String[]      @default([]) @map("compatible_parts")
   defects         String[]      @default([])
   limitations     String[]      @default([])
-  // Avec ou sans sa boîte d'origine : obligatoire pour une affaire, null pour un neuf
-  // scellé, qui l'a par définition (CHECK dans la migration).
+  // Avec (true) ou sans (false) sa boîte d'origine. Une affaire importée d'une annonce
+  // qui n'en parle pas reste à null (« Boîte non précisée ») ; un neuf scellé est
+  // toujours à null, il l'a par définition (CHECK dans la migration).
   withBox         Boolean?      @map("with_box")
   // Les détails du gérant pour le client (« Comme neuf, vendu avec sa boîte d'origine »).
   details         String?
+  // La garantie en mois (CHECK : 1 à 36), obligatoire pour un appareil (règle de l'API).
+  warrantyMonths  Int?          @map("warranty_months")
+  // Le pays d'origine, une valeur de la liste « Pays d'origine » (« Europe »).
+  origin          String?
+  // La référence interne du magasin (« 51057 »), unique quand elle existe.
+  reference       String?       @unique
   // Les articles offerts avec cette variante (neuf scellé ou affaire).
   gifts           VariantGift[] @relation("DealVariant")
   // Les affaires dans lesquelles cette variante est offerte.
@@ -297,6 +308,8 @@ model OrderItem {
   unitPrice       Int       @map("unit_price")
   quantity        Int
   isGift          Boolean   @default(false) @map("is_gift")
+  // La garantie de l'appareil au jour de la commande (null pour un accessoire).
+  warrantyMonths  Int?      @map("warranty_months")
 
   @@index([orderId])
   @@index([productId])
