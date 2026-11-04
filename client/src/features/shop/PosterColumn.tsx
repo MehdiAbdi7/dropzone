@@ -2,7 +2,7 @@ import Link from "next/link";
 import ProductImage from "@/components/ui/ProductImage";
 import { SpecGlyph } from "@/components/ui/icons";
 import { CONDITION_LABELS } from "@/config/catalog";
-import { swatchOf } from "@/config/colors";
+import { type Palette, swatchOf } from "@/config/colors";
 import { formatPrice } from "@/lib/format";
 import type { PosterModel } from "@/types/api";
 import { glowColor, specIcon } from "./series";
@@ -10,14 +10,22 @@ import { glowColor, specIcon } from "./series";
 // Une colonne de l'affiche : la photo sur la lueur de sa couleur, le nom, 4 caractéristiques,
 // les couleurs (barrées si épuisées) et les prix « dès ». Toute la colonne mène à la fiche
 // du modèle (l'étape Neuf scellé ou Affaire). Un modèle épuisé reste, grisé, sans lien.
-export default function PosterColumn({ model, priority }: { model: PosterModel; priority: boolean }) {
+export default function PosterColumn({
+  model,
+  palette,
+  priority,
+}: {
+  model: PosterModel;
+  palette: Palette;
+  priority: boolean;
+}) {
   const body = (
     <>
       <div className="relative h-52 w-full md:h-60">
         <div
           aria-hidden="true"
           className="poster-glow"
-          style={{ background: `radial-gradient(closest-side, ${glowColor(model.posterColor)}, transparent 75%)` }}
+          style={{ background: `radial-gradient(closest-side, ${glowColor(model.posterColor, palette)}, transparent 75%)` }}
         />
         <ProductImage src={model.image} alt="" sizes="(min-width: 768px) 25vw, 78vw" priority={priority} />
       </div>
@@ -40,7 +48,7 @@ export default function PosterColumn({ model, priority }: { model: PosterModel; 
       {model.colors.length > 0 ? (
         <ul aria-label="Couleurs" className="flex flex-wrap justify-center gap-2">
           {model.colors.map((color) => {
-            const swatch = swatchOf(color.name);
+            const swatch = swatchOf(color.name, palette);
             return (
               <li key={color.name} title={color.inStock ? color.name : `${color.name} (épuisée)`}>
                 {swatch ? (

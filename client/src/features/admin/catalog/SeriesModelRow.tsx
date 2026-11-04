@@ -6,6 +6,7 @@ import ProductImage from "@/components/ui/ProductImage";
 import { swatchOf } from "@/config/colors";
 import { errorMessage } from "@/lib/errors";
 import { useUpdateModelMutation, type AdminSeriesModel } from "../adminApi";
+import { usePalette } from "../usePalette";
 
 // Un modèle de la série dans le Catalogue : sa place dans l'affiche (poignée à glisser,
 // ou Monter / Descendre au clavier), son année, la couleur de sa lueur, son stock, et les
@@ -32,6 +33,9 @@ export default function SeriesModelRow({
   const [update, updateState] = useUpdateModelMutation();
   const [year, setYear] = useState(model.releaseYear ? String(model.releaseYear) : "");
   const product = model.product;
+  // Les teintes réglées dans Listes : une couleur sans teinte donnerait une lueur violette.
+  const palette = usePalette();
+  const withoutHue = model.colors.filter((color) => !swatchOf(color, palette));
 
   function saveYear() {
     if (/^\d{4}$/.test(year) && Number(year) !== model.releaseYear) {
@@ -103,7 +107,7 @@ export default function SeriesModelRow({
               Auto
             </button>
             {model.colors.map((color) => {
-              const swatch = swatchOf(color);
+              const swatch = swatchOf(color, palette);
               const active = model.posterColor === color;
               return (
                 <button
@@ -120,6 +124,14 @@ export default function SeriesModelRow({
                 </button>
               );
             })}
+            {withoutHue.length > 0 ? (
+              <span className="basis-full">
+                Sans teinte, la lueur reste violette : {withoutHue.join(", ")}.{" "}
+                <Link href="/admin/listes" className="text-blue-ink underline">
+                  Choisir la teinte dans Listes
+                </Link>
+              </span>
+            ) : null}
           </fieldset>
         ) : null}
 

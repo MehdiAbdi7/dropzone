@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { CONDITION_LABELS, DEVICE_KINDS } from "@/config/catalog";
 import NewPicker from "@/features/shop/NewPicker";
 import ProductHeader from "@/features/shop/ProductHeader";
+import { getPalette } from "@/lib/palette";
 import { getProduct } from "@/lib/products";
 
 export async function generateMetadata({ params }: PageProps<"/produits/[slug]/neuf">): Promise<Metadata> {
@@ -24,11 +25,12 @@ export default async function NewProductPage({ params }: PageProps<"/produits/[s
   if (!DEVICE_KINDS.includes(product.category.kind) || !fresh.some((variant) => variant.stock > 0)) {
     redirect(`/produits/${slug}`);
   }
+  const palette = await getPalette();
 
   return (
     <div className="container-page py-8">
       <ProductHeader product={product} step={CONDITION_LABELS.new}>
-        <NewPicker variants={fresh} kind={product.category.kind} />
+        <NewPicker variants={fresh} kind={product.category.kind} palette={palette} />
       </ProductHeader>
     </div>
   );

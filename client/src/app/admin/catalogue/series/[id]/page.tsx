@@ -16,6 +16,7 @@ import {
 } from "@/features/admin/adminApi";
 import SeriesModelRow from "@/features/admin/catalog/SeriesModelRow";
 import { moveItem } from "@/features/admin/catalog/reorder";
+import { usePalette } from "@/features/admin/usePalette";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import { glowColor } from "@/features/shop/series";
 import { errorMessage } from "@/lib/errors";
@@ -44,6 +45,7 @@ function SeriesView({ data }: { data: AdminSeriesPage }) {
   const [remove, removeState] = useDeleteSeriesMutation();
   const [name, setName] = useState(series.name);
   const dragged = useRef<number | null>(null);
+  const palette = usePalette();
   const ids = models.map((model) => model.id);
   const shopHref = `/boutique/${series.category.slug}/${series.brand.slug}/${series.slug}`;
   const cover = models.find((model) => model.product?.image);
@@ -84,7 +86,7 @@ function SeriesView({ data }: { data: AdminSeriesPage }) {
           ) : (
             <div
               className="absolute inset-0"
-              style={{ background: `radial-gradient(closest-side, ${glowColor(models[0]?.posterColor ?? null)}, transparent), #07080c` }}
+              style={{ background: `radial-gradient(closest-side, ${glowColor(models[0]?.posterColor ?? null, palette)}, transparent), #07080c` }}
             >
               <ProductImage src={cover?.product?.image ?? null} alt="" sizes="176px" />
             </div>

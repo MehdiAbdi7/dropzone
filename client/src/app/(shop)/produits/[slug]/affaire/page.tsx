@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { CONDITION_LABELS } from "@/config/catalog";
 import ProductHeader from "@/features/shop/ProductHeader";
 import RefurbishedList from "@/features/shop/RefurbishedList";
+import { getPalette } from "@/lib/palette";
 import { getProduct } from "@/lib/products";
 
 export async function generateMetadata({ params }: PageProps<"/produits/[slug]/affaire">): Promise<Metadata> {
@@ -25,11 +26,12 @@ export default async function DealProductPage({ params }: PageProps<"/produits/[
   if (refurbished.length === 0) {
     redirect(`/produits/${slug}`);
   }
+  const palette = await getPalette();
 
   return (
     <div className="container-page py-8">
       <ProductHeader product={product} step={CONDITION_LABELS.refurbished}>
-        <RefurbishedList variants={refurbished} kind={product.category.kind} />
+        <RefurbishedList variants={refurbished} kind={product.category.kind} palette={palette} />
       </ProductHeader>
     </div>
   );

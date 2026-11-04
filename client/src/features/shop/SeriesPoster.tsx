@@ -1,11 +1,13 @@
+import type { Palette } from "@/config/colors";
 import type { SeriesPoster as Poster } from "@/types/api";
 import PosterColumn from "./PosterColumn";
 import PosterSlider from "./PosterSlider";
 import { glowColor, posterLayout } from "./series";
 
 // L'affiche d'une série : un bloc toujours sombre, comme une affiche de lancement, avec
-// une colonne par modèle (à glisser sur téléphone, voir PosterSlider).
-export default function SeriesPoster({ poster }: { poster: Poster }) {
+// une colonne par modèle (à glisser sur téléphone, voir PosterSlider). La palette (teintes
+// réglées dans Listes) donne les lueurs et les pastilles.
+export default function SeriesPoster({ poster, palette }: { poster: Poster; palette: Palette }) {
   const first = poster.models[0];
   const last = poster.models[poster.models.length - 1];
   const count = poster.models.length;
@@ -16,7 +18,7 @@ export default function SeriesPoster({ poster }: { poster: Poster }) {
         aria-hidden="true"
         className="poster-backdrop"
         style={{
-          background: `radial-gradient(60% 80% at 0% 55%, ${glowColor(first.posterColor)}, transparent 70%), radial-gradient(60% 80% at 100% 55%, ${glowColor(last.posterColor)}, transparent 70%)`,
+          background: `radial-gradient(60% 80% at 0% 55%, ${glowColor(first.posterColor, palette)}, transparent 70%), radial-gradient(60% 80% at 100% 55%, ${glowColor(last.posterColor, palette)}, transparent 70%)`,
         }}
       />
       <header className="relative space-y-2 px-4 pt-8 text-center">
@@ -31,7 +33,7 @@ export default function SeriesPoster({ poster }: { poster: Poster }) {
       <div className="relative pt-6 pb-8">
         <PosterSlider names={poster.models.map((model) => model.name)} layout={posterLayout(count)}>
           {poster.models.map((model, index) => (
-            <PosterColumn key={model.productSlug} model={model} priority={index === 0} />
+            <PosterColumn key={model.productSlug} model={model} palette={palette} priority={index === 0} />
           ))}
         </PosterSlider>
       </div>

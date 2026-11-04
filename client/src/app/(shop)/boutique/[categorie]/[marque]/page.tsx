@@ -5,6 +5,7 @@ import ProductGrid from "@/features/products/ProductGrid";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import ModelCard from "@/features/shop/ModelCard";
 import SeriesCard from "@/features/shop/SeriesCard";
+import { getPalette } from "@/lib/palette";
 import { publicFetch, publicFetchPage } from "@/lib/publicFetch";
 import type { Category, ProductCard, SeriesSummary } from "@/types/api";
 
@@ -53,10 +54,11 @@ export default async function ShopBrandPage({
 
   const isDevice = category ? DEVICE_KINDS.includes(category.kind) : false;
   if (category && brand && isDevice && brand.slug !== "autres") {
-    const series = await publicFetch<SeriesSummary[]>(
-      `/series?category=${category.slug}&brand=${brand.slug}`,
-      60,
-    );
+    // Les séries et la palette (lueur des affiches sans couverture) en même temps.
+    const [series, palette] = await Promise.all([
+      publicFetch<SeriesSummary[]>(`/series?category=${category.slug}&brand=${brand.slug}`, 60),
+      getPalette(),
+    ]);
     if (!series) {
       return UNAVAILABLE;
     }
@@ -88,6 +90,7 @@ export default async function ShopBrandPage({
                 <SeriesCard
                   series={one}
                   href={`/boutique/${category.slug}/${brand.slug}/${one.slug}`}
+                  palette={palette}
                   priority={index === 0}
                 />
               </li>

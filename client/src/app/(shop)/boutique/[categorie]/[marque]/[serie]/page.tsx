@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import SeriesPoster from "@/features/shop/SeriesPoster";
+import { getPalette } from "@/lib/palette";
 import { publicFetch } from "@/lib/publicFetch";
 import type { Category, SeriesPoster as Poster } from "@/types/api";
 
@@ -40,6 +41,8 @@ export default async function ShopSeriesPage({ params }: PageProps<"/boutique/[c
   }
 
   const brandHref = `/boutique/${poster.category.slug}/${poster.brand.slug}`;
+  // Les teintes des couleurs (Listes du back-office) : lueurs et pastilles de l'affiche.
+  const palette = await getPalette();
   return (
     <div className="container-page space-y-6 py-8">
       <Breadcrumb
@@ -50,7 +53,7 @@ export default async function ShopSeriesPage({ params }: PageProps<"/boutique/[c
           { label: poster.name },
         ]}
       />
-      <SeriesPoster poster={poster} />
+      <SeriesPoster poster={poster} palette={palette} />
     </div>
   );
 }

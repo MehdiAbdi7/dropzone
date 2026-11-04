@@ -1,28 +1,14 @@
-// La teinte de la pastille de chaque couleur (liste « Couleurs » du back-office).
-// Une couleur absente d'ici s'affiche sans pastille, seulement son nom : on ne devine pas.
-const SWATCHES: Record<string, string> = {
-  Noir: "#1d1d1f",
-  Blanc: "#f5f5f0",
-  Bleu: "#3a5f9e",
-  Rouge: "#c8102e",
-  Vert: "#4b7a5a",
-  Rose: "#f2c4ce",
-  Violet: "#6e5a8c",
-  Jaune: "#f3d65c",
-  Argent: "#d9d9de",
-  "Gris sidéral": "#535150",
-  Minuit: "#232a35",
-  "Lumière stellaire": "#ece5d8",
-  "Titane naturel": "#bfb6a8",
-  "Titane noir": "#3c3c3d",
-  "Titane bleu": "#3c4a63",
-  "Titane blanc": "#efeee9",
-  "Titane gris": "#8a8a87",
-  Graphite: "#41424c",
-  Bordeaux: "#6b1f2e",
-  Glacier: "#cfe3ee",
-};
+// La teinte de chaque couleur (« Orange » → « #f47d3c ») : réglée par le gérant dans Listes,
+// servie par l'API (GET /colors pour la boutique, GET /admin/choices pour le back-office).
+// Avant le 04/11, elle était écrite ici, et une couleur ajoutée par le gérant n'avait ni
+// pastille ni lueur. Une couleur sans teinte s'affiche par son nom : on ne devine pas.
+export type Palette = Record<string, string>;
 
-export function swatchOf(name: string): string | null {
-  return SWATCHES[name] ?? null;
+export function swatchOf(name: string, palette: Palette): string | null {
+  return palette[name] ?? null;
+}
+
+// La palette du back-office, tirée de la liste « Couleurs » (les valeurs sans teinte en sont absentes).
+export function paletteFromChoices(colors: { label: string; hex: string | null }[] | undefined): Palette {
+  return Object.fromEntries((colors ?? []).flatMap((color) => (color.hex ? [[color.label, color.hex]] : [])));
 }

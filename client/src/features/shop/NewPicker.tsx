@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { swatchOf } from "@/config/colors";
+import { type Palette, swatchOf } from "@/config/colors";
 import AddToCartButton from "@/features/cart/AddToCartButton";
 import GiftList from "@/features/products/GiftList";
 import { formatPrice } from "@/lib/format";
@@ -22,8 +22,17 @@ function stockLabel(stock: number, first: boolean): string {
 }
 
 // Le choix d'un neuf : couleur, puis stockage… avec, sur chaque valeur, ce qui reste
-// vraiment. Une valeur épuisée reste visible, barrée, et ne se clique pas.
-export default function NewPicker({ variants, kind }: { variants: Variant[]; kind: ProductKind }) {
+// vraiment. Une valeur épuisée reste visible, barrée, et ne se clique pas. La palette
+// (teintes réglées dans Listes) donne la pastille de chaque couleur.
+export default function NewPicker({
+  variants,
+  kind,
+  palette,
+}: {
+  variants: Variant[];
+  kind: ProductKind;
+  palette: Palette;
+}) {
   const keys = optionKeys(variants, kind);
   const [selected, setSelected] = useState(() => initialSelection(variants, keys));
   const choices = optionChoices(variants, keys, selected);
@@ -36,7 +45,7 @@ export default function NewPicker({ variants, kind }: { variants: Variant[]; kin
           <legend className="label">{key}</legend>
           <div className="flex flex-wrap gap-2">
             {values.map(({ value, stock }) => {
-              const swatch = key === "Couleur" ? swatchOf(value) : null;
+              const swatch = key === "Couleur" ? swatchOf(value, palette) : null;
               return (
                 <button
                   key={value}

@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import type { ChoiceGroup } from "@/config/catalog";
 import { errorMessage } from "@/lib/errors";
 import { useChoicesQuery, useCreateChoiceMutation } from "../adminApi";
+import { DEFAULT_HUE } from "../ColorHueChip";
 
 type Props = {
   group: ChoiceGroup;
@@ -22,6 +23,9 @@ export default function ChoicePicker(props: Props) {
   const { data: choices } = useChoicesQuery();
   const [createChoice, { isLoading, error, reset }] = useCreateChoiceMutation();
   const [draft, setDraft] = useState("");
+  // Une nouvelle couleur arrive avec sa teinte (pastille de la boutique, lueur de l'affiche).
+  const [hue, setHue] = useState(DEFAULT_HUE);
+  const isColor = group === "color";
 
   const selected = props.multiple ? props.value : props.value ? [props.value] : [];
   const labels = (choices?.[group] ?? []).map((choice) => choice.label);
@@ -45,9 +49,10 @@ export default function ChoicePicker(props: Props) {
     }
     try {
       if (!labels.includes(value)) {
-        await createChoice({ group, label: value }).unwrap();
+        await createChoice(isColor ? { group, label: value, hex: hue } : { group, label: value }).unwrap();
       }
       setDraft("");
+      setHue(DEFAULT_HUE);
       if (!selected.includes(value)) {
         toggle(value);
       }
@@ -74,6 +79,17 @@ export default function ChoicePicker(props: Props) {
       </div>
       {/* Un vrai <form> imbriqué est interdit en HTML : on gère Entrée à la main. */}
       <div className="flex max-w-sm gap-2">
+        {isColor ? (
+          <label className="flex items-center">
+            <input
+              type="color"
+              aria-label="Teinte de la nouvelle couleur"
+              className="size-9 cursor-pointer rounded-lg"
+              value={hue}
+              onChange={(event) => setHue(event.target.value)}
+            />
+          </label>
+        ) : null}
         <label htmlFor={inputId} className="sr-only">
           Ajouter à « {label} »
         </label>

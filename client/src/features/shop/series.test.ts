@@ -41,14 +41,22 @@ describe("ctaLabel", () => {
 });
 
 describe("glowColor", () => {
-  it("éclaircit de 25 % la pastille de la couleur", () => {
+  const palette = { Bordeaux: "#6b1f2e", Orange: "#f47d3c" };
+
+  it("éclaircit de 25 % la teinte de la couleur", () => {
     // Bordeaux #6b1f2e → (144, 87, 98).
-    expect(glowColor("Bordeaux")).toBe("rgba(144, 87, 98, 0.6)");
+    expect(glowColor("Bordeaux", palette)).toBe("rgba(144, 87, 98, 0.6)");
   });
 
-  it("donne une lueur neutre sans couleur connue", () => {
-    expect(glowColor(null)).toBe("rgba(155, 77, 255, 0.35)");
-    expect(glowColor("Couleur inconnue")).toBe("rgba(155, 77, 255, 0.35)");
+  // Le bug du 04/11 : « Orange » n'avait pas de teinte, la lueur du 17 Pro Max était violette.
+  it("suit la palette : une couleur ajoutée par le gérant a sa lueur", () => {
+    // Orange #f47d3c → (247, 158, 109).
+    expect(glowColor("Orange", palette)).toBe("rgba(247, 158, 109, 0.6)");
+  });
+
+  it("donne une lueur neutre sans couleur, ou pour une couleur sans teinte", () => {
+    expect(glowColor(null, palette)).toBe("rgba(155, 77, 255, 0.35)");
+    expect(glowColor("Couleur inconnue", palette)).toBe("rgba(155, 77, 255, 0.35)");
   });
 });
 

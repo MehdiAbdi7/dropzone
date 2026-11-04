@@ -172,7 +172,10 @@ export type DeviceModel = {
   usage: number;
 };
 
-export type Choices = Record<ChoiceGroup, { id: number; label: string }[]>;
+// `hex` : la teinte d'une couleur (« #f47d3c »), null pour les autres listes et pour une
+// couleur qui attend sa teinte.
+export type Choice = { id: number; label: string; hex: string | null };
+export type Choices = Record<ChoiceGroup, Choice[]>;
 
 export type GiftOption = { id: number; sku: string; label: string; price: number; stock: number };
 
@@ -417,9 +420,15 @@ const adminApi = api.injectEndpoints({
       transformResponse: data<Choices>,
       providesTags: ["Choices"],
     }),
-    createChoice: build.mutation<{ id: number; label: string }, { group: ChoiceGroup; label: string }>({
+    // Une couleur arrive avec sa teinte (`hex`), les autres valeurs sans.
+    createChoice: build.mutation<Choice, { group: ChoiceGroup; label: string; hex?: string }>({
       query: (body) => ({ url: "/admin/choices", method: "POST", body }),
-      transformResponse: data<{ id: number; label: string }>,
+      transformResponse: data<Choice>,
+      invalidatesTags: ["Choices"],
+    }),
+    updateChoice: build.mutation<Choice, { id: number; hex: string }>({
+      query: ({ id, hex }) => ({ url: `/admin/choices/${id}`, method: "PATCH", body: { hex } }),
+      transformResponse: data<Choice>,
       invalidatesTags: ["Choices"],
     }),
     deleteChoice: build.mutation<void, number>({
@@ -482,6 +491,7 @@ export const {
   useSetSeriesModelsMutation,
   useChoicesQuery,
   useCreateChoiceMutation,
+  useUpdateChoiceMutation,
   useDeleteChoiceMutation,
   useAdminOrdersQuery,
   useAdminOrderQuery,

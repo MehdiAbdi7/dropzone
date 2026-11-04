@@ -1,4 +1,4 @@
-import { swatchOf } from "@/config/colors";
+import { type Palette, swatchOf } from "@/config/colors";
 import AddToCartButton from "@/features/cart/AddToCartButton";
 import BatteryGauge from "@/features/products/BatteryGauge";
 import { defectTip } from "@/features/products/ConditionReport";
@@ -13,9 +13,17 @@ import { zonesOf } from "./diagramZones";
 // détails du gérant, les limitations en rouge en haut (ce qui empêche un usage), le
 // schéma avec sa légende (chaque pièce changée, d'origine ou compatible), l'état et la
 // batterie, les articles offerts, puis l'ajout au panier de cet appareil précis.
-export default function RefurbishedCard({ variant, kind }: { variant: Variant; kind: ProductKind }) {
+export default function RefurbishedCard({
+  variant,
+  kind,
+  palette,
+}: {
+  variant: Variant;
+  kind: ProductKind;
+  palette: Palette;
+}) {
   const { Couleur: color, ...otherOptions } = variant.options;
-  const swatch = color ? swatchOf(color) : null;
+  const swatch = color ? swatchOf(color, palette) : null;
   const zones = zonesOf(variant, kind);
   const diagramKind = kind === "tablet" || kind === "laptop" || kind === "watch" ? kind : "phone";
   const pristine = variant.replacedParts.length === 0 && variant.defects.length === 0;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { Palette } from "@/config/colors";
 import type { ProductKind, Variant } from "@/types/api";
 import RefurbishedCard from "./RefurbishedCard";
 
@@ -16,8 +17,16 @@ const SORTS: Record<RefurbSort, { label: string; compare: (a: Variant, b: Varian
 };
 
 // Tous les reconditionnés en stock d'un modèle, une radiographie par appareil,
-// du moins cher au plus cher par défaut.
-export default function RefurbishedList({ variants, kind }: { variants: Variant[]; kind: ProductKind }) {
+// du moins cher au plus cher par défaut. La palette donne la pastille de chaque couleur.
+export default function RefurbishedList({
+  variants,
+  kind,
+  palette,
+}: {
+  variants: Variant[];
+  kind: ProductKind;
+  palette: Palette;
+}) {
   const [sort, setSort] = useState<RefurbSort>("price");
   const sorted = [...variants].sort(SORTS[sort].compare);
 
@@ -42,7 +51,7 @@ export default function RefurbishedList({ variants, kind }: { variants: Variant[
       <ul className="space-y-4">
         {sorted.map((variant) => (
           <li key={variant.sku}>
-            <RefurbishedCard variant={variant} kind={kind} />
+            <RefurbishedCard variant={variant} kind={kind} palette={palette} />
           </li>
         ))}
       </ul>

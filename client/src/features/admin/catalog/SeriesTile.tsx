@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import ProductImage from "@/components/ui/ProductImage";
+import type { Palette } from "@/config/colors";
 import { glowColor } from "@/features/shop/series";
 import type { AdminSeriesTile } from "../adminApi";
 
 // Une série dans le Catalogue, en affiche comme dans la Boutique : sa couverture ou
 // l'affiche de secours, son stock, et « Pas d'image » tant qu'il manque la couverture.
-export default function SeriesTile({ series }: { series: AdminSeriesTile }) {
+export default function SeriesTile({ series, palette }: { series: AdminSeriesTile; palette: Palette }) {
   return (
     <Link href={`/admin/catalogue/series/${series.id}`} className="series-card block">
       <div className="series-media">
@@ -15,7 +16,7 @@ export default function SeriesTile({ series }: { series: AdminSeriesTile }) {
         ) : (
           <div
             className="absolute inset-0"
-            style={{ background: `radial-gradient(70% 90% at 80% 40%, ${glowColor(series.fallbackColor)}, transparent 70%), #07080c` }}
+            style={{ background: `radial-gradient(70% 90% at 80% 40%, ${glowColor(series.fallbackColor, palette)}, transparent 70%), #07080c` }}
           >
             <p aria-hidden="true" className="series-fallback-title absolute left-3 top-2 max-w-[70%] text-5xl">
               {series.name}

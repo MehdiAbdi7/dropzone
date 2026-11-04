@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import ProductImage from "@/components/ui/ProductImage";
 import { ArrowRightIcon } from "@/components/ui/icons";
+import type { Palette } from "@/config/colors";
 import { formatPrice } from "@/lib/format";
 import type { SeriesSummary } from "@/types/api";
 import { ctaLabel, glowColor } from "./series";
@@ -13,10 +14,12 @@ import { ctaLabel, glowColor } from "./series";
 export default function SeriesCard({
   series,
   href,
+  palette,
   priority,
 }: {
   series: SeriesSummary;
   href: string;
+  palette: Palette;
   priority: boolean;
 }) {
   const media = series.coverUrl ? (
@@ -32,7 +35,7 @@ export default function SeriesCard({
     <div
       className="absolute inset-0"
       style={{
-        background: `radial-gradient(70% 90% at 80% 40%, ${glowColor(series.fallback.color)}, transparent 70%), #07080c`,
+        background: `radial-gradient(70% 90% at 80% 40%, ${glowColor(series.fallback.color, palette)}, transparent 70%), #07080c`,
       }}
     >
       <p

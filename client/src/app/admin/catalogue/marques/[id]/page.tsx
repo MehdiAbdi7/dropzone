@@ -11,6 +11,7 @@ import {
 } from "@/features/admin/adminApi";
 import { AddTile } from "@/features/admin/catalog/CatalogTile";
 import SeriesTile from "@/features/admin/catalog/SeriesTile";
+import { usePalette } from "@/features/admin/usePalette";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import { errorMessage } from "@/lib/errors";
 
@@ -34,6 +35,7 @@ function BrandView({ data }: { data: AdminCatalogBrandPage }) {
   const router = useRouter();
   const [create, createState] = useCreateSeriesMutation();
   const [name, setName] = useState("");
+  const palette = usePalette();
 
   async function onCreate(event: FormEvent) {
     event.preventDefault();
@@ -69,7 +71,7 @@ function BrandView({ data }: { data: AdminCatalogBrandPage }) {
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {series.map((one) => (
           <li key={one.id}>
-            <SeriesTile series={one} />
+            <SeriesTile series={one} palette={palette} />
           </li>
         ))}
         <li>

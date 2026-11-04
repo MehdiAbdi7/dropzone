@@ -7,6 +7,7 @@ import ConditionChoice from "@/features/shop/ConditionChoice";
 import NewPicker from "@/features/shop/NewPicker";
 import ProductHeader from "@/features/shop/ProductHeader";
 import { formatPrice, orderedEntries } from "@/lib/format";
+import { getPalette } from "@/lib/palette";
 import { getProduct } from "@/lib/products";
 import { publicFetchPage } from "@/lib/publicFetch";
 import type { ProductCard } from "@/types/api";
@@ -31,10 +32,15 @@ export default async function ProductPage({ params }: PageProps<"/produits/[slug
   }
   const isDevice = DEVICE_KINDS.includes(product.category.kind);
 
-  // Sous un appareil : les accessoires compatibles avec son modèle.
-  const related = product.deviceModel
-    ? ((await publicFetchPage<ProductCard>(`/products?model=${product.deviceModel.slug}&limit=8`, 300))?.data ?? [])
-    : [];
+  // Sous un appareil : les accessoires compatibles avec son modèle. La palette : les
+  // pastilles des couleurs d'un accessoire (NewPicker).
+  const [relatedPage, palette] = await Promise.all([
+    product.deviceModel
+      ? publicFetchPage<ProductCard>(`/products?model=${product.deviceModel.slug}&limit=8`, 300)
+      : Promise.resolve(null),
+    getPalette(),
+  ]);
+  const related = relatedPage?.data ?? [];
   const accessories = related.filter((item) => item.id !== product.id).slice(0, 4);
   const specs = orderedEntries(product.specs, SPEC_ORDER);
 
@@ -60,7 +66,7 @@ export default async function ProductPage({ params }: PageProps<"/produits/[slug
         {isDevice ? (
           <ConditionChoice slug={product.slug} image={product.images[0]?.url ?? null} variants={product.variants} />
         ) : (
-          <NewPicker variants={product.variants} kind={product.category.kind} />
+          <NewPicker variants={product.variants} kind={product.category.kind} palette={palette} />
         )}
 
         {specs.length > 0 ? (

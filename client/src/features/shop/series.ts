@@ -1,4 +1,4 @@
-import { swatchOf } from "@/config/colors";
+import { type Palette, swatchOf } from "@/config/colors";
 
 // Les petits calculs des affiches de séries, sans React : testés avec Vitest.
 
@@ -28,10 +28,11 @@ export function ctaLabel(seriesName: string): string {
 
 const NEUTRAL_GLOW = "rgba(155, 77, 255, 0.35)";
 
-// La lueur derrière la photo d'un modèle : la pastille de sa couleur, éclaircie de 25 %
-// vers le blanc (un bordeaux pur se perdrait dans le fond noir). Couleur inconnue : violet.
-export function glowColor(colorName: string | null): string {
-  const hex = colorName ? swatchOf(colorName) : null;
+// La lueur derrière la photo d'un modèle : la teinte de sa couleur (palette réglée dans
+// Listes), éclaircie de 25 % vers le blanc (un bordeaux pur se perdrait dans le fond noir).
+// Couleur sans teinte : violet neutre.
+export function glowColor(colorName: string | null, palette: Palette): string {
+  const hex = colorName ? swatchOf(colorName, palette) : null;
   if (!hex) {
     return NEUTRAL_GLOW;
   }
