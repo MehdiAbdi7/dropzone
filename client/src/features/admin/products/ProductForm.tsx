@@ -251,7 +251,7 @@ export default function ProductForm({
             </fieldset>
           </section>
 
-          <section aria-labelledby="step-variants" className="space-y-4">
+          <section id="variantes" aria-labelledby="step-variants" className="scroll-mt-6 space-y-4">
             <h2 id="step-variants" className="text-xl">
               Variantes ({draft.variants.length})
             </h2>

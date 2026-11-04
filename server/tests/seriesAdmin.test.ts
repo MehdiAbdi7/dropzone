@@ -148,7 +148,12 @@ describe("Les compteurs du Catalogue", () => {
 
     const response = await admin.get(`/admin/catalog/series/${series.id}`);
     expect(response.status).toBe(200);
-    expect(response.body.data.series).toMatchObject({ name: "iPhone 15", brand: { slug: "iphone" }, category: { slug: "smartphones" } });
+    expect(response.body.data.series).toMatchObject({
+      name: "iPhone 15",
+      // Le fabricant et le type servent au formulaire « Nouveau modèle ».
+      brand: { slug: "iphone", makerName: "Apple" },
+      category: { slug: "smartphones", kind: "phone" },
+    });
     expect(response.body.data.models).toEqual([
       expect.objectContaining({
         id: catalog.iphone.id,

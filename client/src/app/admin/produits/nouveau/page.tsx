@@ -1,8 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import ProductForm from "@/features/admin/products/ProductForm";
 import { emptyDraft } from "@/features/admin/products/productDraft";
+
+// « Créer la fiche » depuis le Catalogue arrive ici avec le modèle, sa catégorie, sa marque
+// et son nom dans l'adresse : le formulaire est déjà rempli.
+function NewProductForm() {
+  const params = useSearchParams();
+  const deviceModelId = Number(params.get("modele"));
+  const categoryId = Number(params.get("categorie"));
+  const brandId = Number(params.get("marque"));
+  const prefill =
+    deviceModelId && categoryId && brandId ? { deviceModelId, categoryId, brandId, name: params.get("nom") ?? "" } : undefined;
+  return <ProductForm initial={emptyDraft(prefill)} />;
+}
 
 export default function NewProductPage() {
   return (
@@ -11,7 +25,9 @@ export default function NewProductPage() {
         Produits
       </Link>
       <h1 className="text-3xl">Nouveau produit</h1>
-      <ProductForm initial={emptyDraft()} />
+      <Suspense fallback={<p className="text-ink-muted">Chargement…</p>}>
+        <NewProductForm />
+      </Suspense>
     </div>
   );
 }

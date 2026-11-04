@@ -177,7 +177,7 @@ export async function catalogSeries(id: number) {
   if (!series) {
     throw new AppError(404, "Série introuvable");
   }
-  const { makerName, category, ...brand } = series.brand;
+  const { makerName, category } = series.brand;
   const candidates = makerName
     ? await prisma.deviceModel.findMany({
         where: { seriesId: null, brand: makerName, kind: category.kind },
@@ -187,7 +187,7 @@ export async function catalogSeries(id: number) {
     : [];
 
   return {
-    series: { id: series.id, name: series.name, slug: series.slug, coverUrl: series.coverUrl, brand, category },
+    series: { id: series.id, name: series.name, slug: series.slug, coverUrl: series.coverUrl, brand: { id: series.brand.id, name: series.brand.name, slug: series.brand.slug, makerName }, category },
     models: series.models.map(({ products, ...model }) => {
       const product = products[0];
       const colors = product ? colorsOf(product.variants) : [];

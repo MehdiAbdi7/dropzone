@@ -98,3 +98,15 @@ describe("draftFromProduct", () => {
     });
   });
 });
+
+describe("emptyDraft prérempli depuis le Catalogue", () => {
+  it("met la catégorie, la marque, le modèle et son nom", () => {
+    const draft = emptyDraft({ categoryId: 1, brandId: 2, deviceModelId: 3, name: "iPhone 18 Pro" });
+    expect(draft).toMatchObject({ categoryId: 1, brandId: 2, deviceModelId: 3, name: "iPhone 18 Pro", status: "draft" });
+    expect(draft.variants).toHaveLength(1);
+  });
+
+  it("reste vide sans préremplissage", () => {
+    expect(emptyDraft()).toMatchObject({ categoryId: null, brandId: null, deviceModelId: null, name: "" });
+  });
+});

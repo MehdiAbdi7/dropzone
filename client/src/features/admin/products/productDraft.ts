@@ -82,13 +82,14 @@ export function withReplacedParts(variant: VariantDraft, replacedParts: string[]
   return { ...variant, replacedParts, partOrigins };
 }
 
-export function emptyDraft(): ProductDraft {
+// Un nouveau produit, vide ou prérempli depuis le Catalogue (« Créer la fiche » d'un modèle).
+export function emptyDraft(prefill?: { categoryId: number; brandId: number; deviceModelId: number; name: string }): ProductDraft {
   return {
-    name: "",
+    name: prefill?.name ?? "",
     description: "",
-    categoryId: null,
-    deviceModelId: null,
-    brandId: null,
+    categoryId: prefill?.categoryId ?? null,
+    deviceModelId: prefill?.deviceModelId ?? null,
+    brandId: prefill?.brandId ?? null,
     compatibleModelIds: [],
     specs: [],
     status: "draft",

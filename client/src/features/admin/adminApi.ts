@@ -148,8 +148,8 @@ export type AdminSeriesPage = {
     name: string;
     slug: string;
     coverUrl: string | null;
-    brand: { id: number; name: string; slug: string };
-    category: { id: number; name: string; slug: string };
+    brand: { id: number; name: string; slug: string; makerName: string | null };
+    category: { id: number; name: string; slug: string; kind: ProductKind };
   };
   models: AdminSeriesModel[];
   candidates: { id: number; name: string; releaseYear: number | null }[];
