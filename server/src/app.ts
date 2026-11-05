@@ -11,6 +11,7 @@ import { brandAdminRouter } from "./modules/brands/brand.routes.js";
 import { categoryAdminRouter, categoryRouter } from "./modules/categories/category.routes.js";
 import { choiceAdminRouter, colorRouter } from "./modules/choices/choice.routes.js";
 import { modelAdminRouter } from "./modules/models/model.routes.js";
+import { modelColorsAdminRouter } from "./modules/models/modelColorsAdmin.routes.js";
 import { orderAdminRouter, orderRouter } from "./modules/orders/order.routes.js";
 import { productAdminRouter } from "./modules/products/productAdmin.routes.js";
 import { productRouter } from "./modules/products/product.routes.js";
@@ -47,6 +48,7 @@ adminRouter.use(
   categoryAdminRouter,
   brandAdminRouter,
   modelAdminRouter,
+  modelColorsAdminRouter,
   seriesAdminRouter,
   choiceAdminRouter,
   orderAdminRouter,

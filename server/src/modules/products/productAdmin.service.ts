@@ -71,6 +71,24 @@ export async function getAdminProduct(id: number) {
   return product;
 }
 
+// Un neuf scellé n'a pas de fiche d'état : on vide ce que le formulaire aurait pu envoyer.
+// Aussi utilisé par l'ajout d'un exemplaire depuis la page d'une couleur.
+export function withoutDealSheet<V extends ProductBody["variants"][number]>(variant: V): V {
+  if (variant.condition === "refurbished") {
+    return variant;
+  }
+  return {
+    ...variant,
+    grade: null,
+    batteryHealth: null,
+    replacedParts: [],
+    compatibleParts: [],
+    defects: [],
+    limitations: [],
+    withBox: null,
+  };
+}
+
 // Les règles qui dépendent de la base (catégorie, modèle, cadeaux) : Zod a déjà
 // vérifié la forme, le service vérifie le sens. Renvoie les données nettoyées.
 async function checkRules(input: ProductBody, productId?: number) {
@@ -150,22 +168,7 @@ async function checkRules(input: ProductBody, productId?: number) {
     }
   }
 
-  const variants = input.variants.map((variant) => {
-    if (variant.condition === "refurbished") {
-      return variant;
-    }
-    // Un neuf scellé n'a pas de fiche d'état : on vide ce que le formulaire aurait pu envoyer.
-    return {
-      ...variant,
-      grade: null,
-      batteryHealth: null,
-      replacedParts: [],
-      compatibleParts: [],
-      defects: [],
-      limitations: [],
-      withBox: null,
-    };
-  });
+  const variants = input.variants.map(withoutDealSheet);
 
   return {
     deviceModelId,
@@ -174,7 +177,7 @@ async function checkRules(input: ProductBody, productId?: number) {
   };
 }
 
-async function uniqueSlug(name: string): Promise<string> {
+export async function uniqueSlug(name: string): Promise<string> {
   const base = slugify(name) || "produit";
   let slug = base;
   for (let n = 2; await prisma.product.findUnique({ where: { slug }, select: { id: true } }); n++) {

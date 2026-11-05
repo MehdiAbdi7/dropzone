@@ -67,7 +67,7 @@ const optionalText = (max: number) =>
     .nullable()
     .default(null);
 
-const variantSchema = z
+export const variantSchema = z
   .object({
     id: z.number().int().positive().optional(),
     sku: z

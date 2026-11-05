@@ -5,7 +5,7 @@ import type { Tx } from "../../config/db.js";
 import { COLOR_HEX } from "../../scripts/device-models.js";
 
 // « Noir » et « noir  » sont la même couleur : on compare sans la casse ni les espaces.
-const sameColor = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+export const sameColor = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 // Les couleurs des variantes (option « Couleur »), sans doublon, dans leur ordre.
 export function variantColors(variants: { options: Record<string, string> }[]): string[] {
