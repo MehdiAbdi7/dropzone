@@ -126,11 +126,13 @@ export type PosterModel = {
   onSale: boolean;
   image: string | null;
   specs: [string, string][];
-  colors: { name: string; inStock: boolean }[];
+  // Les couleurs officielles du modèle dans le monde, sans rapport avec le stock (le stock
+  // par couleur est sur la page Neuf scellé).
+  colors: string[];
   newFrom: number | null;
   dealFrom: number | null;
   soldOut: boolean;
-  // Le nom de la couleur de la lueur, déjà choisie par l'API (null = lueur neutre).
+  // La lueur choisie par le gérant parmi `colors`, sinon la première (null = lueur neutre).
   posterColor: string | null;
 };
 

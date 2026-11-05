@@ -6,10 +6,12 @@ import ProductImage from "@/components/ui/ProductImage";
 import { swatchOf } from "@/config/colors";
 import { errorMessage } from "@/lib/errors";
 import { useUpdateModelMutation, type AdminSeriesModel } from "../adminApi";
+import ChoicePicker from "../products/ChoicePicker";
 import { usePalette } from "../usePalette";
 
 // Un modèle de la série dans le Catalogue : sa place dans l'affiche (poignée à glisser,
-// ou Monter / Descendre au clavier), son année, la couleur de sa lueur, son stock, et les
+// ou Monter / Descendre au clavier), son année, ses couleurs officielles (les pastilles de
+// l'affiche, sans rapport avec le stock), sa lueur choisie parmi elles, son stock, et les
 // raccourcis vers le formulaire produit.
 export default function SeriesModelRow({
   model,
@@ -94,17 +96,37 @@ export default function SeriesModelRow({
           </label>
         </div>
 
-        {model.colors.length > 0 ? (
+        {/* Les couleurs du modèle dans le monde, dans l'ordre où elles sont cochées (celui
+            des pastilles). Repliées : la liste « Couleurs » entière prendrait toute la ligne. */}
+        <details className="text-xs">
+          <summary className="cursor-pointer text-ink-muted">
+            Couleurs officielles : {model.colors.length > 0 ? model.colors.join(", ") : "aucune"}
+          </summary>
+          <div className="mt-2">
+            <ChoicePicker
+              group="color"
+              label={`Couleurs officielles de ${model.name}`}
+              multiple
+              value={model.colors}
+              onChange={(colors) => update({ id: model.id, colors })}
+            />
+          </div>
+        </details>
+
+        {model.colors.length === 0 ? (
+          <p className="text-xs text-ink-muted">Coche ses couleurs officielles pour choisir la lueur.</p>
+        ) : (
           <fieldset className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
             <legend className="sr-only">Couleur de la lueur de {model.name}</legend>
             <span aria-hidden="true">Lueur :</span>
+            {/* Auto : la première couleur officielle. Le stock n'y est pour rien. */}
             <button
               type="button"
               aria-pressed={model.posterColor === null}
               onClick={() => update({ id: model.id, posterColor: null })}
               className={`rounded-full border px-2 py-0.5 ${model.posterColor === null ? "border-ink text-ink" : "border-line"}`}
             >
-              Auto
+              Auto ({model.colors[0]})
             </button>
             {model.colors.map((color) => {
               const swatch = swatchOf(color, palette);
@@ -133,7 +155,7 @@ export default function SeriesModelRow({
               </span>
             ) : null}
           </fieldset>
-        ) : null}
+        )}
 
         {product?.status === "draft" ? (
           // Le stock d'un brouillon est compté, mais la fiche n'est pas en vente : sans ce

@@ -48,27 +48,22 @@ export default function PosterColumn({
         </ul>
       ) : null}
 
+      {/* Les couleurs officielles du modèle, comme sur une affiche de lancement : rien
+          n'est barré ici, le stock par couleur se lit sur la page Neuf scellé. */}
       {model.colors.length > 0 ? (
         <ul aria-label="Couleurs" className="flex flex-wrap justify-center gap-2">
           {model.colors.map((color) => {
-            const swatch = swatchOf(color.name, palette);
+            const swatch = swatchOf(color, palette);
             return (
-              <li key={color.name} title={color.inStock ? color.name : `${color.name} (épuisée)`}>
+              <li key={color} title={color}>
                 {swatch ? (
-                  <span
-                    aria-hidden="true"
-                    className={`poster-swatch ${color.inStock ? "" : "poster-swatch-out"}`}
-                    style={{ backgroundColor: swatch }}
-                  />
+                  <span aria-hidden="true" className="poster-swatch" style={{ backgroundColor: swatch }} />
                 ) : (
-                  <span aria-hidden="true" className={`text-xs text-white/80 ${color.inStock ? "" : "line-through"}`}>
-                    {color.name}
+                  <span aria-hidden="true" className="text-xs text-white/80">
+                    {color}
                   </span>
                 )}
-                <span className="sr-only">
-                  {color.name}
-                  {color.inStock ? "" : " (épuisée)"}
-                </span>
+                <span className="sr-only">{color}</span>
               </li>
             );
           })}

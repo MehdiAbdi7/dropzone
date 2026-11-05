@@ -573,7 +573,8 @@
     outline-offset: 2px;
   }
 
-  /* Les pastilles de couleur ; barrée = épuisée. */
+  /* Les pastilles des couleurs officielles du modèle (jamais barrées : le stock par
+     couleur se lit sur la page Neuf scellé, décision de Mehdi du 05/11). */
   .poster-swatch {
     position: relative;
     display: block;
@@ -581,19 +582,6 @@
     height: 14px;
     border-radius: 50%;
     border: 1px solid rgb(255 255 255 / 0.4);
-  }
-  .poster-swatch-out {
-    opacity: 0.4;
-  }
-  .poster-swatch-out::after {
-    content: "";
-    position: absolute;
-    left: -2px;
-    right: -2px;
-    top: 50%;
-    height: 1.5px;
-    background: #fff;
-    transform: rotate(-45deg);
   }
 
   /* La piste à glisser : un modèle par écran sur téléphone, le suivant qui dépasse à

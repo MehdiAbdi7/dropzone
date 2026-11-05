@@ -361,7 +361,12 @@ const adminApi = api.injectEndpoints({
       invalidatesTags: ["Models"],
     }),
     // Corriger l'année d'un modèle (sa place dans la Boutique), ou la couleur de sa lueur.
-    updateModel: build.mutation<DeviceModel, { id: number; releaseYear?: number; posterColor?: string | null }>({
+    // `colors` : les couleurs officielles du modèle (pastilles de l'affiche) ; `posterColor` :
+    // la lueur, une de ces couleurs (null = la première).
+    updateModel: build.mutation<
+      DeviceModel,
+      { id: number; releaseYear?: number; colors?: string[]; posterColor?: string | null }
+    >({
       query: ({ id, ...body }) => ({ url: `/admin/models/${id}`, method: "PATCH", body }),
       transformResponse: data<DeviceModel>,
       invalidatesTags: ["Models", "Series"],
