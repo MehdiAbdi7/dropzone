@@ -107,6 +107,15 @@ export const DEVICE_MODELS = [
 // par l'import ; ensuite, c'est le gérant qui la règle dans Listes. Orange : mesurée sur la
 // photo de l'iPhone 17 Pro Max. Une couleur absente d'ici attend sa teinte dans Listes.
 export const COLOR_HEX: Record<string, string> = {
+  // Les PC (étape Couleur, 05/11) : teintes approchées, à ajuster dans Listes.
+  Gris: "#8a8d91",
+  Platine: "#d9d8d4",
+  "Noir mat": "#2a2a2c",
+  "Bleu glacier": "#bcd3e0",
+  Grès: "#d8c3a5",
+  Dune: "#cbb89d",
+  Saphir: "#2f4a7a",
+  Océan: "#4f7f95",
   Noir: "#1d1d1f",
   Blanc: "#f5f5f0",
   Bleu: "#3a5f9e",

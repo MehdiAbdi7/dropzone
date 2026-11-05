@@ -261,8 +261,8 @@ export const PRODUCTS: SeedProduct[] = [
     specs: { Écran: "6,6 pouces Super AMOLED, 120 Hz", Processeur: "Exynos 1480", Batterie: "5 000 mAh" },
     image: "/products/phone.svg",
     variants: [
-      neuf("A55-128-BLEU", { Stockage: "128 Go", Couleur: "Bleu", RAM: "8 Go" }, 69000, 6),
-      neuf("A55-256-NOIR", { Stockage: "256 Go", Couleur: "Noir", RAM: "8 Go" }, 76000, 4),
+      neuf("A55-128-BLEU", { Stockage: "128 Go", Couleur: "Iceblue", RAM: "8 Go" }, 69000, 6),
+      neuf("A55-256-NOIR", { Stockage: "256 Go", Couleur: "Navy", RAM: "8 Go" }, 76000, 4),
     ],
   },
 

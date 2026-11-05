@@ -10,7 +10,7 @@ import { refreshMinPrice } from "../../modules/products/product.service.js";
 import { defaultWarrantyMonths } from "../../modules/products/warranty.js";
 import { slugify } from "../../utils/slugify.js";
 import { CHOICES, COLOR_HEX } from "../device-models.js";
-import { applyOfficialColors } from "../applyOfficialColors.js";
+import { fillVariantColors } from "../fillVariantColors.js";
 import { fillSeries } from "../series.js";
 import { dedupe, importSku, type Listing, parseListing, type RawRow } from "./listing.js";
 import { IGNORED, MODEL_MAP } from "./models-map.js";
@@ -179,7 +179,7 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
     ]),
   );
   const variants = new Map(
-    (await db.productVariant.findMany({ where: { sku: { in: skus } }, select: { sku: true, productId: true } })).map(
+    (await db.productVariant.findMany({ where: { sku: { in: skus } }, select: { sku: true, productId: true, options: true } })).map(
       (variant) => [variant.sku, variant],
     ),
   );
@@ -391,6 +391,12 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
     if (Object.keys(changes).length === 0) {
       continue;
     }
+    // Étape Couleur (05/11) : une annonce sans couleur qui change une autre option garde la
+    // couleur de l'exemplaire (posée par le remplissage ou corrigée par le gérant).
+    const currentColor = (variant.options as Record<string, string> | null)?.Couleur;
+    if (changes.options && !listing.options.Couleur && currentColor) {
+      changes.options = { ...listing.options, Couleur: currentColor };
+    }
     await db.productVariant.update({
       where: { sku },
       // Un neuf scellé n'a jamais de boîte à dire (CHECK).
@@ -403,8 +409,9 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
 
   await refreshMinPrice(db, touched);
   // Les modèles créés par cet import reçoivent leurs couleurs officielles (pastilles de
-  // l'affiche) ; ceux que le gérant a déjà réglés ne sont pas touchés.
-  await applyOfficialColors(db);
+  // l'affiche) ; ceux que le gérant a déjà réglés ne sont pas touchés. Puis chaque exemplaire
+  // sans couleur reçoit la première couleur de son modèle (étape Couleur, 05/11).
+  await fillVariantColors(db);
   return report;
 }
 

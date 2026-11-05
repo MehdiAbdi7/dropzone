@@ -335,3 +335,35 @@ describe("importDropzone : la même référence deux fois dans le relevé", () =
     expect((await variant("C-REF-NEW")).price).toBe(66000);
   });
 });
+
+// L'étape Couleur (05/11) : un exemplaire importé a toujours une couleur de son modèle, et
+// la couleur posée ou corrigée survit au rejeu.
+describe("importDropzone : la couleur des exemplaires", () => {
+  const colorOf = async (code: string) => ((await variant(code)).options as Record<string, string>).Couleur;
+  const withRam = (ram: string) =>
+    rows().map((item) => (item.code === "C-LAT7400" ? { ...item, ram } : item));
+
+  it("donne à un exemplaire créé sans couleur la première couleur de son modèle", async () => {
+    await importDropzone(prisma, rows());
+    expect(await colorOf("C-LAT7400")).toBe("Gris");
+  });
+
+  it("garde la couleur corrigée par le gérant au rejeu", async () => {
+    await importDropzone(prisma, rows());
+    const latitude = await variant("C-LAT7400");
+    await prisma.productVariant.update({
+      where: { id: latitude.id },
+      data: { options: { ...(latitude.options as Record<string, string>), Couleur: "Argent" } },
+    });
+    await importDropzone(prisma, rows());
+    expect(await colorOf("C-LAT7400")).toBe("Argent");
+  });
+
+  it("garde la couleur quand l'annonce change une autre option", async () => {
+    await importDropzone(prisma, rows());
+    await importDropzone(prisma, withRam("16 Go DDR4"));
+    const latitude = await variant("C-LAT7400");
+    expect((latitude.options as Record<string, string>).RAM).toBe("16 Go");
+    expect(await colorOf("C-LAT7400")).toBe("Gris");
+  });
+});

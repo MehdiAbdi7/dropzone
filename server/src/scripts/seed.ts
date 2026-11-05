@@ -12,6 +12,7 @@ import { defaultWarrantyMonths } from "../modules/products/warranty.js";
 import { slugify } from "../utils/slugify.js";
 import { CHOICES, COLOR_HEX, DEVICE_MODELS } from "./device-models.js";
 import { applyOfficialColors } from "./applyOfficialColors.js";
+import { fillVariantColors } from "./fillVariantColors.js";
 import { fillSeries } from "./series.js";
 import { BRANDS, CATEGORIES, PRODUCTS } from "./seed-data.js";
 
@@ -179,10 +180,12 @@ await prisma.variantGift.createMany({ data: gifts });
 // officielles (les pastilles de l'affiche, official-colors.ts).
 const series = await fillSeries(prisma);
 const official = await applyOfficialColors(prisma);
+// Étape Couleur (05/11) : chaque exemplaire d'appareil a une couleur de son modèle.
+const filled = await fillVariantColors(prisma);
 
 console.log(
   `Base remplie : ${CATEGORIES.length} catégories, ${BRANDS.length} marques, ${DEVICE_MODELS.length} modèles, ${choiceCount} valeurs, ` +
     `${PRODUCTS.length} produits, ${variantCount} variantes, ${gifts.length} articles offerts, ` +
-    `${series.created} séries (${series.assigned} modèles rangés), couleurs officielles sur ${official.models} modèles.`,
+    `${series.created} séries (${series.assigned} modèles rangés), couleurs officielles sur ${official.models} modèles, ${filled.filled} exemplaires colorés.`,
 );
 await prisma.$disconnect();

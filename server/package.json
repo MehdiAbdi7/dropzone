@@ -15,7 +15,8 @@
     "photos": "tsx src/scripts/productPhotos.ts",
     "series:fill": "tsx src/scripts/fillSeries.ts",
     "import:dropzone": "tsx src/scripts/importDropzone.ts",
-    "colors:official": "tsx src/scripts/officialColors.ts"
+    "colors:official": "tsx src/scripts/officialColors.ts",
+    "colors:variants": "tsx src/scripts/variantColors.ts"
   },
   "type": "module",
   "engines": {

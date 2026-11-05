@@ -128,4 +128,108 @@ export const OFFICIAL_COLORS: Record<string, string[]> = {
   "Honor|Magic8 Pro": ["Sunrise Gold", "Sky Cyan", "Black"],
   "Huawei|P30 Pro": ["Aurora", "Breathing Crystal", "Amber Sunrise", "Black", "Pearl White", "Misty Lavender"],
   "Vivo|X200 Ultra": ["Noir", "Rouge", "Argent"],
+
+  // ---------- Les PC (étape Couleur, 05/11) ----------
+  // Apple : noms français officiels, pages « Identifier votre modèle de MacBook Air »
+  // (support.apple.com/fr-fr/102869) et « … MacBook Pro » (108052), lues le 05/11, dans
+  // l'ordre de ces pages. Les MacBook Pro 14 et 16 pouces M2 Pro (2023) n'y ont pas de ligne
+  // à eux : mêmes couleurs que les 14 et 16 pouces de 2021 (argent, gris sidéral).
+  "Apple|MacBook Air 13 pouces Intel (2018)": ["Gris sidéral", "Or", "Argent"],
+  "Apple|MacBook Air 13 pouces Intel (2020)": ["Gris sidéral", "Or", "Argent"],
+  "Apple|MacBook Air 13 pouces M1": ["Gris sidéral", "Or", "Argent"],
+  "Apple|MacBook Air 13 pouces M2": ["Argent", "Lumière stellaire", "Gris sidéral", "Minuit"],
+  "Apple|MacBook Air 15 pouces M2": ["Argent", "Lumière stellaire", "Gris sidéral", "Minuit"],
+  "Apple|MacBook Air 13 pouces M3": ["Argent", "Lumière stellaire", "Gris sidéral", "Minuit"],
+  "Apple|MacBook Air 15 pouces M3": ["Argent", "Lumière stellaire", "Gris sidéral", "Minuit"],
+  "Apple|MacBook Air 13 pouces M4": ["Argent", "Lumière stellaire", "Bleu ciel", "Minuit"],
+  "Apple|MacBook Air 15 pouces M4": ["Argent", "Lumière stellaire", "Bleu ciel", "Minuit"],
+  "Apple|MacBook Pro 13 pouces Intel (2017)": ["Argent", "Gris sidéral"],
+  "Apple|MacBook Pro 15 pouces Intel (2018)": ["Argent", "Gris sidéral"],
+  "Apple|MacBook Pro 13 pouces Intel (2020)": ["Argent", "Gris sidéral"],
+  "Apple|MacBook Pro 13 pouces M1": ["Argent", "Gris sidéral"],
+  "Apple|MacBook Pro 13 pouces M2": ["Argent", "Gris sidéral"],
+  "Apple|MacBook Pro 14 pouces M1 Pro": ["Argent", "Gris sidéral"],
+  "Apple|MacBook Pro 16 pouces M1 Pro": ["Argent", "Gris sidéral"],
+  "Apple|MacBook Pro 14 pouces M2 Pro": ["Argent", "Gris sidéral"],
+  "Apple|MacBook Pro 16 pouces M2 Pro": ["Argent", "Gris sidéral"],
+  "Apple|MacBook Pro 14 pouces M3": ["Argent", "Gris sidéral"],
+  "Apple|MacBook Pro 14 pouces M3 Pro": ["Argent", "Noir sidéral"],
+  "Apple|MacBook Pro 16 pouces M3 Pro": ["Argent", "Noir sidéral"],
+  "Apple|MacBook Pro 14 pouces M4": ["Argent", "Noir sidéral"],
+  "Apple|MacBook Pro 14 pouces M4 Pro": ["Argent", "Noir sidéral"],
+  "Apple|MacBook Pro 16 pouces M4 Pro": ["Argent", "Noir sidéral"],
+  "Apple|MacBook Pro 16 pouces M4 Max": ["Argent", "Noir sidéral"],
+
+  // Microsoft : noms français des pages Surface de Microsoft France (de mémoire de Claude,
+  // pas relues le 05/11 : à vérifier par le gérant).
+  "Microsoft|Surface Laptop 4": ["Platine", "Noir mat", "Bleu glacier", "Grès"],
+  "Microsoft|Surface Laptop 5": ["Platine", "Noir mat", "Sauge", "Grès"],
+  "Microsoft|Surface Laptop 6": ["Platine", "Noir"],
+  "Microsoft|Surface Laptop 7": ["Platine", "Noir", "Dune", "Saphir"],
+  "Microsoft|Surface Laptop for Business 7": ["Platine", "Noir"],
+  "Microsoft|Surface Pro 6": ["Platine", "Noir"],
+  "Microsoft|Surface Pro 7+": ["Platine", "Noir mat"],
+  "Microsoft|Surface Pro 8": ["Platine", "Graphite"],
+  "Microsoft|Surface Pro 9 5G": ["Platine"],
+  "Microsoft|Surface Pro 11 for Business": ["Platine", "Noir"],
+  "Microsoft|Surface Pro 12 pouces": ["Platine", "Violet", "Océan"],
+
+  // Les autres marques : la teinte du châssis en mots simples (Noir, Argent, Gris…), pas le
+  // nom commercial du fabricant (« Titan Gray », « Mica Silver »…), faute de l'avoir relu
+  // pour chacun des 90 modèles (choix de Claude du 05/11, à corriger dans le Catalogue).
+  ...simpleColors(["Noir"], [
+    "Acer|Nitro V 15", "Acer|Nitro V 16", "Asus|E510KA", "Dell|Latitude 3540", "Gigabyte|G5",
+    "HP|OMEN 15", "HP|OMEN 16", "HP|Pavilion Gaming 15", "Lenovo|IdeaPad Gaming 3", "MSI|GF63 Thin",
+    "Toshiba|Tecra A40", "Lenovo|ThinkPad E14 Gen 4", "Lenovo|ThinkPad L13 2-in-1",
+    "Lenovo|ThinkPad L13 Yoga Gen 4", "Lenovo|ThinkPad P15 Gen 1", "Lenovo|ThinkPad P17 Gen 1",
+    "Lenovo|ThinkPad T14 Gen 2", "Lenovo|ThinkPad T14 Gen 3", "Lenovo|ThinkPad T14 Gen 4",
+    "Lenovo|ThinkPad T14 Gen 5", "Lenovo|ThinkPad T14s Gen 3", "Lenovo|ThinkPad T14s Gen 5",
+    "Lenovo|ThinkPad T14s Gen 6", "Lenovo|ThinkPad X1 Carbon Gen 9", "Lenovo|ThinkPad X1 Carbon Gen 10",
+    "Lenovo|ThinkPad X1 Carbon Gen 11", "Lenovo|ThinkPad X1 Carbon Gen 12", "Lenovo|ThinkPad X1 Yoga Gen 6",
+    "Lenovo|ThinkPad X13 Gen 4",
+  ]),
+  ...simpleColors(["Gris"], [
+    "Acer|Aspire 17 A5", "Asus|ExpertBook", "Asus|ExpertBook 14", "Asus|ExpertBook 15",
+    "Asus|ExpertBook BM1403CDA", "Asus|ROG G17", "Asus|ROG Strix G15 G513RW", "Asus|ROG Strix G16",
+    "Asus|ROG Strix GL503V", "Asus|ROG Strix SCAR 15 G533QS", "Asus|TUF Gaming F15", "Asus|TUF Gaming F17",
+    "Dell|Latitude 5350 2-in-1", "Dell|Latitude 5420", "Dell|Latitude 5430", "Dell|Latitude 5440",
+    "Dell|Latitude 5540", "Dell|Latitude 7350", "Dell|Latitude 7400", "Dell|Latitude 7420",
+    "Dell|Latitude 7430", "Dell|Latitude 7440", "Dell|Precision 3490", "Dell|Precision 3561",
+    "Dell|Precision 3571", "Dell|Precision 3581", "Dell|Precision 7560", "Dell|Pro 13 Plus 2-in-1",
+    "Dell|Pro 13 Premium", "Dell|Pro 14 Plus", "Dell|Pro 16", "Dell|Pro 16 Plus", "Dell|Pro Max 16",
+    "Honor|MagicBook 14", "HP|Elite Dragonfly Chromebook", "HP|ZBook Fury 15 G7", "HP|ZBook X G1i 16",
+    "Lenovo|IdeaPad Duet 5i", "Lenovo|Legion 5 15ACH6H", "Lenovo|Legion 5 15IRX10", "Lenovo|Legion 5 Gen 7",
+    "Lenovo|LOQ 15AHP10", "Lenovo|LOQ 15IAX9E", "Lenovo|ThinkBook 15", "Lenovo|Yoga Slim 7 Pro OLED",
+    "Lenovo|Yoga Slim 7x",
+  ]),
+  ...simpleColors(["Argent"], [
+    "Acer|Aspire A515-58P", "Acer|Swift SF514-56T", "Asus|Vivobook OLED", "Dell|Precision 5560",
+    "Dell|Precision 5570", "Dell|Precision 5680", "Dell|Precision 5690", "Dell|XPS 15", "Dell|XPS 15 9500",
+    "HP|EliteBook 630 G11", "HP|EliteBook 640 G11", "HP|EliteBook 645 G11", "HP|EliteBook 830 G11",
+    "HP|EliteBook 840 G7", "HP|EliteBook 840 G8", "HP|EliteBook 840 G9", "HP|EliteBook 840 G10",
+    "HP|EliteBook 840 G11", "HP|EliteBook 845 G9", "HP|EliteBook 845 G10", "HP|EliteBook 850 G8",
+    "HP|EliteBook x360 1040 G10", "HP|EliteBook x360 830 G10", "HP|Pavilion x360", "HP|ProBook 440 G10",
+    "HP|ProBook 450 G9", "HP|ProBook 450 G10", "HP|ProBook 455 G10", "HP|ZBook Firefly 14 G9",
+    "HP|ZBook Power G10",
+  ]),
+  "Asus|Vivobook 14": ["Argent", "Bleu"],
+  "Asus|Vivobook 15": ["Argent", "Bleu"],
+  "Asus|ROG Zephyrus G14": ["Gris", "Blanc"],
+  "Asus|Zenbook": ["Bleu", "Gris"],
+  "Asus|ZenBook 14 OLED": ["Bleu", "Gris"],
+  "Asus|Zenbook 15 OLED": ["Bleu", "Gris"],
+  "Dell|XPS 13": ["Argent", "Blanc"],
+  "Dell|XPS 13 9310": ["Argent", "Blanc"],
+  "HP|250 G10": ["Argent", "Gris"],
+  "HP|Elite Dragonfly G2": ["Bleu", "Noir"],
+  "HP|OmniBook X Flip 14": ["Bleu", "Argent"],
+  "HP|Victus 15": ["Argent", "Bleu", "Blanc"],
+  "HP|Victus 16": ["Argent", "Bleu", "Blanc"],
+  "MSI|Modern 14": ["Noir", "Argent"],
+  "Samsung|Galaxy Book3": ["Graphite", "Argent"],
 };
+
+// La même liste de couleurs pour plusieurs modèles.
+function simpleColors(colors: string[], models: string[]): Record<string, string[]> {
+  return Object.fromEntries(models.map((model) => [model, colors]));
+}
