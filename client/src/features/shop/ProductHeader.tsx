@@ -2,17 +2,24 @@ import type { ReactNode } from "react";
 import ProductImage from "@/components/ui/ProductImage";
 import type { ProductDetail } from "@/types/api";
 import Breadcrumb, { type Crumb } from "./Breadcrumb";
+import { colorHref } from "./colors";
 
 // Le haut commun des pages d'un produit : le fil d'Ariane complet
 // (Boutique › Smartphones › iPhone › iPhone 18 Pro Max › Neuf), la photo à gauche,
 // la marque et le nom à droite, puis le contenu de l'étape (`children`).
+// Après l'étape Couleur : la couleur entre le modèle et l'étape, et sa photo à gauche
+// (`image`, sinon la photo du produit).
 export default function ProductHeader({
   product,
   step,
+  color,
+  image,
   children,
 }: {
   product: ProductDetail;
   step?: string;
+  color?: string | null;
+  image?: string | null;
   children: ReactNode;
 }) {
   const category = `/boutique/${product.category.slug}`;
@@ -27,8 +34,11 @@ export default function ProductHeader({
       ? [{ label: product.series.name, href: `${category}/${product.brand.slug}/${product.series.slug}` }]
       : []),
     { label: product.name, href: `/produits/${product.slug}` },
+    // Sur l'étape Neuf ou Affaire, la couleur ramène au choix Neuf / Affaire de cette couleur.
+    ...(color ? [step ? { label: color, href: colorHref(product.slug, color) } : { label: color }] : []),
     ...(step ? [{ label: step }] : []),
   ];
+  const title = [color, step].filter(Boolean).join(" · ");
 
   return (
     <div className="space-y-6">
@@ -37,7 +47,7 @@ export default function ProductHeader({
         {/* Sur téléphone, une photo plus petite : les choix arrivent plus vite à l'écran. */}
         <div className="mx-auto w-full max-w-72 sm:max-w-sm lg:sticky lg:top-6 lg:max-w-none lg:self-start">
           <div className="card relative aspect-square overflow-hidden bg-surface-2">
-            <ProductImage src={product.images[0]?.url ?? null} alt={product.name} sizes="(min-width: 1024px) 480px, 100vw" priority />
+            <ProductImage src={image ?? product.images[0]?.url ?? null} alt={color ? `${product.name}, ${color}` : product.name} sizes="(min-width: 1024px) 480px, 100vw" priority />
           </div>
         </div>
         <div className="min-w-0 space-y-6">
@@ -47,7 +57,7 @@ export default function ProductHeader({
             ) : null}
             <h1 className="text-3xl sm:text-4xl">
               {product.name}
-              {step ? <span className="text-ink-muted"> · {step}</span> : null}
+              {title ? <span className="text-ink-muted"> · {title}</span> : null}
             </h1>
           </header>
           {children}

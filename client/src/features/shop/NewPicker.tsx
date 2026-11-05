@@ -23,17 +23,20 @@ function stockLabel(stock: number, first: boolean): string {
 
 // Le choix d'un neuf : couleur, puis stockage… avec, sur chaque valeur, ce qui reste
 // vraiment. Une valeur épuisée reste visible, barrée, et ne se clique pas. La palette
-// (teintes réglées dans Listes) donne la pastille de chaque couleur.
+// (teintes réglées dans Listes) donne la pastille de chaque couleur. `colorChosen` : la
+// couleur a été choisie à l'étape Couleur, les variantes sont déjà les siennes.
 export default function NewPicker({
   variants,
   kind,
   palette,
+  colorChosen = false,
 }: {
   variants: Variant[];
   kind: ProductKind;
   palette: Palette;
+  colorChosen?: boolean;
 }) {
-  const keys = optionKeys(variants, kind);
+  const keys = optionKeys(variants, kind, colorChosen ? "Couleur" : undefined);
   const [selected, setSelected] = useState(() => initialSelection(variants, keys));
   const choices = optionChoices(variants, keys, selected);
   const current = variants.find((variant) => keys.every((key) => variant.options[key] === selected[key])) ?? variants[0];

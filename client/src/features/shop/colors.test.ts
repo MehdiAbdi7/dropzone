@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Options, Variant } from "@/types/api";
-import { colorHref, colorTiles, ofColor, pickColor } from "./colors";
+import type { Options, ProductDetail, Variant } from "@/types/api";
+import { colorHref, colorTiles, kindIcon, ofColor, pickColor, productStep } from "./colors";
 
 const variant = (options: Options, stock: number, price: number, condition: Variant["condition"] = "new"): Variant => ({
   sku: `${options.Couleur}-${options.Stockage}-${price}-${condition}`,
@@ -85,5 +85,38 @@ describe("colorHref", () => {
     expect(colorHref("iphone-18-pro", "Glacier")).toBe("/produits/iphone-18-pro?couleur=Glacier");
     expect(colorHref("iphone-17-pro", "Orange cosmique", "neuf")).toBe("/produits/iphone-17-pro/neuf?couleur=Orange%20cosmique");
     expect(colorHref("iphone-8", "(PRODUCT)RED", "affaire")).toBe("/produits/iphone-8/affaire?couleur=(PRODUCT)RED");
+  });
+});
+
+describe("productStep", () => {
+  const product = (kind: ProductDetail["category"]["kind"], names: string[]) =>
+    ({ category: { name: "x", slug: "x", kind }, colors: names.map((name) => ({ name, photoUrl: null })) }) as ProductDetail;
+
+  it("montre les couleurs d'un appareil sans couleur choisie", () => {
+    expect(productStep(product("phone", ["Noir", "Glacier"]), undefined)).toEqual({ kind: "colors" });
+  });
+
+  it("passe à Neuf ou Affaire avec une couleur du modèle", () => {
+    expect(productStep(product("phone", ["Noir", "Glacier"]), "Glacier")).toEqual({ kind: "conditions", color: "Glacier" });
+  });
+
+  it("revient aux couleurs avec une couleur inconnue", () => {
+    expect(productStep(product("laptop", ["Argent"]), "Violet")).toEqual({ kind: "colors" });
+  });
+
+  it("garde l'étape d'un modèle à une seule couleur", () => {
+    expect(productStep(product("laptop", ["Argent"]), undefined)).toEqual({ kind: "colors" });
+  });
+
+  it("saute l'étape d'un modèle sans couleurs et d'un accessoire", () => {
+    expect(productStep(product("phone", []), undefined)).toEqual({ kind: "conditions", color: null });
+    expect(productStep(product("accessory", ["Noir"]), "Noir")).toEqual({ kind: "conditions", color: null });
+  });
+});
+
+describe("kindIcon", () => {
+  it("donne l'icône de la catégorie", () => {
+    expect(kindIcon("phone")).toBe("/products/phone.svg");
+    expect(kindIcon("laptop")).toBe("/products/laptop.svg");
   });
 });

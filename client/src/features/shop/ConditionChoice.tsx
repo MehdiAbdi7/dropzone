@@ -5,11 +5,13 @@ import { CONDITION_LABELS } from "@/config/catalog";
 import { warrantyRange } from "@/config/warranty";
 import { formatPrice } from "@/lib/format";
 import type { Variant } from "@/types/api";
+import { colorHref } from "./colors";
 import { conditionSummary } from "./stock";
 
-// Une des deux grandes cartes. Sans stock : barrée, grisée, sans lien (règle de Mehdi :
-// les deux cartes s'affichent toujours, on ne saute jamais cette étape).
-function ChoiceCard({
+// Une des grandes cartes. Sans stock : barrée, grisée, sans lien (règle de Mehdi :
+// les cartes s'affichent toujours, on ne saute jamais cette étape). Aussi les tuiles de
+// l'étape Couleur (ColorChoice).
+export function ChoiceCard({
   href,
   image,
   badge,
@@ -65,7 +67,19 @@ function ChoiceCard({
 }
 
 // Étape 4 du parcours : neuf scellé ou affaire, avec le prix de départ et ce qui reste.
-export default function ConditionChoice({ slug, image, variants }: { slug: string; image: string | null; variants: Variant[] }) {
+// `color` : la couleur choisie à l'étape d'avant ; les variantes sont déjà celles de la couleur.
+export default function ConditionChoice({
+  slug,
+  image,
+  variants,
+  color = null,
+}: {
+  slug: string;
+  image: string | null;
+  variants: Variant[];
+  color?: string | null;
+}) {
+  const href = (step: "neuf" | "affaire") => (color ? colorHref(slug, color, step) : `/produits/${slug}/${step}`);
   const summary = conditionSummary(variants);
   // « À partir de » seulement s'il y a plusieurs prix neufs en stock ; sinon le prix seul.
   const newPrices = new Set(variants.filter((v) => v.condition === "new" && v.stock > 0).map((v) => v.price));
@@ -74,7 +88,7 @@ export default function ConditionChoice({ slug, image, variants }: { slug: strin
   return (
     <section aria-label="Neuf scellé ou affaire" className="grid grid-cols-2 gap-3 sm:gap-4">
       <ChoiceCard
-        href={`/produits/${slug}/neuf`}
+        href={href("neuf")}
         image={image}
         badge={<span className="badge bg-blue text-on-brand">{CONDITION_LABELS.new}</span>}
         title="Dans sa boîte scellée"
@@ -84,7 +98,7 @@ export default function ConditionChoice({ slug, image, variants }: { slug: strin
         disabled={summary.newFrom === null}
       />
       <ChoiceCard
-        href={`/produits/${slug}/affaire`}
+        href={href("affaire")}
         image={image}
         // Fond plein (et non le bleu léger des cartes produit) : le badge passe sur la photo.
         badge={<span className="badge bg-ink text-surface">{CONDITION_LABELS.refurbished}</span>}
