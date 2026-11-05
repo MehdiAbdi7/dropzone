@@ -14,7 +14,8 @@
     "create-admin": "tsx src/scripts/createAdmin.ts",
     "photos": "tsx src/scripts/productPhotos.ts",
     "series:fill": "tsx src/scripts/fillSeries.ts",
-    "import:dropzone": "tsx src/scripts/importDropzone.ts"
+    "import:dropzone": "tsx src/scripts/importDropzone.ts",
+    "colors:official": "tsx src/scripts/officialColors.ts"
   },
   "type": "module",
   "engines": {

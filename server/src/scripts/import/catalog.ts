@@ -10,6 +10,7 @@ import { refreshMinPrice } from "../../modules/products/product.service.js";
 import { defaultWarrantyMonths } from "../../modules/products/warranty.js";
 import { slugify } from "../../utils/slugify.js";
 import { CHOICES, COLOR_HEX } from "../device-models.js";
+import { applyOfficialColors } from "../applyOfficialColors.js";
 import { fillSeries } from "../series.js";
 import { dedupe, importSku, type Listing, parseListing, type RawRow } from "./listing.js";
 import { IGNORED, MODEL_MAP } from "./models-map.js";
@@ -401,6 +402,9 @@ export async function importDropzone(db: Tx, rows: RawRow[]): Promise<ImportRepo
   }
 
   await refreshMinPrice(db, touched);
+  // Les modèles créés par cet import reçoivent leurs couleurs officielles (pastilles de
+  // l'affiche) ; ceux que le gérant a déjà réglés ne sont pas touchés.
+  await applyOfficialColors(db);
   return report;
 }
 

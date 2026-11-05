@@ -11,6 +11,7 @@ import { computeMinPrice } from "../modules/products/product.service.js";
 import { defaultWarrantyMonths } from "../modules/products/warranty.js";
 import { slugify } from "../utils/slugify.js";
 import { CHOICES, COLOR_HEX, DEVICE_MODELS } from "./device-models.js";
+import { applyOfficialColors } from "./applyOfficialColors.js";
 import { fillSeries } from "./series.js";
 import { BRANDS, CATEGORIES, PRODUCTS } from "./seed-data.js";
 
@@ -174,12 +175,14 @@ const gifts = PRODUCTS.flatMap((product) =>
 );
 await prisma.variantGift.createMany({ data: gifts });
 
-// Les modèles rangés en séries, pour les affiches de la Boutique.
+// Les modèles rangés en séries, pour les affiches de la Boutique, avec leurs couleurs
+// officielles (les pastilles de l'affiche, official-colors.ts).
 const series = await fillSeries(prisma);
+const official = await applyOfficialColors(prisma);
 
 console.log(
   `Base remplie : ${CATEGORIES.length} catégories, ${BRANDS.length} marques, ${DEVICE_MODELS.length} modèles, ${choiceCount} valeurs, ` +
     `${PRODUCTS.length} produits, ${variantCount} variantes, ${gifts.length} articles offerts, ` +
-    `${series.created} séries (${series.assigned} modèles rangés).`,
+    `${series.created} séries (${series.assigned} modèles rangés), couleurs officielles sur ${official.models} modèles.`,
 );
 await prisma.$disconnect();
