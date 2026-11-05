@@ -197,8 +197,9 @@ export const PRODUCTS: SeedProduct[] = [
     specs: { Écran: "6,1 pouces Super Retina XDR, 120 Hz", Puce: "A16 Bionic", Batterie: "3 200 mAh", Connecteur: "Lightning" },
     image: "/products/phone.svg",
     variants: [
-      recond("IP14P-R-001", { Stockage: "128 Go", Couleur: "Violet" }, 129000, 9, 86, { gifts: [{ sku: "CHG-20W-BLANC" }] }),
-      recond("IP14P-R-002", { Stockage: "256 Go", Couleur: "Noir" }, 139000, 10, 92),
+      // Noms officiels d'Apple pour l'iPhone 14 Pro (official-colors.ts), depuis le 05/11.
+      recond("IP14P-R-001", { Stockage: "128 Go", Couleur: "Violet intense" }, 129000, 9, 86, { gifts: [{ sku: "CHG-20W-BLANC" }] }),
+      recond("IP14P-R-002", { Stockage: "256 Go", Couleur: "Noir sidéral" }, 139000, 10, 92),
       recond("IP14P-R-003", { Stockage: "128 Go", Couleur: "Argent" }, 99000, 8, 84, {
         replacedParts: ["Batterie"],
         compatibleParts: ["Batterie"],
@@ -243,9 +244,10 @@ export const PRODUCTS: SeedProduct[] = [
     specs: { Écran: "6,8 pouces Dynamic AMOLED 2X, 120 Hz", Processeur: "Snapdragon 8 Gen 3", Batterie: "5 000 mAh", "Appareil photo": "200 Mpx" },
     image: "/products/phone.svg",
     variants: [
-      neuf("S24U-256-GRIS", { Stockage: "256 Go", Couleur: "Titane gris", RAM: "12 Go" }, 215000, 3),
-      neuf("S24U-512-NOIR", { Stockage: "512 Go", Couleur: "Titane noir", RAM: "12 Go" }, 245000, 1),
-      recond("S24U-R-001", { Stockage: "256 Go", Couleur: "Titane noir" }, 169000, 9, 94, {
+      // Noms officiels mondiaux de Samsung pour le S24 Ultra (official-colors.ts), depuis le 05/11.
+      neuf("S24U-256-GRIS", { Stockage: "256 Go", Couleur: "Titanium Gray", RAM: "12 Go" }, 215000, 3),
+      neuf("S24U-512-NOIR", { Stockage: "512 Go", Couleur: "Titanium Black", RAM: "12 Go" }, 245000, 1),
+      recond("S24U-R-001", { Stockage: "256 Go", Couleur: "Titanium Black" }, 169000, 9, 94, {
         defects: ["Rayures légères sur l'écran"],
         gifts: [{ sku: "CHG-45W" }],
       }),
