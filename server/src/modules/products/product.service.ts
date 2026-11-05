@@ -214,7 +214,17 @@ export async function getProductBySlug(slug: string) {
       // La marque de la Boutique (« iPhone »), pour le fil d'Ariane ; null = carte « Autres ».
       brand: { select: { name: true, slug: true } },
       // La série du modèle, pour le fil d'Ariane (Boutique › … › iPhone 18 › iPhone 18 Pro Max).
-      deviceModel: { select: { brand: true, name: true, slug: true, series: { select: { name: true, slug: true } } } },
+      // Ses couleurs et leurs photos : l'étape Couleur de la Boutique (05/11).
+      deviceModel: {
+        select: {
+          brand: true,
+          name: true,
+          slug: true,
+          series: { select: { name: true, slug: true } },
+          colors: true,
+          colorPhotos: { select: { color: true, url: true } },
+        },
+      },
       compatibleModels: {
         select: { brand: true, name: true, slug: true },
         orderBy: [{ brand: "asc" }, { name: "asc" }],
@@ -270,11 +280,16 @@ export async function getProductBySlug(slug: string) {
     throw new AppError(404, "Produit introuvable");
   }
 
-  const { series = null, ...deviceModel } = product.deviceModel ?? {};
+  const { series = null, colors: modelColors = [], colorPhotos = [], ...deviceModel } = product.deviceModel ?? {};
   return {
     ...product,
     deviceModel: product.deviceModel ? deviceModel : null,
     series,
+    // Les couleurs du modèle dans leur ordre, avec leur photo (null : l'icône de la catégorie).
+    colors: modelColors.map((name) => ({
+      name,
+      photoUrl: colorPhotos.find((photo) => photo.color === name)?.url ?? null,
+    })),
     variants: product.variants.map(({ gifts, ...variant }) => ({
       ...variant,
       gifts: gifts.map(({ quantity, giftVariant }) => ({

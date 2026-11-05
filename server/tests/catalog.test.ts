@@ -286,3 +286,26 @@ describe("Neuf scellé et affaires", () => {
     ).rejects.toThrow();
   });
 });
+
+// L'étape Couleur (05/11) : la fiche dit les couleurs de son modèle, dans l'ordre, avec leur photo.
+describe("GET /products/:slug, les couleurs du modèle", () => {
+  it("donne les couleurs dans l'ordre du modèle, avec leur photo ou null", async () => {
+    const model = await prisma.deviceModel.update({
+      where: { slug: "apple-iphone-15-pro-max" },
+      data: { colors: ["Titane naturel", "Titane bleu", "Titane blanc", "Titane noir"] },
+    });
+    await prisma.modelColorPhoto.create({ data: { deviceModelId: model.id, color: "Titane bleu", url: "https://x/bleu.webp" } });
+    const response = await request(app).get("/products/iphone-15-pro-max");
+    expect(response.body.data.colors).toEqual([
+      { name: "Titane naturel", photoUrl: null },
+      { name: "Titane bleu", photoUrl: "https://x/bleu.webp" },
+      { name: "Titane blanc", photoUrl: null },
+      { name: "Titane noir", photoUrl: null },
+    ]);
+  });
+
+  it("donne une liste vide pour un accessoire", async () => {
+    const response = await request(app).get("/products/chargeur-usb-c-20-w");
+    expect(response.body.data.colors).toEqual([]);
+  });
+});
