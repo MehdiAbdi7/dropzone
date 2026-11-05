@@ -309,3 +309,14 @@ describe("GET /products/:slug, les couleurs du modèle", () => {
     expect(response.body.data.colors).toEqual([]);
   });
 });
+
+describe("GET /products/:slug, la lueur du modèle", () => {
+  it("donne la lueur choisie pour le modèle, null pour un accessoire", async () => {
+    await prisma.deviceModel.update({
+      where: { slug: "apple-iphone-15-pro-max" },
+      data: { colors: ["Titane bleu", "Titane noir"], posterColor: "Titane noir" },
+    });
+    expect((await request(app).get("/products/iphone-15-pro-max")).body.data.posterColor).toBe("Titane noir");
+    expect((await request(app).get("/products/chargeur-usb-c-20-w")).body.data.posterColor).toBeNull();
+  });
+});

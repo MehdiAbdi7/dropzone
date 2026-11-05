@@ -222,6 +222,7 @@ export async function getProductBySlug(slug: string) {
           slug: true,
           series: { select: { name: true, slug: true } },
           colors: true,
+          posterColor: true,
           colorPhotos: { select: { color: true, url: true } },
         },
       },
@@ -280,11 +281,13 @@ export async function getProductBySlug(slug: string) {
     throw new AppError(404, "Produit introuvable");
   }
 
-  const { series = null, colors: modelColors = [], colorPhotos = [], ...deviceModel } = product.deviceModel ?? {};
+  const { series = null, colors: modelColors = [], colorPhotos = [], posterColor = null, ...deviceModel } = product.deviceModel ?? {};
   return {
     ...product,
     deviceModel: product.deviceModel ? deviceModel : null,
     series,
+    // La lueur choisie pour le modèle (affiche de la fiche quand il n'a pas de couleur choisie).
+    posterColor,
     // Les couleurs du modèle dans leur ordre, avec leur photo (null : l'icône de la catégorie).
     colors: modelColors.map((name) => ({
       name,

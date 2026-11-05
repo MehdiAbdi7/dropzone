@@ -5,9 +5,20 @@ import type { Condition, OrderStatus, Prisma } from "../../generated/prisma/clie
 import { AppError } from "../../utils/AppError.js";
 import { paginate, paginationMeta } from "../../utils/pagination.js";
 import { buildConditionReport, refreshMinPrice } from "../products/product.service.js";
+import { sameColor } from "../models/modelColors.js";
 import type { AdminOrderListQuery, CartItemInput, CreateOrderInput } from "./order.schema.js";
 
 const MAX_QUANTITY = 10;
+
+// La photo de la couleur d'une ligne (option « Couleur »), si le modèle en a une.
+function colorPhotoOf(variant: {
+  options: unknown;
+  product: { deviceModel: { colorPhotos: { color: string; url: string }[] } | null };
+}): string | null {
+  const color = (variant.options as Record<string, string> | null)?.Couleur;
+  if (!color) return null;
+  return variant.product.deviceModel?.colorPhotos.find((photo) => sameColor(photo.color, color))?.url ?? null;
+}
 
 export type CartLine = {
   sku: string;
@@ -45,7 +56,17 @@ export async function priceCart(db: Tx, items: CartItemInput[]) {
   const variants = await db.productVariant.findMany({
     where: { sku: { in: [...quantities.keys()] } },
     include: {
-      product: { select: { id: true, name: true, slug: true, status: true, images: image } },
+      product: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          status: true,
+          images: image,
+          // La photo de la couleur de la ligne, si le gérant l'a mise (barre du panier, 05/11).
+          deviceModel: { select: { colorPhotos: { select: { color: true, url: true } } } },
+        },
+      },
       gifts: {
         include: {
           giftVariant: {
@@ -84,7 +105,7 @@ export async function priceCart(db: Tx, items: CartItemInput[]) {
       productId: variant.product.id,
       name: variant.product.name,
       slug: variant.product.slug,
-      image: variant.product.images[0]?.url ?? null,
+      image: colorPhotoOf(variant) ?? variant.product.images[0]?.url ?? null,
       options: variant.options,
       condition: variant.condition,
       conditionReport: buildConditionReport(variant),

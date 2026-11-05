@@ -245,3 +245,23 @@ describe("Suivi et historique", () => {
     expect((await agent.get("/orders/mine/1002")).status).toBe(404);
   });
 });
+
+// La barre du panier (05/11) : chaque ligne montre la photo de sa couleur quand elle existe.
+describe("POST /orders/preview, la photo de la couleur", () => {
+  it("prend la photo de la couleur de la ligne", async () => {
+    await prisma.productVariant.update({
+      where: { sku: "IP-NEW-256" },
+      data: { options: { Stockage: "256 Go", Couleur: "Titane bleu" } },
+    });
+    const model = await prisma.deviceModel.findUniqueOrThrow({ where: { slug: "apple-iphone-15-pro-max" } });
+    await prisma.modelColorPhoto.create({ data: { deviceModelId: model.id, color: "Titane bleu", url: "https://x/bleu.webp" } });
+    const response = await request(app).post("/orders/preview").send({ items: [{ sku: "IP-NEW-256", quantity: 1 }] });
+    expect(response.body.data.lines[0].image).toBe("https://x/bleu.webp");
+  });
+
+  it("garde la photo du produit sans photo de couleur", async () => {
+    const response = await request(app).post("/orders/preview").send({ items: [{ sku: "IP-NEW-256", quantity: 1 }] });
+    const product = await prisma.product.findUniqueOrThrow({ where: { slug: "iphone-15-pro-max" }, include: { images: true } });
+    expect(response.body.data.lines[0].image).toBe(product.images[0]?.url ?? null);
+  });
+});
