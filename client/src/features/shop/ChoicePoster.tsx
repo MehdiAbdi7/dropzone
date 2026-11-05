@@ -1,3 +1,4 @@
+import { CONDITION_LABELS } from "@/config/catalog";
 import type { Palette } from "@/config/colors";
 import ChoiceColumn from "./ChoiceColumn";
 import type { ChoiceColumnData } from "./choiceColumns";
@@ -36,7 +37,11 @@ export default function ChoicePoster({
         </h1>
       </header>
       <div className="relative pt-6 pb-8">
-        <PosterSlider names={columns.map((column) => column.title)} layout={posterLayout(columns.length)}>
+        {/* Les onglets du glissement : le nom court (« Neuf scellé », « Affaire »), pas le sous-titre. */}
+        <PosterSlider
+          names={columns.map((column) => (column.badge ? CONDITION_LABELS[column.badge === "new" ? "new" : "refurbished"] : column.title))}
+          layout={posterLayout(columns.length)}
+        >
           {columns.map((column, index) => (
             <ChoiceColumn key={column.key} column={column} palette={palette} priority={index === 0} />
           ))}

@@ -59,7 +59,7 @@ export default function CartBar() {
             ) : null}
           </span>
           <span className="flex min-w-0 flex-1 flex-col text-start">
-            <span className="font-display text-base leading-tight font-bold">Voir mon panier</span>
+            <span className="font-display text-base leading-tight font-bold truncate">Voir mon panier</span>
             <span className="text-xs font-semibold tabular-nums opacity-80">{itemsLabel}</span>
           </span>
           <span className="shrink-0 font-display text-base font-bold tabular-nums">{formatPrice(total)}</span>
