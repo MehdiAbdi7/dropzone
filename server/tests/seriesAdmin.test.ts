@@ -140,8 +140,8 @@ describe("Les compteurs du Catalogue", () => {
     const response = await admin.get("/admin/catalog");
     expect(response.status).toBe(200);
     expect(response.body.data).toEqual([
-      // 3 neufs de l'iPhone et 2 du brouillon Galaxy Z Flip6 ; 2 affaires en stock.
-      expect.objectContaining({ slug: "smartphones", brandCount: 2, seriesCount: 2, modelCount: 2, productCount: 2, newStock: 5, dealCount: 2 }),
+      // 3 neufs de l'iPhone et 2 du brouillon Galaxy Z Flip6 (son propre modèle et sa série) ; 2 affaires en stock.
+      expect.objectContaining({ slug: "smartphones", brandCount: 2, seriesCount: 3, modelCount: 3, productCount: 2, newStock: 5, dealCount: 2 }),
       expect.objectContaining({ slug: "accessoires", brandCount: 1, seriesCount: 0, modelCount: 0, productCount: 2, newStock: 15, dealCount: 0 }),
     ]);
   });
@@ -152,7 +152,7 @@ describe("Les compteurs du Catalogue", () => {
     expect(response.body.data.category).toMatchObject({ id: catalog.phones.id, name: "Smartphones" });
     expect(response.body.data.brands).toEqual([
       expect.objectContaining({ slug: "iphone", seriesCount: 1, productCount: 1, newStock: 3, dealCount: 2 }),
-      expect.objectContaining({ slug: "samsung", seriesCount: 1, productCount: 1, newStock: 2, dealCount: 0 }),
+      expect.objectContaining({ slug: "samsung", seriesCount: 2, productCount: 1, newStock: 2, dealCount: 0 }),
     ]);
   });
 

@@ -2,6 +2,41 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/db.js";
 import { createCatalog, resetDb } from "./helpers.js";
 
+// L'étape Couleur (05/11) : une photo par modèle et couleur, un seul produit par modèle d'appareil.
+describe("La base de l'étape Couleur", () => {
+  beforeEach(async () => {
+    await resetDb();
+    await createCatalog();
+  });
+
+  it("refuse un deuxième produit pour le même modèle", async () => {
+    const first = await prisma.product.findUniqueOrThrow({ where: { slug: "iphone-15-pro-max" } });
+    await expect(
+      prisma.product.create({
+        data: { name: "Doublon", slug: "doublon", description: "x", categoryId: first.categoryId, deviceModelId: first.deviceModelId },
+      }),
+    ).rejects.toMatchObject({ code: "P2002" });
+  });
+
+  it("laisse plusieurs accessoires sans modèle", async () => {
+    const charger = await prisma.product.findUniqueOrThrow({ where: { slug: "chargeur-usb-c-20-w" } });
+    const other = await prisma.product.create({
+      data: { name: "Câble", slug: "cable-test", description: "x", categoryId: charger.categoryId },
+    });
+    expect([charger.deviceModelId, other.deviceModelId]).toEqual([null, null]);
+  });
+
+  it("garde une seule photo par modèle et couleur", async () => {
+    const model = await prisma.deviceModel.findUniqueOrThrow({ where: { slug: "apple-iphone-15-pro-max" } });
+    await prisma.modelColorPhoto.create({ data: { deviceModelId: model.id, color: "Titane bleu", url: "https://x/1.webp" } });
+    await expect(
+      prisma.modelColorPhoto.create({ data: { deviceModelId: model.id, color: "Titane bleu", url: "https://x/2.webp" } }),
+    ).rejects.toMatchObject({ code: "P2002" });
+    await prisma.modelColorPhoto.create({ data: { deviceModelId: model.id, color: "Titane noir", url: "https://x/3.webp" } });
+    expect(await prisma.modelColorPhoto.count({ where: { deviceModelId: model.id } })).toBe(2);
+  });
+});
+
 // Les règles que la base fait respecter pour le vrai catalogue de DropZone :
 // note et batterie facultatives, boîte « non précisée », garantie et référence.
 describe("La base du vrai catalogue", () => {

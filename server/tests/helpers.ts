@@ -128,7 +128,12 @@ export async function createCatalog() {
       slug: "galaxy-z-flip6",
       description: "Bientôt",
       categoryId: phones.id,
-      deviceModelId: galaxy.id,
+      // Son propre modèle : un produit au plus par modèle d'appareil (étape Couleur, 05/11).
+      deviceModelId: (
+        await prisma.deviceModel.create({
+          data: { brand: "Samsung", name: "Galaxy Z Flip6", slug: "samsung-galaxy-z-flip6", kind: "phone", releaseYear: 2024 },
+        })
+      ).id,
       brandId: samsungBrand.id,
       status: "draft",
       variants: { create: [{ sku: "ZFLIP6", price: 175000, stock: 2 }] },

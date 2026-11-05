@@ -74,9 +74,10 @@ describe("fillSeries : le rangement de départ", () => {
 
   it("ne crée rien la deuxième fois", async () => {
     const first = await fillSeries(prisma);
-    expect(first).toEqual({ created: 2, assigned: 2 });
+    // iPhone 15, Galaxy S24 et Galaxy Z Flip6 (le brouillon a son propre modèle).
+    expect(first).toEqual({ created: 3, assigned: 3 });
     expect(await fillSeries(prisma)).toEqual({ created: 0, assigned: 0 });
-    expect(await prisma.series.count()).toBe(2);
+    expect(await prisma.series.count()).toBe(3);
   });
 
   it("ne déplace pas un modèle déjà rangé à la main", async () => {

@@ -139,6 +139,10 @@ model DeviceModel {
   colors             String[]    @default([])
   // La lueur choisie par le gérant, une de `colors` ; null = la première de `colors`.
   posterColor        String?     @map("poster_color")
+  // La photo de chaque couleur (étape Couleur de la Boutique) ; sans photo, l'icône.
+  colorPhotos        ModelColorPhoto[]
+  // Un produit au plus par modèle (index unique partiel écrit à la main dans la migration
+  // 20261105150000_color_photos : Prisma ne sait pas le déclarer). Tableau gardé pour Prisma.
   products           Product[]   @relation("ProductDeviceModel")
   compatibleProducts Product[]   @relation("ProductCompatibleModels")
   createdAt          DateTime    @default(now()) @map("created_at")
@@ -147,6 +151,21 @@ model DeviceModel {
   @@index([kind])
   @@index([seriesId])
   @@map("device_models")
+}
+
+// La photo d'une couleur d'un modèle (« iPhone 18 Pro » en « Glacier »), sans rapport avec
+// le stock : elle sert à toutes ses fiches. Envoyée par le gérant (Cloudinary).
+model ModelColorPhoto {
+  id            Int         @id @default(autoincrement())
+  deviceModelId Int         @map("device_model_id")
+  deviceModel   DeviceModel @relation(fields: [deviceModelId], references: [id], onDelete: Cascade)
+  // Un nom de `device_models.colors`.
+  color         String
+  url           String
+  publicId      String?     @map("public_id")
+
+  @@unique([deviceModelId, color])
+  @@map("model_color_photos")
 }
 
 model Choice {

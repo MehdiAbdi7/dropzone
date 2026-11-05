@@ -80,7 +80,10 @@ describe("GET /products", () => {
   // La vitrine de l'accueil : une affaire dont la fiche dit vraiment la note et la batterie
   // (les annonces importées n'en disent souvent rien).
   it("filtre les affaires à fiche complète, note et batterie connues", async () => {
-    const galaxyModel = await prisma.deviceModel.findUniqueOrThrow({ where: { slug: "samsung-galaxy-s24-ultra" } });
+    // Un modèle à lui : un produit au plus par modèle d'appareil.
+    const galaxyModel = await prisma.deviceModel.create({
+      data: { brand: "Samsung", name: "Galaxy S24 importé", slug: "samsung-galaxy-s24-importe", kind: "phone" },
+    });
     const phones = await prisma.category.findUniqueOrThrow({ where: { slug: "smartphones" } });
     await prisma.product.create({
       data: {
