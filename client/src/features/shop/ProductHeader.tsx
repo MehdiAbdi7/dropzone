@@ -7,6 +7,27 @@ import { colorHref } from "./colors";
 // Le haut commun des pages d'un produit : le fil d'Ariane complet
 // (Boutique › Smartphones › iPhone › iPhone 18 Pro Max › Neuf), la photo à gauche,
 // la marque et le nom à droite, puis le contenu de l'étape (`children`).
+// Le fil d'Ariane d'un produit, partagé avec l'affiche de choix (05/11) :
+// Boutique › Smartphones › iPhone › iPhone 18 › iPhone 18 Pro › Glacier › Neuf scellé.
+export function productCrumbs(product: ProductDetail, color: string | null, step?: string): Crumb[] {
+  const category = `/boutique/${product.category.slug}`;
+  return [
+    { label: "Boutique", href: "/boutique" },
+    { label: product.category.name, href: category },
+    product.brand
+      ? { label: product.brand.name, href: `${category}/${product.brand.slug}` }
+      : { label: "Autres", href: `${category}/autres` },
+    // La série, entre la marque et le modèle : Boutique › Smartphones › iPhone › iPhone 18 › …
+    ...(product.brand && product.series
+      ? [{ label: product.series.name, href: `${category}/${product.brand.slug}/${product.series.slug}` }]
+      : []),
+    color || step ? { label: product.name, href: `/produits/${product.slug}` } : { label: product.name },
+    // Sur l'étape Neuf ou Affaire, la couleur ramène au choix Neuf / Affaire de cette couleur.
+    ...(color ? [step ? { label: color, href: colorHref(product.slug, color) } : { label: color }] : []),
+    ...(step ? [{ label: step }] : []),
+  ];
+}
+
 // Après l'étape Couleur : la couleur entre le modèle et l'étape, et sa photo à gauche
 // (`image`, sinon la photo du produit).
 export default function ProductHeader({
@@ -22,22 +43,7 @@ export default function ProductHeader({
   image?: string | null;
   children: ReactNode;
 }) {
-  const category = `/boutique/${product.category.slug}`;
-  const crumbs: Crumb[] = [
-    { label: "Boutique", href: "/boutique" },
-    { label: product.category.name, href: category },
-    product.brand
-      ? { label: product.brand.name, href: `${category}/${product.brand.slug}` }
-      : { label: "Autres", href: `${category}/autres` },
-    // La série, entre la marque et le modèle : Boutique › Smartphones › iPhone › iPhone 18 › …
-    ...(product.brand && product.series
-      ? [{ label: product.series.name, href: `${category}/${product.brand.slug}/${product.series.slug}` }]
-      : []),
-    { label: product.name, href: `/produits/${product.slug}` },
-    // Sur l'étape Neuf ou Affaire, la couleur ramène au choix Neuf / Affaire de cette couleur.
-    ...(color ? [step ? { label: color, href: colorHref(product.slug, color) } : { label: color }] : []),
-    ...(step ? [{ label: step }] : []),
-  ];
+  const crumbs = productCrumbs(product, color ?? null, step);
   const title = [color, step].filter(Boolean).join(" · ");
 
   return (

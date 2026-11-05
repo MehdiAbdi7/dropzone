@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { CONDITION_LABELS, DEVICE_KINDS } from "@/config/catalog";
 import { colorHref, ofColor, productStep } from "@/features/shop/colors";
 import NewPicker from "@/features/shop/NewPicker";
+import ProductFacts from "@/features/shop/ProductFacts";
 import ProductHeader from "@/features/shop/ProductHeader";
 import { getPalette } from "@/lib/palette";
 import { getProduct } from "@/lib/products";
@@ -40,6 +41,7 @@ export default async function NewProductPage({ params, searchParams }: PageProps
     <div className="container-page py-8">
       <ProductHeader product={product} step={CONDITION_LABELS.new} color={step.color} image={photo}>
         <NewPicker variants={fresh} kind={product.category.kind} palette={palette} colorChosen={step.color !== null} />
+        <ProductFacts product={product} />
       </ProductHeader>
     </div>
   );

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { CONDITION_LABELS } from "@/config/catalog";
 import { colorHref, ofColor, productStep } from "@/features/shop/colors";
+import ProductFacts from "@/features/shop/ProductFacts";
 import ProductHeader from "@/features/shop/ProductHeader";
 import RefurbishedList from "@/features/shop/RefurbishedList";
 import { getPalette } from "@/lib/palette";
@@ -42,6 +43,7 @@ export default async function DealProductPage({ params, searchParams }: PageProp
     <div className="container-page py-8">
       <ProductHeader product={product} step={CONDITION_LABELS.refurbished} color={step.color} image={photo}>
         <RefurbishedList variants={refurbished} kind={product.category.kind} palette={palette} />
+        <ProductFacts product={product} />
       </ProductHeader>
     </div>
   );

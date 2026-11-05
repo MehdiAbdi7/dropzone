@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DEVICE_KINDS, SPEC_ORDER } from "@/config/catalog";
+import { DEVICE_KINDS } from "@/config/catalog";
 import ProductGrid from "@/features/products/ProductGrid";
-import ColorChoice from "@/features/shop/ColorChoice";
-import { colorTiles, kindIcon, ofColor, productStep } from "@/features/shop/colors";
-import ConditionChoice from "@/features/shop/ConditionChoice";
+import Breadcrumb from "@/features/shop/Breadcrumb";
+import ChoicePoster from "@/features/shop/ChoicePoster";
+import { colorColumns, conditionColumns } from "@/features/shop/choiceColumns";
+import { productStep } from "@/features/shop/colors";
 import NewPicker from "@/features/shop/NewPicker";
-import ProductHeader from "@/features/shop/ProductHeader";
-import { formatPrice, orderedEntries } from "@/lib/format";
+import ProductFacts from "@/features/shop/ProductFacts";
+import ProductHeader, { productCrumbs } from "@/features/shop/ProductHeader";
+import { formatPrice } from "@/lib/format";
 import { getPalette } from "@/lib/palette";
 import { getProduct } from "@/lib/products";
 import { publicFetchPage } from "@/lib/publicFetch";
@@ -25,10 +27,10 @@ export async function generateMetadata({ params }: PageProps<"/produits/[slug]">
   };
 }
 
-// La page d'un produit. Appareil : étape 4 du parcours, neuf ou reconditionné.
-// Accessoire ou audiovisuel (vendus neufs) : le choix des options et l'achat, directement.
-// Étape Couleur (05/11) : un appareil dont le modèle a des couleurs commence par la couleur ;
-// `?couleur=Glacier` passe à Neuf scellé ou Affaire, comptés dans cette couleur.
+// La page d'un produit. Appareil : l'affiche de choix (05/11), d'abord la couleur, puis
+// Neuf scellé ou Affaire dans cette couleur (`?couleur=Glacier`), au style de l'affiche de la
+// série, avec les caractéristiques dessous. Accessoire (vendu neuf) : le choix des options et
+// l'achat, directement.
 export default async function ProductPage({ params, searchParams }: PageProps<"/produits/[slug]">) {
   const product = await getProduct((await params).slug);
   if (!product) {
@@ -36,11 +38,9 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   }
   const isDevice = DEVICE_KINDS.includes(product.category.kind);
   const step = productStep(product, (await searchParams).couleur);
-  const chosen = step.kind === "conditions" ? step.color : null;
-  const colorPhoto = chosen ? (product.colors.find((color) => color.name === chosen)?.photoUrl ?? null) : null;
 
-  // Sous un appareil : les accessoires compatibles avec son modèle. La palette : les
-  // pastilles des couleurs d'un accessoire (NewPicker).
+  // Sous un appareil : les accessoires compatibles avec son modèle. La palette : les lueurs
+  // de l'affiche et les pastilles des couleurs d'un accessoire (NewPicker).
   const [relatedPage, palette] = await Promise.all([
     product.deviceModel
       ? publicFetchPage<ProductCard>(`/products?model=${product.deviceModel.slug}&limit=8`)
@@ -49,72 +49,50 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   ]);
   const related = relatedPage?.data ?? [];
   const accessories = related.filter((item) => item.id !== product.id).slice(0, 4);
-  const specs = orderedEntries(product.specs, SPEC_ORDER);
 
-  return (
-    <div className="container-page py-8">
-      <ProductHeader product={product} color={step.kind === "conditions" ? step.color : null} image={colorPhoto}>
-        <p className="max-w-prose text-ink-muted">{product.description}</p>
+  const accessoriesSection =
+    accessories.length > 0 ? (
+      <section aria-labelledby="accessories" className="mt-14 space-y-4">
+        <h2 id="accessories" className="text-2xl">
+          Pour protéger votre {product.deviceModel?.name}
+        </h2>
+        <ProductGrid products={accessories} />
+      </section>
+    ) : null;
 
-        {product.compatibleModels.length > 0 ? (
-          <p className="text-sm">
-            <span className="font-semibold">Compatible avec : </span>
-            {product.compatibleModels.map((model, index) => (
-              <span key={model.slug}>
-                {index > 0 ? ", " : ""}
-                <Link href={`/produits?model=${model.slug}`} className="text-blue-ink underline">
-                  {model.name}
-                </Link>
-              </span>
-            ))}
-          </p>
-        ) : null}
-
-        {step.kind === "colors" ? (
-          <ColorChoice slug={product.slug} kind={product.category.kind} tiles={colorTiles(product.colors, product.variants)} />
-        ) : isDevice ? (
-          <>
-            <ConditionChoice
-              slug={product.slug}
-              image={step.color ? (colorPhoto ?? kindIcon(product.category.kind)) : (product.images[0]?.url ?? null)}
-              variants={step.color ? ofColor(product.variants, step.color) : product.variants}
-              color={step.color}
-            />
-            {step.color ? (
-              <Link href={`/produits/${product.slug}`} className="inline-block text-sm text-blue-ink underline">
-                Choisir une autre couleur
-              </Link>
-            ) : null}
-          </>
-        ) : (
+  if (!isDevice) {
+    return (
+      <div className="container-page py-8">
+        <ProductHeader product={product}>
           <NewPicker variants={product.variants} kind={product.category.kind} palette={palette} />
-        )}
+          <ProductFacts product={product} />
+        </ProductHeader>
+        {accessoriesSection}
+      </div>
+    );
+  }
 
-        {specs.length > 0 ? (
-          <section aria-labelledby="specs" className="space-y-3">
-            <h2 id="specs" className="text-xl">
-              Caractéristiques
-            </h2>
-            <dl className="card divide-y divide-line">
-              {specs.map(([label, value]) => (
-                <div key={label} className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 px-4 py-3 text-sm">
-                  <dt className="text-ink-muted">{label}</dt>
-                  <dd className="font-semibold">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        ) : null}
-      </ProductHeader>
-
-      {accessories.length > 0 ? (
-        <section aria-labelledby="accessories" className="mt-14 space-y-4">
-          <h2 id="accessories" className="text-2xl">
-            Pour protéger votre {product.deviceModel?.name}
-          </h2>
-          <ProductGrid products={accessories} />
-        </section>
+  const color = step.kind === "conditions" ? step.color : null;
+  return (
+    <div className="container-page space-y-6 py-8">
+      <Breadcrumb items={productCrumbs(product, color)} />
+      {step.kind === "colors" ? (
+        <ChoicePoster kicker="CHOISISSEZ LA COULEUR" title={product.name} columns={colorColumns(product)} palette={palette} />
+      ) : (
+        <ChoicePoster
+          kicker="NEUF SCELLÉ OU AFFAIRE"
+          title={color ? `${product.name} · ${color}` : product.name}
+          columns={conditionColumns(product, color)}
+          palette={palette}
+        />
+      )}
+      {color ? (
+        <Link href={`/produits/${product.slug}`} className="inline-block text-sm text-blue-ink underline">
+          Choisir une autre couleur
+        </Link>
       ) : null}
+      <ProductFacts product={product} />
+      {accessoriesSection}
     </div>
   );
 }

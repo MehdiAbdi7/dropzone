@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formatPrice } from "@/lib/format";
 import type { Options, ProductDetail, Variant } from "@/types/api";
-import { colorColumns, conditionColumns } from "./choicePoster";
+import { colorColumns, conditionColumns } from "./choiceColumns";
 
 const variant = (options: Options, stock: number, price: number, condition: Variant["condition"] = "new", warrantyMonths = 12): Variant => ({
   sku: `${options.Couleur}-${options.Stockage}-${price}-${condition}`,
