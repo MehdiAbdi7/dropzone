@@ -24,25 +24,16 @@ export const RENAMES: Record<string, Record<string, string>> = {
   "Samsung|Galaxy A55": { Noir: "Navy", Bleu: "Iceblue" },
 };
 
-// Les photos à l'échelle réelle déjà faites (npm run photos), rangées sous leur couleur.
-const PHOTO_COLORS: Record<string, string> = {
-  "Apple|iPhone 17 Pro": "Orange cosmique",
-  "Apple|iPhone 17 Pro Max": "Orange cosmique",
-  "Apple|iPhone 18 Pro": "Bordeaux",
-  "Apple|iPhone 18 Pro Max": "Bordeaux",
-};
-
 export type FillReport = {
   filled: number;
   renamed: number;
   appended: { model: string; color: string }[];
   withoutColors: string[];
-  photos: number;
 };
 
 export async function fillVariantColors(db: Tx): Promise<FillReport> {
   await applyOfficialColors(db);
-  const report: FillReport = { filled: 0, renamed: 0, appended: [], withoutColors: [], photos: 0 };
+  const report: FillReport = { filled: 0, renamed: 0, appended: [], withoutColors: [] };
 
   const models = await db.deviceModel.findMany({
     where: { kind: { in: [...DEVICE_KINDS] } },
@@ -52,12 +43,8 @@ export async function fillVariantColors(db: Tx): Promise<FillReport> {
       brand: true,
       name: true,
       colors: true,
-      colorPhotos: { select: { color: true } },
       products: {
-        select: {
-          images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
-          variants: { select: { id: true, options: true } },
-        },
+        select: { variants: { select: { id: true, options: true } } },
       },
     },
   });
@@ -91,14 +78,6 @@ export async function fillVariantColors(db: Tx): Promise<FillReport> {
     if (seen.length > 0) {
       await addMissingModelColors(db, model.id, seen);
       report.appended.push(...seen.map((color) => ({ model: key, color })));
-    }
-
-    // La photo à l'échelle de la fiche devient celle de sa couleur, si elle n'en a pas.
-    const photoColor = PHOTO_COLORS[key];
-    const url = model.products[0]?.images[0]?.url;
-    if (photoColor && url?.includes("/dropzone/products/") && !model.colorPhotos.some((p) => p.color === photoColor)) {
-      await db.modelColorPhoto.create({ data: { deviceModelId: model.id, color: photoColor, url } });
-      report.photos += 1;
     }
   }
   return report;

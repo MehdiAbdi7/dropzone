@@ -75,6 +75,6 @@ describe("fillVariantColors", () => {
   it("ne change plus rien au deuxième passage", async () => {
     await fillVariantColors(prisma);
     const second = await fillVariantColors(prisma);
-    expect(second).toMatchObject({ filled: 0, renamed: 0, appended: [], photos: 0 });
+    expect(second).toMatchObject({ filled: 0, renamed: 0, appended: [] });
   });
 });

@@ -16,7 +16,7 @@ class Simulation extends Error {
 function print(report: FillReport, written: boolean) {
   console.log(
     `${written ? "Écrit" : "Simulation, rien n'est écrit"} : ${report.filled} exemplaires colorés, ` +
-      `${report.renamed} couleurs renommées, ${report.photos} photos rangées sous leur couleur.`,
+      `${report.renamed} couleurs renommées.`,
   );
   if (report.appended.length > 0) {
     console.log("Couleurs ajoutées à leur modèle (sans équivalent officiel) :");
