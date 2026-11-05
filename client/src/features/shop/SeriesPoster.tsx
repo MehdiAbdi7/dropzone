@@ -7,7 +7,13 @@ import { glowColor, posterLayout } from "./series";
 // L'affiche d'une série : un bloc toujours sombre, comme une affiche de lancement, avec
 // une colonne par modèle (à glisser sur téléphone, voir PosterSlider). La palette (teintes
 // réglées dans Listes) donne les lueurs et les pastilles.
-export default function SeriesPoster({ poster, palette }: { poster: Poster; palette: Palette }) {
+export default function SeriesPoster({
+  poster,
+  palette,
+}: {
+  poster: Poster;
+  palette: Palette;
+}) {
   const first = poster.models[0];
   const last = poster.models[poster.models.length - 1];
   const count = poster.models.length;
@@ -22,7 +28,9 @@ export default function SeriesPoster({ poster, palette }: { poster: Poster; pale
         }}
       />
       <header className="relative space-y-2 px-4 pt-8 text-center">
-        <p className="text-gradient text-xs font-extrabold tracking-[0.32em]">DROPZONE</p>
+        <p className="text-gradient text-xs font-extrabold tracking-[0.32em]">
+          DROPZONE
+        </p>
         <h1 id="poster-title" className="poster-title text-4xl md:text-6xl">
           {poster.name}
         </h1>
@@ -31,10 +39,18 @@ export default function SeriesPoster({ poster, palette }: { poster: Poster; pale
         </p>
       </header>
       <div className="relative pt-6 pb-8">
-        <PosterSlider names={poster.models.map((model) => model.name)} layout={posterLayout(count)}>
+        <PosterSlider
+          names={poster.models.map((model) => model.name)}
+          layout={posterLayout(count)}
+        >
           {poster.models.map((model, index) => (
             // La clé : le nom du modèle (un modèle pas encore en vente n'a pas de slug produit).
-            <PosterColumn key={model.name} model={model} palette={palette} priority={index === 0} />
+            <PosterColumn
+              key={model.name}
+              model={model}
+              palette={palette}
+              priority={index === 0}
+            />
           ))}
         </PosterSlider>
       </div>

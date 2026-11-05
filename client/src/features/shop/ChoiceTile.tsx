@@ -37,7 +37,6 @@ export default function ChoiceTile({
             size={76}
             className="group-hover:text-blue-ink"
           />
-
         ) : (
           <span
             aria-hidden="true"
@@ -68,7 +67,7 @@ export default function ChoiceTile({
   return (
     <Link
       href={href}
-      className={`${className} group transition-[border-color,box-shadow] hover:border-b-blue-ink hover:shadow-[var(--shadow)]`}
+      className={`${className} group transition-[border-color,box-shadow] hover:border-b-blue-ink hover:shadow-(--shadow)`}
     >
       {body}
     </Link>

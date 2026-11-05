@@ -8,15 +8,33 @@ type StageDevice = { src: string; position: string };
 
 export const HERO_DEVICES: StageDevice[] = [
   { src: "/products/charger.svg", position: "left-[19%] bottom-[33%] w-[22%]" },
-  { src: "/products/watch.svg", position: "left-[4%] bottom-[16%] w-[30%] z-10" },
-  { src: "/products/phone.svg", position: "left-[26%] bottom-[15%] w-[48%] z-20" },
-  { src: "/products/earbuds.svg", position: "right-[4%] bottom-[16%] w-[30%] z-10" },
+  {
+    src: "/products/watch.svg",
+    position: "left-[4%] bottom-[16%] w-[30%] z-10",
+  },
+  {
+    src: "/products/phone.svg",
+    position: "left-[26%] bottom-[15%] w-[48%] z-20",
+  },
+  {
+    src: "/products/earbuds.svg",
+    position: "right-[4%] bottom-[16%] w-[30%] z-10",
+  },
 ];
 
 export const DEAL_DEVICES: StageDevice[] = [
-  { src: "/products/charger.svg", position: "left-[6%] bottom-[16%] w-[30%] z-10" },
-  { src: "/products/phone.svg", position: "left-[26%] bottom-[15%] w-[48%] z-20" },
-  { src: "/products/earbuds.svg", position: "right-[6%] bottom-[16%] w-[30%] z-10" },
+  {
+    src: "/products/charger.svg",
+    position: "left-[6%] bottom-[16%] w-[30%] z-10",
+  },
+  {
+    src: "/products/phone.svg",
+    position: "left-[26%] bottom-[15%] w-[48%] z-20",
+  },
+  {
+    src: "/products/earbuds.svg",
+    position: "right-[6%] bottom-[16%] w-[30%] z-10",
+  },
 ];
 
 // Le décor entier est décoratif (aria-hidden) : le texte à côté dit tout.
@@ -36,7 +54,11 @@ export default function DeviceStage({
       <div className="stage-plinth" />
       {devices.map((device) => (
         <div key={device.src} className={`stage-item ${device.position}`}>
-          <ProductImage src={device.src} alt="" sizes="(min-width: 1024px) 270px, 45vw" />
+          <ProductImage
+            src={device.src}
+            alt=""
+            sizes="(min-width: 1024px) 270px, 45vw"
+          />
         </div>
       ))}
     </div>

@@ -56,7 +56,9 @@ export default async function ShopBrandPage({
   if (category && brand && isDevice && brand.slug !== "autres") {
     // Les séries et la palette (lueur des affiches sans couverture) en même temps.
     const [series, palette] = await Promise.all([
-      publicFetch<SeriesSummary[]>(`/series?category=${category.slug}&brand=${brand.slug}`),
+      publicFetch<SeriesSummary[]>(
+        `/series?category=${category.slug}&brand=${brand.slug}`,
+      ),
       getPalette(),
     ]);
     if (!series) {
@@ -84,7 +86,7 @@ export default async function ShopBrandPage({
         ) : (
           // 2 affiches par ligne sur tablette, 3 seulement à partir de 1280 px : en
           // paysage (16/10), une affiche plus étroite n'a pas la hauteur de son texte.
-          <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid gap-4 grid-cols-2 xl:grid-cols-3">
             {series.map((one, index) => (
               <li key={one.slug}>
                 <SeriesCard
