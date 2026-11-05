@@ -17,8 +17,11 @@ type Props = {
   giftOptions: GiftOption[];
   // Les couleurs officielles du modèle choisi : proposées en premier pour l'option Couleur.
   modelColors?: string[];
+  // La couleur imposée (page d'une couleur du Catalogue) : affichée, pas modifiable.
+  lockedColor?: string;
   onChange: (variant: VariantDraft) => void;
-  onRemove: () => void;
+  // Sans `onRemove` (ajout depuis la page d'une couleur), pas de bouton « Retirer ».
+  onRemove?: () => void;
   onSuggestSku: () => void;
 };
 
@@ -32,6 +35,7 @@ export default function VariantEditor({
   canBeRefurbished,
   giftOptions,
   modelColors = [],
+  lockedColor,
   onChange,
   onRemove,
   onSuggestSku,
@@ -48,9 +52,11 @@ export default function VariantEditor({
           Variante {index + 1}
           {variant.id ? null : <span className="ml-2 text-sm font-semibold text-blue-ink">nouvelle</span>}
         </p>
-        <button type="button" className="btn btn-danger btn-small" onClick={onRemove}>
-          Retirer la variante
-        </button>
+        {onRemove ? (
+          <button type="button" className="btn btn-danger btn-small" onClick={onRemove}>
+            Retirer la variante
+          </button>
+        ) : null}
       </div>
 
       {canBeRefurbished ? (
@@ -73,16 +79,24 @@ export default function VariantEditor({
       ) : null}
 
       <div className="grid gap-5 md:grid-cols-2">
-        {OPTION_FIELDS[kind].map((field) => (
-          <ChoicePicker
-            key={field.key}
-            group={field.group}
-            label={field.key}
-            only={field.group === "color" ? modelColors : undefined}
-            value={variant.options[field.key] ?? ""}
-            onChange={(value) => set({ options: { ...variant.options, [field.key]: value } })}
-          />
-        ))}
+        {OPTION_FIELDS[kind].map((field) =>
+          field.group === "color" && lockedColor ? (
+            // Ajouté depuis la page d'une couleur : la couleur est celle de la page.
+            <div key={field.key}>
+              <p className="label">{field.key}</p>
+              <p className="input flex items-center bg-surface-2 font-semibold">{lockedColor}</p>
+            </div>
+          ) : (
+            <ChoicePicker
+              key={field.key}
+              group={field.group}
+              label={field.key}
+              only={field.group === "color" ? modelColors : undefined}
+              value={variant.options[field.key] ?? ""}
+              onChange={(value) => set({ options: { ...variant.options, [field.key]: value } })}
+            />
+          ),
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -243,7 +257,8 @@ export default function VariantEditor({
         </div>
       ) : null}
 
-      <GiftEditor variant={variant} giftOptions={giftOptions} onChange={(gifts) => set({ gifts })} />
+      {/* Depuis la page d'une couleur, les articles offerts s'ajoutent ensuite dans la fiche. */}
+      {lockedColor ? null : <GiftEditor variant={variant} giftOptions={giftOptions} onChange={(gifts) => set({ gifts })} />}
     </fieldset>
   );
 }

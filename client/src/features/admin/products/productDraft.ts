@@ -214,34 +214,44 @@ export function bodyFromDraft(draft: ProductDraft): ProductBody {
       draft.specs.filter((row) => row.key.trim() && row.value.trim()).map((row) => [row.key.trim(), row.value.trim()]),
     ),
     status: draft.status,
-    variants: draft.variants.map((variant) => {
-      const deal = variant.condition === "refurbished";
-      return {
-        id: variant.id,
-        sku: variant.sku,
-        condition: variant.condition,
-        // Une option non choisie n'est pas envoyée.
-        options: Object.fromEntries(Object.entries(variant.options).filter(([, value]) => value)),
-        price: toNumber(variant.price),
-        stock: toNumber(variant.stock),
-        grade: toNullable(variant.grade),
-        batteryHealth: toNullable(variant.batteryHealth),
-        replacedParts: variant.replacedParts,
-        defects: variant.defects,
-        limitations: variant.limitations,
-        // Un neuf scellé n'a ni boîte à dire, ni pièce, ni détails : l'API les refuserait.
-        compatibleParts: deal ? variant.replacedParts.filter((part) => variant.partOrigins[part] === "compatible") : [],
-        withBox: deal ? variant.withBox : null,
-        // Un champ vide part tel quel : l'API le range comme « pas de détails » (null).
-        details: deal ? variant.details : "",
-        warrantyMonths: toNullable(variant.warrantyMonths),
-        // Vides, l'origine et la référence partent telles quelles : l'API les range en null.
-        origin: variant.origin,
-        reference: variant.reference,
-        gifts: variant.gifts,
-      };
-    }),
+    variants: draft.variants.map(variantBody),
   };
+}
+
+// Une variante du brouillon, prête pour l'API : le formulaire produit et l'ajout d'un
+// exemplaire depuis la page d'une couleur (étape Couleur) l'envoient de la même façon.
+export function variantBody(variant: VariantDraft): ProductBody["variants"][number] {
+  const deal = variant.condition === "refurbished";
+  return {
+    id: variant.id,
+    sku: variant.sku,
+    condition: variant.condition,
+    // Une option non choisie n'est pas envoyée.
+    options: Object.fromEntries(Object.entries(variant.options).filter(([, value]) => value)),
+    price: toNumber(variant.price),
+    stock: toNumber(variant.stock),
+    grade: toNullable(variant.grade),
+    batteryHealth: toNullable(variant.batteryHealth),
+    replacedParts: variant.replacedParts,
+    defects: variant.defects,
+    limitations: variant.limitations,
+    // Un neuf scellé n'a ni boîte à dire, ni pièce, ni détails : l'API les refuserait.
+    compatibleParts: deal ? variant.replacedParts.filter((part) => variant.partOrigins[part] === "compatible") : [],
+    withBox: deal ? variant.withBox : null,
+    // Un champ vide part tel quel : l'API le range comme « pas de détails » (null).
+    details: deal ? variant.details : "",
+    warrantyMonths: toNullable(variant.warrantyMonths),
+    // Vides, l'origine et la référence partent telles quelles : l'API les range en null.
+    origin: variant.origin,
+    reference: variant.reference,
+    gifts: variant.gifts,
+  };
+}
+
+// Un exemplaire ajouté depuis la page d'une couleur : la couleur est posée, la garantie
+// de DropZone pour cet état aussi.
+export function unitDraft(kind: ProductKind, condition: Condition, color: string): VariantDraft {
+  return { ...emptyVariant(condition, kind), options: { Couleur: color } };
 }
 
 // Une référence proposée : le modèle en majuscules, les options, puis un numéro

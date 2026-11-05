@@ -9,6 +9,8 @@ import {
   invalidWarranty,
   missingBox,
   missingPartOrigins,
+  unitDraft,
+  variantBody,
   type VariantDraft,
   withCondition,
   withReplacedParts,
@@ -224,5 +226,38 @@ describe("emptyDraft prérempli depuis le Catalogue", () => {
 
   it("reste vide sans préremplissage", () => {
     expect(emptyDraft()).toMatchObject({ categoryId: null, brandId: null, deviceModelId: null, name: "" });
+  });
+});
+
+// L'étape Couleur (05/11) : un exemplaire ajouté depuis la page d'une couleur.
+describe("unitDraft", () => {
+  it("pose la couleur et la garantie d'un neuf scellé", () => {
+    const draft = unitDraft("phone", "new", "Glacier");
+    expect(draft.options).toEqual({ Couleur: "Glacier" });
+    expect(draft).toMatchObject({ condition: "new", warrantyMonths: "12", stock: "" });
+  });
+
+  it("prépare une affaire unique avec sa garantie", () => {
+    expect(unitDraft("phone", "refurbished", "Glacier")).toMatchObject({
+      condition: "refurbished",
+      stock: "1",
+      warrantyMonths: "6",
+      options: { Couleur: "Glacier" },
+    });
+  });
+});
+
+describe("variantBody", () => {
+  it("convertit une variante comme le formulaire produit", () => {
+    const draft = { ...unitDraft("phone", "new", "Glacier"), sku: "IP18P-256", price: "280000", stock: "2" };
+    draft.options = { ...draft.options, Stockage: "256 Go" };
+    expect(variantBody(draft)).toMatchObject({
+      sku: "IP18P-256",
+      options: { Couleur: "Glacier", Stockage: "256 Go" },
+      price: 280000,
+      stock: 2,
+      warrantyMonths: 12,
+      withBox: null,
+    });
   });
 });

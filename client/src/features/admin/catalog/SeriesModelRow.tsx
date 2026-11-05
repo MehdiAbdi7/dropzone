@@ -191,9 +191,13 @@ export default function SeriesModelRow({
       </div>
 
       <div className="flex flex-wrap gap-2 sm:flex-col">
+        {/* Étape Couleur (05/11) : le modèle, puis une couleur, où l'on ajoute un exemplaire. */}
+        <Link href={`/admin/catalogue/modeles/${model.id}`} className="btn btn-primary btn-small">
+          Couleurs et stock
+        </Link>
         {product ? (
           <>
-            <Link href={`/admin/produits/${product.id}#variantes`} className="btn btn-primary btn-small">
+            <Link href={`/admin/produits/${product.id}#variantes`} className="btn btn-secondary btn-small">
               + Ajouter un appareil
             </Link>
             <Link href={`/admin/produits/${product.id}`} className="btn btn-secondary btn-small">

@@ -11,6 +11,7 @@ export default function EditDialog({
   title,
   onClose,
   toolbar,
+  closeLabel = "Terminé",
   children,
 }: {
   open: boolean;
@@ -18,6 +19,8 @@ export default function EditDialog({
   onClose: () => void;
   // Une zone collée sous le titre, qui ne défile pas avec la liste (recherche, ajout).
   toolbar?: ReactNode;
+  // « Annuler » quand la fenêtre a son propre bouton d'envoi (ajout d'un exemplaire).
+  closeLabel?: string;
   children: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -49,7 +52,7 @@ export default function EditDialog({
         <div className="flex items-center justify-between gap-3 px-5 py-3">
           <h2 className="text-lg">{title}</h2>
           <button type="button" className="btn btn-primary btn-small" onClick={onClose}>
-            Terminé
+            {closeLabel}
           </button>
         </div>
         {open && toolbar ? <div className="space-y-2 px-5 pb-3">{toolbar}</div> : null}
