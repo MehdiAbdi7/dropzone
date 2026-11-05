@@ -349,3 +349,59 @@ describe("Commandes", () => {
     });
   });
 });
+
+// L'étape Couleur (05/11) : une couleur enregistrée sur un appareil devient une couleur de
+// son modèle, et un modèle n'a qu'une fiche.
+describe("Les couleurs du modèle suivent les exemplaires", () => {
+  const product = (colors: string[]) => ({
+    name: "Samsung Galaxy S24 Ultra",
+    description: "Titane et S Pen",
+    categoryId: catalog.phones.id,
+    deviceModelId: catalog.galaxy.id,
+    status: "published",
+    variants: colors.map((color, index) => ({
+      sku: `S24U-C${index}`,
+      options: { Stockage: "256 Go", Couleur: color },
+      price: 215000,
+      stock: 1,
+      warrantyMonths: 12,
+    })),
+  });
+  const colorsOfGalaxy = async () =>
+    (await prisma.deviceModel.findUniqueOrThrow({ where: { id: catalog.galaxy.id } })).colors;
+
+  it("ajoute à la fin une couleur que le modèle n'a pas", async () => {
+    await prisma.deviceModel.update({ where: { id: catalog.galaxy.id }, data: { colors: ["Noir", "Argent"] } });
+    expect((await admin.post("/admin/products").send(product(["Bleu glacier"]))).status).toBe(201);
+    expect(await colorsOfGalaxy()).toEqual(["Noir", "Argent", "Bleu glacier"]);
+    // La couleur entre aussi dans la liste « Couleurs » du back-office.
+    expect(await prisma.choice.count({ where: { group: "color", label: "Bleu glacier" } })).toBe(1);
+  });
+
+  it("ne double pas une couleur écrite autrement (casse, espace)", async () => {
+    await prisma.deviceModel.update({ where: { id: catalog.galaxy.id }, data: { colors: ["Noir"] } });
+    expect((await admin.post("/admin/products").send(product(["noir "]))).status).toBe(201);
+    expect(await colorsOfGalaxy()).toEqual(["Noir"]);
+  });
+
+  it("donne sa première couleur à un modèle qui n'en avait pas", async () => {
+    expect(await colorsOfGalaxy()).toEqual([]);
+    expect((await admin.post("/admin/products").send(product(["Argent", "Argent"]))).status).toBe(201);
+    expect(await colorsOfGalaxy()).toEqual(["Argent"]);
+  });
+
+  it("refuse une deuxième fiche pour le même modèle", async () => {
+    expect((await admin.post("/admin/products").send(product(["Noir"]))).status).toBe(201);
+    const again = product(["Noir"]);
+    const second = await admin.post("/admin/products").send({ ...again, variants: [{ ...again.variants[0], sku: "S24U-BIS" }] });
+    expect(second.status).toBe(409);
+    expect(second.body.error.message).toBe("Ce modèle a déjà sa fiche produit");
+  });
+
+  it("ajoute aussi la couleur à la modification d'une fiche", async () => {
+    const created = await admin.post("/admin/products").send(product(["Noir"]));
+    const body = product(["Noir", "Violet titane"]);
+    expect((await admin.patch(`/admin/products/${created.body.data.id}`).send(body)).status).toBe(200);
+    expect(await colorsOfGalaxy()).toEqual(["Noir", "Violet titane"]);
+  });
+});

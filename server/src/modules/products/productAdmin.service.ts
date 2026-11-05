@@ -6,6 +6,7 @@ import { escapeLike } from "../../utils/escapeLike.js";
 import { paginate, paginationMeta } from "../../utils/pagination.js";
 import { slugify } from "../../utils/slugify.js";
 import type { AdminProductListQuery, ProductBody } from "./product.schema.js";
+import { addMissingModelColors, variantColors } from "../models/modelColors.js";
 import { DEVICE_KINDS, computeMinPrice, refreshMinPrice } from "./product.service.js";
 
 const MAX_IMAGES = 6;
@@ -89,6 +90,15 @@ async function checkRules(input: ProductBody, productId?: number) {
       throw new AppError(400, "Ce modèle ne correspond pas à la catégorie");
     }
     deviceModelId = model.id;
+    // Un modèle n'a qu'une fiche : la page d'une couleur du back-office ajoute toujours
+    // dans celle-là (étape Couleur, 05/11). L'index unique de la base le garantit aussi.
+    const taken = await prisma.product.findFirst({
+      where: { deviceModelId: model.id, ...(productId ? { id: { not: productId } } : {}) },
+      select: { id: true },
+    });
+    if (taken) {
+      throw new AppError(409, "Ce modèle a déjà sa fiche produit");
+    }
   }
 
   if (!isDevice && input.variants.some((variant) => variant.condition === "refurbished")) {
@@ -181,26 +191,33 @@ function variantData(variant: Awaited<ReturnType<typeof checkRules>>["variants"]
 export async function createProduct(input: ProductBody) {
   const rules = await checkRules(input);
   const slug = await uniqueSlug(input.name);
-  return prisma.product.create({
-    data: {
-      name: input.name,
-      slug,
-      description: input.description,
-      categoryId: input.categoryId,
-      deviceModelId: rules.deviceModelId,
-      brandId: input.brandId,
-      specs: input.specs,
-      status: input.status,
-      minPrice: computeMinPrice(rules.variants),
-      compatibleModels: { connect: rules.compatibleModelIds.map((id) => ({ id })) },
-      variants: {
-        create: rules.variants.map((variant) => ({
-          ...variantData(variant),
-          gifts: { create: variant.gifts },
-        })),
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.create({
+      data: {
+        name: input.name,
+        slug,
+        description: input.description,
+        categoryId: input.categoryId,
+        deviceModelId: rules.deviceModelId,
+        brandId: input.brandId,
+        specs: input.specs,
+        status: input.status,
+        minPrice: computeMinPrice(rules.variants),
+        compatibleModels: { connect: rules.compatibleModelIds.map((id) => ({ id })) },
+        variants: {
+          create: rules.variants.map((variant) => ({
+            ...variantData(variant),
+            gifts: { create: variant.gifts },
+          })),
+        },
       },
-    },
-    select: { id: true, slug: true },
+      select: { id: true, slug: true },
+    });
+    // Une couleur que le modèle n'a pas encore devient une de ses couleurs (étape Couleur).
+    if (rules.deviceModelId) {
+      await addMissingModelColors(tx, rules.deviceModelId, variantColors(rules.variants));
+    }
+    return product;
   });
 }
 
@@ -250,6 +267,9 @@ export async function updateProduct(id: number, input: ProductBody) {
       },
     });
     await refreshMinPrice(tx, [id]);
+    if (rules.deviceModelId) {
+      await addMissingModelColors(tx, rules.deviceModelId, variantColors(rules.variants));
+    }
     return { id };
   });
 }
