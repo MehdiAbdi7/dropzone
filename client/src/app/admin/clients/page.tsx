@@ -26,7 +26,29 @@ export default function CustomersPage() {
           }}
         />
       </label>
-      <div className="card overflow-x-auto">
+      {/* Sur téléphone, une carte par client (05/11) ; le tableau revient à partir de 768 px. */}
+      <ul className="space-y-2 md:hidden">
+        {data?.data.map((customer) => (
+          <li key={customer.id} className="card flex items-center gap-3 p-3">
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-semibold">
+                {customer.firstName} {customer.lastName}
+              </span>
+              <span className="block truncate text-xs text-ink-muted">{customer.email}</span>
+              <span className="block text-xs text-ink-muted">
+                {customer.phone} · {customer.addressWilaya ?? "—"} · inscrit le {formatDate(customer.createdAt)}
+              </span>
+            </span>
+            <span className="shrink-0 text-center">
+              <span className="block font-bold">{customer._count.orders}</span>
+              <span className="text-xs text-ink-muted">cmd.</span>
+            </span>
+          </li>
+        ))}
+        {data && data.data.length === 0 ? <li className="card p-6 text-ink-muted">Aucun client.</li> : null}
+      </ul>
+
+      <div className="card hidden overflow-x-auto md:block">
         <table className="table min-w-[640px]">
           <thead>
             <tr>

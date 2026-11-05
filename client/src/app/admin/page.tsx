@@ -36,7 +36,7 @@ export default function DashboardPage() {
         </Link>
       ) : null}
 
-      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {[
           { label: "Ventes du jour", value: formatPrice(stats.revenueToday), hint: `${stats.ordersToday} commande(s)` },
           { label: "Ventes du mois", value: formatPrice(stats.revenueMonth), hint: "hors annulations" },

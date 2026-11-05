@@ -58,7 +58,32 @@ function OrdersList() {
         />
       </label>
 
-      <div className="card overflow-x-auto" aria-busy={isFetching}>
+      {/* Sur téléphone, une carte par commande, comme une application (05/11) ; le tableau
+          revient à partir de 768 px. */}
+      <ul className="space-y-2 md:hidden" aria-busy={isFetching}>
+        {data?.data.map((order) => (
+          <li key={order.id}>
+            <Link href={`/admin/commandes/${order.id}`} className="card flex items-center gap-3 p-3">
+              <span className="min-w-0 flex-1">
+                <span className="font-display font-bold text-blue-ink">N° {order.number}</span>
+                <span className="block truncate text-sm font-semibold">{order.fullName}</span>
+                <span className="block text-xs text-ink-muted">
+                  {order.wilaya} · {formatDate(order.createdAt)}
+                </span>
+              </span>
+              <span className="shrink-0 text-right">
+                <span className="block font-bold">{formatPrice(order.total)}</span>
+                <span className={`text-xs ${order.status === "pending" ? "font-semibold text-red" : "text-ink-muted"}`}>
+                  {STATUS_LABELS[order.status]}
+                </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+        {data && data.data.length === 0 ? <li className="card p-6 text-ink-muted">Aucune commande.</li> : null}
+      </ul>
+
+      <div className="card hidden overflow-x-auto md:block" aria-busy={isFetching}>
         <table className="table min-w-[720px]">
           <thead>
             <tr>

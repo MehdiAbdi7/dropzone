@@ -80,9 +80,9 @@ function SeriesView({ data }: { data: AdminSeriesPage }) {
       />
 
       <section aria-labelledby="series-title" className="card flex flex-wrap items-center gap-4 p-4">
-        <div className="relative h-28 w-44 shrink-0 overflow-hidden rounded-lg bg-black">
+        <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-lg bg-black sm:h-28 sm:w-44">
           {series.coverUrl ? (
-            <Image src={series.coverUrl} alt="" fill sizes="176px" className="object-cover" />
+            <Image src={series.coverUrl} alt="" fill sizes="(min-width: 640px) 176px, 100vw" className="object-cover" />
           ) : (
             <div
               className="absolute inset-0"
@@ -92,7 +92,8 @@ function SeriesView({ data }: { data: AdminSeriesPage }) {
             </div>
           )}
         </div>
-        <div className="min-w-0 flex-1 space-y-3">
+        {/* Sur téléphone, l'image prend la largeur et les réglages passent dessous (05/11). */}
+        <div className="min-w-0 flex-1 basis-full space-y-3 sm:basis-auto">
           <h1 id="series-title" className="text-2xl">
             {series.name}
           </h1>

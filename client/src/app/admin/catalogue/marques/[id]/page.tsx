@@ -68,7 +68,7 @@ function BrandView({ data }: { data: AdminCatalogBrandPage }) {
 
       {unassigned.length > 0 ? <UnassignedAlert data={data} /> : null}
 
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {series.map((one) => (
           <li key={one.id}>
             <SeriesTile series={one} palette={palette} />

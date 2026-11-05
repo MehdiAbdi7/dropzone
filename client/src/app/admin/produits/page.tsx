@@ -52,7 +52,34 @@ export default function AdminProductsPage() {
         </label>
       </div>
 
-      <div className="card overflow-x-auto" aria-busy={isFetching}>
+      {/* Sur téléphone, une carte par produit (05/11) ; le tableau revient à partir de 768 px. */}
+      <ul className="space-y-2 md:hidden" aria-busy={isFetching}>
+        {data?.data.map((product) => (
+          <li key={product.id}>
+            <Link href={`/admin/produits/${product.id}`} className="card flex items-center gap-3 p-3">
+              <span className="relative size-14 shrink-0 overflow-hidden rounded-md bg-surface-2">
+                <ProductImage src={product.image} alt="" sizes="56px" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold">{product.name}</span>
+                <span className="block text-xs text-ink-muted">
+                  {product.category.name} · {product.newStock} neuf{product.newStock > 1 ? "s" : ""} ·{" "}
+                  {product.refurbishedAvailable} affaire{product.refurbishedAvailable > 1 ? "s" : ""}
+                </span>
+                <span className="mt-1 flex items-center gap-2 text-xs">
+                  <span className={`badge ${product.status === "published" ? "badge-refurb" : "badge-out"}`}>
+                    {product.status === "published" ? "Publié" : "Brouillon"}
+                  </span>
+                  <span className="font-semibold">dès {formatPrice(product.minPrice)}</span>
+                </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+        {data && data.data.length === 0 ? <li className="card p-6 text-ink-muted">Aucun produit.</li> : null}
+      </ul>
+
+      <div className="card hidden overflow-x-auto md:block" aria-busy={isFetching}>
         <table className="table min-w-[720px]">
           <thead>
             <tr>

@@ -45,7 +45,7 @@ export default function CatalogPage() {
       {error ? <p className="field-error">{errorMessage(error)}</p> : null}
       {isLoading ? <p className="text-ink-muted">Chargement…</p> : null}
 
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {categories?.map((category) => (
           <li key={category.id}>
             <CatalogTile

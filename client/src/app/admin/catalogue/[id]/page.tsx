@@ -60,7 +60,7 @@ function CategoryView({ data }: { data: AdminCatalogCategoryPage }) {
         </p>
       </div>
 
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {brands.map((brand) => (
           <li key={brand.id}>
             <CatalogTile

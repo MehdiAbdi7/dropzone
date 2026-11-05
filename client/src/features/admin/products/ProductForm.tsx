@@ -236,13 +236,13 @@ export default function ProductForm({
                   !variant.price ? "prix" : null,
                 ].filter(Boolean);
                 return (
-                  <li key={variant.key} className="flex flex-wrap items-center gap-3 py-2.5">
+                  <li key={variant.key} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
                     <span
                       className={`badge ${variant.condition === "refurbished" ? "bg-red-soft text-red" : "bg-blue-soft text-blue-ink"}`}
                     >
                       {CONDITION_LABELS[variant.condition]}
                     </span>
-                    <span className="min-w-0 flex-1">
+                    <span className="min-w-0 flex-1 basis-48">
                       <span className="font-semibold">{options || "Sans option"}</span>
                       <span className="block text-xs text-ink-muted">
                         {variant.sku || "SKU à écrire"}
@@ -255,7 +255,12 @@ export default function ProductForm({
                     {problems.length > 0 ? (
                       <span className="badge bg-[#ffb547] text-black">À compléter : {problems.join(", ")}</span>
                     ) : null}
-                    <button type="button" className="btn btn-secondary btn-small" onClick={() => setOpen(`variant:${variant.key}`)}>
+                    {/* ml-auto : « Modifier » reste à droite, même quand la ligne passe à la ligne. */}
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-small ml-auto"
+                      onClick={() => setOpen(`variant:${variant.key}`)}
+                    >
                       Modifier
                     </button>
                   </li>
@@ -415,7 +420,7 @@ export default function ProductForm({
         ) : null}
       </EditDialog>
 
-      <div className="card sticky bottom-0 z-10 flex flex-wrap items-center gap-4 p-4">
+      <div className="card sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center gap-4 p-4 lg:bottom-0">
         <fieldset className="flex gap-2">
           <legend className="sr-only">Statut</legend>
           {(["draft", "published"] as const).map((status) => (

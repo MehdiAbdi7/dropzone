@@ -210,3 +210,61 @@ const SPEC_PATHS: Record<string, ReactNode> = {
 export const SpecGlyph = ({ icon, ...props }: IconProps & { icon: string }) => (
   <Icon {...props}>{SPEC_PATHS[icon] ?? SPEC_PATHS.dot}</Icon>
 );
+
+// Les icônes de la barre du bas du back-office (05/11).
+export const HomeIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 11 12 4l9 7" />
+    <path d="M5 10v10h14V10" />
+    <path d="M10 20v-6h4v6" />
+  </Icon>
+);
+
+export const GridIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    <rect x="14" y="14" width="7" height="7" rx="1.5" />
+  </Icon>
+);
+
+export const PhoneIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+    <path d="M11 18.5h2" />
+  </Icon>
+);
+
+export const ListIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M9 6h11M9 12h11M9 18h11" />
+    <circle cx="4.5" cy="6" r="1" />
+    <circle cx="4.5" cy="12" r="1" />
+    <circle cx="4.5" cy="18" r="1" />
+  </Icon>
+);
+
+export const UsersIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" />
+    <path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .8 3.5 2.9 3.5 6" />
+  </Icon>
+);
+
+export const DotsIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="8" cy="12" r=".6" fill="currentColor" />
+    <circle cx="12" cy="12" r=".6" fill="currentColor" />
+    <circle cx="16" cy="12" r=".6" fill="currentColor" />
+  </Icon>
+);
+
+export const LogoutIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M15 4h4v16h-4" />
+    <path d="M10 8l-4 4 4 4M6 12h10" />
+  </Icon>
+);
