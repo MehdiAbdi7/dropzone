@@ -81,12 +81,14 @@ export async function catalogCategory(id: number) {
   };
 }
 
-// Les produits d'un modèle, avec ce qu'il faut pour le stock, la photo et les couleurs.
+// Les produits d'un modèle, avec ce qu'il faut pour le stock, la photo, les couleurs, et
+// le statut : un brouillon n'est pas en vente, même avec du stock (grisé sur l'affiche).
 const MODEL_PRODUCTS = {
   orderBy: { id: "asc" },
   select: {
     id: true,
     slug: true,
+    status: true,
     images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
     variants: { orderBy: { id: "asc" }, select: { condition: true, stock: true, price: true, options: true } },
   },
@@ -198,6 +200,7 @@ export async function catalogSeries(id: number) {
           ? {
               id: product.id,
               slug: product.slug,
+              status: product.status,
               image: product.images[0]?.url ?? null,
               ...stockOf(product.variants),
               soldOutColors: colors.filter((color) => !color.inStock).map((color) => color.name),

@@ -166,6 +166,18 @@ describe("Les compteurs du Catalogue", () => {
     expect(response.body.data.candidates).toEqual([{ id: plus.id, name: "iPhone 15 Plus", releaseYear: 2023 }]);
   });
 
+  // Le 05/11, Mehdi voyait « Neuf scellé : 2 en stock » sur son iPhone 17 Pro sans savoir
+  // que la fiche était un brouillon, absent de la boutique.
+  it("dit si la fiche d'un modèle est publiée ou en brouillon", async () => {
+    await fillSeries(prisma);
+    const series = await prisma.series.findFirstOrThrow({ where: { slug: "iphone-15" } });
+    const url = `/admin/catalog/series/${series.id}`;
+    expect((await admin.get(url)).body.data.models[0].product.status).toBe("published");
+
+    await prisma.product.update({ where: { id: catalog.phone.id }, data: { status: "draft" } });
+    expect((await admin.get(url)).body.data.models[0].product.status).toBe("draft");
+  });
+
   it("refuse le Catalogue à un client", async () => {
     const { agent: client } = await loginAs("customer");
     expect((await client.get("/admin/catalog")).status).toBe(403);

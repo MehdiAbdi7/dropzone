@@ -135,6 +135,18 @@ export default function SeriesModelRow({
           </fieldset>
         ) : null}
 
+        {product?.status === "draft" ? (
+          // Le stock d'un brouillon est compté, mais la fiche n'est pas en vente : sans ce
+          // badge, « 2 en stock » laissait croire que le modèle était sur la boutique.
+          <p className="text-xs">
+            <span className="badge bg-[#ffb547] text-black">Brouillon</span>{" "}
+            <span className="text-ink-muted">
+              Pas en vente : grisé sur l&apos;affiche, « Pas encore en vente ». Publie la fiche (Modifier la fiche, puis
+              « Publié ») pour la mettre en vente.
+            </span>
+          </p>
+        ) : null}
+
         {product ? (
           <div className="flex flex-wrap gap-1.5">
             <span className="badge bg-blue-soft text-blue-ink">Neuf scellé : {product.newStock} en stock</span>
@@ -148,7 +160,10 @@ export default function SeriesModelRow({
             </span>
           </div>
         ) : (
-          <p className="text-xs text-ink-muted">Pas encore de fiche produit : le modèle n&apos;apparaît pas sur l&apos;affiche.</p>
+          // Depuis le 05/11, toute la série est sur l'affiche : un modèle sans fiche y est grisé.
+          <p className="text-xs text-ink-muted">
+            Pas encore de fiche produit : grisé sur l&apos;affiche, « Pas encore en vente ».
+          </p>
         )}
         {updateState.error ? <p className="field-error">{errorMessage(updateState.error)}</p> : null}
       </div>

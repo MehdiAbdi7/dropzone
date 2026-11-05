@@ -143,7 +143,10 @@ export type AdminSeriesModel = {
   seriesPosition: number;
   posterColor: string | null;
   colors: string[];
-  product: (Stock & { id: number; slug: string; image: string | null; soldOutColors: string[] }) | null;
+  // `status` : un brouillon a du stock mais n'est pas en vente (grisé sur l'affiche).
+  product:
+    | (Stock & { id: number; slug: string; status: ProductStatus; image: string | null; soldOutColors: string[] })
+    | null;
 };
 
 export type AdminSeriesPage = {
