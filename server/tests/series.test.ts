@@ -128,6 +128,21 @@ describe("GET /series : les séries d'une marque", () => {
     expect(response.body.data.map((s: { slug: string }) => s.slug)).toEqual(["iphone-17", "iphone-16", "iphone-15"]);
   });
 
+  it("cite aussi les modèles pas encore en vente, et garde la lueur de secours du premier en vente", async () => {
+    await prisma.deviceModel.create({
+      data: { brand: "Apple", name: "iPhone 15 Plus", slug: "apple-iphone-15-plus", kind: "phone", releaseYear: 2023 },
+    });
+    await fillSeries(prisma);
+    await prisma.deviceModel.updateMany({ where: { name: "iPhone 15 Plus" }, data: { seriesPosition: 0 } });
+    await prisma.deviceModel.updateMany({ where: { name: "iPhone 15 Pro Max" }, data: { seriesPosition: 1, posterColor: "Noir" } });
+
+    const response = await request(app).get("/series?category=smartphones&brand=iphone");
+    expect(response.body.data[0]).toMatchObject({
+      models: ["iPhone 15 Plus", "iPhone 15 Pro Max"],
+      fallback: { color: "Noir" },
+    });
+  });
+
   it("n'affiche pas une série dont le seul produit est un brouillon", async () => {
     await fillSeries(prisma);
     // Le Galaxy Z Flip6 du catalogue de test est en brouillon, sur le modèle Galaxy S24 Ultra.
@@ -182,6 +197,7 @@ describe("GET /series/:category/:brand/:serie : l'affiche", () => {
       newFrom: 165000,
       dealFrom: 120000,
       soldOut: false,
+      onSale: true,
       posterColor: "Noir",
     });
   });
@@ -195,14 +211,46 @@ describe("GET /series/:category/:brand/:serie : l'affiche", () => {
     expect(response.body.data.models[1].posterColor).toBe("Rose");
   });
 
-  it("n'affiche pas un modèle de la série qui n'a pas de produit publié", async () => {
-    await prisma.deviceModel.create({
+  // Règle de Mehdi (05/11) : toute la série reste visible, comme les cartes Neuf et Affaire
+  // barrées. Un modèle sans fiche publiée (aucune, ou un brouillon) est grisé, sans lien.
+  it("montre aussi un modèle sans fiche publiée, à sa place dans l'ordre du Catalogue, grisé et sans prix", async () => {
+    const plus = await prisma.deviceModel.create({
       data: { brand: "Apple", name: "iPhone 15 Plus", slug: "apple-iphone-15-plus", kind: "phone", releaseYear: 2023 },
     });
+    const { model: iphone15, product } = await addIphone15();
+    await prisma.product.update({ where: { id: product.id }, data: { status: "draft" } });
     await fillSeries(prisma);
+    // L'ordre choisi dans le Catalogue : iPhone 15, iPhone 15 Plus, puis le Pro Max.
+    await prisma.deviceModel.update({ where: { id: iphone15.id }, data: { seriesPosition: 0 } });
+    await prisma.deviceModel.update({ where: { id: plus.id }, data: { seriesPosition: 1 } });
+    await prisma.deviceModel.updateMany({ where: { name: "iPhone 15 Pro Max" }, data: { seriesPosition: 2 } });
 
     const response = await request(app).get("/series/smartphones/iphone/iphone-15");
-    expect(response.body.data.models.map((m: { name: string }) => m.name)).toEqual(["iPhone 15 Pro Max"]);
+    const models = response.body.data.models;
+    expect(models.map((m: { name: string }) => m.name)).toEqual(["iPhone 15", "iPhone 15 Plus", "iPhone 15 Pro Max"]);
+    const notOnSale = {
+      productSlug: null,
+      image: null,
+      specs: [],
+      colors: [],
+      newFrom: null,
+      dealFrom: null,
+      soldOut: true,
+      onSale: false,
+      posterColor: null,
+    };
+    // Le brouillon ne montre rien de sa fiche : ni photo, ni prix, ni lien.
+    expect(models[0]).toEqual({ name: "iPhone 15", ...notOnSale });
+    expect(models[1]).toEqual({ name: "iPhone 15 Plus", ...notOnSale });
+    expect(models[2]).toMatchObject({ name: "iPhone 15 Pro Max", onSale: true, soldOut: false });
+  });
+
+  it("répond 404 pour une série dont aucun modèle n'est en vente", async () => {
+    await fillSeries(prisma);
+    // Le Galaxy Z Flip6 du catalogue de test est en brouillon : sa série n'a rien en vente.
+    const series = await prisma.series.findFirstOrThrow({ where: { brand: { slug: "samsung" } } });
+    const response = await request(app).get(`/series/smartphones/samsung/${series.slug}`);
+    expect(response.status).toBe(404);
   });
 
   it("répond 404 pour une série inconnue", async () => {

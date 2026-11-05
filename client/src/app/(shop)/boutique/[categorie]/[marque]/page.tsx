@@ -11,7 +11,7 @@ import type { Category, ProductCard, SeriesSummary } from "@/types/api";
 
 // La catégorie et la marque de l'adresse, si elles existent. « autres » = sans marque.
 async function getBrand(categorySlug: string, brandSlug: string) {
-  const categories = await publicFetch<Category[]>("/categories", 300);
+  const categories = await publicFetch<Category[]>("/categories");
   const category = categories?.find((item) => item.slug === categorySlug);
   const brand =
     brandSlug === "autres"
@@ -56,7 +56,7 @@ export default async function ShopBrandPage({
   if (category && brand && isDevice && brand.slug !== "autres") {
     // Les séries et la palette (lueur des affiches sans couverture) en même temps.
     const [series, palette] = await Promise.all([
-      publicFetch<SeriesSummary[]>(`/series?category=${category.slug}&brand=${brand.slug}`, 60),
+      publicFetch<SeriesSummary[]>(`/series?category=${category.slug}&brand=${brand.slug}`),
       getPalette(),
     ]);
     if (!series) {
@@ -105,7 +105,6 @@ export default async function ShopBrandPage({
     category && brand
       ? await publicFetchPage<ProductCard>(
           `/products?category=${category.slug}&brand=${brand.slug}&sort=${isDevice ? "sortie" : "nouveautes"}&limit=50`,
-          60,
         )
       : null;
 

@@ -65,17 +65,17 @@ const FAMILIES = [
 
 export default async function HomePage() {
   const [latest, complete, refurbished, deals] = await Promise.all([
-    publicFetchPage<ProductCard>("/products?limit=6", 60),
+    publicFetchPage<ProductCard>("/products?limit=6"),
     // La vitrine : un smartphone dont une affaire dit sa note et sa batterie (les annonces
     // importées n'en disent souvent rien) ; à défaut, le plus récent qui a une affaire.
-    publicFetchPage<ProductCard>("/products?category=smartphones&condition=affaire&fiche=complete&limit=1", 60),
-    publicFetchPage<ProductCard>("/products?category=smartphones&condition=affaire&limit=1", 60),
-    publicFetchPage<ProductCard>("/products?condition=affaire&limit=1", 60),
+    publicFetchPage<ProductCard>("/products?category=smartphones&condition=affaire&fiche=complete&limit=1"),
+    publicFetchPage<ProductCard>("/products?category=smartphones&condition=affaire&limit=1"),
+    publicFetchPage<ProductCard>("/products?condition=affaire&limit=1"),
   ]);
 
   // Une vraie affaire du stock, montrée avec sa fiche d'état.
   const showcaseSlug = complete?.data[0]?.slug ?? refurbished?.data[0]?.slug;
-  const showcase = showcaseSlug ? await publicFetch<ProductDetail>(`/products/${showcaseSlug}`, 60) : null;
+  const showcase = showcaseSlug ? await publicFetch<ProductDetail>(`/products/${showcaseSlug}`) : null;
   // En vitrine : la fiche la plus complète, puis l'exemple le plus rassurant.
   const unit = showcase ? showcaseUnit(showcase.variants) : null;
   const refurbishedUnits = showcase?.variants.filter((variant) => variant.condition === "refurbished") ?? [];

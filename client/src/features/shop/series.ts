@@ -22,6 +22,15 @@ export function swipeHint(names: string[], index: number): { text: string; back:
   return { text: ELIDES.test(previous) ? `Revenir à l'${previous}` : `Revenir au ${previous}`, back: true };
 }
 
+// Le mot sous une colonne grisée de l'affiche. Toute la série reste visible : un modèle
+// sans fiche publiée n'est « pas encore en vente », un modèle sans stock est « épuisé ».
+export function posterStatus(model: { onSale: boolean; soldOut: boolean }): string | null {
+  if (!model.onSale) {
+    return "Pas encore en vente";
+  }
+  return model.soldOut ? "Épuisé" : null;
+}
+
 export function ctaLabel(seriesName: string): string {
   return `Acheter un ${seriesName}`;
 }

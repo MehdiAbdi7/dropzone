@@ -101,36 +101,52 @@ const SERIES_SELECT = {
 
 type SeriesRow = Prisma.SeriesGetPayload<{ select: typeof SERIES_SELECT }>;
 
-// Les modèles de la série qui ont un produit publié, prêts pour l'affiche.
+// Tous les modèles de la série, dans l'ordre du Catalogue, prêts pour l'affiche. Un modèle
+// sans produit publié (aucune fiche, ou un brouillon) reste à sa place, grisé et sans lien,
+// comme une carte Neuf ou Affaire barrée (règle de Mehdi du 05/11) : `onSale` vaut false,
+// et rien de la fiche ne sort (un brouillon peut avoir une photo ou un prix provisoires).
 function posterModels(series: SeriesRow) {
-  return series.models.flatMap((model) => {
+  return series.models.map((model) => {
     const product = model.products[0];
     if (!product) {
-      return [];
+      return {
+        name: model.name,
+        releaseYear: model.releaseYear,
+        productSlug: null,
+        image: null,
+        specs: [] as [string, string][],
+        colors: [] as Color[],
+        newFrom: null,
+        dealFrom: null,
+        soldOut: true,
+        onSale: false,
+        posterColor: null,
+        prices: [] as VariantLite[],
+      };
     }
     const colors = colorsOf(product.variants);
     const newFrom = lowestInStock(product.variants.filter((variant) => variant.condition === "new"));
     const dealFrom = lowestInStock(product.variants.filter((variant) => variant.condition === "refurbished"));
-    return [
-      {
-        name: model.name,
-        releaseYear: model.releaseYear,
-        productSlug: product.slug,
-        image: product.images[0]?.url ?? null,
-        specs: posterSpecs(product.specs as Record<string, string>),
-        colors,
-        newFrom,
-        dealFrom,
-        soldOut: newFrom === null && dealFrom === null,
-        posterColor: resolvePosterColor(model.posterColor, colors),
-        prices: product.variants,
-      },
-    ];
+    return {
+      name: model.name,
+      releaseYear: model.releaseYear,
+      productSlug: product.slug,
+      image: product.images[0]?.url ?? null,
+      specs: posterSpecs(product.specs as Record<string, string>),
+      colors,
+      newFrom,
+      dealFrom,
+      soldOut: newFrom === null && dealFrom === null,
+      onSale: true,
+      posterColor: resolvePosterColor(model.posterColor, colors),
+      prices: product.variants,
+    };
   });
 }
 
 // Les séries d'une marque, de la plus récente à la plus ancienne (l'année la plus haute
-// de ses modèles), puis par nom. Une série sans produit publié n'apparaît pas.
+// de ses modèles), puis par nom. Une série où aucun modèle n'est en vente n'apparaît pas ;
+// ses modèles pas encore en vente sont cités avec les autres.
 export async function listSeries(category: string, brand: string) {
   const rows = await prisma.series.findMany({
     where: { brand: { slug: brand, category: { slug: category } } },
@@ -138,7 +154,8 @@ export async function listSeries(category: string, brand: string) {
   });
   const series = rows.flatMap((row) => {
     const models = posterModels(row);
-    if (models.length === 0) {
+    const onSale = models.filter((model) => model.onSale);
+    if (onSale.length === 0) {
       return [];
     }
     const fromPrice = lowestInStock(models.flatMap((model) => model.prices));
@@ -153,7 +170,8 @@ export async function listSeries(category: string, brand: string) {
           models: models.map((model) => model.name),
           fromPrice,
           soldOut: fromPrice === null,
-          fallback: { image: withImage?.image ?? null, color: models[0].posterColor },
+          // La lueur de secours : celle du premier modèle en vente (un modèle pas en vente n'en a pas).
+          fallback: { image: withImage?.image ?? null, color: onSale[0].posterColor },
         },
       },
     ];
@@ -163,14 +181,15 @@ export async function listSeries(category: string, brand: string) {
     .map(({ summary }) => summary);
 }
 
-// L'affiche d'une série. Une série inconnue, ou sans produit publié, n'a pas d'affiche.
+// L'affiche d'une série. Une série inconnue, ou dont aucun modèle n'est en vente (elle
+// n'apparaît pas non plus dans la liste), n'a pas d'affiche.
 export async function getSeries(category: string, brand: string, serie: string) {
   const row = await prisma.series.findFirst({
     where: { slug: serie, brand: { slug: brand, category: { slug: category } } },
     select: SERIES_SELECT,
   });
   const models = row ? posterModels(row) : [];
-  if (!row || models.length === 0) {
+  if (!row || !models.some((model) => model.onSale)) {
     throw new AppError(404, "Série introuvable");
   }
   return {

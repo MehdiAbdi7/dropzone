@@ -8,7 +8,7 @@ import type { Category } from "@/types/api";
 
 // Le même appel sert à generateMetadata et à la page : Next le déduplique.
 async function getCategory(slug: string) {
-  const categories = await publicFetch<Category[]>("/categories", 300);
+  const categories = await publicFetch<Category[]>("/categories");
   return {
     categories,
     category: categories?.find((item) => item.slug === slug),

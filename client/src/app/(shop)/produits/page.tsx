@@ -33,8 +33,8 @@ export default async function CatalogPage({ searchParams }: PageProps<"/produits
   }
 
   const [result, categories] = await Promise.all([
-    publicFetchPage<ProductCard>(`/products?${params.toString()}`, 60),
-    publicFetch<Category[]>("/categories", 300),
+    publicFetchPage<ProductCard>(`/products?${params.toString()}`),
+    publicFetch<Category[]>("/categories"),
   ]);
 
   // Les catégories servent aux filtres ; la liste elle-même n'existe plus que pour la

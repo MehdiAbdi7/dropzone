@@ -5,7 +5,7 @@ import { CONDITION_LABELS } from "@/config/catalog";
 import { type Palette, swatchOf } from "@/config/colors";
 import { formatPrice } from "@/lib/format";
 import type { PosterModel } from "@/types/api";
-import { glowColor, specIcon } from "./series";
+import { glowColor, posterStatus, specIcon } from "./series";
 
 // Une colonne de l'affiche : la photo sur la lueur de sa couleur, le nom, 4 caractéristiques,
 // les couleurs (barrées si épuisées) et les prix « dès ». Toute la colonne mène à la fiche
@@ -19,6 +19,9 @@ export default function PosterColumn({
   palette: Palette;
   priority: boolean;
 }) {
+  // « Pas encore en vente » (aucune fiche publiée) ou « Épuisé » : la colonne est grisée,
+  // son nom barré, et elle ne se clique pas, comme une carte Neuf ou Affaire vide.
+  const status = posterStatus(model);
   const body = (
     <>
       <div className="relative h-52 w-full md:h-60">
@@ -29,7 +32,7 @@ export default function PosterColumn({
         />
         <ProductImage src={model.image} alt="" sizes="(min-width: 768px) 25vw, 78vw" priority={priority} />
       </div>
-      <h2 className={`text-lg font-bold text-white ${model.soldOut ? "line-through" : ""}`}>{model.name}</h2>
+      <h2 className={`text-lg font-bold text-white ${status ? "line-through" : ""}`}>{model.name}</h2>
 
       {model.specs.length > 0 ? (
         <ul className="w-full max-w-[16rem] space-y-1.5 text-left text-xs text-white/80">
@@ -86,13 +89,13 @@ export default function PosterColumn({
             <span className="font-display text-base font-extrabold whitespace-nowrap text-white">{formatPrice(model.dealFrom)}</span>
           </p>
         ) : null}
-        {model.soldOut ? <p className="font-semibold text-white">Épuisé</p> : null}
+        {status ? <p className="font-semibold text-white">{status}</p> : null}
       </div>
     </>
   );
 
   const className = "poster-column flex h-full flex-col items-center gap-3 rounded-2xl px-3 pb-4 text-center";
-  if (model.soldOut) {
+  if (status || !model.productSlug) {
     return (
       <div aria-disabled="true" className={`${className} opacity-50`}>
         {body}

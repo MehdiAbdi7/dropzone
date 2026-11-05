@@ -109,7 +109,7 @@ export type SeriesSummary = {
   name: string;
   slug: string;
   coverUrl: string | null;
-  // Les modèles qui ont un produit publié, dans l'ordre de l'affiche.
+  // Tous les modèles de la série, dans l'ordre de l'affiche, ceux pas encore en vente compris.
   models: string[];
   // Le plus bas en stock, neuf scellé ou affaire ; null = série épuisée.
   fromPrice: number | null;
@@ -118,10 +118,12 @@ export type SeriesSummary = {
   fallback: { image: string | null; color: string | null };
 };
 
-// Une colonne de l'affiche d'une série.
+// Une colonne de l'affiche d'une série. Un modèle sans fiche publiée y est aussi, grisé :
+// `onSale` faux, pas de `productSlug` (donc pas de lien), ni photo, ni prix.
 export type PosterModel = {
   name: string;
-  productSlug: string;
+  productSlug: string | null;
+  onSale: boolean;
   image: string | null;
   specs: [string, string][];
   colors: { name: string; inStock: boolean }[];

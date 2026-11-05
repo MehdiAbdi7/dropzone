@@ -36,7 +36,7 @@ export default async function ProductPage({ params }: PageProps<"/produits/[slug
   // pastilles des couleurs d'un accessoire (NewPicker).
   const [relatedPage, palette] = await Promise.all([
     product.deviceModel
-      ? publicFetchPage<ProductCard>(`/products?model=${product.deviceModel.slug}&limit=8`, 300)
+      ? publicFetchPage<ProductCard>(`/products?model=${product.deviceModel.slug}&limit=8`)
       : Promise.resolve(null),
     getPalette(),
   ]);

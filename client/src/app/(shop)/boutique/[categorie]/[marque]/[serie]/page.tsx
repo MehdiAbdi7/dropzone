@@ -10,8 +10,8 @@ import type { Category, SeriesPoster as Poster } from "@/types/api";
 // distingue une série inconnue (404) d'une API arrêtée (message).
 async function getPoster(categorie: string, marque: string, serie: string) {
   const [categories, poster] = await Promise.all([
-    publicFetch<Category[]>("/categories", 300),
-    publicFetch<Poster>(`/series/${categorie}/${marque}/${serie}`, 60),
+    publicFetch<Category[]>("/categories"),
+    publicFetch<Poster>(`/series/${categorie}/${marque}/${serie}`),
   ]);
   return { categories, poster };
 }

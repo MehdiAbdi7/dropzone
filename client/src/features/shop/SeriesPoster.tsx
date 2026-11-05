@@ -33,7 +33,8 @@ export default function SeriesPoster({ poster, palette }: { poster: Poster; pale
       <div className="relative pt-6 pb-8">
         <PosterSlider names={poster.models.map((model) => model.name)} layout={posterLayout(count)}>
           {poster.models.map((model, index) => (
-            <PosterColumn key={model.productSlug} model={model} palette={palette} priority={index === 0} />
+            // La clé : le nom du modèle (un modèle pas encore en vente n'a pas de slug produit).
+            <PosterColumn key={model.name} model={model} palette={palette} priority={index === 0} />
           ))}
         </PosterSlider>
       </div>

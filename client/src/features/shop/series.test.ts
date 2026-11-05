@@ -1,5 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { ctaLabel, glowColor, posterLayout, specIcon, swipeHint, trackEndPadding, withArticle } from "./series";
+import { ctaLabel, glowColor, posterLayout, posterStatus, specIcon, swipeHint, trackEndPadding, withArticle } from "./series";
+
+// Le mot sous une colonne grisée de l'affiche (règle de Mehdi du 05/11 : toute la série
+// reste visible, comme les cartes Neuf et Affaire barrées).
+describe("posterStatus", () => {
+  it("dit qu'un modèle sans fiche publiée n'est pas encore en vente", () => {
+    expect(posterStatus({ onSale: false, soldOut: true })).toBe("Pas encore en vente");
+  });
+
+  it("dit qu'un modèle en vente sans stock est épuisé", () => {
+    expect(posterStatus({ onSale: true, soldOut: true })).toBe("Épuisé");
+  });
+
+  it("ne dit rien d'un modèle qu'on peut acheter", () => {
+    expect(posterStatus({ onSale: true, soldOut: false })).toBeNull();
+  });
+});
 
 describe("withArticle", () => {
   it.each([

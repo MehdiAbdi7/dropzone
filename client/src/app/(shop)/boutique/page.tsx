@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Boutique" };
 
 // Étape 1 du parcours : les catégories. Une catégorie sans produit reste visible, barrée.
 export default async function ShopPage() {
-  const categories = await publicFetch<Category[]>("/categories", 300);
+  const categories = await publicFetch<Category[]>("/categories");
 
   return (
     <div className="container-page space-y-6 py-8">
