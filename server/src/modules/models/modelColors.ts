@@ -49,3 +49,21 @@ export async function addMissingModelColors(tx: Tx, deviceModelId: number, color
   });
   return updated.colors;
 }
+
+// La boutique compare les couleurs à l'identique (relecture du 05/11) : chaque exemplaire
+// du produit reprend l'orthographe du modèle (« noir » devient « Noir »). Renvoie le nombre
+// d'exemplaires réécrits. À appeler après addMissingModelColors, dans la même transaction.
+export async function alignVariantColors(tx: Tx, productId: number, colors: string[]): Promise<number> {
+  const variants = await tx.productVariant.findMany({ where: { productId }, select: { id: true, options: true } });
+  let aligned = 0;
+  for (const variant of variants) {
+    const options = variant.options as Record<string, string>;
+    const color = options.Couleur;
+    const spelled = color ? colors.find((known) => sameColor(known, color)) : undefined;
+    if (spelled && spelled !== color) {
+      await tx.productVariant.update({ where: { id: variant.id }, data: { options: { ...options, Couleur: spelled } } });
+      aligned += 1;
+    }
+  }
+  return aligned;
+}

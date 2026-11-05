@@ -172,3 +172,55 @@ describe("POST /admin/models/:id/variants", () => {
     expect(response.status).toBe(409);
   });
 });
+
+// Relecture du 05/11 : la boutique compare les couleurs à l'identique ; l'API doit donc
+// toujours écrire l'orthographe du modèle, et ne pas laisser retirer une couleur en stock.
+describe("L'orthographe des couleurs, et le retrait d'une couleur en stock", () => {
+  beforeEach(async () => {
+    await prisma.choice.createMany({
+      data: ["Titane naturel", "Titane bleu", "Titane noir"].map((label) => ({ group: "color" as const, label })),
+    });
+  });
+
+  const colorOf = async (sku: string) =>
+    ((await prisma.productVariant.findUniqueOrThrow({ where: { sku } })).options as Record<string, string>).Couleur;
+
+  it("écrit l'orthographe du modèle pour un exemplaire ajouté dans une couleur", async () => {
+    const response = await admin.post(`/admin/models/${catalog.iphone.id}/variants`).send(newUnit("titane bleu"));
+    expect(response.status).toBe(201);
+    expect(await colorOf("IP15P-256-N")).toBe("Titane bleu");
+  });
+
+  it("écrit l'orthographe du modèle dans le formulaire produit", async () => {
+    const product = await admin.get(`/admin/products/${catalog.phone.id}`);
+    const body = {
+      name: product.body.data.name,
+      description: product.body.data.description,
+      categoryId: catalog.phones.id,
+      deviceModelId: catalog.iphone.id,
+      brandId: catalog.iphoneBrand.id,
+      status: "published",
+      variants: [
+        { sku: "IP-NEW-256", options: { Stockage: "256 Go", Couleur: "TITANE NATUREL " }, price: 245000, stock: 3, warrantyMonths: 12 },
+      ],
+    };
+    expect((await admin.patch(`/admin/products/${catalog.phone.id}`).send(body)).status).toBe(200);
+    expect(await colorOf("IP-NEW-256")).toBe("Titane naturel");
+  });
+
+  it("refuse de retirer d'un modèle une couleur que portent encore des exemplaires", async () => {
+    const response = await admin.patch(`/admin/models/${catalog.iphone.id}`).send({ colors: ["Titane bleu", "Titane noir"] });
+    expect(response.status).toBe(409);
+    expect(response.body.error.message).toBe(
+      "La couleur « Titane naturel » est encore portée par 2 exemplaires : changez-les d'abord dans la fiche produit",
+    );
+  });
+
+  it("laisse retirer une couleur sans exemplaire", async () => {
+    await prisma.productVariant.update({ where: { sku: "IP-R-SOLD" }, data: { options: { Couleur: "Titane bleu" } } });
+    const response = await admin
+      .patch(`/admin/models/${catalog.iphone.id}`)
+      .send({ colors: ["Titane naturel", "Titane bleu"] });
+    expect(response.status).toBe(200);
+  });
+});

@@ -62,7 +62,9 @@ export async function fillVariantColors(db: Tx): Promise<FillReport> {
       const options = variant.options as Record<string, string>;
       const current = options.Couleur?.trim();
       const renamed = current ? RENAMES[key]?.[current] : undefined;
-      const next = !current ? first : (renamed ?? current);
+      const wanted = !current ? first : (renamed ?? current);
+      // L'orthographe du modèle : la boutique compare les couleurs à l'identique.
+      const next = model.colors.find((color) => sameColor(color, wanted)) ?? wanted;
       if (next !== options.Couleur) {
         await db.productVariant.update({
           where: { id: variant.id },

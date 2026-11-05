@@ -8,7 +8,7 @@ import { AppError } from "../../utils/AppError.js";
 import { refreshMinPrice } from "../products/product.service.js";
 import { uniqueSlug, withoutDealSheet } from "../products/productAdmin.service.js";
 import type { UnitBody } from "./modelColors.schema.js";
-import { addMissingModelColors, sameColor } from "./modelColors.js";
+import { addMissingModelColors, alignVariantColors, sameColor } from "./modelColors.js";
 
 const colorOf = (options: unknown) => (options as Record<string, string> | null)?.Couleur ?? "";
 
@@ -170,7 +170,8 @@ export async function addUnit(id: number, input: UnitBody) {
       data: { ...data, options: { ...data.options, Couleur: color }, productId },
       select: { id: true },
     });
-    await addMissingModelColors(tx, model.id, [color]);
+    const colors = await addMissingModelColors(tx, model.id, [color]);
+    await alignVariantColors(tx, productId, colors);
     await refreshMinPrice(tx, [productId]);
     return { productId, variantId: created.id };
   });

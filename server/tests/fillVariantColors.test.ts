@@ -78,3 +78,12 @@ describe("fillVariantColors", () => {
     expect(second).toMatchObject({ filled: 0, renamed: 0, appended: [] });
   });
 });
+
+describe("fillVariantColors, l'orthographe", () => {
+  it("remet l'orthographe du modèle sur une couleur écrite autrement", async () => {
+    await prisma.productVariant.update({ where: { sku: "IP-R-WIFI" }, data: { options: { Couleur: "titane BLEU" } } });
+    const report = await fillVariantColors(prisma);
+    expect(await colorOf("IP-R-WIFI")).toBe("Titane bleu");
+    expect(report.renamed).toBe(1);
+  });
+});

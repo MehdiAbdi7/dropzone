@@ -6,7 +6,7 @@ import { escapeLike } from "../../utils/escapeLike.js";
 import { paginate, paginationMeta } from "../../utils/pagination.js";
 import { slugify } from "../../utils/slugify.js";
 import type { AdminProductListQuery, ProductBody } from "./product.schema.js";
-import { addMissingModelColors, variantColors } from "../models/modelColors.js";
+import { addMissingModelColors, alignVariantColors, variantColors } from "../models/modelColors.js";
 import { DEVICE_KINDS, computeMinPrice, refreshMinPrice } from "./product.service.js";
 
 const MAX_IMAGES = 6;
@@ -218,7 +218,8 @@ export async function createProduct(input: ProductBody) {
     });
     // Une couleur que le modèle n'a pas encore devient une de ses couleurs (étape Couleur).
     if (rules.deviceModelId) {
-      await addMissingModelColors(tx, rules.deviceModelId, variantColors(rules.variants));
+      const colors = await addMissingModelColors(tx, rules.deviceModelId, variantColors(rules.variants));
+      await alignVariantColors(tx, product.id, colors);
     }
     return product;
   });
@@ -271,7 +272,8 @@ export async function updateProduct(id: number, input: ProductBody) {
     });
     await refreshMinPrice(tx, [id]);
     if (rules.deviceModelId) {
-      await addMissingModelColors(tx, rules.deviceModelId, variantColors(rules.variants));
+      const colors = await addMissingModelColors(tx, rules.deviceModelId, variantColors(rules.variants));
+      await alignVariantColors(tx, id, colors);
     }
     return { id };
   });

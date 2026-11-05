@@ -5,6 +5,7 @@ import { prisma } from "../../config/db.js";
 import { validate } from "../../middlewares/validate.js";
 import { AppError } from "../../utils/AppError.js";
 import { escapeLike } from "../../utils/escapeLike.js";
+import { sameColor } from "./modelColors.js";
 import { modelSlug } from "./modelSlug.js";
 
 // Les modèles d'appareils (« Apple iPhone 15 Pro Max ») proposés dans le formulaire produit.
@@ -95,6 +96,26 @@ async function patchModel(req: Request, res: Response) {
     const known = await prisma.choice.count({ where: { group: "color", label: { in: colors } } });
     if (known !== colors.length) {
       throw new AppError(400, "Choisissez des couleurs de la liste « Couleurs »");
+    }
+  }
+  // Étape Couleur (relecture du 05/11) : les couleurs du modèle rangent ses exemplaires dans
+  // la boutique. Retirer une couleur encore portée cacherait ces exemplaires : refusé.
+  if (colors) {
+    const removed = current.colors.filter((color) => !colors.some((kept) => sameColor(kept, color)));
+    if (removed.length > 0) {
+      const variants = await prisma.productVariant.findMany({
+        where: { product: { deviceModelId: Number(req.params.id) } },
+        select: { options: true },
+      });
+      for (const color of removed) {
+        const count = variants.filter((v) => sameColor((v.options as Record<string, string>).Couleur ?? "", color)).length;
+        if (count > 0) {
+          throw new AppError(
+            409,
+            `La couleur « ${color} » est encore portée par ${count} exemplaire${count > 1 ? "s" : ""} : changez-les d'abord dans la fiche produit`,
+          );
+        }
+      }
     }
   }
   const officialColors = colors ?? current.colors;
