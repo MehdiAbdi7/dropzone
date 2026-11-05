@@ -7,11 +7,12 @@ import type { ProductKind, Variant } from "@/types/api";
 type Selection = Record<string, string>;
 
 // Les clés d'options présentes dans les variantes, dans l'ordre de la sorte de produit ;
-// une clé inconnue de cet ordre passe après, par ordre alphabétique.
-export function optionKeys(variants: Variant[], kind: ProductKind): string[] {
+// une clé inconnue de cet ordre passe après, par ordre alphabétique. `exclude` : une clé déjà
+// choisie avant (la couleur, à l'étape Couleur), que la page ne redemande pas.
+export function optionKeys(variants: Variant[], kind: ProductKind, exclude?: string): string[] {
   const order = OPTION_ORDER_BY_KIND[kind];
   const rank = (key: string) => (order.includes(key) ? order.indexOf(key) : order.length);
-  const keys = [...new Set(variants.flatMap((variant) => Object.keys(variant.options)))];
+  const keys = [...new Set(variants.flatMap((variant) => Object.keys(variant.options)))].filter((key) => key !== exclude);
   return keys.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b, "fr"));
 }
 

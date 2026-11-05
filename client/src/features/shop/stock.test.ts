@@ -110,3 +110,10 @@ describe("conditionSummary", () => {
     });
   });
 });
+
+// L'étape Couleur (05/11) : la couleur est déjà choisie, la page Neuf ne la redemande pas.
+describe("optionKeys sans la couleur choisie", () => {
+  it("retire la clé exclue", () => {
+    expect(optionKeys(iphone18ProMax, "phone", "Couleur")).toEqual(["Stockage"]);
+  });
+});

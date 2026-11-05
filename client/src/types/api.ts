@@ -100,6 +100,8 @@ export type ProductDetail = {
   compatibleModels: ModelRef[];
   images: { id: number; url: string }[];
   variants: Variant[];
+  // Les couleurs du modèle, dans leur ordre, avec leur photo (étape Couleur) ; [] sans modèle.
+  colors: { name: string; photoUrl: string | null }[];
 };
 
 // ---------- Les affiches de séries ----------
