@@ -135,7 +135,7 @@ function CartRow({ line, gifts }: { line: CartLine; gifts: CartLine[] }) {
             <select
               className="input min-h-9 w-20 py-1"
               value={line.quantity}
-              onChange={(event) => dispatch(setQuantity({ sku: line.sku, quantity: Number(event.target.value) }))}
+              onChange={(event) => dispatch(setQuantity({ sku: line.sku, quantity: Number(event.target.value), max: line.maxQuantity }))}
             >
               {Array.from({ length: Math.max(line.maxQuantity, line.quantity) }, (_, index) => index + 1).map((value) => (
                 <option key={value} value={value}>

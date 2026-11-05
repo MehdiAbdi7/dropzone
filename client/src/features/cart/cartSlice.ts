@@ -32,10 +32,11 @@ const cartSlice = createSlice({
         state.items.push({ sku, quantity: Math.min(quantity, max) });
       }
     },
-    setQuantity(state, action: PayloadAction<{ sku: string; quantity: number }>) {
+    // `max` : le maximum de la ligne donné par l'aperçu du panier (le stock réel, 10 au plus).
+    setQuantity(state, action: PayloadAction<{ sku: string; quantity: number; max: number }>) {
       const line = state.items.find((item) => item.sku === action.payload.sku);
       if (line) {
-        line.quantity = Math.max(1, Math.min(action.payload.quantity, MAX_PER_LINE));
+        line.quantity = Math.max(1, Math.min(action.payload.quantity, action.payload.max, MAX_PER_LINE));
       }
     },
     removeItem(state, action: PayloadAction<string>) {

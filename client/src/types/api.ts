@@ -100,6 +100,8 @@ export type ProductDetail = {
   compatibleModels: ModelRef[];
   images: { id: number; url: string }[];
   variants: Variant[];
+  // La lueur choisie pour le modèle (affiche Neuf / Affaire sans couleur) ; null sans modèle.
+  posterColor: string | null;
   // Les couleurs du modèle, dans leur ordre, avec leur photo (étape Couleur) ; [] sans modèle.
   colors: { name: string; photoUrl: string | null }[];
 };

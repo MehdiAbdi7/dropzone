@@ -7,5 +7,5 @@ import type { ProductDetail } from "@/types/api";
 // saute alors l'étape Couleur, comme avant, au lieu de planter.
 export async function getProduct(slug: string): Promise<ProductDetail | null> {
   const product = await publicFetch<ProductDetail>(`/products/${encodeURIComponent(slug)}`);
-  return product ? { ...product, colors: product.colors ?? [] } : null;
+  return product ? { ...product, colors: product.colors ?? [], posterColor: product.posterColor ?? null } : null;
 }
