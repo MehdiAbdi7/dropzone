@@ -23,11 +23,14 @@ const bodySchema = z.object({
   kind: deviceKind,
   releaseYear,
 });
-// Corriger l'année, ou choisir la couleur de la lueur de l'affiche (null = automatique).
+// Corriger l'année, les couleurs officielles du modèle (pastilles de l'affiche), ou choisir
+// la lueur parmi elles (null = la première couleur officielle).
+const colorName = z.string().trim().min(1).max(40);
 const patchSchema = z
   .object({
     releaseYear: releaseYear.optional(),
-    posterColor: z.string().trim().min(1).max(40).nullable().optional(),
+    colors: z.array(colorName).max(20).optional(),
+    posterColor: colorName.nullable().optional(),
   })
   .refine((body) => Object.keys(body).length > 0, { error: "Rien à modifier" });
 const idSchema = z.object({ id: z.coerce.number().int().positive() });
@@ -73,19 +76,41 @@ async function postModel(req: Request, res: Response) {
   res.status(201).json({ data: model });
 }
 
-// Une année fausse rangerait mal le modèle. La lueur est une couleur de la liste
-// « Couleurs », pour rester d'accord avec les pastilles. Id inconnu : P2025 → 404.
+// Une année fausse rangerait mal le modèle. Les couleurs officielles sont des noms de la
+// liste « Couleurs » (leur teinte donne les pastilles), dans l'ordre donné, sans doublon.
+// La lueur est une de ces couleurs : en retirer la couleur fait revenir la lueur par défaut.
 async function patchModel(req: Request, res: Response) {
-  const { releaseYear, posterColor } = req.body as z.infer<typeof patchSchema>;
-  if (posterColor) {
-    const known = await prisma.choice.findUnique({ where: { group_label: { group: "color", label: posterColor } } });
-    if (!known) {
-      throw new AppError(400, "Choisissez une couleur de la liste « Couleurs »");
+  const body = req.body as z.infer<typeof patchSchema>;
+  const current = await prisma.deviceModel.findUnique({
+    where: { id: Number(req.params.id) },
+    select: { colors: true, posterColor: true },
+  });
+  if (!current) {
+    throw new AppError(404, "Modèle introuvable");
+  }
+
+  const colors = body.colors ? [...new Set(body.colors)] : undefined;
+  if (colors && colors.length > 0) {
+    const known = await prisma.choice.count({ where: { group: "color", label: { in: colors } } });
+    if (known !== colors.length) {
+      throw new AppError(400, "Choisissez des couleurs de la liste « Couleurs »");
     }
   }
+  const officialColors = colors ?? current.colors;
+  if (body.posterColor && !officialColors.includes(body.posterColor)) {
+    throw new AppError(400, "Choisissez la lueur parmi les couleurs du modèle");
+  }
+  // Sans nouvelle lueur, l'ancienne est gardée si elle reste une couleur du modèle.
+  const posterColor =
+    body.posterColor !== undefined
+      ? body.posterColor
+      : current.posterColor && !officialColors.includes(current.posterColor)
+        ? null
+        : undefined;
+
   const model = await prisma.deviceModel.update({
     where: { id: Number(req.params.id) },
-    data: { releaseYear, posterColor },
+    data: { releaseYear: body.releaseYear, colors, posterColor },
   });
   res.json({ data: model });
 }

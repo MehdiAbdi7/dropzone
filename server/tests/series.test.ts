@@ -130,11 +130,12 @@ describe("GET /series : les séries d'une marque", () => {
 
   it("cite aussi les modèles pas encore en vente, et garde la lueur de secours du premier en vente", async () => {
     await prisma.deviceModel.create({
-      data: { brand: "Apple", name: "iPhone 15 Plus", slug: "apple-iphone-15-plus", kind: "phone", releaseYear: 2023 },
+      data: { brand: "Apple", name: "iPhone 15 Plus", slug: "apple-iphone-15-plus", kind: "phone", releaseYear: 2023, colors: ["Jaune"] },
     });
     await fillSeries(prisma);
     await prisma.deviceModel.updateMany({ where: { name: "iPhone 15 Plus" }, data: { seriesPosition: 0 } });
-    await prisma.deviceModel.updateMany({ where: { name: "iPhone 15 Pro Max" }, data: { seriesPosition: 1, posterColor: "Noir" } });
+    // Sans lueur choisie, la première couleur officielle du Pro Max.
+    await prisma.deviceModel.updateMany({ where: { name: "iPhone 15 Pro Max" }, data: { seriesPosition: 1, colors: ["Noir", "Bleu"] } });
 
     const response = await request(app).get("/series?category=smartphones&brand=iphone");
     expect(response.body.data[0]).toMatchObject({
@@ -165,9 +166,12 @@ describe("GET /series : les séries d'une marque", () => {
 });
 
 describe("GET /series/:category/:brand/:serie : l'affiche", () => {
-  it("donne les modèles dans l'ordre, avec 4 caractéristiques, leurs couleurs et leurs prix", async () => {
-    const { product } = await addIphone15();
+  it("donne les modèles dans l'ordre, avec 4 caractéristiques, leurs couleurs officielles et leurs prix", async () => {
+    const { model, product } = await addIphone15();
     await fillSeries(prisma);
+    // Les couleurs de l'iPhone 15 dans le monde : Jaune et Bleu ne sont pas en boutique,
+    // Rose est épuisé, Vert n'est qu'une affaire. Toutes s'affichent, dans cet ordre.
+    await prisma.deviceModel.update({ where: { id: model.id }, data: { colors: ["Noir", "Bleu", "Vert", "Jaune", "Rose"] } });
 
     const response = await request(app).get("/series/smartphones/iphone/iphone-15");
     expect(response.status).toBe(200);
@@ -189,11 +193,7 @@ describe("GET /series/:category/:brand/:serie : l'affiche", () => {
         ["Appareil photo", "48 Mpx"],
         ["Batterie", "3 349 mAh"],
       ],
-      colors: [
-        { name: "Noir", inStock: true },
-        { name: "Rose", inStock: false },
-        { name: "Vert", inStock: true },
-      ],
+      colors: ["Noir", "Bleu", "Vert", "Jaune", "Rose"],
       newFrom: 165000,
       dealFrom: 120000,
       soldOut: false,
@@ -202,20 +202,32 @@ describe("GET /series/:category/:brand/:serie : l'affiche", () => {
     });
   });
 
-  it("prend la couleur d'affiche choisie par le gérant", async () => {
+  it("prend la lueur choisie par le gérant, même pour une couleur qui n'est pas en boutique", async () => {
     const { model } = await addIphone15();
     await fillSeries(prisma);
-    await prisma.deviceModel.update({ where: { id: model.id }, data: { posterColor: "Rose" } });
+    // Jaune : aucune variante jaune en boutique, mais c'est une couleur de l'iPhone 15.
+    await prisma.deviceModel.update({ where: { id: model.id }, data: { colors: ["Noir", "Jaune"], posterColor: "Jaune" } });
 
     const response = await request(app).get("/series/smartphones/iphone/iphone-15");
-    expect(response.body.data.models[1].posterColor).toBe("Rose");
+    expect(response.body.data.models[1].posterColor).toBe("Jaune");
+  });
+
+  it("remplace une lueur qui n'est plus une couleur du modèle par la première couleur officielle", async () => {
+    const { model } = await addIphone15();
+    await fillSeries(prisma);
+    await prisma.deviceModel.update({ where: { id: model.id }, data: { colors: ["Noir", "Jaune"], posterColor: "Bordeaux" } });
+
+    const response = await request(app).get("/series/smartphones/iphone/iphone-15");
+    expect(response.body.data.models[1].posterColor).toBe("Noir");
   });
 
   // Règle de Mehdi (05/11) : toute la série reste visible, comme les cartes Neuf et Affaire
   // barrées. Un modèle sans fiche publiée (aucune, ou un brouillon) est grisé, sans lien.
   it("montre aussi un modèle sans fiche publiée, à sa place dans l'ordre du Catalogue, grisé et sans prix", async () => {
+    // Le Plus a ses couleurs officielles : elles s'affichent même sans fiche, ce sont des
+    // faits du modèle, pas de la boutique.
     const plus = await prisma.deviceModel.create({
-      data: { brand: "Apple", name: "iPhone 15 Plus", slug: "apple-iphone-15-plus", kind: "phone", releaseYear: 2023 },
+      data: { brand: "Apple", name: "iPhone 15 Plus", slug: "apple-iphone-15-plus", kind: "phone", releaseYear: 2023, colors: ["Rose", "Jaune"] },
     });
     const { model: iphone15, product } = await addIphone15();
     await prisma.product.update({ where: { id: product.id }, data: { status: "draft" } });
@@ -241,7 +253,7 @@ describe("GET /series/:category/:brand/:serie : l'affiche", () => {
     };
     // Le brouillon ne montre rien de sa fiche : ni photo, ni prix, ni lien.
     expect(models[0]).toEqual({ name: "iPhone 15", ...notOnSale });
-    expect(models[1]).toEqual({ name: "iPhone 15 Plus", ...notOnSale });
+    expect(models[1]).toEqual({ name: "iPhone 15 Plus", ...notOnSale, colors: ["Rose", "Jaune"], posterColor: "Rose" });
     expect(models[2]).toMatchObject({ name: "iPhone 15 Pro Max", onSale: true, soldOut: false });
   });
 

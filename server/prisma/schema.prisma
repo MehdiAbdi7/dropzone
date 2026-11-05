@@ -134,6 +134,10 @@ model DeviceModel {
   seriesId           Int?        @map("series_id")
   series             Series?     @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   seriesPosition     Int         @default(0) @map("series_position")
+  // Les couleurs officielles du modèle, dans le monde (noms de la liste « Couleurs »),
+  // sans rapport avec le stock : les pastilles de l'affiche (décision de Mehdi du 05/11).
+  colors             String[]    @default([])
+  // La lueur choisie par le gérant, une de `colors` ; null = la première de `colors`.
   posterColor        String?     @map("poster_color")
   products           Product[]   @relation("ProductDeviceModel")
   compatibleProducts Product[]   @relation("ProductCompatibleModels")

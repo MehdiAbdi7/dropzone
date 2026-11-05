@@ -112,7 +112,7 @@ export async function catalogBrand(id: number) {
           coverUrl: true,
           models: {
             orderBy: [{ seriesPosition: "asc" }, { id: "asc" }],
-            select: { id: true, releaseYear: true, posterColor: true, products: MODEL_PRODUCTS },
+            select: { id: true, releaseYear: true, colors: true, posterColor: true, products: MODEL_PRODUCTS },
           },
         },
       },
@@ -141,7 +141,8 @@ export async function catalogBrand(id: number) {
           modelIds: models.map((model) => model.id),
           ...stockOf(products.flatMap((product) => product.variants)),
           fallbackImage: products.find((product) => product.images[0])?.images[0]?.url ?? null,
-          fallbackColor: first && firstProduct ? resolvePosterColor(first.posterColor, colorsOf(firstProduct.variants)) : null,
+          // La lueur de l'affiche de secours : celle du premier modèle (ses couleurs officielles).
+          fallbackColor: first && firstProduct ? resolvePosterColor(first.posterColor, first.colors) : null,
         },
       };
     })
@@ -172,7 +173,7 @@ export async function catalogSeries(id: number) {
       },
       models: {
         orderBy: [{ seriesPosition: "asc" }, { id: "asc" }],
-        select: { id: true, name: true, releaseYear: true, seriesPosition: true, posterColor: true, products: MODEL_PRODUCTS },
+        select: { id: true, name: true, releaseYear: true, seriesPosition: true, colors: true, posterColor: true, products: MODEL_PRODUCTS },
       },
     },
   });
@@ -192,10 +193,11 @@ export async function catalogSeries(id: number) {
     series: { id: series.id, name: series.name, slug: series.slug, coverUrl: series.coverUrl, brand: { id: series.brand.id, name: series.brand.name, slug: series.brand.slug, makerName }, category },
     models: series.models.map(({ products, ...model }) => {
       const product = products[0];
-      const colors = product ? colorsOf(product.variants) : [];
+      // Les couleurs du stock, seulement pour signaler une couleur épuisée au gérant ;
+      // `model.colors` (couleurs officielles, choix de la lueur) passe tel quel.
+      const stockColors = product ? colorsOf(product.variants) : [];
       return {
         ...model,
-        colors: colors.map((color) => color.name),
         product: product
           ? {
               id: product.id,
@@ -203,7 +205,7 @@ export async function catalogSeries(id: number) {
               status: product.status,
               image: product.images[0]?.url ?? null,
               ...stockOf(product.variants),
-              soldOutColors: colors.filter((color) => !color.inStock).map((color) => color.name),
+              soldOutColors: stockColors.filter((color) => !color.inStock).map((color) => color.name),
             }
           : null,
       };

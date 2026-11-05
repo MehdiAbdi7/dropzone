@@ -95,16 +95,41 @@ describe("Ranger les modèles d'une série", () => {
     expect((await prisma.deviceModel.findUniqueOrThrow({ where: { id: proMax.id } })).seriesPosition).toBe(0);
   });
 
-  it("change la couleur d'affiche d'un modèle, seulement pour une couleur de la liste", async () => {
-    await prisma.choice.create({ data: { group: "color", label: "Bordeaux" } });
+  // Décision de Mehdi du 05/11 : les couleurs d'un modèle sont ses couleurs officielles dans
+  // le monde, sans rapport avec le stock ; la lueur, c'est le gérant qui la choisit parmi elles.
+  it("enregistre les couleurs officielles d'un modèle, seulement des couleurs de la liste", async () => {
+    await prisma.choice.createMany({
+      data: [
+        { group: "color", label: "Argent", hex: "#d9d9de" },
+        { group: "color", label: "Orange cosmique", hex: "#f47d3c" },
+      ],
+    });
     const url = `/admin/models/${catalog.iphone.id}`;
 
-    const response = await admin.patch(url).send({ posterColor: "Bordeaux" });
+    const response = await admin.patch(url).send({ colors: ["Argent", "Orange cosmique", "Argent"] });
     expect(response.status).toBe(200);
-    expect(response.body.data.posterColor).toBe("Bordeaux");
+    // L'ordre donné est gardé (c'est celui des pastilles), le doublon retiré.
+    expect(response.body.data.colors).toEqual(["Argent", "Orange cosmique"]);
+    expect((await admin.patch(url).send({ colors: ["Couleur inventée"] })).status).toBe(400);
+  });
 
-    expect((await admin.patch(url).send({ posterColor: "Couleur inventée" })).status).toBe(400);
+  it("choisit la lueur parmi les couleurs officielles du modèle, et l'oublie si sa couleur est retirée", async () => {
+    await prisma.choice.createMany({
+      data: [
+        { group: "color", label: "Argent", hex: "#d9d9de" },
+        { group: "color", label: "Orange cosmique", hex: "#f47d3c" },
+        { group: "color", label: "Bordeaux", hex: "#6b1f2e" },
+      ],
+    });
+    await prisma.deviceModel.update({ where: { id: catalog.iphone.id }, data: { colors: ["Argent", "Orange cosmique"] } });
+    const url = `/admin/models/${catalog.iphone.id}`;
+
+    expect((await admin.patch(url).send({ posterColor: "Orange cosmique" })).body.data.posterColor).toBe("Orange cosmique");
+    // Bordeaux est dans la liste « Couleurs », mais ce modèle n'existe pas en bordeaux.
+    expect((await admin.patch(url).send({ posterColor: "Bordeaux" })).status).toBe(400);
     expect((await admin.patch(url).send({})).status).toBe(400);
+    // Retirer l'orange des couleurs du modèle fait revenir la lueur par défaut.
+    expect((await admin.patch(url).send({ colors: ["Argent"] })).body.data.posterColor).toBeNull();
     expect((await admin.patch(url).send({ posterColor: null })).body.data.posterColor).toBeNull();
   });
 });
@@ -164,6 +189,14 @@ describe("Les compteurs du Catalogue", () => {
     ]);
     // Ni le Galaxy (autre fabricant), ni le Pro Max (déjà rangé).
     expect(response.body.data.candidates).toEqual([{ id: plus.id, name: "iPhone 15 Plus", releaseYear: 2023 }]);
+  });
+
+  it("donne au Catalogue les couleurs officielles d'un modèle, pas celles du stock", async () => {
+    await fillSeries(prisma);
+    await prisma.deviceModel.update({ where: { id: catalog.iphone.id }, data: { colors: ["Titane naturel", "Titane bleu"] } });
+    const series = await prisma.series.findFirstOrThrow({ where: { slug: "iphone-15" } });
+    const response = await admin.get(`/admin/catalog/series/${series.id}`);
+    expect(response.body.data.models[0].colors).toEqual(["Titane naturel", "Titane bleu"]);
   });
 
   // Le 05/11, Mehdi voyait « Neuf scellé : 2 en stock » sur son iPhone 17 Pro sans savoir

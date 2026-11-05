@@ -23,10 +23,11 @@ export function colorsOf(variants: VariantLite[]): Color[] {
   return [...colors].map(([name, inStock]) => ({ name, inStock }));
 }
 
-// La couleur de la lueur : celle choisie par le gérant, sinon la première en stock,
-// sinon la première tout court (null : lueur neutre).
-export function resolvePosterColor(chosen: string | null, colors: Color[]): string | null {
-  return chosen ?? colors.find((color) => color.inStock)?.name ?? colors[0]?.name ?? null;
+// La couleur de la lueur : celle choisie par le gérant si c'est une couleur officielle du
+// modèle, sinon la première couleur officielle (null : lueur neutre). Le stock n'y est pour
+// rien (décision de Mehdi du 05/11 : avant, c'était la première couleur en stock).
+export function resolvePosterColor(chosen: string | null, officialColors: string[]): string | null {
+  return chosen && officialColors.includes(chosen) ? chosen : (officialColors[0] ?? null);
 }
 
 // Les caractéristiques les plus parlantes d'abord. JSONB ne garde pas l'ordre de saisie
@@ -83,6 +84,7 @@ const SERIES_SELECT = {
     select: {
       name: true,
       releaseYear: true,
+      colors: true,
       posterColor: true,
       products: {
         where: { status: "published" },
@@ -105,8 +107,12 @@ type SeriesRow = Prisma.SeriesGetPayload<{ select: typeof SERIES_SELECT }>;
 // sans produit publié (aucune fiche, ou un brouillon) reste à sa place, grisé et sans lien,
 // comme une carte Neuf ou Affaire barrée (règle de Mehdi du 05/11) : `onSale` vaut false,
 // et rien de la fiche ne sort (un brouillon peut avoir une photo ou un prix provisoires).
+// Les couleurs et la lueur sont des faits du modèle (ses couleurs officielles dans le monde,
+// la lueur choisie par le gérant), pas du stock : elles s'affichent dans les deux cas.
 function posterModels(series: SeriesRow) {
   return series.models.map((model) => {
+    const colors = model.colors;
+    const posterColor = resolvePosterColor(model.posterColor, colors);
     const product = model.products[0];
     if (!product) {
       return {
@@ -115,16 +121,15 @@ function posterModels(series: SeriesRow) {
         productSlug: null,
         image: null,
         specs: [] as [string, string][],
-        colors: [] as Color[],
+        colors,
         newFrom: null,
         dealFrom: null,
         soldOut: true,
         onSale: false,
-        posterColor: null,
+        posterColor,
         prices: [] as VariantLite[],
       };
     }
-    const colors = colorsOf(product.variants);
     const newFrom = lowestInStock(product.variants.filter((variant) => variant.condition === "new"));
     const dealFrom = lowestInStock(product.variants.filter((variant) => variant.condition === "refurbished"));
     return {
@@ -138,7 +143,7 @@ function posterModels(series: SeriesRow) {
       dealFrom,
       soldOut: newFrom === null && dealFrom === null,
       onSale: true,
-      posterColor: resolvePosterColor(model.posterColor, colors),
+      posterColor,
       prices: product.variants,
     };
   });
