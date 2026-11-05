@@ -56,6 +56,7 @@ async function getModels(_req: Request, res: Response) {
       slug: true,
       kind: true,
       releaseYear: true,
+      colors: true,
       _count: { select: { products: true, compatibleProducts: true } },
     },
   });

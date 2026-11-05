@@ -15,6 +15,8 @@ type Props = {
   kind: ProductKind;
   canBeRefurbished: boolean;
   giftOptions: GiftOption[];
+  // Les couleurs officielles du modèle choisi : proposées en premier pour l'option Couleur.
+  modelColors?: string[];
   onChange: (variant: VariantDraft) => void;
   onRemove: () => void;
   onSuggestSku: () => void;
@@ -29,6 +31,7 @@ export default function VariantEditor({
   kind,
   canBeRefurbished,
   giftOptions,
+  modelColors = [],
   onChange,
   onRemove,
   onSuggestSku,
@@ -75,6 +78,7 @@ export default function VariantEditor({
             key={field.key}
             group={field.group}
             label={field.key}
+            only={field.group === "color" ? modelColors : undefined}
             value={variant.options[field.key] ?? ""}
             onChange={(value) => set({ options: { ...variant.options, [field.key]: value } })}
           />

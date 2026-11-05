@@ -9,6 +9,9 @@ import { DEFAULT_HUE } from "../ColorHueChip";
 type Props = {
   group: ChoiceGroup;
   label: string;
+  // Les valeurs à proposer d'abord (les couleurs officielles du modèle) : les autres
+  // restent derrière « Voir toutes les valeurs ». Vide ou absent : toute la liste.
+  only?: string[];
 } & (
   | { multiple?: false; value: string; onChange: (value: string) => void }
   | { multiple: true; value: string[]; onChange: (value: string[]) => void }
@@ -26,11 +29,16 @@ export default function ChoicePicker(props: Props) {
   // Une nouvelle couleur arrive avec sa teinte (pastille de la boutique, lueur de l'affiche).
   const [hue, setHue] = useState(DEFAULT_HUE);
   const isColor = group === "color";
+  const [showAll, setShowAll] = useState(false);
 
   const selected = props.multiple ? props.value : props.value ? [props.value] : [];
   const labels = (choices?.[group] ?? []).map((choice) => choice.label);
   // Une valeur déjà sur la variante mais retirée de la liste reste visible.
   const all = [...labels, ...selected.filter((value) => !labels.includes(value))];
+  const only = props.only ?? [];
+  const shortList = only.length > 0 && !showAll;
+  // La liste courte : la sélection proposée, plus ce qui est déjà coché.
+  const shown = shortList ? [...only, ...selected.filter((value) => !only.includes(value))] : all;
 
   function toggle(value: string) {
     if (props.multiple) {
@@ -65,7 +73,7 @@ export default function ChoicePicker(props: Props) {
     <fieldset className="space-y-2">
       <legend className="label">{label}</legend>
       <div className="flex flex-wrap gap-2">
-        {all.map((value) => (
+        {shown.map((value) => (
           <button
             key={value}
             type="button"
@@ -76,6 +84,11 @@ export default function ChoicePicker(props: Props) {
             {value}
           </button>
         ))}
+        {only.length > 0 ? (
+          <button type="button" className="text-sm font-semibold text-blue-ink underline" onClick={() => setShowAll(!showAll)}>
+            {showAll ? "Seulement les couleurs du modèle" : `Voir toutes les valeurs (${all.length})`}
+          </button>
+        ) : null}
       </div>
       {/* Un vrai <form> imbriqué est interdit en HTML : on gère Entrée à la main. */}
       <div className="flex max-w-sm gap-2">

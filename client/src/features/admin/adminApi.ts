@@ -173,6 +173,8 @@ export type DeviceModel = {
   // L'année de sortie : la Boutique range les modèles du plus récent au plus ancien.
   releaseYear: number | null;
   usage: number;
+  // Les couleurs officielles du modèle (pastilles de l'affiche, choix de la Couleur d'une variante).
+  colors: string[];
 };
 
 // `hex` : la teinte d'une couleur (« #f47d3c »), null pour les autres listes et pour une
