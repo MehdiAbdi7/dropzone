@@ -62,14 +62,17 @@ export default function SeriesCard({
       <div className="series-media">{media}</div>
       {/* Le bouton reste sous le prix à toutes les tailles : à côté, il serrait les
           modèles sur plusieurs lignes et le bloc sortait par le haut de l'affiche. */}
-      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 p-4 md:p-5">
+      {/* Affiche « mini » sur téléphone (2 par ligne, choix de Mehdi du 05/11) : à 164 px
+          de large, les pastilles des modèles passaient une par ligne et le bloc montait
+          jusqu'à 82 px au-dessus de l'affiche. Sous 768 px : le prix et « Voir » seulement. */}
+      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 p-3 md:gap-3 md:p-5">
         <div className="min-w-0 space-y-2">
           {/* Le titre n'est plus affiché (la couverture porte déjà le nom), mais il
               reste pour les lecteurs d'écran : un titre par série dans la page. */}
           <h2 className="sr-only">{series.name}</h2>
           <ul
             aria-label="Modèles de la série"
-            className="flex flex-wrap gap-1.5"
+            className="hidden flex-wrap gap-1.5 md:flex"
           >
             {series.models.map((model) => (
               <li
@@ -93,7 +96,8 @@ export default function SeriesCard({
           <span className="badge badge-out self-start">Épuisé</span>
         ) : (
           <span className="series-cta w-full">
-            {ctaLabel(series.name)}
+            <span className="md:hidden">Voir</span>
+            <span className="hidden md:inline">{ctaLabel(series.name)}</span>
             <ArrowRightIcon size={16} />
           </span>
         )}
