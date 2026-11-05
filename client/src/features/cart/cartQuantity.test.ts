@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CartLine, CartPreview, Variant } from "@/types/api";
-import { cartBarSummary, clampQuantity, quantityLimit, showCartBar } from "./cartBar";
+import { cartBarSummary, clampQuantity, quantityLimit, showCartBar } from "./cartQuantity";
 
 const variant = (stock: number, condition: Variant["condition"] = "new") => ({ stock, condition }) as Variant;
 

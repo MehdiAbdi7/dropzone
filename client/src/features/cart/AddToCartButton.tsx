@@ -6,7 +6,7 @@ import { formatPrice } from "@/lib/format";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useHydrated } from "@/lib/useHydrated";
 import type { Variant } from "@/types/api";
-import { clampQuantity, quantityLimit } from "./cartBar";
+import { clampQuantity, quantityLimit } from "./cartQuantity";
 import { MAX_PER_LINE, addItem } from "./cartSlice";
 import QuantityStepper from "./QuantityStepper";
 
