@@ -31,7 +31,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       // ThemeScript peut changer data-theme avant React : on prévient React que
       // cet attribut peut différer du HTML du serveur.
       suppressHydrationWarning
-      className={`${manrope.variable} ${montserrat.variable} h-full`}
+      // scroll-pt-20 : un lien vers une section (#categories) s'arrête sous l'en-tête collant.
+      className={`${manrope.variable} ${montserrat.variable} h-full scroll-pt-20`}
     >
       <head>
         <ThemeScript />

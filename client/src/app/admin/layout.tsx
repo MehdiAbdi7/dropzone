@@ -22,7 +22,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
 
   return (
     <div className="flex flex-1 flex-col lg:flex-row">
-      <aside className="border-b border-line bg-surface lg:w-60 lg:shrink-0 lg:border-b-0 lg:border-r">
+      {/* Sur ordinateur, la barre latérale reste en place pendant le défilement (05/11) :
+          sticky sur toute la hauteur de l'écran, avec son propre défilement si besoin. */}
+      <aside className="border-b border-line bg-surface lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between gap-3 p-4 lg:block lg:space-y-1">
           <Logo href="/admin" size="text-xl" />
           <p className="text-xs text-ink-muted lg:mt-1">Back-office</p>

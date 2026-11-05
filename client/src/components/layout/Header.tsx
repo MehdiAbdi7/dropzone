@@ -14,7 +14,9 @@ import SearchToggle from "./SearchToggle";
 // le menu mobile sont des composants client.
 export default function Header() {
   return (
-    <header className="brand-dark relative z-30 border-b border-line">
+    // sticky : l'en-tête reste visible en haut pendant le défilement (demande de Mehdi du
+    // 05/11). Il reste positionné, donc le panneau de recherche se place toujours dessous.
+    <header className="brand-dark sticky top-0 z-30 border-b border-line">
       <div className="container-page flex min-h-16 items-center gap-2 py-2 lg:gap-6">
         <Logo />
 
