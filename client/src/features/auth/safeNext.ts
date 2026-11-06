@@ -22,5 +22,12 @@ export function safeNext(suite: string | undefined, isAdmin: boolean, origin: st
   if (url.origin !== origin) {
     return fallback;
   }
-  return url.pathname + url.search + url.hash;
+  // On contrôle aussi ce qu'on renvoie vraiment : new URL nettoie le chemin, et
+  // « /.//pirate.example », « /a/..//pirate.example » ou « /%2e//pirate.example »
+  // deviennent « //pirate.example », que le navigateur lirait comme un autre site.
+  const path = url.pathname + url.search + url.hash;
+  if (path.startsWith("//") || path.startsWith("/\\")) {
+    return fallback;
+  }
+  return path;
 }

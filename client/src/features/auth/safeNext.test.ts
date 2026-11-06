@@ -27,6 +27,10 @@ describe("safeNext", () => {
     ["une barre oblique inverse, lue comme / par le navigateur", "/\\pirate.example"],
     ["une tabulation, retirée par le navigateur", "/\t/pirate.example"],
     ["un script", "javascript:alert(1)"],
+    // new URL nettoie le chemin : ces trois-là deviennent « //pirate.example ».
+    ["un point qui disparaît au nettoyage", "/.//pirate.example"],
+    ["un dossier parent qui disparaît au nettoyage", "/a/..//pirate.example"],
+    ["un point encodé (%2e)", "/%2e//pirate.example"],
   ])("refuse %s", (_case, suite) => {
     expect(safeNext(suite, false, ORIGIN)).toBe("/compte");
   });
