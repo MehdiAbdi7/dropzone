@@ -584,15 +584,25 @@
     border: 1px solid rgb(255 255 255 / 0.4);
   }
 
-  /* La piste à glisser : un modèle par écran sur téléphone, le suivant qui dépasse à
-     droite, grisé tant qu'il n'est pas affiché. */
+  /* La piste à glisser (06/11 : le modèle affiché est toujours au centre). Un modèle par
+     écran sur téléphone, les voisins qui dépassent des deux côtés, grisés.
+     Les largeurs sont en cqw, des centièmes de la largeur du cadre (.poster-frame) : un %
+     dans la piste se calculerait sur sa largeur moins ses marges, et le compte ne
+     tomberait plus juste. --side : la marge de chaque côté qui permet de centrer le
+     premier modèle au départ et le dernier à la fin. */
+  .poster-frame {
+    container-type: inline-size;
+  }
   .poster-track {
+    --slide: 78cqw;
+    --gap: 12px;
+    --side: calc((100cqw - var(--slide)) / 2);
     position: relative;
     display: flex;
-    gap: 12px;
+    gap: var(--gap);
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    padding: 0 56px 4px 16px;
+    padding: 0 0 4px var(--side);
     scrollbar-width: none;
   }
   .poster-track::-webkit-scrollbar {
@@ -600,17 +610,18 @@
   }
   .poster-slide {
     flex: none;
-    width: 78%;
-    scroll-snap-align: start;
-    scroll-margin-left: 16px;
+    width: var(--slide);
+    scroll-snap-align: center;
     transition: opacity 0.3s;
   }
   .poster-slide:not([data-active]) {
     opacity: 0.45;
   }
-  /* L'espace vide après le dernier modèle, mesuré en JavaScript (PosterSlider). */
+  /* La marge de droite : un élément plutôt qu'un padding, que certains navigateurs
+     oublient au bout d'une piste qui défile. Le gap avant lui compte déjà. */
   .poster-spacer {
     flex: none;
+    width: max(0px, calc(var(--side) - var(--gap)));
   }
   .poster-single {
     width: 100%;
@@ -618,8 +629,8 @@
     margin-inline: auto;
   }
   @media (min-width: 768px) {
-    .poster-slide {
-      width: 30%;
+    .poster-track {
+      --slide: 30cqw;
     }
     .poster-slide:not([data-active]) {
       opacity: 1;

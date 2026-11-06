@@ -1,12 +1,14 @@
 "use client";
 
 import { Children, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { swipeHint, trackEndPadding } from "./series";
+import { swipeHint } from "./series";
 
 // Les modèles d'une affiche, qu'on fait glisser de gauche à droite sur téléphone (et sur
 // ordinateur à partir de 5 modèles). Pour qu'on ne rate pas qu'il y en a d'autres, six
-// indices : les noms en haut, le suivant qui dépasse, la flèche ronde, le texte « Glisse
+// indices : les noms en haut, les voisins qui dépassent, la flèche ronde, le texte « Glisse
 // pour voir… », une petite poussée à l'arrivée et le compteur.
+// Le modèle affiché est toujours au centre, du premier au dernier (06/11) : les marges de
+// chaque côté sont calculées en CSS (.poster-track dans globals.css), sans JavaScript.
 // Avec 4 modèles ou moins, l'ordinateur les montre en colonnes et cache les contrôles.
 export default function PosterSlider({
   names,
@@ -18,7 +20,6 @@ export default function PosterSlider({
   children: ReactNode;
 }) {
   const trackRef = useRef<HTMLUListElement>(null);
-  const spacerRef = useRef<HTMLLIElement>(null);
   const [index, setIndex] = useState(0);
   const items = Children.toArray(children);
   const count = items.length;
@@ -40,30 +41,6 @@ export default function PosterSlider({
     track.addEventListener("scroll", onScroll, { passive: true });
     return () => track.removeEventListener("scroll", onScroll);
   }, [count, many]);
-
-  // L'espace après le dernier modèle, pour que chaque modèle puisse se caler à gauche (et
-  // donc devenir l'actif, compteur « 5 / 5 » compris). Mesuré en pixels et posé sur le DOM :
-  // une marge en % rétrécirait les colonnes, dont la largeur dépend de celle de la piste.
-  useEffect(() => {
-    const track = trackRef.current;
-    const spacer = spacerRef.current;
-    const first = track?.children[0] as HTMLElement | undefined;
-    if (!track || !spacer || !first) {
-      return;
-    }
-    const measure = () => {
-      const style = getComputedStyle(track);
-      if (style.display !== "flex") {
-        return;
-      }
-      const room = trackEndPadding(track.clientWidth, first.offsetWidth, parseFloat(style.paddingLeft));
-      const gap = parseFloat(style.columnGap) || 0;
-      spacer.style.width = `${Math.max(0, room - gap - parseFloat(style.paddingRight))}px`;
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [count]);
 
   // À l'arrivée, la piste glisse un peu vers la gauche puis revient, deux fois : seulement
   // si on glisse vraiment à cette largeur, et jamais avec « réduire les animations ».
@@ -111,7 +88,7 @@ export default function PosterSlider({
         </div>
       ) : null}
 
-      <div className="relative">
+      <div className="poster-frame relative">
         <ul
           ref={trackRef}
           className={`poster-track ${layout === "columns" ? "poster-track-fit" : ""}`}
@@ -123,7 +100,7 @@ export default function PosterSlider({
               {item}
             </li>
           ))}
-          {many ? <li ref={spacerRef} aria-hidden="true" className="poster-spacer" /> : null}
+          {many ? <li aria-hidden="true" className="poster-spacer" /> : null}
         </ul>
 
         {many && index > 0 ? (
