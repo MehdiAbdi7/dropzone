@@ -23,7 +23,11 @@ export default function DeviceStage({
       {devices.map((device) => (
         // `object-bottom` : la photo se cale en bas de sa case carrée, donc l'objet pose sur
         // le socle au lieu de flotter (un ordinateur, plus large que haut, restait au milieu).
-        <div key={device.slot} className={`stage-item [&_img]:object-bottom ${device.position}`}>
+        // Une photo (adresse https) n'a pas la marge intérieure des dessins : elle la rapetissait.
+        <div
+          key={device.slot}
+          className={`stage-item [&_img]:object-bottom ${device.src.startsWith("http") ? "[&_img]:p-0" : ""} ${device.position}`}
+        >
           <ProductImage src={device.src} alt="" sizes="(min-width: 1024px) 320px, 45vw" />
         </div>
       ))}

@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { dealDevices, heroDevices, type StagePhotos } from "./stageLayout";
+import { dealDevices, heroDevices, stagePhoto, type StagePhotos } from "./stageLayout";
+
+// 06/11 : une photo détourée garde souvent du vide transparent autour de l'objet, qui le
+// rapetisse sur le socle. Cloudinary le coupe (`e_trim`) à l'affichage.
+describe("stagePhoto", () => {
+  it("coupe le vide transparent autour d'une photo Cloudinary", () => {
+    expect(stagePhoto("https://res.cloudinary.com/nscawk7d/image/upload/v1/dropzone/stage/a.webp")).toBe(
+      "https://res.cloudinary.com/nscawk7d/image/upload/e_trim/v1/dropzone/stage/a.webp",
+    );
+  });
+
+  it("laisse les dessins et les autres adresses tels quels", () => {
+    expect(stagePhoto("/products/phone.svg")).toBe("/products/phone.svg");
+    expect(stagePhoto("https://x/a.webp")).toBe("https://x/a.webp");
+  });
+});
 
 const empty: StagePhotos = {
   hero: { laptop: null, phone: null, tablet: null, accessory1: null, accessory2: null, accessory3: null, accessory4: null },
