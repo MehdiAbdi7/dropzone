@@ -6,7 +6,7 @@ import { errorMessage } from "@/lib/errors";
 import type { ProductKind } from "@/types/api";
 import { useCreateModelMutation, useModelsQuery, type DeviceModel } from "../adminApi";
 
-const MAX_SHOWN = 40;
+const MAX_SHOWN = 12;
 
 // Le choix du modèle d'appareil : une recherche dans la liste complète (iPhone,
 // Galaxy, Pixel, MacBook…), filtrée par la sorte de la catégorie, et un ajout
@@ -72,27 +72,35 @@ export default function ModelPicker({
           onChange={(event) => setSearch(event.target.value)}
         />
       </Field>
-      <div className="max-h-56 overflow-y-auto rounded-lg border border-line p-2">
-        <div className="flex flex-wrap gap-2">
-          {matches.slice(0, MAX_SHOWN).map((model) => (
-            <button
-              key={model.id}
-              type="button"
-              className="chip"
-              aria-pressed={model.id === value}
-              onClick={() => onChange(model)}
-            >
-              <span className="text-ink-muted">{model.brand}</span> {model.name}
-            </button>
-          ))}
+      {/* Rien tant qu'on ne tape pas (06/11) : la liste complète chargeait la fenêtre. */}
+      {words.length > 0 ? (
+        <div className="rounded-lg border border-line p-2">
+          <div className="flex flex-wrap gap-2">
+            {matches.slice(0, MAX_SHOWN).map((model) => (
+              <button
+                key={model.id}
+                type="button"
+                className="chip"
+                aria-pressed={model.id === value}
+                onClick={() => {
+                  onChange(model);
+                  setSearch("");
+                }}
+              >
+                <span className="text-ink-muted">{model.brand}</span> {model.name}
+              </button>
+            ))}
+          </div>
+          {matches.length > MAX_SHOWN ? (
+            <p className="mt-2 text-xs text-ink-muted">
+              {matches.length - MAX_SHOWN} autres modèles : précisez la recherche.
+            </p>
+          ) : null}
+          {matches.length === 0 ? <p className="text-sm text-ink-muted">Aucun modèle trouvé.</p> : null}
         </div>
-        {matches.length > MAX_SHOWN ? (
-          <p className="mt-2 text-xs text-ink-muted">
-            {matches.length - MAX_SHOWN} autres modèles : précisez la recherche.
-          </p>
-        ) : null}
-        {matches.length === 0 ? <p className="text-sm text-ink-muted">Aucun modèle trouvé.</p> : null}
-      </div>
+      ) : (
+        <p className="text-xs text-ink-muted">{ofKind.length} modèles : tapez quelques lettres pour les trouver.</p>
+      )}
 
       {adding ? (
         <div className="grid gap-3 rounded-lg border border-line p-3 sm:grid-cols-[1fr_2fr_7rem_auto] sm:items-end">
