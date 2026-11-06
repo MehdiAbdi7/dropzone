@@ -46,7 +46,8 @@ describe("La photo d'un emplacement", () => {
   it("range la photo envoyée, que la boutique lit ensuite", async () => {
     expect((await send("hero", "laptop")).status).toBe(200);
     const response = await request(app).get("/stage");
-    expect(response.body.data.hero.laptop).toBe("https://x/socle.webp");
+    // Sans place choisie : x, y, w et z à null, le front prend la place de départ.
+    expect(response.body.data.hero.laptop).toEqual({ url: "https://x/socle.webp", x: null, y: null, w: null, z: null });
   });
 
   it("remplace la photo d'un emplacement déjà rempli", async () => {
@@ -68,5 +69,38 @@ describe("La photo d'un emplacement", () => {
 
   it("est réservé à l'admin", async () => {
     expect((await request(app).delete("/admin/stage/hero/phone/photo")).status).toBe(401);
+    expect((await request(app).put("/admin/stage/hero/layout").send({ slots: [] })).status).toBe(401);
+  });
+});
+
+// Déplacer et redimensionner les photos à la souris ou au doigt (06/11).
+describe("PUT /admin/stage/:stage/layout", () => {
+  it("enregistre la place, la taille et l'ordre de chaque photo", async () => {
+    await send("hero", "phone");
+    await send("hero", "laptop");
+    const response = await admin.put("/admin/stage/hero/layout").send({
+      slots: [
+        { slot: "phone", x: 55.5, y: 12, w: 40, z: 3 },
+        { slot: "laptop", x: 10, y: 30, w: 70, z: 1 },
+      ],
+    });
+    expect(response.status).toBe(204);
+    const { hero } = (await request(app).get("/stage")).body.data;
+    expect(hero.phone).toMatchObject({ x: 55.5, y: 12, w: 40, z: 3 });
+    expect(hero.laptop).toMatchObject({ x: 10, y: 30, w: 70, z: 1 });
+  });
+
+  it("remet la place de départ avec des valeurs nulles", async () => {
+    await send("hero", "phone");
+    await admin.put("/admin/stage/hero/layout").send({ slots: [{ slot: "phone", x: 5, y: 5, w: 30, z: 2 }] });
+    await admin.put("/admin/stage/hero/layout").send({ slots: [{ slot: "phone", x: null, y: null, w: null, z: null }] });
+    expect((await request(app).get("/stage")).body.data.hero.phone).toMatchObject({ x: null, w: null });
+  });
+
+  it("ignore un emplacement sans photo, refuse un emplacement inconnu ou une taille hors bornes", async () => {
+    expect((await admin.put("/admin/stage/hero/layout").send({ slots: [{ slot: "tablet", x: 1, y: 1, w: 30, z: 1 }] })).status).toBe(204);
+    expect(await prisma.stageSlot.count()).toBe(0);
+    expect((await admin.put("/admin/stage/hero/layout").send({ slots: [{ slot: "left", x: 1, y: 1, w: 30, z: 1 }] })).status).toBe(400);
+    expect((await admin.put("/admin/stage/hero/layout").send({ slots: [{ slot: "phone", x: 1, y: 1, w: 500, z: 1 }] })).status).toBe(400);
   });
 });

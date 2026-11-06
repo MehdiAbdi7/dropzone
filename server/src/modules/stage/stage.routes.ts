@@ -2,8 +2,10 @@ import { Router } from "express";
 import type { Request } from "express";
 import { uploadImage } from "../../middlewares/upload.js";
 import { validate } from "../../middlewares/validate.js";
-import { stageParamsSchema } from "./stage.schema.js";
-import { removeStagePhoto, setStagePhoto, stagePhotos } from "./stage.service.js";
+import { AppError } from "../../utils/AppError.js";
+import { stageLayoutSchema, stageNameSchema, stageParamsSchema, unknownSlots, type StageLayout } from "./stage.schema.js";
+import type { StageName } from "./stage.slots.js";
+import { removeStagePhoto, setStageLayout, setStagePhoto, stagePhotos } from "./stage.service.js";
 
 const params = (req: Request) => [String(req.params.stage), String(req.params.slot)] as const;
 
@@ -22,3 +24,17 @@ stageAdminRouter.delete("/stage/:stage/:slot/photo", validate({ params: stagePar
   await removeStagePhoto(...params(req));
   res.status(204).end();
 });
+// La disposition réglée à la souris ou au doigt (06/11) : place, taille et ordre des photos.
+stageAdminRouter.put(
+  "/stage/:stage/layout",
+  validate({ params: stageNameSchema, body: stageLayoutSchema }),
+  async (req, res) => {
+    const stage = String(req.params.stage) as StageName;
+    const layout = req.body as StageLayout;
+    if (unknownSlots(stage, layout).length > 0) {
+      throw new AppError(400, "Emplacement inconnu pour ce socle");
+    }
+    await setStageLayout(stage, layout);
+    res.status(204).end();
+  },
+);

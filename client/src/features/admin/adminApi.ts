@@ -496,6 +496,14 @@ const adminApi = api.injectEndpoints({
       query: ({ stage, slot }) => ({ url: `/admin/stage/${stage}/${slot}/photo`, method: "DELETE" }),
       invalidatesTags: ["Stage"],
     }),
+    // La disposition réglée à la souris (06/11) ; des valeurs nulles remettent la place de départ.
+    saveStageLayout: build.mutation<
+      void,
+      { stage: string; slots: { slot: string; x: number | null; y: number | null; w: number | null; z: number | null }[] }
+    >({
+      query: ({ stage, slots }) => ({ url: `/admin/stage/${stage}/layout`, method: "PUT", body: { slots } }),
+      invalidatesTags: ["Stage"],
+    }),
     // Un exemplaire ajouté dans une couleur ; la fiche du modèle est créée si besoin.
     addUnit: build.mutation<{ productId: number; variantId: number }, { id: number; body: UnitBody }>({
       query: ({ id, body }) => ({ url: `/admin/models/${id}/variants`, method: "POST", body }),
@@ -574,6 +582,7 @@ export const {
   useStageQuery,
   useUploadStagePhotoMutation,
   useDeleteStagePhotoMutation,
+  useSaveStageLayoutMutation,
   useAddUnitMutation,
   useCatalogQuery,
   useCatalogCategoryQuery,

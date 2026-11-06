@@ -1,14 +1,32 @@
 "use client";
 
-import { useStageQuery, useUploadStagePhotoMutation, useDeleteStagePhotoMutation } from "@/features/admin/adminApi";
-import DeviceStage from "@/features/home/DeviceStage";
-import { DEAL_SLOTS, HERO_SLOTS, dealDevices, heroDevices, type StagePhotos } from "@/features/home/stageLayout";
 import ProductImage from "@/components/ui/ProductImage";
+import { useDeleteStagePhotoMutation, useStageQuery, useUploadStagePhotoMutation } from "@/features/admin/adminApi";
+import StageEditor from "@/features/admin/StageEditor";
+import {
+  DEAL_SLOTS,
+  HERO_SLOTS,
+  dealDevices,
+  heroDevices,
+  type StageDevice,
+  type StagePhotos,
+} from "@/features/home/stageLayout";
 import { errorMessage } from "@/lib/errors";
 
+const HERO_LABELS = Object.fromEntries(HERO_SLOTS.map(({ slot, label }) => [slot, label]));
+const DEAL_LABELS = Object.fromEntries(DEAL_SLOTS.map(({ slot, label }) => [slot, label]));
+
+// L'éditeur reçoit les photos (déplaçables) et les dessins restés à leur place.
+function split(devices: StageDevice[], filled: Record<string, unknown>) {
+  return {
+    devices: devices.filter((device) => filled[device.slot]),
+    fixed: devices.filter((device) => !filled[device.slot]),
+  };
+}
+
 // L'accueil de la boutique (06/11) : les photos des deux socles, le hero et le bandeau des
-// affaires. Chaque emplacement a sa place fixe ; le gérant y met la photo qu'il veut, déjà
-// sans fond (PNG ou WebP transparent), et voit tout de suite le socle comme dans la boutique.
+// affaires. Le gérant envoie une photo déjà sans fond (PNG ou WebP transparent) dans chaque
+// emplacement, puis la place à la souris ou au doigt sur l'aperçu, le même décor que la boutique.
 export default function StageAdminPage() {
   const { data: photos, isLoading, error } = useStageQuery();
 
@@ -24,9 +42,9 @@ export default function StageAdminPage() {
       <div className="space-y-1">
         <h1 className="text-3xl">Accueil de la boutique</h1>
         <p className="text-ink-muted">
-          Les photos posées sur les socles de l&apos;accueil. Envoie des photos déjà sans fond (PNG ou WebP transparent),
-          cadrées au plus près de l&apos;objet. Un emplacement vide n&apos;est pas affiché ; sans aucune photo, le hero
-          garde ses dessins.
+          Envoie une photo déjà sans fond (PNG ou WebP transparent) dans chaque emplacement, puis place-la sur le socle :
+          glisse-la avec la souris ou le doigt, tire le rond bleu du coin (ou le curseur) pour changer sa taille. Le vide
+          autour de l&apos;objet est coupé tout seul. Sans aucune photo, le hero garde ses dessins.
         </p>
       </div>
 
@@ -34,31 +52,43 @@ export default function StageAdminPage() {
         stage="hero"
         title="Le socle du hero"
         hint="Le haut de l'accueil : un ordinateur, un smartphone, une tablette et 4 accessoires."
-        preview={<DeviceStage id="admin-hero" devices={heroDevices(photos)} className="mx-auto w-full max-w-[460px]" />}
-        slots={HERO_SLOTS.map(({ slot, label }) => ({ slot, label, url: photos.hero[slot] }))}
+        editor={<HeroEditor photos={photos} />}
+        slots={HERO_SLOTS.map(({ slot, label }) => ({ slot, label, url: photos.hero[slot]?.url ?? null }))}
       />
       <StageSection
         stage="deal"
         title="Le socle du bandeau des affaires"
-        hint="Affiché seulement quand une affaire est en stock. Un emplacement vide garde son dessin."
-        preview={<DeviceStage id="admin-deals" devices={dealDevices(photos)} className="mx-auto w-full max-w-[380px]" />}
-        slots={DEAL_SLOTS.map(({ slot, label }) => ({ slot, label, url: photos.deal[slot] }))}
+        hint="Affiché seulement quand une affaire est en stock. Un emplacement vide garde son dessin (en transparence ici)."
+        editor={<DealEditor photos={photos} />}
+        slots={DEAL_SLOTS.map(({ slot, label }) => ({ slot, label, url: photos.deal[slot]?.url ?? null }))}
       />
     </div>
   );
+}
+
+// `key` : quand les photos ou leurs places enregistrées changent (envoi, « Tout remettre au
+// départ »), l'éditeur repart de ce que dit l'API.
+function HeroEditor({ photos }: { photos: StagePhotos }) {
+  const { devices, fixed } = split(heroDevices(photos), photos.hero);
+  return <StageEditor key={JSON.stringify(photos.hero)} stage="hero" devices={devices} fixed={fixed} labels={HERO_LABELS} />;
+}
+
+function DealEditor({ photos }: { photos: StagePhotos }) {
+  const { devices, fixed } = split(dealDevices(photos), photos.deal);
+  return <StageEditor key={JSON.stringify(photos.deal)} stage="deal" devices={devices} fixed={fixed} labels={DEAL_LABELS} />;
 }
 
 function StageSection({
   stage,
   title,
   hint,
-  preview,
+  editor,
   slots,
 }: {
   stage: keyof StagePhotos;
   title: string;
   hint: string;
-  preview: React.ReactNode;
+  editor: React.ReactNode;
   slots: { slot: string; label: string; url: string | null }[];
 }) {
   return (
@@ -70,8 +100,8 @@ function StageSection({
           </h2>
           <p className="text-sm text-ink-muted">{hint}</p>
         </div>
-        {/* L'aperçu : le même composant que la boutique, sur le fond sombre du hero. */}
-        <div className="brand-dark rounded-2xl p-4">{preview}</div>
+        {/* L'éditeur : le même décor que la boutique, sur le fond sombre du hero. */}
+        <div className="brand-dark rounded-2xl p-4">{editor}</div>
       </div>
       <ul className="grid content-start gap-3 sm:grid-cols-2">
         {slots.map((slot) => (

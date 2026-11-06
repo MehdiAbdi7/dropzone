@@ -365,6 +365,13 @@ model StageSlot {
   slot     String
   url      String
   publicId String? @map("public_id")
+  // La place choisie à la souris ou au doigt (06/11), en % du cadre du socle : `x` le bord
+  // gauche, `y` la hauteur du bas de la photo, `w` la largeur ; `z` l'ordre (devant/derrière).
+  // Null : la place de départ de l'emplacement (stageLayout.ts du front).
+  x        Float?
+  y        Float?
+  w        Float?
+  z        Int?
 
   @@unique([stage, slot])
   @@map("stage_slots")
