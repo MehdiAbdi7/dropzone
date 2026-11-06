@@ -7,21 +7,13 @@ import { z } from "zod";
 import Field from "@/components/ui/Field";
 import { errorMessage } from "@/lib/errors";
 import { useLoginMutation } from "./authApi";
+import { safeNext } from "./safeNext";
 
 const schema = z.object({
   email: z.email({ error: "Email invalide" }),
   password: z.string().min(1, { error: "Votre mot de passe" }),
 });
 type Values = z.infer<typeof schema>;
-
-// `suite` : la page demandée avant la redirection (posée par proxy.ts).
-// Seul un chemin interne est accepté, jamais une adresse d'un autre site.
-function safeNext(suite: string | undefined, isAdmin: boolean) {
-  if (suite && suite.startsWith("/") && !suite.startsWith("//")) {
-    return suite;
-  }
-  return isAdmin ? "/admin" : "/compte";
-}
 
 export default function LoginForm({ suite }: { suite?: string }) {
   const [login, { isLoading, error }] = useLoginMutation();
@@ -39,7 +31,8 @@ export default function LoginForm({ suite }: { suite?: string }) {
       // (proxy.ts), et router.push la rejouait : on restait sur la page de connexion.
       // Le cookie vient de changer : toute l'application se recharge avec lui (le panier
       // est gardé dans localStorage, il ne se perd pas).
-      window.location.assign(safeNext(suite, user.role === "admin"));
+      // `suite` est vérifié par safeNext.ts : jamais une adresse d'un autre site.
+      window.location.assign(safeNext(suite, user.role === "admin", window.location.origin));
     } catch {
       // Le message de l'API s'affiche sous le formulaire.
     }
