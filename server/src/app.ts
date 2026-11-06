@@ -17,6 +17,7 @@ import { productAdminRouter } from "./modules/products/productAdmin.routes.js";
 import { productRouter } from "./modules/products/product.routes.js";
 import { seriesRouter } from "./modules/series/series.routes.js";
 import { seriesAdminRouter } from "./modules/series/seriesAdmin.routes.js";
+import { stageAdminRouter, stageRouter } from "./modules/stage/stage.routes.js";
 import { statsAdminRouter } from "./modules/stats/stats.routes.js";
 import { userAdminRouter } from "./modules/users/user.routes.js";
 
@@ -38,6 +39,7 @@ app.use("/series", seriesRouter);
 app.use("/colors", colorRouter);
 app.use("/orders", orderRouter);
 app.use("/auth", authRouter);
+app.use("/stage", stageRouter);
 
 // Tout le back-office est protégé en une ligne : impossible d'oublier la
 // protection sur une nouvelle route admin.
@@ -53,6 +55,7 @@ adminRouter.use(
   choiceAdminRouter,
   orderAdminRouter,
   userAdminRouter,
+  stageAdminRouter,
 );
 app.use("/admin", requireAuth, requireRole("admin"), adminRouter);
 

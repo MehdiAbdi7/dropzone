@@ -17,10 +17,8 @@ import ScrollToHash from "@/components/ui/ScrollToHash";
 import { FREE_SHIPPING_FROM } from "@/config/shipping";
 import { STORE_INFO } from "@/config/storeInfo";
 import CategoryCards from "@/features/home/CategoryCards";
-import DeviceStage, {
-  DEAL_DEVICES,
-  HERO_DEVICES,
-} from "@/features/home/DeviceStage";
+import DeviceStage from "@/features/home/DeviceStage";
+import { dealDevices, heroDevices, type StagePhotos } from "@/features/home/stageLayout";
 import Guarantees, { type Guarantee } from "@/features/home/Guarantees";
 import { showcaseUnit } from "@/features/home/showcase";
 import ConditionReport from "@/features/products/ConditionReport";
@@ -99,7 +97,7 @@ const FAMILIES = [
 ];
 
 export default async function HomePage() {
-  const [latest, complete, refurbished, deals] = await Promise.all([
+  const [latest, complete, refurbished, deals, stage] = await Promise.all([
     publicFetchPage<ProductCard>("/products?limit=5"),
     // La vitrine : un smartphone dont une affaire dit sa note et sa batterie (les annonces
     // importées n'en disent souvent rien) ; à défaut, le plus récent qui a une affaire.
@@ -110,6 +108,8 @@ export default async function HomePage() {
       "/products?category=smartphones&condition=affaire&limit=1",
     ),
     publicFetchPage<ProductCard>("/products?condition=affaire&limit=1"),
+    // Les photos des deux socles, choisies dans le back-office (06/11) ; null : les dessins.
+    publicFetch<StagePhotos>("/stage"),
   ]);
 
   // Une vraie affaire du stock, montrée avec sa fiche d'état.
@@ -203,7 +203,7 @@ export default async function HomePage() {
           </div>
           <DeviceStage
             id="hero"
-            devices={HERO_DEVICES}
+            devices={heroDevices(stage)}
             className="mx-auto w-full max-w-[360px] sm:max-w-[460px] lg:max-w-[580px]"
           />
         </div>
@@ -282,7 +282,7 @@ export default async function HomePage() {
             </div>
             <DeviceStage
               id="deals"
-              devices={DEAL_DEVICES}
+              devices={dealDevices(stage)}
               className="mx-auto w-full max-w-[300px] md:max-w-[380px]"
             />
           </div>

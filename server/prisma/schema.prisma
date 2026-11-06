@@ -121,31 +121,31 @@ model Series {
 }
 
 model DeviceModel {
-  id                 Int         @id @default(autoincrement())
+  id                 Int               @id @default(autoincrement())
   brand              String
   name               String
-  slug               String      @unique
+  slug               String            @unique
   kind               ProductKind
   // L'année de sortie : la Boutique range les modèles du plus récent au plus ancien.
   // Facultative pour les modèles créés avant ; ceux sans année passent à la fin.
-  releaseYear        Int?        @map("release_year")
+  releaseYear        Int?              @map("release_year")
   // La série du modèle (null = sans série, invisible dans la Boutique), sa place dans
   // l'affiche et la couleur de sa lueur (un nom de la liste « Couleurs »).
-  seriesId           Int?        @map("series_id")
-  series             Series?     @relation(fields: [seriesId], references: [id], onDelete: SetNull)
-  seriesPosition     Int         @default(0) @map("series_position")
+  seriesId           Int?              @map("series_id")
+  series             Series?           @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  seriesPosition     Int               @default(0) @map("series_position")
   // Les couleurs officielles du modèle, dans le monde (noms de la liste « Couleurs »),
   // sans rapport avec le stock : les pastilles de l'affiche (décision de Mehdi du 05/11).
-  colors             String[]    @default([])
+  colors             String[]          @default([])
   // La lueur choisie par le gérant, une de `colors` ; null = la première de `colors`.
-  posterColor        String?     @map("poster_color")
+  posterColor        String?           @map("poster_color")
   // La photo de chaque couleur (étape Couleur de la Boutique) ; sans photo, l'icône.
   colorPhotos        ModelColorPhoto[]
   // Un produit au plus par modèle (index unique partiel écrit à la main dans la migration
   // 20261105150000_color_photos : Prisma ne sait pas le déclarer). Tableau gardé pour Prisma.
-  products           Product[]   @relation("ProductDeviceModel")
-  compatibleProducts Product[]   @relation("ProductCompatibleModels")
-  createdAt          DateTime    @default(now()) @map("created_at")
+  products           Product[]         @relation("ProductDeviceModel")
+  compatibleProducts Product[]         @relation("ProductCompatibleModels")
+  createdAt          DateTime          @default(now()) @map("created_at")
 
   @@unique([brand, name])
   @@index([kind])
@@ -353,4 +353,19 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
+}
+
+// Les photos du socle de l'accueil (06/11) : le hero (`hero`) et le bandeau des affaires
+// (`deal`) ont chacun leurs emplacements fixes (`slot`, liste dans stage.slots.ts). Le gérant y
+// envoie ses photos sans fond depuis le back-office (page Accueil) ; un emplacement sans ligne
+// garde l'illustration de départ.
+model StageSlot {
+  id       Int     @id @default(autoincrement())
+  stage    String
+  slot     String
+  url      String
+  publicId String? @map("public_id")
+
+  @@unique([stage, slot])
+  @@map("stage_slots")
 }

@@ -1,4 +1,5 @@
 import type { ChoiceGroup } from "@/config/catalog";
+import type { StagePhotos } from "@/features/home/stageLayout";
 import { api } from "@/lib/api";
 import type {
   Category,
@@ -477,6 +478,24 @@ const adminApi = api.injectEndpoints({
       query: ({ id, color }) => ({ url: `/admin/models/${id}/colors/${encodeURIComponent(color)}/photo`, method: "DELETE" }),
       invalidatesTags: ["Models"],
     }),
+    // Le socle de l'accueil (06/11) : la lecture est publique, l'envoi réservé à l'admin.
+    stage: build.query<StagePhotos, void>({
+      query: () => "/stage",
+      transformResponse: data<StagePhotos>,
+      providesTags: ["Stage"],
+    }),
+    uploadStagePhoto: build.mutation<unknown, { stage: string; slot: string; file: File }>({
+      query: ({ stage, slot, file }) => {
+        const form = new FormData();
+        form.append("image", file);
+        return { url: `/admin/stage/${stage}/${slot}/photo`, method: "POST", body: form };
+      },
+      invalidatesTags: ["Stage"],
+    }),
+    deleteStagePhoto: build.mutation<void, { stage: string; slot: string }>({
+      query: ({ stage, slot }) => ({ url: `/admin/stage/${stage}/${slot}/photo`, method: "DELETE" }),
+      invalidatesTags: ["Stage"],
+    }),
     // Un exemplaire ajouté dans une couleur ; la fiche du modèle est créée si besoin.
     addUnit: build.mutation<{ productId: number; variantId: number }, { id: number; body: UnitBody }>({
       query: ({ id, body }) => ({ url: `/admin/models/${id}/variants`, method: "POST", body }),
@@ -552,6 +571,9 @@ export const {
   useModelColorQuery,
   useUploadColorPhotoMutation,
   useDeleteColorPhotoMutation,
+  useStageQuery,
+  useUploadStagePhotoMutation,
+  useDeleteStagePhotoMutation,
   useAddUnitMutation,
   useCatalogQuery,
   useCatalogCategoryQuery,
