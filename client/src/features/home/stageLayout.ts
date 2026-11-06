@@ -15,10 +15,11 @@ export const HERO_SLOTS: { slot: keyof StagePhotos["hero"]; label: string; posit
   { slot: "laptop", label: "Ordinateur portable (au fond, au centre)", position: "left-[22%] bottom-[24%] w-[56%] z-0" },
   { slot: "tablet", label: "Tablette (à gauche)", position: "left-[5%] bottom-[18%] w-[34%] z-10" },
   { slot: "phone", label: "Smartphone (à droite)", position: "right-[6%] bottom-[17%] w-[30%] z-20" },
-  { slot: "accessory1", label: "Accessoire 1 (devant, à gauche)", position: "left-[10%] bottom-[2%] w-[18%] z-30" },
-  { slot: "accessory2", label: "Accessoire 2 (devant)", position: "left-[30%] bottom-[0%] w-[18%] z-30" },
-  { slot: "accessory3", label: "Accessoire 3 (devant)", position: "left-[52%] bottom-[0%] w-[18%] z-30" },
-  { slot: "accessory4", label: "Accessoire 4 (devant, à droite)", position: "left-[72%] bottom-[2%] w-[18%] z-30" },
+  // Le rang de devant suit la courbe du bord du socle : plus bas au centre qu'aux côtés.
+  { slot: "accessory1", label: "Accessoire 1 (devant, à gauche)", position: "left-[10%] bottom-[12%] w-[18%] z-30" },
+  { slot: "accessory2", label: "Accessoire 2 (devant)", position: "left-[30%] bottom-[8%] w-[18%] z-30" },
+  { slot: "accessory3", label: "Accessoire 3 (devant)", position: "left-[52%] bottom-[8%] w-[18%] z-30" },
+  { slot: "accessory4", label: "Accessoire 4 (devant, à droite)", position: "left-[72%] bottom-[12%] w-[18%] z-30" },
 ];
 
 // Les illustrations de départ du hero, gardées tant qu'aucune photo n'est envoyée : un socle

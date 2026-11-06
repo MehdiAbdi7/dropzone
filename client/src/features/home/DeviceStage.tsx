@@ -21,7 +21,9 @@ export default function DeviceStage({
       <div className="stage-halo" />
       <div className="stage-plinth" />
       {devices.map((device) => (
-        <div key={device.slot} className={`stage-item ${device.position}`}>
+        // `object-bottom` : la photo se cale en bas de sa case carrée, donc l'objet pose sur
+        // le socle au lieu de flotter (un ordinateur, plus large que haut, restait au milieu).
+        <div key={device.slot} className={`stage-item [&_img]:object-bottom ${device.position}`}>
           <ProductImage src={device.src} alt="" sizes="(min-width: 1024px) 320px, 45vw" />
         </div>
       ))}
