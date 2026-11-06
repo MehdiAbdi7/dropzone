@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { CONDITION_LABELS, DEVICE_KINDS } from "@/config/catalog";
+import { imageOf } from "@/features/shop/choiceColumns";
 import { colorHref, ofColor, productStep } from "@/features/shop/colors";
 import NewPicker from "@/features/shop/NewPicker";
 import ProductFacts from "@/features/shop/ProductFacts";
@@ -35,7 +36,8 @@ export default async function NewProductPage({ params, searchParams }: PageProps
     redirect(step.color ? colorHref(slug, step.color) : `/produits/${slug}`);
   }
   const palette = await getPalette();
-  const photo = step.color ? (product.colors.find((color) => color.name === step.color)?.photoUrl ?? null) : null;
+  // La photo de la couleur choisie (sinon l'icône), jamais celle d'une autre couleur.
+  const photo = step.color ? imageOf(product, step.color) : null;
 
   return (
     <div className="container-page py-8">

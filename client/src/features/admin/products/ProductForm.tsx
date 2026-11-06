@@ -404,6 +404,7 @@ export default function ProductForm({
             canBeRefurbished={isDevice}
             giftOptions={giftOptions}
             modelColors={models.find((model) => model.id === draft.deviceModelId)?.colors ?? []}
+            modelId={isDevice ? draft.deviceModelId : null}
             onChange={(next) => set({ variants: draft.variants.map((v) => (v.key === editedVariant.key ? next : v)) })}
             onRemove={() => {
               set({ variants: draft.variants.filter((v) => v.key !== editedVariant.key) });

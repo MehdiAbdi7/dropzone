@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/format";
 import type { ProductKind } from "@/types/api";
 import type { GiftOption } from "../adminApi";
 import ChoicePicker from "./ChoicePicker";
+import ColorPhotoField from "./ColorPhotoField";
 import { type PartOrigin, type VariantDraft, withCondition, withReplacedParts } from "./productDraft";
 
 type Props = {
@@ -17,6 +18,8 @@ type Props = {
   giftOptions: GiftOption[];
   // Les couleurs officielles du modèle choisi : proposées en premier pour l'option Couleur.
   modelColors?: string[];
+  // Le modèle choisi : la photo de la couleur de la variante s'envoie sous lui (06/11).
+  modelId?: number | null;
   // La couleur imposée (page d'une couleur du Catalogue) : affichée, pas modifiable.
   lockedColor?: string;
   onChange: (variant: VariantDraft) => void;
@@ -35,6 +38,7 @@ export default function VariantEditor({
   canBeRefurbished,
   giftOptions,
   modelColors = [],
+  modelId = null,
   lockedColor,
   onChange,
   onRemove,
@@ -98,6 +102,11 @@ export default function VariantEditor({
           ),
         )}
       </div>
+
+      {/* La photo de la couleur, dès qu'un modèle et une couleur sont choisis. */}
+      {modelId && (lockedColor ?? variant.options.Couleur) ? (
+        <ColorPhotoField modelId={modelId} color={lockedColor ?? variant.options.Couleur} />
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Field id={id("price")} label="Prix TTC (DA)">

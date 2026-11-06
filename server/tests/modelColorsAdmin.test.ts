@@ -1,8 +1,14 @@
 import request from "supertest";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app.js";
 import { prisma } from "../src/config/db.js";
 import { createCatalog, loginAs, resetDb } from "./helpers.js";
+
+// Cloudinary simulé : l'envoi rend une adresse sans quitter le PC.
+vi.mock("../src/config/cloudinary.js", () => ({
+  uploadToCloudinary: vi.fn(async () => ({ url: "https://x/envoyee.webp", publicId: "dropzone/colors/envoyee" })),
+  deleteFromCloudinary: vi.fn(async () => undefined),
+}));
 
 // Les pages Couleur du back-office (étape Couleur, 05/11) : Catalogue › modèle › couleur,
 // et l'ajout d'un exemplaire directement dans une couleur.
@@ -93,6 +99,27 @@ describe("La photo d'une couleur", () => {
   it("refuse un envoi sans image", async () => {
     const response = await admin.post(`/admin/models/${catalog.iphone.id}/colors/${encodeURIComponent("Titane bleu")}/photo`);
     expect(response.status).toBe(400);
+  });
+
+  it("range la photo sous la couleur du modèle", async () => {
+    const response = await admin
+      .post(`/admin/models/${catalog.iphone.id}/colors/${encodeURIComponent("titane bleu")}/photo`)
+      .attach("image", Buffer.from("fake"), { filename: "bleu.png", contentType: "image/png" });
+    expect(response.status).toBe(200);
+    const photo = await prisma.modelColorPhoto.findFirstOrThrow();
+    expect(photo).toMatchObject({ color: "Titane bleu", url: "https://x/envoyee.webp" });
+  });
+
+  // Depuis une variante du formulaire produit (06/11) : « j'ajoute un iPhone rose, je mets
+  // la photo de l'iPhone rose », avant même d'enregistrer la fiche.
+  it("ajoute au modèle une couleur qu'il n'avait pas encore", async () => {
+    const response = await admin
+      .post(`/admin/models/${catalog.iphone.id}/colors/${encodeURIComponent("Rose")}/photo`)
+      .attach("image", Buffer.from("fake"), { filename: "rose.png", contentType: "image/png" });
+    expect(response.status).toBe(200);
+    const model = await prisma.deviceModel.findUniqueOrThrow({ where: { id: catalog.iphone.id } });
+    expect(model.colors).toEqual(["Titane naturel", "Titane bleu", "Titane noir", "Rose"]);
+    expect(await prisma.modelColorPhoto.findFirstOrThrow()).toMatchObject({ color: "Rose" });
   });
 
   it("retire la photo d'une couleur", async () => {

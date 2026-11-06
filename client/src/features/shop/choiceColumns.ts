@@ -22,10 +22,12 @@ export type ChoiceColumnData = {
 
 const lowest = (prices: number[]) => (prices.length > 0 ? Math.min(...prices) : null);
 
-// La photo de la couleur, sinon celle du modèle, sinon l'icône de la catégorie.
-function imageOf(product: Pick<ProductDetail, "colors" | "images" | "category">, color: string | null): string {
-  const photo = color ? product.colors.find((item) => item.name === color)?.photoUrl : null;
-  return photo ?? product.images[0]?.url ?? kindIcon(product.category.kind);
+// Une couleur montre sa propre photo, sinon l'icône de la catégorie : la photo du modèle
+// mettait la même image sur toutes les couleurs (06/11). Sans couleur choisie, la photo du
+// produit.
+export function imageOf(product: Pick<ProductDetail, "colors" | "images" | "category">, color: string | null): string {
+  const photo = color ? product.colors.find((item) => item.name === color)?.photoUrl : product.images[0]?.url;
+  return photo ?? kindIcon(product.category.kind);
 }
 
 export function colorColumns(product: ProductDetail): ChoiceColumnData[] {

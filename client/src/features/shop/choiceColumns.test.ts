@@ -68,11 +68,17 @@ describe("colorColumns", () => {
     });
   });
 
-  it("prend la photo de la couleur, sinon celle du modèle, sinon l'icône", () => {
+  // 06/11 : la photo du modèle montrait la même image sur toutes les couleurs. Une couleur
+  // sans sa photo garde l'icône, le gérant envoie la sienne depuis la variante.
+  it("prend la photo de la couleur, sinon l'icône (jamais la photo du modèle)", () => {
     const [argent, orange] = colorColumns(product());
     expect(orange.image).toBe("https://x/orange.webp");
-    expect(argent.image).toBe("https://x/modele.webp");
-    expect(colorColumns(product({ images: [] }))[0].image).toBe("/products/phone.svg");
+    expect(argent.image).toBe("/products/phone.svg");
+  });
+
+  it("garde la photo du modèle à l'étape Neuf / Affaire d'un produit sans couleurs", () => {
+    expect(conditionColumns(product(), null)[0].image).toBe("https://x/modele.webp");
+    expect(conditionColumns(product(), "Argent")[0].image).toBe("/products/phone.svg");
   });
 });
 

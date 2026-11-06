@@ -101,7 +101,13 @@ export async function setColorPhoto(id: number, color: string, file: Express.Mul
     throw new AppError(400, "Choisissez une image");
   }
   const model = await findModel(id);
-  const name = knownColor(model, color);
+  // Envoyée depuis une variante du formulaire produit (06/11), la couleur peut être nouvelle
+  // pour le modèle : elle y entre, comme à l'enregistrement d'une variante.
+  const known = model.colors.find((name) => sameColor(name, color));
+  const name =
+    known ??
+    (await prisma.$transaction((tx) => addMissingModelColors(tx, id, [color]))).find((name) => sameColor(name, color)) ??
+    color.trim();
   const previous = photoOf(model, name);
   const uploaded = await uploadToCloudinary(file.buffer, "dropzone/colors");
   await prisma.modelColorPhoto.upsert({
