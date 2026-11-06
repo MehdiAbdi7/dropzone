@@ -14,6 +14,8 @@ import {
 
 // Les marques d'une catégorie, dans l'ordre des puces de la Boutique. L'API pose
 // toute seule le logo d'une marque connue (Simple Icons) ; sinon, on envoie le sien.
+// Dans une catégorie d'accessoires (06/11), les mêmes lignes de `brands` servent de types
+// (Coques, Chargeurs…) : la Boutique et le back-office les montrent sous ce nom.
 export default function BrandsEditor({ categoryId, isDevice }: { categoryId: number; isDevice: boolean }) {
   const { data: all = [] } = useBrandsQuery();
   const brands = all.filter((brand) => brand.categoryId === categoryId);
@@ -48,7 +50,7 @@ export default function BrandsEditor({ categoryId, isDevice }: { categoryId: num
 
   return (
     <div className="space-y-3 rounded-[10px] bg-surface-2 p-3">
-      <p className="text-sm font-semibold">Marques</p>
+      <p className="text-sm font-semibold">{isDevice ? "Marques" : "Types d'accessoires"}</p>
       {brands.length > 0 ? (
         <ul className="space-y-2">
           {brands.map((brand, index) => (
@@ -64,13 +66,18 @@ export default function BrandsEditor({ categoryId, isDevice }: { categoryId: num
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-ink-muted">Aucune marque pour l&apos;instant.</p>
+        <p className="text-sm text-ink-muted">{isDevice ? "Aucune marque" : "Aucun type"} pour l&apos;instant.</p>
       )}
 
       <form onSubmit={onCreate} className="flex flex-wrap items-end gap-2">
         <label className="min-w-40 flex-1">
-          <span className="label">Ajouter une marque</span>
-          <input className="input" value={name} placeholder="Realme" onChange={(event) => setName(event.target.value)} />
+          <span className="label">{isDevice ? "Ajouter une marque" : "Ajouter un type"}</span>
+          <input
+            className="input"
+            value={name}
+            placeholder={isDevice ? "Realme" : "Coques, Chargeurs, Écouteurs…"}
+            onChange={(event) => setName(event.target.value)}
+          />
         </label>
         {isDevice ? (
           <label className="min-w-40 flex-1">
@@ -120,7 +127,7 @@ function BrandRow({
           {brand.logoUrl ? <BrandLogo url={brand.logoUrl} size={18} /> : <span className="text-xs text-ink-muted">—</span>}
         </span>
         <label className="min-w-32 flex-1">
-          <span className="sr-only">Nom de la marque</span>
+          <span className="sr-only">{isDevice ? "Nom de la marque" : "Nom du type"}</span>
           <input className="input" value={name} onChange={(event) => setName(event.target.value)} />
         </label>
         {isDevice ? (
@@ -165,7 +172,15 @@ function BrandRow({
         </button>
         {/* Un <label> autour du champ fichier : le bouton ouvre le sélecteur, sans JavaScript en plus. */}
         <label className="btn btn-secondary btn-small cursor-pointer">
-          {uploadState.isLoading ? "Envoi…" : brand.logoUrl ? "Changer le logo" : "Envoyer un logo"}
+          {uploadState.isLoading
+            ? "Envoi…"
+            : isDevice
+              ? brand.logoUrl
+                ? "Changer le logo"
+                : "Envoyer un logo"
+              : brand.logoUrl
+                ? "Changer l'icône"
+                : "Envoyer une icône"}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"

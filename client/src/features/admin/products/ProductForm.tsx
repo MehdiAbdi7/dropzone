@@ -175,7 +175,11 @@ export default function ProductForm({
               {kind === "accessory" ? (
                 <SummaryLine label="Compatible avec" value={`${draft.compatibleModelIds.length} modèle(s)`} />
               ) : null}
-              <SummaryLine label="Marque" value={brandName ?? "Sans marque"} />
+              {kind === "accessory" ? (
+                <SummaryLine label="Type" value={brandName ?? "Sans type"} />
+              ) : (
+                <SummaryLine label="Marque" value={brandName ?? "Sans marque"} />
+              )}
             </dl>
           ) : (
             <p className="text-sm text-ink-muted">Choisis d&apos;abord une catégorie : elle décide du reste de la fiche.</p>
@@ -303,11 +307,12 @@ export default function ProductForm({
         ) : null}
         {kind ? (
           <fieldset className="space-y-2">
-            <legend className="label">Marque</legend>
+            {/* Pour un accessoire, la « marque » est son type (Coques, Chargeurs…, 06/11). */}
+            <legend className="label">{kind === "accessory" ? "Type d'accessoire" : "Marque"}</legend>
             {brands.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 <button type="button" className="chip" aria-pressed={draft.brandId === null} onClick={() => set({ brandId: null })}>
-                  Sans marque
+                  {kind === "accessory" ? "Sans type" : "Sans marque"}
                 </button>
                 {brands.map((brand) => (
                   <button
@@ -324,9 +329,12 @@ export default function ProductForm({
               </div>
             ) : (
               <p className="text-sm text-ink-muted">
-                Aucune marque dans cette catégorie.{" "}
-                <Link href="/admin/categories" className="font-semibold text-blue-ink underline">
-                  En ajouter dans Catégories
+                {kind === "accessory" ? "Aucun type dans cette catégorie." : "Aucune marque dans cette catégorie."}{" "}
+                <Link
+                  href={draft.categoryId ? `/admin/catalogue/${draft.categoryId}#marques` : "/admin/catalogue"}
+                  className="font-semibold text-blue-ink underline"
+                >
+                  En ajouter dans le Catalogue
                 </Link>
               </p>
             )}

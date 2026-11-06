@@ -56,7 +56,9 @@ function CategoryView({ data }: { data: AdminCatalogCategoryPage }) {
         <h1 className="text-3xl">{category.name}</h1>
         <p className="text-ink-muted">
           {KIND_LABELS[category.kind]}.{" "}
-          {isDevice ? "Choisis une marque pour voir ses séries." : "Les accessoires n'ont pas de séries."}
+          {isDevice
+            ? "Choisis une marque pour voir ses séries."
+            : "Choisis un type pour voir, créer, modifier ou supprimer ses accessoires. Les types se créent en bas de la page."}
         </p>
       </div>
 
@@ -64,7 +66,8 @@ function CategoryView({ data }: { data: AdminCatalogCategoryPage }) {
         {brands.map((brand) => (
           <li key={brand.id}>
             <CatalogTile
-              href={isDevice ? `/admin/catalogue/marques/${brand.id}` : undefined}
+              // Accessoires (06/11) : la page du type, avec ses produits.
+              href={isDevice ? `/admin/catalogue/marques/${brand.id}` : `/admin/catalogue/types/${brand.id}`}
               icon={<BrandLogo url={brand.logoUrl} size={28} />}
               title={brand.name}
               subtitle={
@@ -81,7 +84,7 @@ function CategoryView({ data }: { data: AdminCatalogCategoryPage }) {
 
       <section id="marques" aria-labelledby="brands-title" className="card scroll-mt-6 space-y-3 p-5">
         <h2 id="brands-title" className="text-xl">
-          Modifier les marques
+          {isDevice ? "Modifier les marques" : "Créer et modifier les types"}
         </h2>
         <BrandsEditor categoryId={category.id} isDevice={isDevice} />
       </section>

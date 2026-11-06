@@ -43,6 +43,8 @@ export const adminProductListQuerySchema = z.object({
   q: z.string().trim().min(1).max(100).optional(),
   status: z.enum(["draft", "published"]).optional(),
   category: slug.optional(),
+  // Les produits d'une marque, ou d'un type d'accessoires (page d'un type du Catalogue).
+  brand: z.coerce.number().int().positive().optional(),
   ...paginationQuery,
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });

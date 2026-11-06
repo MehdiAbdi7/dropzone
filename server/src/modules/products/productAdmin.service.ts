@@ -18,6 +18,7 @@ export async function listAdminProducts(query: AdminProductListQuery) {
   const where: Prisma.ProductWhereInput = {
     status: query.status,
     category: query.category ? { slug: query.category } : undefined,
+    brandId: query.brand,
     OR: contains
       ? [{ name: contains }, { variants: { some: { OR: [{ sku: contains }, { reference: contains }] } } }]
       : undefined,

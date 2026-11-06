@@ -259,6 +259,13 @@ describe("Produits", () => {
     const response = await admin.get("/admin/gift-options");
     expect(response.body.data.map((v: { sku: string }) => v.sku).sort()).toEqual(["CHG-20W", "COQ-IP15PM"]);
   });
+
+  // La page d'un type d'accessoires du Catalogue (06/11) : ses produits seulement.
+  it("liste les produits d'une marque ou d'un type d'accessoires (?brand=)", async () => {
+    const response = await admin.get(`/admin/products?brand=${catalog.ankerBrand.id}`);
+    expect(response.status).toBe(200);
+    expect(response.body.data.map((p: { name: string }) => p.name)).toEqual(["Chargeur USB-C 20 W"]);
+  });
 });
 
 describe("Modèles, listes et catégories", () => {

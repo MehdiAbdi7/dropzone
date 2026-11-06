@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
 
 // Une confirmation avant une action qui ne se défait pas (supprimer, annuler).
 // L'élément natif <dialog> gère seul le focus, la touche Échap et le fond.
@@ -18,6 +18,8 @@ export default function ConfirmDialog({
   onConfirm: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  // Un id par boîte : une liste peut en avoir plusieurs (un « Supprimer » par accessoire).
+  const titleId = useId();
 
   return (
     <>
@@ -26,10 +28,10 @@ export default function ConfirmDialog({
       </button>
       <dialog
         ref={dialog}
-        aria-labelledby="confirm-title"
+        aria-labelledby={titleId}
         className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-6 text-ink backdrop:bg-black/70"
       >
-        <h2 id="confirm-title" className="text-xl">
+        <h2 id={titleId} className="text-xl">
           {title}
         </h2>
         <div className="mt-3 text-ink-muted">{children}</div>

@@ -285,7 +285,11 @@ const adminApi = api.injectEndpoints({
     }),
 
     // Produits
-    adminProducts: build.query<Page<AdminProductRow>, { q?: string; status?: string; page: number }>({
+    // `brand` : les produits d'une marque ou d'un type d'accessoires (page d'un type, 06/11).
+    adminProducts: build.query<
+      Page<AdminProductRow>,
+      { q?: string; status?: string; brand?: number; limit?: number; page: number }
+    >({
       query: (params) => ({ url: "/admin/products", params }),
       providesTags: ["Products"],
     }),
@@ -349,7 +353,8 @@ const adminApi = api.injectEndpoints({
     brands: build.query<AdminBrand[], void>({
       query: () => "/admin/brands",
       transformResponse: data<AdminBrand[]>,
-      providesTags: ["Brands"],
+      // « Products » aussi : le nombre de produits de chaque marque ou type suit les ajouts.
+      providesTags: ["Brands", "Products"],
     }),
     createBrand: build.mutation<AdminBrand, { categoryId: number; name: string; makerName?: string | null }>({
       query: ({ categoryId, ...body }) => ({ url: `/admin/categories/${categoryId}/brands`, method: "POST", body }),

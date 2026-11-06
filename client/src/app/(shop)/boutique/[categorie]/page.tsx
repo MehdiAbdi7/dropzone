@@ -55,7 +55,8 @@ export default async function ShopCategoryPage({
       {/* Pas de « Tout voir » : la liste de tous les produits n'existe plus, on choisit une marque. */}
       <header className="space-y-1">
         <h1 className="text-3xl">{category.name}</h1>
-        <p className="text-ink-muted">Choisissez une marque.</p>
+        {/* Les accessoires se rangent par type (Coques, Chargeurs…, 06/11), les appareils par marque. */}
+        <p className="text-ink-muted">{unit === "modèle" ? "Choisissez une marque." : "Choisissez un type."}</p>
       </header>
 
       <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-5">
@@ -74,7 +75,7 @@ export default async function ShopCategoryPage({
             <ChoiceTile
               href={`/boutique/${category.slug}/autres`}
               label="Autres"
-              hint="Sans marque"
+              hint={unit === "modèle" ? "Sans marque" : "Sans type"}
             />
           </li>
         ) : null}
