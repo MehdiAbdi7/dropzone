@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Field from "@/components/ui/Field";
@@ -22,7 +21,6 @@ const schema = z.object({
 type Values = z.input<typeof schema>;
 
 export default function RegisterForm() {
-  const router = useRouter();
   const [registerUser, { isLoading, error }] = useRegisterMutation();
   const {
     register,
@@ -34,8 +32,11 @@ export default function RegisterForm() {
   async function onSubmit(values: Values) {
     try {
       await registerUser(schema.parse(values)).unwrap();
-      router.push("/compte");
-      router.refresh();
+      // Un vrai chargement de page, comme après la connexion (LoginForm.tsx) : router.push
+      // pourrait rejouer la réponse de /compte gardée d'avant, « va sur /connexion ».
+      // La règle ESLint conseille router.push : c'est justement lui qui posait problème.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign("/compte");
     } catch {
       // Affiché sous le formulaire (email déjà utilisé, champ refusé…).
     }
