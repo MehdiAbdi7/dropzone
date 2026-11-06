@@ -1,20 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import ProductImage from "@/components/ui/ProductImage";
 import { useDeleteStagePhotoMutation, useStageQuery, useUploadStagePhotoMutation } from "@/features/admin/adminApi";
 import StageEditor from "@/features/admin/StageEditor";
 import {
   DEAL_SLOTS,
   HERO_SLOTS,
+  MAX_EXTRA_SLOTS,
   dealDevices,
+  extraSlots,
   heroDevices,
+  nextExtraSlot,
+  slotLabel,
   type StageDevice,
+  type StagePhoto,
   type StagePhotos,
 } from "@/features/home/stageLayout";
 import { errorMessage } from "@/lib/errors";
-
-const HERO_LABELS = Object.fromEntries(HERO_SLOTS.map(({ slot, label }) => [slot, label]));
-const DEAL_LABELS = Object.fromEntries(DEAL_SLOTS.map(({ slot, label }) => [slot, label]));
 
 // L'éditeur reçoit les photos (déplaçables) et les dessins restés à leur place.
 function split(devices: StageDevice[], filled: Record<string, unknown>) {
@@ -26,7 +29,8 @@ function split(devices: StageDevice[], filled: Record<string, unknown>) {
 
 // L'accueil de la boutique (06/11) : les photos des deux socles, le hero et le bandeau des
 // affaires. Le gérant envoie une photo déjà sans fond (PNG ou WebP transparent) dans chaque
-// emplacement, puis la place à la souris ou au doigt sur l'aperçu, le même décor que la boutique.
+// emplacement, en ajoute d'autres s'il veut, puis les place à la souris ou au doigt sur
+// l'aperçu, le même décor que la boutique.
 export default function StageAdminPage() {
   const { data: photos, isLoading, error } = useStageQuery();
 
@@ -42,25 +46,28 @@ export default function StageAdminPage() {
       <div className="space-y-1">
         <h1 className="text-3xl">Accueil de la boutique</h1>
         <p className="text-ink-muted">
-          Envoie une photo déjà sans fond (PNG ou WebP transparent) dans chaque emplacement, puis place-la sur le socle :
-          glisse-la avec la souris ou le doigt, tire le rond bleu du coin (ou le curseur) pour changer sa taille. Le vide
-          autour de l&apos;objet est coupé tout seul. Sans aucune photo, le hero garde ses dessins.
+          Envoie une photo déjà sans fond (PNG ou WebP transparent) dans chaque emplacement, ajoute-en d&apos;autres si
+          tu veux, puis place-les sur le socle : glisse-les avec la souris ou le doigt, tire le rond bleu du coin (ou le
+          curseur) pour changer leur taille. Le vide autour de l&apos;objet est coupé tout seul. Sans aucune photo, le
+          hero garde ses dessins.
         </p>
       </div>
 
       <StageSection
         stage="hero"
         title="Le socle du hero"
-        hint="Le haut de l'accueil : un ordinateur, un smartphone, une tablette et 4 accessoires."
+        hint="Le haut de l'accueil : un ordinateur, un smartphone, une tablette, 4 accessoires, et ce que tu ajoutes."
         editor={<HeroEditor photos={photos} />}
-        slots={HERO_SLOTS.map(({ slot, label }) => ({ slot, label, url: photos.hero[slot]?.url ?? null }))}
+        named={HERO_SLOTS.map(({ slot }) => slot)}
+        photos={photos.hero}
       />
       <StageSection
         stage="deal"
         title="Le socle du bandeau des affaires"
-        hint="Affiché seulement quand une affaire est en stock. Un emplacement vide garde son dessin (en transparence ici)."
+        hint="Affiché seulement quand une affaire est en stock. Un emplacement nommé vide garde son dessin (en transparence ici)."
         editor={<DealEditor photos={photos} />}
-        slots={DEAL_SLOTS.map(({ slot, label }) => ({ slot, label, url: photos.deal[slot]?.url ?? null }))}
+        named={DEAL_SLOTS.map(({ slot }) => slot)}
+        photos={photos.deal}
       />
     </div>
   );
@@ -70,12 +77,12 @@ export default function StageAdminPage() {
 // départ »), l'éditeur repart de ce que dit l'API.
 function HeroEditor({ photos }: { photos: StagePhotos }) {
   const { devices, fixed } = split(heroDevices(photos), photos.hero);
-  return <StageEditor key={JSON.stringify(photos.hero)} stage="hero" devices={devices} fixed={fixed} labels={HERO_LABELS} />;
+  return <StageEditor key={JSON.stringify(photos.hero)} stage="hero" devices={devices} fixed={fixed} />;
 }
 
 function DealEditor({ photos }: { photos: StagePhotos }) {
   const { devices, fixed } = split(dealDevices(photos), photos.deal);
-  return <StageEditor key={JSON.stringify(photos.deal)} stage="deal" devices={devices} fixed={fixed} labels={DEAL_LABELS} />;
+  return <StageEditor key={JSON.stringify(photos.deal)} stage="deal" devices={devices} fixed={fixed} />;
 }
 
 function StageSection({
@@ -83,14 +90,29 @@ function StageSection({
   title,
   hint,
   editor,
-  slots,
+  named,
+  photos,
 }: {
   stage: keyof StagePhotos;
   title: string;
   hint: string;
   editor: React.ReactNode;
-  slots: { slot: string; label: string; url: string | null }[];
+  named: string[];
+  photos: Record<string, StagePhoto | null>;
 }) {
+  // Un emplacement en plus, créé par « Ajouter un emplacement » : une case vide jusqu'à
+  // l'envoi de sa photo (l'API ne garde que les emplacements qui ont une photo).
+  const [pending, setPending] = useState<string | null>(null);
+  const extras = extraSlots(photos);
+  // Sa photo envoyée, la case en attente devient un vrai emplacement : on l'oublie, sinon
+  // « Retirer » la ferait revenir vide. Mise à jour pendant le rendu, gardée par la condition.
+  if (pending && extras.includes(pending)) {
+    setPending(null);
+  }
+  const waiting = pending && !extras.includes(pending) ? pending : null;
+  const slots = [...named, ...extras, ...(waiting ? [waiting] : [])];
+  const full = extras.length >= MAX_EXTRA_SLOTS;
+
   return (
     <section aria-labelledby={`${stage}-title`} className="card grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <div className="space-y-3">
@@ -103,18 +125,56 @@ function StageSection({
         {/* L'éditeur : le même décor que la boutique, sur le fond sombre du hero. */}
         <div className="brand-dark rounded-2xl p-4">{editor}</div>
       </div>
-      <ul className="grid content-start gap-3 sm:grid-cols-2">
-        {slots.map((slot) => (
-          <li key={slot.slot}>
-            <SlotRow stage={stage} {...slot} />
-          </li>
-        ))}
-      </ul>
+      <div className="space-y-3">
+        <ul className="grid content-start gap-3 sm:grid-cols-2">
+          {slots.map((slot) => (
+            <li key={slot}>
+              <SlotRow
+                stage={stage}
+                slot={slot}
+                label={slotLabel(slot)}
+                url={photos[slot]?.url ?? null}
+                onCancel={slot === waiting ? () => setPending(null) : undefined}
+              />
+            </li>
+          ))}
+        </ul>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            className="btn btn-secondary btn-small"
+            disabled={full || Boolean(waiting)}
+            onClick={() => setPending(nextExtraSlot(photos))}
+          >
+            + Ajouter un emplacement
+          </button>
+          <span className="text-xs text-ink-muted">
+            {full
+              ? `${MAX_EXTRA_SLOTS} emplacements en plus au maximum.`
+              : waiting
+                ? "Envoie d'abord la photo de la nouvelle case."
+                : `${extras.length} en plus sur ${MAX_EXTRA_SLOTS}. « Retirer » supprime un emplacement en plus.`}
+          </span>
+        </div>
+      </div>
     </section>
   );
 }
 
-function SlotRow({ stage, slot, label, url }: { stage: string; slot: string; label: string; url: string | null }) {
+function SlotRow({
+  stage,
+  slot,
+  label,
+  url,
+  onCancel,
+}: {
+  stage: string;
+  slot: string;
+  label: string;
+  url: string | null;
+  // La case d'un emplacement en plus pas encore envoyé : « Annuler » la fait disparaître.
+  onCancel?: () => void;
+}) {
   const [upload, uploadState] = useUploadStagePhotoMutation();
   const [remove, removeState] = useDeleteStagePhotoMutation();
   const busy = uploadState.isLoading || removeState.isLoading;
@@ -152,6 +212,11 @@ function SlotRow({ stage, slot, label, url }: { stage: string; slot: string; lab
           {url ? (
             <button type="button" className="btn btn-outline btn-small" disabled={busy} onClick={() => remove({ stage, slot })}>
               Retirer
+            </button>
+          ) : null}
+          {onCancel ? (
+            <button type="button" className="btn btn-outline btn-small" disabled={busy} onClick={onCancel}>
+              Annuler
             </button>
           ) : null}
         </div>

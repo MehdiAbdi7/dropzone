@@ -1,7 +1,5 @@
 import { z } from "zod";
-import { STAGE_NAMES, STAGE_SLOTS } from "./stage.slots.js";
-
-const isSlotOf = (stage: (typeof STAGE_NAMES)[number], slot: string) => (STAGE_SLOTS[stage] as readonly string[]).includes(slot);
+import { STAGE_NAMES, isSlotOf } from "./stage.slots.js";
 
 // /admin/stage/:stage/:slot/photo : un socle connu et un de ses emplacements.
 export const stageParamsSchema = z

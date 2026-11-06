@@ -2,26 +2,34 @@ import { deleteFromCloudinary, uploadToCloudinary } from "../../config/cloudinar
 import { prisma } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
 import type { StageLayout } from "./stage.schema.js";
-import { STAGE_SLOTS, type StageName } from "./stage.slots.js";
+import { EXTRA_SLOT, MAX_EXTRA_SLOTS, STAGE_SLOTS, type StageName } from "./stage.slots.js";
 
 // Une photo et sa place (x, y, w, z en % du cadre ; null : la place de départ, 06/11).
 type StagePhoto = { url: string; x: number | null; y: number | null; w: number | null; z: number | null };
-type StagePhotos = { [Stage in StageName]: Record<(typeof STAGE_SLOTS)[Stage][number], StagePhoto | null> };
+type StagePhotos = Record<StageName, Record<string, StagePhoto | null>>;
 
-// Les photos des deux socles, chaque emplacement présent (null : vide, le front garde
-// l'illustration de départ).
+// Le numéro d'un emplacement en plus (« extra-12 » → 12), pour les ranger dans l'ordre.
+const extraNumber = (slot: string) => Number(slot.slice("extra-".length));
+
+// Les photos des deux socles : chaque emplacement nommé (null : vide, le front garde
+// l'illustration de départ), puis les emplacements en plus qui ont une photo, dans l'ordre.
 export async function stagePhotos(): Promise<StagePhotos> {
   const rows = await prisma.stageSlot.findMany({
     select: { stage: true, slot: true, url: true, x: true, y: true, w: true, z: true },
   });
-  const photosOf = (stage: StageName) =>
-    Object.fromEntries(
-      STAGE_SLOTS[stage].map((slot) => {
-        const row = rows.find((item) => item.stage === stage && item.slot === slot);
-        return [slot, row ? { url: row.url, x: row.x, y: row.y, w: row.w, z: row.z } : null];
-      }),
-    );
-  return { hero: photosOf("hero"), deal: photosOf("deal") } as StagePhotos;
+  const photo = (row: (typeof rows)[number]) => ({ url: row.url, x: row.x, y: row.y, w: row.w, z: row.z });
+  const photosOf = (stage: StageName) => {
+    const named = STAGE_SLOTS[stage].map((slot) => {
+      const row = rows.find((item) => item.stage === stage && item.slot === slot);
+      return [slot, row ? photo(row) : null] as const;
+    });
+    const extras = rows
+      .filter((row) => row.stage === stage && EXTRA_SLOT.test(row.slot))
+      .sort((a, b) => extraNumber(a.slot) - extraNumber(b.slot))
+      .map((row) => [row.slot, photo(row)] as const);
+    return Object.fromEntries([...named, ...extras]);
+  };
+  return { hero: photosOf("hero"), deal: photosOf("deal") };
 }
 
 // La disposition réglée dans l'éditeur du back-office, en une transaction. Un emplacement
@@ -39,6 +47,13 @@ export async function setStagePhoto(stage: string, slot: string, file: Express.M
     throw new AppError(400, "Choisissez une image");
   }
   const previous = await prisma.stageSlot.findUnique({ where: { stage_slot: { stage, slot } } });
+  // Un nouvel emplacement en plus : refusé au-delà de la limite (remplacer une photo reste permis).
+  if (!previous && EXTRA_SLOT.test(slot)) {
+    const extras = await prisma.stageSlot.findMany({ where: { stage }, select: { slot: true } });
+    if (extras.filter((row) => EXTRA_SLOT.test(row.slot)).length >= MAX_EXTRA_SLOTS) {
+      throw new AppError(409, `${MAX_EXTRA_SLOTS} emplacements en plus au maximum sur ce socle`);
+    }
+  }
   const uploaded = await uploadToCloudinary(file.buffer, "dropzone/stage");
   await prisma.stageSlot.upsert({
     where: { stage_slot: { stage, slot } },

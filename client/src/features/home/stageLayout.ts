@@ -12,9 +12,12 @@ export type Box = { x: number; y: number; w: number; z: number };
 // Ce que l'API renvoie pour une photo : null sur x, y, w ou z = la place de départ.
 export type StagePhoto = { url: string; x: number | null; y: number | null; w: number | null; z: number | null };
 
+// Les emplacements nommés de chaque socle, puis ceux en plus du gérant (« extra-1 »…, 06/11),
+// présents seulement quand ils ont une photo.
 export type StagePhotos = {
-  hero: Record<"laptop" | "phone" | "tablet" | "accessory1" | "accessory2" | "accessory3" | "accessory4", StagePhoto | null>;
-  deal: Record<"left" | "center" | "right", StagePhoto | null>;
+  hero: Record<"laptop" | "phone" | "tablet" | "accessory1" | "accessory2" | "accessory3" | "accessory4", StagePhoto | null> &
+    Record<string, StagePhoto | null>;
+  deal: Record<"left" | "center" | "right", StagePhoto | null> & Record<string, StagePhoto | null>;
 };
 
 export type StageDevice = { slot: string; src: string; box: Box };
@@ -58,20 +61,65 @@ function placeOf(photo: StagePhoto, start: Box): Box {
   return x !== null && y !== null && w !== null ? { x, y, w, z: z ?? start.z } : start;
 }
 
+// ---------- Les emplacements en plus (06/11) ----------
+
+const EXTRA_SLOT = /^extra-([1-9]\d?)$/;
+// La limite de l'API : 20 emplacements en plus par socle.
+export const MAX_EXTRA_SLOTS = 20;
+const extraNumber = (slot: string) => Number(EXTRA_SLOT.exec(slot)?.[1] ?? 0);
+
+// Les emplacements en plus qui ont une photo, dans l'ordre de leur numéro.
+export function extraSlots(photos: Record<string, StagePhoto | null>): string[] {
+  return Object.keys(photos)
+    .filter((slot) => EXTRA_SLOT.test(slot) && photos[slot])
+    .sort((a, b) => extraNumber(a) - extraNumber(b));
+}
+
+// La place de départ d'un emplacement en plus : devant, au milieu, décalée d'un numéro à
+// l'autre pour que deux photos ajoutées de suite ne s'empilent pas.
+export function extraBox(n: number): Box {
+  return { x: 10 + (((n - 1) * 17) % 60), y: 6 + (((n - 1) * 7) % 21), w: 24, z: 5 };
+}
+
+// Le premier numéro libre : « extra-2 » si extra-1 et extra-3 sont pris.
+export function nextExtraSlot(photos: Record<string, StagePhoto | null>): string {
+  const taken = new Set(extraSlots(photos).map(extraNumber));
+  let n = 1;
+  while (taken.has(n)) n += 1;
+  return `extra-${n}`;
+}
+
+const NAMED_LABELS: Record<string, string> = Object.fromEntries(
+  [...HERO_SLOTS, ...DEAL_SLOTS].map(({ slot, label }) => [slot, label]),
+);
+export function slotLabel(slot: string): string {
+  return EXTRA_SLOT.test(slot) ? `Article en plus ${extraNumber(slot)}` : (NAMED_LABELS[slot] ?? slot);
+}
+
+function extraDevices(photos: Record<string, StagePhoto | null>): StageDevice[] {
+  return extraSlots(photos).map((slot) => {
+    const photo = photos[slot]!;
+    return { slot, src: stagePhoto(photo.url), box: placeOf(photo, extraBox(extraNumber(slot))) };
+  });
+}
+
 export function heroDevices(photos: StagePhotos | null): StageDevice[] {
   const filled = HERO_SLOTS.flatMap(({ slot, box }) => {
     const photo = photos?.hero[slot];
     return photo ? [{ slot, src: stagePhoto(photo.url), box: placeOf(photo, box) }] : [];
   });
-  return filled.length > 0 ? filled : HERO_DEFAULT;
+  const all = [...filled, ...(photos ? extraDevices(photos.hero) : [])];
+  return all.length > 0 ? all : HERO_DEFAULT;
 }
 
-// Le bandeau des affaires : 3 emplacements, chacun garde son illustration tant qu'il est vide.
+// Le bandeau des affaires : 3 emplacements, chacun garde son illustration tant qu'il est vide,
+// puis ceux en plus.
 export function dealDevices(photos: StagePhotos | null): StageDevice[] {
-  return DEAL_SLOTS.map(({ slot, box, fallback }) => {
+  const named = DEAL_SLOTS.map(({ slot, box, fallback }) => {
     const photo = photos?.deal[slot];
     return photo ? { slot, src: stagePhoto(photo.url), box: placeOf(photo, box) } : { slot, src: fallback, box };
   });
+  return [...named, ...(photos ? extraDevices(photos.deal) : [])];
 }
 
 // ---------- L'éditeur du back-office ----------

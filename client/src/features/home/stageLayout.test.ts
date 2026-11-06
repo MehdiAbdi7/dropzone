@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   clampBox,
   dealDevices,
+  extraBox,
   HERO_SLOTS,
+  nextExtraSlot,
+  slotLabel,
   heroDevices,
   moveBox,
   reorder,
@@ -59,6 +62,34 @@ describe("heroDevices", () => {
   it("prend la place choisie par le gérant quand elle est enregistrée", () => {
     const devices = heroDevices({ ...empty, hero: { ...empty.hero, phone: photo("https://x/tel.webp", { x: 10, y: 20, w: 30, z: 9 }) } });
     expect(devices[0].box).toEqual({ x: 10, y: 20, w: 30, z: 9 });
+  });
+});
+
+// Les emplacements en plus (06/11) : « extra-1 », « extra-2 »… ajoutés par le gérant.
+describe("emplacements en plus", () => {
+  it("les ajoute après les emplacements nommés, dans l'ordre de leur numéro", () => {
+    const devices = heroDevices({
+      ...empty,
+      hero: { ...empty.hero, phone: photo("https://x/tel.webp"), "extra-10": photo("https://x/b.webp"), "extra-2": photo("https://x/a.webp") },
+    });
+    expect(devices.map((device) => device.slot)).toEqual(["phone", "extra-2", "extra-10"]);
+  });
+
+  it("donne à chacun une place de départ décalée, pour ne pas les empiler", () => {
+    expect(extraBox(1)).not.toEqual(extraBox(2));
+    expect(clampBox(extraBox(7))).toEqual(extraBox(7));
+  });
+
+  it("existe aussi dans le bandeau des affaires", () => {
+    const devices = dealDevices({ ...empty, deal: { ...empty.deal, "extra-1": photo("https://x/a.webp") } });
+    expect(devices.map((device) => device.slot)).toEqual(["left", "center", "right", "extra-1"]);
+  });
+
+  it("propose le premier numéro libre et un nom lisible", () => {
+    expect(nextExtraSlot({ ...empty.hero, "extra-1": photo("a"), "extra-3": photo("b") })).toBe("extra-2");
+    expect(nextExtraSlot(empty.hero)).toBe("extra-1");
+    expect(slotLabel("extra-4")).toBe("Article en plus 4");
+    expect(slotLabel("phone")).toBe("Smartphone");
   });
 });
 

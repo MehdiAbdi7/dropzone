@@ -2,7 +2,7 @@
 
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { StageDecor, StageItem, boxStyle } from "@/features/home/DeviceStage";
-import { clampBox, moveBox, reorder, resizeBox, type Box, type StageDevice } from "@/features/home/stageLayout";
+import { clampBox, moveBox, reorder, resizeBox, slotLabel, type Box, type StageDevice } from "@/features/home/stageLayout";
 import { errorMessage } from "@/lib/errors";
 import { useSaveStageLayoutMutation } from "./adminApi";
 
@@ -20,14 +20,12 @@ export default function StageEditor({
   stage,
   devices,
   fixed,
-  labels,
 }: {
   stage: "hero" | "deal";
-  // Les photos du gérant, déplaçables.
+  // Les photos du gérant, déplaçables (emplacements nommés et en plus).
   devices: StageDevice[];
   // Les dessins des emplacements vides (bandeau des affaires) : visibles, pas déplaçables.
   fixed: StageDevice[];
-  labels: Record<string, string>;
 }) {
   const frame = useRef<HTMLDivElement>(null);
   const initial = Object.fromEntries(devices.map((device) => [device.slot, device.box]));
@@ -115,7 +113,7 @@ export default function StageEditor({
             <button
               key={slot}
               type="button"
-              aria-label={`${labels[slot] ?? slot} : glisser pour déplacer, flèches du clavier, + et − pour la taille`}
+              aria-label={`${slotLabel(slot)} : glisser pour déplacer, flèches du clavier, + et − pour la taille`}
               aria-pressed={active}
               className={`stage-item cursor-grab rounded-lg outline-offset-2 [&_img]:pointer-events-none ${
                 active ? "outline-2 outline-dashed outline-blue" : "hover:outline-1 hover:outline-dashed hover:outline-white/50"
@@ -145,7 +143,7 @@ export default function StageEditor({
         <div className="space-y-3 rounded-xl bg-surface-2 p-3">
           {selected && current ? (
             <>
-              <p className="text-sm font-semibold">{labels[selected] ?? selected}</p>
+              <p className="text-sm font-semibold">{slotLabel(selected)}</p>
               <label className="flex items-center gap-3 text-sm">
                 <span className="shrink-0">Taille</span>
                 <input

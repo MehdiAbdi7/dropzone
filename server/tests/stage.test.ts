@@ -73,6 +73,42 @@ describe("La photo d'un emplacement", () => {
   });
 });
 
+// Des emplacements en plus des 7 + 3 nommés (06/11, demande de Mehdi) : `extra-1`, `extra-2`…
+describe("Les emplacements en plus", () => {
+  it("accepte une photo dans un emplacement en plus, que la boutique lit avec les autres", async () => {
+    expect((await send("hero", "extra-1")).status).toBe(200);
+    expect((await send("deal", "extra-12")).status).toBe(200);
+    const { data } = (await request(app).get("/stage")).body;
+    expect(data.hero["extra-1"]).toMatchObject({ url: "https://x/socle.webp" });
+    expect(data.deal["extra-12"]).toMatchObject({ url: "https://x/socle.webp" });
+    // Un emplacement en plus sans photo n'existe pas : il n'est pas listé.
+    expect(data.hero["extra-2"]).toBeUndefined();
+  });
+
+  it("refuse un nom d'emplacement mal formé", async () => {
+    expect((await send("hero", "extra-0")).status).toBe(400);
+    expect((await send("hero", "extra-abc")).status).toBe(400);
+    expect((await send("hero", "extra-100")).status).toBe(400);
+  });
+
+  it("limite à 20 emplacements en plus par socle", async () => {
+    await prisma.stageSlot.createMany({
+      data: Array.from({ length: 20 }, (_, i) => ({ stage: "hero", slot: `extra-${i + 1}`, url: "https://x/a.webp" })),
+    });
+    expect((await send("hero", "extra-21")).status).toBe(409);
+    // Remplacer la photo d'un emplacement qui existe reste possible.
+    expect((await send("hero", "extra-3")).status).toBe(200);
+  });
+
+  it("se place comme les autres, et disparaît quand on retire sa photo", async () => {
+    await send("hero", "extra-1");
+    expect((await admin.put("/admin/stage/hero/layout").send({ slots: [{ slot: "extra-1", x: 1, y: 2, w: 20, z: 5 }] })).status).toBe(204);
+    expect((await request(app).get("/stage")).body.data.hero["extra-1"]).toMatchObject({ x: 1, w: 20 });
+    await admin.delete("/admin/stage/hero/extra-1/photo");
+    expect((await request(app).get("/stage")).body.data.hero["extra-1"]).toBeUndefined();
+  });
+});
+
 // Déplacer et redimensionner les photos à la souris ou au doigt (06/11).
 describe("PUT /admin/stage/:stage/layout", () => {
   it("enregistre la place, la taille et l'ordre de chaque photo", async () => {
