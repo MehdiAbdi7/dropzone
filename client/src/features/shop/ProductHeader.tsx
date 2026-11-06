@@ -9,7 +9,11 @@ import { colorHref } from "./colors";
 // la marque et le nom à droite, puis le contenu de l'étape (`children`).
 // Le fil d'Ariane d'un produit, partagé avec l'affiche de choix (05/11) :
 // Boutique › Smartphones › iPhone › iPhone 18 › iPhone 18 Pro › Glacier › Neuf scellé.
-export function productCrumbs(product: ProductDetail, color: string | null, step?: string): Crumb[] {
+export function productCrumbs(
+  product: ProductDetail,
+  color: string | null,
+  step?: string,
+): Crumb[] {
   const category = `/boutique/${product.category.slug}`;
   return [
     { label: "Boutique", href: "/boutique" },
@@ -19,11 +23,24 @@ export function productCrumbs(product: ProductDetail, color: string | null, step
       : { label: "Autres", href: `${category}/autres` },
     // La série, entre la marque et le modèle : Boutique › Smartphones › iPhone › iPhone 18 › …
     ...(product.brand && product.series
-      ? [{ label: product.series.name, href: `${category}/${product.brand.slug}/${product.series.slug}` }]
+      ? [
+          {
+            label: product.series.name,
+            href: `${category}/${product.brand.slug}/${product.series.slug}`,
+          },
+        ]
       : []),
-    color || step ? { label: product.name, href: `/produits/${product.slug}` } : { label: product.name },
+    color || step
+      ? { label: product.name, href: `/produits/${product.slug}` }
+      : { label: product.name },
     // Sur l'étape Neuf ou Affaire, la couleur ramène au choix Neuf / Affaire de cette couleur.
-    ...(color ? [step ? { label: color, href: colorHref(product.slug, color) } : { label: color }] : []),
+    ...(color
+      ? [
+          step
+            ? { label: color, href: colorHref(product.slug, color) }
+            : { label: color },
+        ]
+      : []),
     ...(step ? [{ label: step }] : []),
   ];
 }
@@ -52,18 +69,31 @@ export default function ProductHeader({
       <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         {/* Sur téléphone, une photo plus petite : les choix arrivent plus vite à l'écran. */}
         <div className="mx-auto w-full max-w-72 sm:max-w-sm lg:sticky lg:top-6 lg:max-w-none lg:self-start">
-          <div className="card relative aspect-square overflow-hidden bg-surface-2">
-            <ProductImage src={image ?? product.images[0]?.url ?? null} alt={color ? `${product.name}, ${color}` : product.name} sizes="(min-width: 1024px) 480px, 100vw" priority />
+          <div className="card relative aspect-square overflow-hidden bg-surface">
+            {/* La photo dans une boîte plus petite que le cadre : inset-[12%] laisse 12 % de vide
+      de chaque côté. Plus le nombre est grand, plus la photo est petite. */}
+            <div className="absolute inset-[8%] sm:inset-[16%]">
+              <ProductImage
+                src={image ?? product.images[0]?.url ?? null}
+                alt={color ? `${product.name}, ${color}` : product.name}
+                sizes="(min-width: 1024px) 480px, 100vw"
+                priority
+              />
+            </div>
           </div>
         </div>
         <div className="min-w-0 space-y-6">
           <header className="space-y-2">
             {product.deviceModel || product.brand ? (
-              <p className="text-sm font-semibold text-ink-muted">{product.deviceModel?.brand ?? product.brand?.name}</p>
+              <p className="text-sm font-semibold text-ink-muted">
+                {product.deviceModel?.brand ?? product.brand?.name}
+              </p>
             ) : null}
             <h1 className="text-3xl sm:text-4xl">
               {product.name}
-              {title ? <span className="text-ink-muted"> · {title}</span> : null}
+              {title ? (
+                <span className="text-ink-muted"> · {title}</span>
+              ) : null}
             </h1>
           </header>
           {children}
