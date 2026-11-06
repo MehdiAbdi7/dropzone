@@ -186,6 +186,12 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+    /* Sauf la roue de chargement (06/11) : elle tourne plus lentement, c'est le seul signe
+       que la page attend. Ici, dans la même couche : un !important d'une couche suivante
+       (components) ne passerait pas devant celui-ci. */
+    .spinner {
+      animation-duration: 2.4s !important;
+    }
   }
 }
 
@@ -584,15 +590,25 @@
     border: 1px solid rgb(255 255 255 / 0.4);
   }
 
-  /* La piste à glisser : un modèle par écran sur téléphone, le suivant qui dépasse à
-     droite, grisé tant qu'il n'est pas affiché. */
+  /* La piste à glisser (06/11 : le modèle affiché est toujours au centre). Un modèle par
+     écran sur téléphone, les voisins qui dépassent des deux côtés, grisés.
+     Les largeurs sont en cqw, des centièmes de la largeur du cadre (.poster-frame) : un %
+     dans la piste se calculerait sur sa largeur moins ses marges, et le compte ne
+     tomberait plus juste. --side : la marge de chaque côté qui permet de centrer le
+     premier modèle au départ et le dernier à la fin. */
+  .poster-frame {
+    container-type: inline-size;
+  }
   .poster-track {
+    --slide: 78cqw;
+    --gap: 12px;
+    --side: calc((100cqw - var(--slide)) / 2);
     position: relative;
     display: flex;
-    gap: 12px;
+    gap: var(--gap);
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    padding: 0 56px 4px 16px;
+    padding: 0 0 4px var(--side);
     scrollbar-width: none;
   }
   .poster-track::-webkit-scrollbar {
@@ -600,17 +616,18 @@
   }
   .poster-slide {
     flex: none;
-    width: 78%;
-    scroll-snap-align: start;
-    scroll-margin-left: 16px;
+    width: var(--slide);
+    scroll-snap-align: center;
     transition: opacity 0.3s;
   }
   .poster-slide:not([data-active]) {
     opacity: 0.45;
   }
-  /* L'espace vide après le dernier modèle, mesuré en JavaScript (PosterSlider). */
+  /* La marge de droite : un élément plutôt qu'un padding, que certains navigateurs
+     oublient au bout d'une piste qui défile. Le gap avant lui compte déjà. */
   .poster-spacer {
     flex: none;
+    width: max(0px, calc(var(--side) - var(--gap)));
   }
   .poster-single {
     width: 100%;
@@ -618,8 +635,8 @@
     margin-inline: auto;
   }
   @media (min-width: 768px) {
-    .poster-slide {
-      width: 30%;
+    .poster-track {
+      --slide: 30cqw;
     }
     .poster-slide:not([data-active]) {
       opacity: 1;
@@ -730,6 +747,35 @@
     }
     .poster-track {
       scroll-behavior: auto;
+    }
+  }
+
+  /* La roue de chargement (Spinner.tsx, 06/11). Un dégradé conique va du transparent à la
+     couleur du texte en un tour ; le masque radial n'en garde qu'un anneau de 6 px ; le
+     point (::after) arrondit la tête, en haut, là où le dégradé est le plus foncé. */
+  .spinner {
+    position: relative;
+    display: inline-block;
+    width: 3rem;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: conic-gradient(transparent 8%, currentColor);
+    mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5.5px));
+    animation: spinner-turn 0.9s linear infinite;
+  }
+  .spinner::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: calc(50% - 3px);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  @keyframes spinner-turn {
+    to {
+      transform: rotate(1turn);
     }
   }
 }

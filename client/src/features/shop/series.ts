@@ -52,12 +52,6 @@ export function glowColor(colorName: string | null, palette: Palette): string {
   return `rgba(${r}, ${g}, ${b}, 0.6)`;
 }
 
-// La place à laisser après le dernier modèle (marge comprise) pour qu'il puisse venir se
-// caler à gauche comme les autres : sans elle, la piste s'arrête quand il touche le bord
-// droit, et sur ordinateur (3 modèles visibles) les derniers ne deviennent jamais « actifs ».
-export function trackEndPadding(trackWidth: number, slideWidth: number, startPadding: number): number {
-  return Math.max(0, Math.round(trackWidth - slideWidth - startPadding));
-}
 
 // Sur ordinateur, jusqu'à 4 colonnes côte à côte ; au-delà, on glisse comme sur téléphone.
 export function posterLayout(count: number): "columns" | "slider" {
