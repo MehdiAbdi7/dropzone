@@ -1,13 +1,7 @@
-import type { Metadata } from "next";
-import CartView from "@/features/cart/CartView";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Panier" };
-
+// Depuis le 06/11, le panier n'a plus de page : c'est une fenêtre, ouverte par le bouton de
+// l'en-tête ou la barre du bas (comme Niwa Food). Une ancienne adresse mène à la Boutique.
 export default function CartPage() {
-  return (
-    <div className="container-page space-y-6 py-8">
-      <h1 className="text-3xl">Votre panier</h1>
-      <CartView />
-    </div>
-  );
+  redirect("/boutique");
 }

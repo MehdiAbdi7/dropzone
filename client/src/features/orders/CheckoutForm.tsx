@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Field from "@/components/ui/Field";
 import { CONDITION_LABELS } from "@/config/catalog";
-import { clearCart } from "@/features/cart/cartSlice";
+import { clearCart, openCart } from "@/features/cart/cartSlice";
 import CartSummary from "@/features/cart/CartSummary";
 import { WILAYAS } from "@/config/wilayas";
 import { errorMessage } from "@/lib/errors";
@@ -83,9 +83,9 @@ export default function CheckoutForm({ user }: { user: User | null }) {
     return (
       <div role="alert" className="card space-y-4 p-6">
         <p>Votre panier contient un article indisponible ou une quantité trop grande.</p>
-        <Link href="/panier" className="btn btn-primary">
+        <button type="button" className="btn btn-primary" onClick={() => dispatch(openCart())}>
           Corriger le panier
-        </Link>
+        </button>
       </div>
     );
   }
@@ -182,9 +182,9 @@ export default function CheckoutForm({ user }: { user: User | null }) {
             <h2 id="recap" className="text-xl">
               Récapitulatif
             </h2>
-            <Link href="/panier" className="text-sm text-blue-ink underline">
+            <button type="button" className="text-sm text-blue-ink underline" onClick={() => dispatch(openCart())}>
               Modifier le panier
-            </Link>
+            </button>
           </div>
           <ul className="space-y-2 text-sm">
             {preview.lines.map((line) => (

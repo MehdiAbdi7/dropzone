@@ -31,15 +31,10 @@ export function cartBarSummary(preview: CartPreview): { count: number; total: nu
   };
 }
 
-// La barre est partout dans la boutique, sauf là où le panier est déjà sous les yeux.
+// La barre est partout dans la boutique, sauf sur la commande (le récapitulatif y est déjà).
+// Depuis le 06/11, le panier n'a plus de page : c'est une fenêtre (CartWindow).
 export function showCartBar(pathname: string): boolean {
-  return pathname !== "/panier" && !pathname.startsWith("/commande");
-}
-
-// Le panneau n'est ouvert que si la barre est là et le panier non vide : sinon, le prochain
-// ajout le rouvrirait tout seul (relecture du 05/11).
-export function sheetIsOpen(open: boolean, visible: boolean, count: number): boolean {
-  return open && visible && count > 0;
+  return !pathname.startsWith("/commande");
 }
 
 // La quantité d'une ligne du panneau : celle du panier du navigateur, à jour au clic (l'aperçu

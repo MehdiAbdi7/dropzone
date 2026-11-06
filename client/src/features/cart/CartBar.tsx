@@ -1,41 +1,31 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import { useCartPreviewQuery } from "@/features/orders/ordersApi";
 import { formatPrice } from "@/lib/format";
-import { useAppSelector } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useHydrated } from "@/lib/useHydrated";
-import { cartBarSummary, sheetIsOpen, showCartBar } from "./cartQuantity";
-import CartSheet from "./CartSheet";
+import { cartBarSummary, showCartBar } from "./cartQuantity";
+import { openCart } from "./cartSlice";
 
 // La barre du panier (05/11), comme celle de Niwa Food : toujours visible en bas de la
 // boutique dès qu'il y a un article, avec le total ; les vignettes empilées disent d'un coup
-// d'œil CE QUI est dans le panier. Un clic ouvre le panneau (CartSheet). Les prix viennent
-// de l'aperçu du panier de l'API, jamais du navigateur.
+// d'œil CE QUI est dans le panier. Un clic ouvre la fenêtre du panier (CartWindow, montée
+// avec l'en-tête). Les prix viennent de l'aperçu du panier de l'API, jamais du navigateur.
 export default function CartBar() {
+  const dispatch = useAppDispatch();
   const pathname = usePathname();
   const { items, hydrated: loaded } = useAppSelector((state) => state.cart);
   const hydrated = useHydrated() && loaded;
   const visible = hydrated && items.length > 0 && showCartBar(pathname);
   const { data: preview } = useCartPreviewQuery(items, { skip: !visible });
-  // La page où le panneau a été ouvert : changer de page (bouton Retour) le ferme.
-  const [openOn, setOpenOn] = useState<string | null>(null);
   const summary = visible && preview ? cartBarSummary(preview) : null;
   const count = summary?.count ?? 0;
-  // Panier vidé ou barre cachée : on oublie l'ouverture, sinon le prochain ajout rouvrirait
-  // le panneau tout seul (relecture du 05/11). Mise à jour pendant le rendu, gardée par la
-  // condition : React la permet et refait le rendu aussitôt.
-  if (openOn !== null && !sheetIsOpen(true, visible, count)) {
-    setOpenOn(null);
-  }
 
   if (!summary || !preview || count === 0) {
     return null;
   }
   const { total, thumbs, hidden } = summary;
-  const open = openOn === pathname;
-  const setOpen = (value: boolean) => setOpenOn(value ? pathname : null);
   const itemsLabel = `${count} article${count > 1 ? "s" : ""}`;
 
   return (
@@ -45,7 +35,8 @@ export default function CartBar() {
       <div className="fixed inset-x-0 z-30 px-4" style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}>
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          aria-haspopup="dialog"
+          onClick={() => dispatch(openCart())}
           aria-label={`Voir mon panier, ${itemsLabel}, ${formatPrice(total)}`}
           className="mx-auto flex h-16 w-full max-w-md items-center gap-3 rounded-full bg-blue ps-2.5 pe-4 text-on-brand shadow-[0_14px_38px_-10px_rgba(0,0,0,0.65)] transition-transform hover:scale-[1.02] active:scale-[0.99]"
         >
@@ -76,7 +67,6 @@ export default function CartBar() {
           </span>
         </button>
       </div>
-      <CartSheet open={sheetIsOpen(open, visible, count)} preview={preview} onClose={() => setOpen(false)} />
     </>
   );
 }

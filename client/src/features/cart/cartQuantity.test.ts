@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CartLine, CartPreview, Variant } from "@/types/api";
-import { cartBarSummary, clampQuantity, lineQuantity, quantityLimit, sheetIsOpen, showCartBar } from "./cartQuantity";
+import { cartBarSummary, clampQuantity, lineQuantity, quantityLimit, showCartBar } from "./cartQuantity";
 
 const variant = (stock: number, condition: Variant["condition"] = "new") => ({ stock, condition }) as Variant;
 
@@ -62,23 +62,11 @@ describe("cartBarSummary", () => {
 });
 
 describe("showCartBar", () => {
-  it("montre la barre dans la boutique, pas sur le panier ni la commande", () => {
+  it("montre la barre dans la boutique, pas sur la commande", () => {
     expect(showCartBar("/produits/iphone-17-pro-max")).toBe(true);
     expect(showCartBar("/boutique")).toBe(true);
-    expect(showCartBar("/panier")).toBe(false);
     expect(showCartBar("/commande")).toBe(false);
     expect(showCartBar("/commande/confirmation")).toBe(false);
-  });
-});
-
-// Relecture du 05/11 : le panneau ne se rouvre jamais tout seul, et son « − + » suit le
-// panier du navigateur (pas l'aperçu du serveur, en retard d'un aller-retour).
-describe("sheetIsOpen", () => {
-  it("ferme le panneau quand la barre disparaît ou que le panier est vide", () => {
-    expect(sheetIsOpen(true, true, 2)).toBe(true);
-    expect(sheetIsOpen(true, false, 2)).toBe(false);
-    expect(sheetIsOpen(true, true, 0)).toBe(false);
-    expect(sheetIsOpen(false, true, 2)).toBe(false);
   });
 });
 

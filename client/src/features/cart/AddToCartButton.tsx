@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { formatPrice } from "@/lib/format";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useHydrated } from "@/lib/useHydrated";
 import type { Variant } from "@/types/api";
 import { clampQuantity, quantityLimit } from "./cartQuantity";
-import { MAX_PER_LINE, addItem } from "./cartSlice";
+import { MAX_PER_LINE, addItem, openCart } from "./cartSlice";
 import QuantityStepper from "./QuantityStepper";
 
 // L'achat d'une variante, avec sa quantité (05/11) : on peut prendre tout le stock réel d'un
@@ -66,9 +65,9 @@ export default function AddToCartButton({ variant }: { variant: Variant }) {
         {/* aria-live : un lecteur d'écran annonce l'ajout. */}
         <p aria-live="polite" className="text-sm">
           {added ? (
-            <Link href="/panier" className="font-semibold text-blue-ink underline">
-              Voir le panier
-            </Link>
+            <button type="button" className="font-semibold text-blue-ink underline" onClick={() => dispatch(openCart())}>
+              Ajouté. Voir le panier
+            </button>
           ) : null}
         </p>
       </div>

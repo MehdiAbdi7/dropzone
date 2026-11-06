@@ -8,9 +8,12 @@ type CartState = {
   // false tant que le panier n'a pas été relu depuis localStorage (au premier rendu,
   // le serveur ne connaît pas le panier : on n'affiche pas un faux « 0 »).
   hydrated: boolean;
+  // La fenêtre du panier (06/11, comme le ticket de Niwa) : ouverte par l'en-tête, la barre
+  // ou « Voir le panier ». Pas gardée dans localStorage (StoreProvider n'y écrit que `items`).
+  open: boolean;
 };
 
-const initialState: CartState = { items: [], hydrated: false };
+const initialState: CartState = { items: [], hydrated: false, open: false };
 
 export const MAX_PER_LINE = 10;
 
@@ -45,8 +48,14 @@ const cartSlice = createSlice({
     clearCart(state) {
       state.items = [];
     },
+    openCart(state) {
+      state.open = true;
+    },
+    closeCart(state) {
+      state.open = false;
+    },
   },
 });
 
-export const { hydrate, addItem, setQuantity, removeItem, clearCart } = cartSlice.actions;
+export const { hydrate, addItem, setQuantity, removeItem, clearCart, openCart, closeCart } = cartSlice.actions;
 export default cartSlice.reducer;
