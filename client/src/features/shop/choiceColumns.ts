@@ -46,7 +46,8 @@ export function colorColumns(product: ProductDetail): ChoiceColumnData[] {
       badge: null,
       subtitle: null,
       lines: lines.length > 0 ? lines : ["Indisponible"],
-      price: from !== null ? { prefix: "dès ", value: from } : null,
+      // Les prix « dès » sont dans les lignes (neuf, affaire) : pas de prix en double.
+      price: null,
       href: from !== null ? colorHref(product.slug, name) : null,
     };
   });

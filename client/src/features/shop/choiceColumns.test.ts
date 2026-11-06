@@ -62,7 +62,8 @@ describe("colorColumns", () => {
     const orange = colorColumns(product())[1];
     expect(orange).toMatchObject({
       href: "/produits/iphone-17-pro-max?couleur=Orange%20cosmique",
-      price: { prefix: "dès ", value: 310000 },
+      // Les prix sont dans les lignes : pas de prix en double (relecture du 05/11).
+      price: null,
       lines: [`Neuf scellé dès ${formatPrice(352000)}`, `Affaire dès ${formatPrice(310000)}`],
     });
   });

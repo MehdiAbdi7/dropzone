@@ -6,7 +6,7 @@ import { useCartPreviewQuery } from "@/features/orders/ordersApi";
 import { formatPrice } from "@/lib/format";
 import { useAppSelector } from "@/lib/hooks";
 import { useHydrated } from "@/lib/useHydrated";
-import { cartBarSummary, showCartBar } from "./cartQuantity";
+import { cartBarSummary, sheetIsOpen, showCartBar } from "./cartQuantity";
 import CartSheet from "./CartSheet";
 
 // La barre du panier (05/11), comme celle de Niwa Food : toujours visible en bas de la
@@ -19,21 +19,29 @@ export default function CartBar() {
   const hydrated = useHydrated() && loaded;
   const visible = hydrated && items.length > 0 && showCartBar(pathname);
   const { data: preview } = useCartPreviewQuery(items, { skip: !visible });
-  const [open, setOpen] = useState(false);
+  // La page où le panneau a été ouvert : changer de page (bouton Retour) le ferme.
+  const [openOn, setOpenOn] = useState<string | null>(null);
+  const summary = visible && preview ? cartBarSummary(preview) : null;
+  const count = summary?.count ?? 0;
+  // Panier vidé ou barre cachée : on oublie l'ouverture, sinon le prochain ajout rouvrirait
+  // le panneau tout seul (relecture du 05/11). Mise à jour pendant le rendu, gardée par la
+  // condition : React la permet et refait le rendu aussitôt.
+  if (openOn !== null && !sheetIsOpen(true, visible, count)) {
+    setOpenOn(null);
+  }
 
-  if (!visible || !preview) {
+  if (!summary || !preview || count === 0) {
     return null;
   }
-  const { count, total, thumbs, hidden } = cartBarSummary(preview);
-  if (count === 0) {
-    return null;
-  }
+  const { total, thumbs, hidden } = summary;
+  const open = openOn === pathname;
+  const setOpen = (value: boolean) => setOpenOn(value ? pathname : null);
   const itemsLabel = `${count} article${count > 1 ? "s" : ""}`;
 
   return (
     <>
       {/* La place de la barre sous le contenu : elle ne cache jamais le bas de la page. */}
-      <div aria-hidden="true" className="h-24" />
+      <div aria-hidden="true" className="h-[calc(6rem+env(safe-area-inset-bottom))]" />
       <div className="fixed inset-x-0 z-30 px-4" style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}>
         <button
           type="button"
@@ -68,7 +76,7 @@ export default function CartBar() {
           </span>
         </button>
       </div>
-      <CartSheet open={open} preview={preview} onClose={() => setOpen(false)} />
+      <CartSheet open={sheetIsOpen(open, visible, count)} preview={preview} onClose={() => setOpen(false)} />
     </>
   );
 }

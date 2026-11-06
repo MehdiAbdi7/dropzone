@@ -2,7 +2,7 @@ import { DEVICE_KINDS } from "@/config/catalog";
 import type { ProductDetail, ProductKind, Variant } from "@/types/api";
 
 // L'étape Couleur (05/11), sans React : la couleur dans l'adresse et les variantes d'une
-// couleur. Les colonnes de l'affiche sont dans choicePoster.ts.
+// couleur. Les colonnes de l'affiche sont dans choiceColumns.ts.
 
 export function ofColor(variants: Variant[], color: string): Variant[] {
   return variants.filter((variant) => variant.options.Couleur === color);

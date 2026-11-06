@@ -5,8 +5,9 @@ import { useEffect, useRef } from "react";
 import ProductImage from "@/components/ui/ProductImage";
 import { CONDITION_LABELS } from "@/config/catalog";
 import { formatOptions, formatPrice } from "@/lib/format";
-import { useAppDispatch } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import type { CartLine, CartPreview } from "@/types/api";
+import { lineQuantity } from "./cartQuantity";
 import { removeItem, setQuantity } from "./cartSlice";
 import QuantityStepper from "./QuantityStepper";
 
@@ -82,6 +83,7 @@ export default function CartSheet({ open, preview, onClose }: { open: boolean; p
 
 function SheetLine({ line, gifts }: { line: CartLine; gifts: CartLine[] }) {
   const dispatch = useAppDispatch();
+  const quantity = lineQuantity(useAppSelector((state) => state.cart.items), line.sku, line.quantity);
   const options = formatOptions(line.options);
   return (
     <li className="space-y-2 py-3">
@@ -108,7 +110,7 @@ function SheetLine({ line, gifts }: { line: CartLine; gifts: CartLine[] }) {
           <span className="text-sm text-ink-muted">Appareil unique</span>
         ) : (
           <QuantityStepper
-            value={line.quantity}
+            value={quantity}
             max={line.maxQuantity}
             label={`Quantité de ${line.name}`}
             onChange={(quantity) => dispatch(setQuantity({ sku: line.sku, quantity, max: line.maxQuantity }))}

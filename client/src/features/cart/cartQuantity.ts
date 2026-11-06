@@ -35,3 +35,15 @@ export function cartBarSummary(preview: CartPreview): { count: number; total: nu
 export function showCartBar(pathname: string): boolean {
   return pathname !== "/panier" && !pathname.startsWith("/commande");
 }
+
+// Le panneau n'est ouvert que si la barre est là et le panier non vide : sinon, le prochain
+// ajout le rouvrirait tout seul (relecture du 05/11).
+export function sheetIsOpen(open: boolean, visible: boolean, count: number): boolean {
+  return open && visible && count > 0;
+}
+
+// La quantité d'une ligne du panneau : celle du panier du navigateur, à jour au clic (l'aperçu
+// du serveur arrive un aller-retour plus tard), sinon celle de l'aperçu.
+export function lineQuantity(items: { sku: string; quantity: number }[], sku: string, fallback: number): number {
+  return items.find((item) => item.sku === sku)?.quantity ?? fallback;
+}

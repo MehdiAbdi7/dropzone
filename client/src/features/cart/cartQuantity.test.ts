@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CartLine, CartPreview, Variant } from "@/types/api";
-import { cartBarSummary, clampQuantity, quantityLimit, showCartBar } from "./cartQuantity";
+import { cartBarSummary, clampQuantity, lineQuantity, quantityLimit, sheetIsOpen, showCartBar } from "./cartQuantity";
 
 const variant = (stock: number, condition: Variant["condition"] = "new") => ({ stock, condition }) as Variant;
 
@@ -68,5 +68,24 @@ describe("showCartBar", () => {
     expect(showCartBar("/panier")).toBe(false);
     expect(showCartBar("/commande")).toBe(false);
     expect(showCartBar("/commande/confirmation")).toBe(false);
+  });
+});
+
+// Relecture du 05/11 : le panneau ne se rouvre jamais tout seul, et son « − + » suit le
+// panier du navigateur (pas l'aperçu du serveur, en retard d'un aller-retour).
+describe("sheetIsOpen", () => {
+  it("ferme le panneau quand la barre disparaît ou que le panier est vide", () => {
+    expect(sheetIsOpen(true, true, 2)).toBe(true);
+    expect(sheetIsOpen(true, false, 2)).toBe(false);
+    expect(sheetIsOpen(true, true, 0)).toBe(false);
+    expect(sheetIsOpen(false, true, 2)).toBe(false);
+  });
+});
+
+describe("lineQuantity", () => {
+  it("lit la quantité du panier du navigateur, sinon celle de l'aperçu", () => {
+    const items = [{ sku: "IP", quantity: 3 }];
+    expect(lineQuantity(items, "IP", 2)).toBe(3);
+    expect(lineQuantity(items, "AUTRE", 2)).toBe(2);
   });
 });
