@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import ProductImage from "@/components/ui/ProductImage";
+import Spinner from "@/components/ui/Spinner";
 import NeonLines from "./NeonLines";
 import type { Box, StageDevice } from "./stageLayout";
 
@@ -28,6 +29,20 @@ export default function DeviceStage({
       {devices.map((device) => (
         <StageItem key={device.slot} device={device} />
       ))}
+    </div>
+  );
+}
+
+// Le socle pendant que l'API se réveille (06/11) : le même décor, avec une roue posée sur
+// le socle à la place des appareils. Pas les dessins de départ : ils disparaîtraient dès
+// l'arrivée des photos du gérant.
+export function StageLoading({ id, className = "" }: { id: string; className?: string }) {
+  return (
+    <div className={`stage ${className}`} aria-hidden="true">
+      <StageDecor id={id} />
+      <div className="absolute inset-x-0 bottom-[38%] flex justify-center text-ink">
+        <Spinner className="size-12 sm:size-14" />
+      </div>
     </div>
   );
 }
