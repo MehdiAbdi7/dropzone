@@ -126,7 +126,7 @@
 @theme {
   /* Des rayons qui suivent la hiérarchie : champs et boutons, cartes, grands blocs. */
   --radius-field: 10px;
-  --radius-card: 14px;
+  --radius-card: 16px;
   --radius-block: 20px;
 
   /* Le dégradé du logo, du bleu électrique au rouge, en passant par le violet. */
@@ -379,10 +379,12 @@
 
   /* Les cartes : une ombre très légère en clair, aucune en sombre. */
   .card {
-    background: var(--surface);
-    border: 1px solid var(--line);
     border-radius: var(--radius-card);
-    box-shadow: var(--card-shadow);
+    border: 1px solid transparent;
+    backdrop-filter: blur(16px);
+    background:
+      linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+      linear-gradient(90deg, #3d4affc0, #a23bf0c0, #ff2e4dc2) border-box;
   }
 
   /* Les puces à cocher : une valeur d'une liste (stockage, couleur, défaut…). */
@@ -588,7 +590,11 @@
     position: relative;
     overflow: hidden;
     border-radius: 24px;
-    background: #07080c;
+    border: 2px solid transparent;
+    backdrop-filter: blur(16px);
+    background:
+      linear-gradient(#070800, #070800) padding-box,
+      linear-gradient(90deg, #3d4affc0, #a23bf0c0, #ff2e4dc2) border-box;
   }
   .poster-backdrop {
     position: absolute;

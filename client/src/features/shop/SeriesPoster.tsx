@@ -3,6 +3,7 @@ import type { SeriesPoster as Poster } from "@/types/api";
 import PosterColumn from "./PosterColumn";
 import PosterSlider from "./PosterSlider";
 import { glowColor, posterLayout } from "./series";
+import Logo from "@/components/ui/Logo";
 
 // L'affiche d'une série : un bloc toujours sombre, comme une affiche de lancement, avec
 // une colonne par modèle (à glisser sur téléphone, voir PosterSlider). La palette (teintes
@@ -28,9 +29,7 @@ export default function SeriesPoster({
         }}
       />
       <header className="relative space-y-2 px-4 pt-8 text-center">
-        <p className="text-gradient text-xs font-extrabold tracking-[0.32em]">
-          DROPZONE
-        </p>
+        <Logo />
         <h1 id="poster-title" className="poster-title text-4xl md:text-6xl">
           {poster.name}
         </h1>

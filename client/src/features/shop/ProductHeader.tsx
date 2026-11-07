@@ -3,6 +3,9 @@ import ProductImage from "@/components/ui/ProductImage";
 import type { ProductDetail } from "@/types/api";
 import Breadcrumb, { type Crumb } from "./Breadcrumb";
 import { colorHref } from "./colors";
+import Logo from "@/components/ui/Logo";
+import { findLibraryLogo } from "../../config/brandLogos";
+import Image from "next/image";
 
 // Le haut commun des pages d'un produit : le fil d'Ariane complet
 // (Boutique › Smartphones › iPhone › iPhone 18 Pro Max › Neuf), la photo à gauche,
@@ -63,6 +66,8 @@ export default function ProductHeader({
   const crumbs = productCrumbs(product, color ?? null, step);
   const title = [color, step].filter(Boolean).join(" · ");
 
+  const brandLogo = findLibraryLogo(product.brand?.name ?? "");
+
   return (
     <div className="space-y-6">
       <Breadcrumb items={crumbs} />
@@ -72,7 +77,16 @@ export default function ProductHeader({
           <div className="card relative aspect-square overflow-hidden bg-surface">
             {/* La photo dans une boîte plus petite que le cadre : inset-[12%] laisse 12 % de vide
       de chaque côté. Plus le nombre est grand, plus la photo est petite. */}
-            <div className="absolute inset-[8%] sm:inset-[16%]">
+            <div className="absolute top-4 left-4 z-30 w-12 h-12 sm:top-6 sm:left-6 sm:w-16 sm:h-16 backdrop-opacity-45">
+              <Image
+                src={brandLogo ?? "/brands/unknown.svg"}
+                alt={product.brand?.name ?? "Marque inconnue"}
+                fill
+                sizes="48px"
+                className="w-full h-full object-contain brightness-0 dark:invert"
+              />
+            </div>
+            <div className="absolute inset-[12%] sm:inset-[16%]">
               <ProductImage
                 src={image ?? product.images[0]?.url ?? null}
                 alt={color ? `${product.name}, ${color}` : product.name}
