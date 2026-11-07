@@ -23,6 +23,7 @@ export type Zone =
 // reliée à sa zone pour chaque sorte. Une valeur absente d'ici ne va que dans la légende.
 const PHONE_ZONES: Record<string, Zone> = {
   Écran: "screen",
+  Afficheur: "screen",
   Batterie: "battery",
   "Caméra arrière": "rearCamera",
   "Caméra avant": "frontCamera",
@@ -42,6 +43,7 @@ const ZONES: Partial<Record<ProductKind, Record<string, Zone>>> = {
   tablet: PHONE_ZONES,
   laptop: {
     Écran: "screen",
+    Afficheur: "screen",
     Batterie: "battery",
     Clavier: "keyboard",
     "Pavé tactile": "trackpad",
@@ -52,6 +54,7 @@ const ZONES: Partial<Record<ProductKind, Record<string, Zone>>> = {
   },
   watch: {
     Écran: "screen",
+    Afficheur: "screen",
     Batterie: "caseBack",
     "Rayures légères sur l'écran": "screen",
     "Rayures sur le cadre": "case",
