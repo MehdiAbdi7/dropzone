@@ -77,14 +77,17 @@ export default function ProductHeader({
           <div className="card relative aspect-square overflow-hidden bg-surface">
             {/* La photo dans une boîte plus petite que le cadre : inset-[12%] laisse 12 % de vide
       de chaque côté. Plus le nombre est grand, plus la photo est petite. */}
-            <div className="absolute top-4 left-4 z-30 w-12 h-12 sm:top-6 sm:left-6 sm:w-16 sm:h-16 backdrop-opacity-45">
+            <div className="absolute top-2 left-2 z-30 w-12 h-12 sm:top-4 sm:left-4 sm:w-16 sm:h-16 backdrop-opacity-45">
               <Image
                 src={brandLogo ?? "/brands/unknown.svg"}
                 alt={product.brand?.name ?? "Marque inconnue"}
                 fill
                 sizes="48px"
-                className="w-full h-full object-contain brightness-0 dark:invert"
+                className="w-full h-full object-contain brightness-0 dark:invert opacity-25"
               />
+            </div>
+            <div className="absolute top-4 right-30 z-30 w-4 h-4 opacity-0 sm:top-8 sm:right-20 sm:w-16 sm:h-16 backdrop-opacity-45 sm:opacity-45">
+              <Logo />
             </div>
             <div className="absolute inset-[12%] sm:inset-[16%]">
               <ProductImage
