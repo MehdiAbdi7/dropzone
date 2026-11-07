@@ -11,7 +11,13 @@ export const DEFAULT_HUE = "#808080";
 // nom et le bouton pour la retirer. La teinte n'est enregistrée qu'au clic sur
 // « Enregistrer » : le sélecteur envoie un événement à chaque mouvement de la souris, on
 // n'envoie pas une requête à chacun.
-export default function ColorHueChip({ choice, onRemove }: { choice: Choice; onRemove: () => void }) {
+export default function ColorHueChip({
+  choice,
+  onRemove,
+}: {
+  choice: Choice;
+  onRemove: () => void;
+}) {
   const [draft, setDraft] = useState(choice.hex ?? DEFAULT_HUE);
   const [update, { isLoading, error }] = useUpdateChoiceMutation();
   // Le bouton n'apparaît qu'après un vrai choix (pas pour le gris de départ).
@@ -30,7 +36,9 @@ export default function ColorHueChip({ choice, onRemove }: { choice: Choice; onR
         />
         {choice.label}
       </label>
-      {choice.hex ? null : <span className="text-xs text-red">teinte à choisir</span>}
+      {choice.hex ? null : (
+        <span className="text-xs text-red">teinte à choisir</span>
+      )}
       {changed ? (
         <button
           type="button"
@@ -41,10 +49,17 @@ export default function ColorHueChip({ choice, onRemove }: { choice: Choice; onR
           Enregistrer
         </button>
       ) : null}
-      <button type="button" className="text-ink-muted hover:text-red" aria-label={`Retirer ${choice.label}`} onClick={onRemove}>
+      <button
+        type="button"
+        className="text-ink-muted hover:text-red"
+        aria-label={`Retirer ${choice.label}`}
+        onClick={onRemove}
+      >
         ×
       </button>
-      {error ? <span className="field-error basis-full">{errorMessage(error)}</span> : null}
+      {error ? (
+        <span className="field-error basis-full">{errorMessage(error)}</span>
+      ) : null}
     </li>
   );
 }
