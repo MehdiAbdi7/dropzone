@@ -192,13 +192,13 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--color-blue-ink);
+    background: var(--color-blue);
     border-radius: 9999px;
     cursor: -webkit-grab;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-foreground);
+    background: var(--color-red);
   }
 
   /* Un focus clavier toujours visible, dans la couleur de la marque. */
