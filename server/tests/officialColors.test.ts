@@ -24,6 +24,10 @@ describe("Les couleurs officielles du fichier", () => {
     expect([...new Set(colors)].filter((color) => !/^#[0-9a-f]{6}$/.test(COLOR_HEX[color] ?? ""))).toEqual([]);
     expect(Object.entries(OFFICIAL_COLORS).filter(([, list]) => new Set(list).size !== list.length)).toEqual([]);
   });
+
+  it("utilise la teinte Burgundy choisie pour l'iPhone 18 Pro", () => {
+    expect(COLOR_HEX.Burgundy).toBe("#6b1f2e");
+  });
 });
 
 describe("applyOfficialColors : le remplissage de la base", () => {

@@ -330,7 +330,6 @@ export const COLOR_HEX: Record<string, string> = {
   "Pink Gold": "#e7c3b6",
   Cream: "#efe6d4",
   "Sky Blue": "#a8cbe6",
-  Burgundy: "#6e2a3a",
   Red: "#c62f3a",
   Lime: "#dfe8a8",
   Mint: "#c4e3d4",
