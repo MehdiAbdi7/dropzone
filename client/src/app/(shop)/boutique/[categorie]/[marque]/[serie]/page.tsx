@@ -51,7 +51,7 @@ export default async function ShopSeriesPage({
   // Les teintes des couleurs (Listes du back-office) : lueurs et pastilles de l'affiche.
   const palette = await getPalette();
   return (
-    <div className="container-page space-y-6 py-8">
+    <div className="container-page space-y-4 py-4">
       <Breadcrumb
         items={[
           { label: "Boutique", href: "/boutique" },

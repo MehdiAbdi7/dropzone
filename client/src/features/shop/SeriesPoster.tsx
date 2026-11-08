@@ -28,7 +28,7 @@ export default function SeriesPoster({
           background: `radial-gradient(60% 80% at 0% 55%, ${glowColor(first.posterColor, palette)}, transparent 70%), radial-gradient(60% 80% at 100% 55%, ${glowColor(last.posterColor, palette)}, transparent 70%)`,
         }}
       />
-      <header className="relative space-y-2 px-4 pt-8 text-center">
+      <header className="relative space-y-2 px-4 pt-5 text-center md:pt-6">
         <Logo />
         <h1 id="poster-title" className="poster-title text-4xl md:text-6xl">
           {poster.name}
@@ -37,7 +37,7 @@ export default function SeriesPoster({
           La série · {count} modèle{count > 1 ? "s" : ""}
         </p>
       </header>
-      <div className="relative pt-6 pb-8">
+      <div className="relative pt-2 pb-3">
         <PosterSlider
           names={poster.models.map((model) => model.name)}
           layout={posterLayout(count)}

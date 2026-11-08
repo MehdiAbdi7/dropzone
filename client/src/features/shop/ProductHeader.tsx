@@ -3,7 +3,6 @@ import ProductImage from "@/components/ui/ProductImage";
 import type { ProductDetail } from "@/types/api";
 import Breadcrumb, { type Crumb } from "./Breadcrumb";
 import { colorHref } from "./colors";
-import Logo from "@/components/ui/Logo";
 import { findLibraryLogo } from "../../config/brandLogos";
 import Image from "next/image";
 
@@ -69,49 +68,55 @@ export default function ProductHeader({
   const brandLogo = findLibraryLogo(product.brand?.name ?? "");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <Breadcrumb items={crumbs} />
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-        {/* Sur téléphone, une photo plus petite : les choix arrivent plus vite à l'écran. */}
-        <div className="mx-auto w-full max-w-72 sm:max-w-sm lg:sticky lg:top-6 lg:max-w-none lg:self-start">
-          <div className="card relative aspect-square overflow-hidden bg-surface">
-            {/* La photo dans une boîte plus petite que le cadre : inset-[12%] laisse 12 % de vide
-      de chaque côté. Plus le nombre est grand, plus la photo est petite. */}
-            <div className="absolute top-1 left-1 z-30 w-12 h-12 sm:top-4 sm:left-4 sm:w-16 sm:h-16 backdrop-opacity-45">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-8">
+        <div className="mx-auto w-full max-w-sm lg:sticky lg:top-24 lg:max-w-none">
+          <div className="card product-stage relative aspect-square overflow-hidden rounded-3xl bg-surface shadow-[0_24px_70px_-38px_rgba(61,75,255,0.32)] lg:aspect-[1/0.92]">
+            <div aria-hidden="true" className="product-stage-glow" />
+            <div className="absolute left-4 top-4 z-20 grid size-11 place-items-center rounded-full border border-line bg-surface/80 p-2.5 shadow-sm backdrop-blur sm:left-5 sm:top-5 sm:size-12">
               <Image
                 src={brandLogo ?? "/brands/unknown.svg"}
                 alt={product.brand?.name ?? "Marque inconnue"}
                 fill
                 sizes="48px"
-                className="w-full h-full object-contain brightness-0 dark:invert opacity-80"
+                className="object-contain p-2.5 brightness-0 opacity-75 dark:invert"
               />
             </div>
-            <div className="absolute top-4 right-30 z-30 w-4 h-4 opacity-0 sm:top-8 sm:right-20 sm:w-16 sm:h-16 backdrop-opacity-45 sm:opacity-45">
-              <Logo />
-            </div>
-            <div className="absolute inset-[12%] sm:inset-[16%]">
+            <div className="product-stage-image absolute inset-[8%] z-10 sm:inset-[10%]">
               <ProductImage
                 src={image ?? product.images[0]?.url ?? null}
                 alt={color ? `${product.name}, ${color}` : product.name}
-                sizes="(min-width: 1024px) 480px, 100vw"
+                sizes="(min-width: 1024px) 560px, (min-width: 640px) 384px, 100vw"
                 priority
               />
             </div>
           </div>
         </div>
-        <div className="min-w-0 space-y-6">
-          <header className="space-y-2">
+        <div className="min-w-0 space-y-5 lg:pt-2">
+          <header className="space-y-3 border-b border-line pb-5">
             {product.deviceModel || product.brand ? (
-              <p className="text-sm font-semibold text-ink-muted">
+              <p className="text-xs font-bold tracking-[0.16em] text-blue-ink uppercase">
                 {product.deviceModel?.brand ?? product.brand?.name}
               </p>
             ) : null}
-            <h1 className="text-3xl sm:text-4xl">
+            <h1 className="text-3xl leading-tight tracking-tight sm:text-4xl lg:text-[2.75rem]">
               {product.name}
-              {title ? (
-                <span className="text-ink-muted"> · {title}</span>
-              ) : null}
             </h1>
+            {title ? (
+              <div className="flex flex-wrap gap-2">
+                {color ? (
+                  <span className="rounded-full border border-line bg-surface px-3 py-1 text-sm font-semibold text-ink-muted">
+                    {color}
+                  </span>
+                ) : null}
+                {step ? (
+                  <span className="rounded-full border border-blue/20 bg-blue-soft px-3 py-1 text-sm font-bold text-blue-ink">
+                    {step}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </header>
           {children}
         </div>

@@ -74,7 +74,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
 
   const color = step.kind === "conditions" ? step.color : null;
   return (
-    <div className="container-page space-y-6 py-8">
+    <div className="container-page space-y-4 py-4">
       <Breadcrumb items={productCrumbs(product, color)} />
       {step.kind === "colors" ? (
         <ChoicePoster kicker="CHOISISSEZ LA COULEUR" title={product.name} columns={colorColumns(product)} palette={palette} />

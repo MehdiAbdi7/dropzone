@@ -30,13 +30,13 @@ export default function ChoicePoster({
           background: `radial-gradient(60% 80% at 0% 55%, ${glowColor(first?.glow ?? null, palette)}, transparent 70%), radial-gradient(60% 80% at 100% 55%, ${glowColor(last?.glow ?? null, palette)}, transparent 70%)`,
         }}
       />
-      <header className="relative space-y-2 px-4 pt-8 text-center">
+      <header className="relative space-y-2 px-4 pt-5 text-center md:pt-6">
         <p className="text-gradient text-xs font-extrabold tracking-[0.32em]">{kicker}</p>
         <h1 id="choice-title" className="poster-title text-3xl md:text-5xl">
           {title}
         </h1>
       </header>
-      <div className="relative pt-6 pb-8">
+      <div className="relative pt-2 pb-3">
         {/* Les onglets du glissement : le nom court (« Neuf scellé », « Affaire »), pas le sous-titre. */}
         <PosterSlider
           names={columns.map((column) => (column.badge ? CONDITION_LABELS[column.badge === "new" ? "new" : "refurbished"] : column.title))}

@@ -21,7 +21,7 @@ export default function ChoiceColumn({
   const off = column.href === null;
   const body = (
     <>
-      <div className="relative h-52 w-full md:h-60">
+      <div className="relative h-36 w-full md:h-40">
         <div
           aria-hidden="true"
           className="poster-glow"
@@ -57,7 +57,7 @@ export default function ChoiceColumn({
     </>
   );
 
-  const className = "poster-column flex h-full flex-col items-center gap-3 rounded-2xl px-3 pb-4 text-center";
+  const className = "poster-column flex h-full flex-col items-center gap-2 rounded-2xl px-3 pb-3 text-center";
   if (off) {
     return (
       <div aria-disabled="true" className={`${className} opacity-50`}>

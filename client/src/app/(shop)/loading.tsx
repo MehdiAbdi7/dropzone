@@ -1,11 +1,12 @@
 // Affiché pendant que le serveur prépare une page de la boutique (streaming).
 export default function Loading() {
   return (
-    <div className="container-page py-10" role="status" aria-label="Chargement">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {Array.from({ length: 8 }, (_, index) => (
-          <div key={index} className="card aspect-[3/4] animate-pulse bg-surface-2" />
-        ))}
+    <div className="shop-loading" role="status" aria-live="polite">
+      <div className="shop-loading-content">
+        <span className="spinner text-blue" aria-hidden="true" />
+        <p className="font-display text-lg font-bold">On prépare votre sélection</p>
+        <p className="text-sm text-ink-muted">La boutique arrive…</p>
+        <span className="shop-loading-progress" aria-hidden="true" />
       </div>
     </div>
   );
