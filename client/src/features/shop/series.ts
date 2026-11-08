@@ -11,20 +11,34 @@ export function withArticle(name: string): string {
 
 // Le texte sous l'affiche à glisser : vers le modèle suivant, ou retour au précédent
 // quand on est sur le dernier. Rien à dire pour une série d'un seul modèle.
-export function swipeHint(names: string[], index: number): { text: string; back: boolean } | null {
+export function swipeHint(
+  names: string[],
+  index: number,
+): { text: string; back: boolean } | null {
   if (names.length < 2) {
     return null;
   }
   if (index < names.length - 1) {
-    return { text: `Glisse pour voir ${withArticle(names[index + 1])}`, back: false };
+    return {
+      text: `Glisse pour voir ${withArticle(names[index + 1])}`,
+      back: false,
+    };
   }
   const previous = names[index - 1];
-  return { text: ELIDES.test(previous) ? `Revenir à l'${previous}` : `Revenir au ${previous}`, back: true };
+  return {
+    text: ELIDES.test(previous)
+      ? `Revenir à l'${previous}`
+      : `Revenir au ${previous}`,
+    back: true,
+  };
 }
 
 // Le mot sous une colonne grisée de l'affiche. Toute la série reste visible : un modèle
 // sans fiche publiée n'est « pas encore en vente », un modèle sans stock est « épuisé ».
-export function posterStatus(model: { onSale: boolean; soldOut: boolean }): string | null {
+export function posterStatus(model: {
+  onSale: boolean;
+  soldOut: boolean;
+}): string | null {
   if (!model.onSale) {
     return "Pas encore en vente";
   }
@@ -38,7 +52,7 @@ export function ctaLabel(seriesName: string): string {
 const NEUTRAL_GLOW = "rgba(155, 77, 255, 0.35)";
 
 // La lueur derrière la photo d'un modèle : la teinte de sa couleur (palette réglée dans
-// Listes), éclaircie de 25 % vers le blanc (un bordeaux pur se perdrait dans le fond noir).
+// Listes), éclaircie de 25 % vers le blanc (un Burgundy pur se perdrait dans le fond noir).
 // Couleur sans teinte : violet neutre.
 export function glowColor(colorName: string | null, palette: Palette): string {
   const hex = colorName ? swatchOf(colorName, palette) : null;
@@ -52,13 +66,21 @@ export function glowColor(colorName: string | null, palette: Palette): string {
   return `rgba(${r}, ${g}, ${b}, 0.6)`;
 }
 
-
 // Sur ordinateur, jusqu'à 4 colonnes côte à côte ; au-delà, on glisse comme sur téléphone.
 export function posterLayout(count: number): "columns" | "slider" {
   return count <= 4 ? "columns" : "slider";
 }
 
-export type SpecIcon = "screen" | "chip" | "camera" | "battery" | "plug" | "memory" | "storage" | "gpu" | "dot";
+export type SpecIcon =
+  | "screen"
+  | "chip"
+  | "camera"
+  | "battery"
+  | "plug"
+  | "memory"
+  | "storage"
+  | "gpu"
+  | "dot";
 
 const SPEC_ICONS: Record<string, SpecIcon> = {
   Écran: "screen",

@@ -1,11 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { ctaLabel, glowColor, posterLayout, posterStatus, specIcon, swipeHint, withArticle } from "./series";
+import {
+  ctaLabel,
+  glowColor,
+  posterLayout,
+  posterStatus,
+  specIcon,
+  swipeHint,
+  withArticle,
+} from "./series";
 
 // Le mot sous une colonne grisée de l'affiche (règle de Mehdi du 05/11 : toute la série
 // reste visible, comme les cartes Neuf et Affaire barrées).
 describe("posterStatus", () => {
   it("dit qu'un modèle sans fiche publiée n'est pas encore en vente", () => {
-    expect(posterStatus({ onSale: false, soldOut: true })).toBe("Pas encore en vente");
+    expect(posterStatus({ onSale: false, soldOut: true })).toBe(
+      "Pas encore en vente",
+    );
   });
 
   it("dit qu'un modèle en vente sans stock est épuisé", () => {
@@ -33,16 +43,26 @@ describe("swipeHint", () => {
   const iphones = ["iPhone 18 Pro", "iPhone 18 Pro Max"];
 
   it("invite à glisser vers le modèle suivant", () => {
-    expect(swipeHint(iphones, 0)).toEqual({ text: "Glisse pour voir l'iPhone 18 Pro Max", back: false });
+    expect(swipeHint(iphones, 0)).toEqual({
+      text: "Glisse pour voir l'iPhone 18 Pro Max",
+      back: false,
+    });
   });
 
   it("propose de revenir au dernier modèle", () => {
-    expect(swipeHint(iphones, 1)).toEqual({ text: "Revenir à l'iPhone 18 Pro", back: true });
+    expect(swipeHint(iphones, 1)).toEqual({
+      text: "Revenir à l'iPhone 18 Pro",
+      back: true,
+    });
   });
 
   it("accorde l'article avec un nom qui commence par une consonne", () => {
-    expect(swipeHint(["Galaxy S25", "Galaxy S25 Ultra"], 0)?.text).toBe("Glisse pour voir le Galaxy S25 Ultra");
-    expect(swipeHint(["Galaxy S25", "Galaxy S25 Ultra"], 1)?.text).toBe("Revenir au Galaxy S25");
+    expect(swipeHint(["Galaxy S25", "Galaxy S25 Ultra"], 0)?.text).toBe(
+      "Glisse pour voir le Galaxy S25 Ultra",
+    );
+    expect(swipeHint(["Galaxy S25", "Galaxy S25 Ultra"], 1)?.text).toBe(
+      "Revenir au Galaxy S25",
+    );
   });
 
   it("ne dit rien pour un seul modèle", () => {
@@ -57,11 +77,11 @@ describe("ctaLabel", () => {
 });
 
 describe("glowColor", () => {
-  const palette = { Bordeaux: "#6b1f2e", Orange: "#f47d3c" };
+  const palette = { Burgundy: "#6b1f2e", Orange: "#f47d3c" };
 
   it("éclaircit de 25 % la teinte de la couleur", () => {
-    // Bordeaux #6b1f2e → (144, 87, 98).
-    expect(glowColor("Bordeaux", palette)).toBe("rgba(144, 87, 98, 0.6)");
+    // Burgundy #6b1f2e → (144, 87, 98).
+    expect(glowColor("Burgundy", palette)).toBe("rgba(144, 87, 98, 0.6)");
   });
 
   // Le bug du 04/11 : « Orange » n'avait pas de teinte, la lueur du 17 Pro Max était violette.
@@ -72,7 +92,9 @@ describe("glowColor", () => {
 
   it("donne une lueur neutre sans couleur, ou pour une couleur sans teinte", () => {
     expect(glowColor(null, palette)).toBe("rgba(155, 77, 255, 0.35)");
-    expect(glowColor("Couleur inconnue", palette)).toBe("rgba(155, 77, 255, 0.35)");
+    expect(glowColor("Couleur inconnue", palette)).toBe(
+      "rgba(155, 77, 255, 0.35)",
+    );
   });
 });
 

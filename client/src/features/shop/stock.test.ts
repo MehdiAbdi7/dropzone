@@ -1,8 +1,19 @@
 import { describe, expect, it } from "vitest";
 import type { Options, Variant } from "@/types/api";
-import { conditionSummary, initialSelection, optionChoices, optionKeys, selectOption } from "./stock";
+import {
+  conditionSummary,
+  initialSelection,
+  optionChoices,
+  optionKeys,
+  selectOption,
+} from "./stock";
 
-const variant = (options: Options, stock: number, price = 335000, condition: Variant["condition"] = "new"): Variant => ({
+const variant = (
+  options: Options,
+  stock: number,
+  price = 335000,
+  condition: Variant["condition"] = "new",
+): Variant => ({
   sku: `${options.Couleur ?? "X"}-${options.Stockage ?? "X"}-${price}-${condition}`,
   options,
   price,
@@ -19,10 +30,10 @@ const variant = (options: Options, stock: number, price = 335000, condition: Var
   gifts: [],
 });
 
-// L'exemple de Mehdi : 3 Bordeaux (2 en 256 Go, 1 en 512 Go), 1 Noir, 1 Argent, Glacier épuisé.
+// L'exemple de Mehdi : 3 Burgundy (2 en 256 Go, 1 en 512 Go), 1 Noir, 1 Argent, Glacier épuisé.
 const iphone18ProMax = [
-  variant({ Stockage: "256 Go", Couleur: "Bordeaux" }, 2),
-  variant({ Stockage: "512 Go", Couleur: "Bordeaux" }, 1, 385000),
+  variant({ Stockage: "256 Go", Couleur: "Burgundy" }, 2),
+  variant({ Stockage: "512 Go", Couleur: "Burgundy" }, 1, 385000),
   variant({ Stockage: "256 Go", Couleur: "Noir" }, 1),
   variant({ Stockage: "512 Go", Couleur: "Argent" }, 1, 385000),
   variant({ Stockage: "256 Go", Couleur: "Glacier" }, 0),
@@ -33,7 +44,10 @@ const valuesOf = (choices: ReturnType<typeof optionChoices>, key: string) =>
 
 describe("optionKeys", () => {
   it("met la couleur avant le stockage pour un téléphone", () => {
-    expect(optionKeys(iphone18ProMax, "phone")).toEqual(["Couleur", "Stockage"]);
+    expect(optionKeys(iphone18ProMax, "phone")).toEqual([
+      "Couleur",
+      "Stockage",
+    ]);
   });
 
   it("ne renvoie rien pour un produit sans options", () => {
@@ -43,8 +57,10 @@ describe("optionKeys", () => {
 
 describe("optionChoices", () => {
   it("compte le stock de chaque couleur, épuisées comprises", () => {
-    expect(valuesOf(optionChoices(iphone18ProMax, keys, {}), "Couleur")).toEqual([
-      { value: "Bordeaux", stock: 3 },
+    expect(
+      valuesOf(optionChoices(iphone18ProMax, keys, {}), "Couleur"),
+    ).toEqual([
+      { value: "Burgundy", stock: 3 },
       { value: "Noir", stock: 1 },
       { value: "Argent", stock: 1 },
       { value: "Glacier", stock: 0 },
@@ -52,11 +68,21 @@ describe("optionChoices", () => {
   });
 
   it("compte le stockage dans la couleur choisie", () => {
-    expect(valuesOf(optionChoices(iphone18ProMax, keys, { Couleur: "Bordeaux" }), "Stockage")).toEqual([
+    expect(
+      valuesOf(
+        optionChoices(iphone18ProMax, keys, { Couleur: "Burgundy" }),
+        "Stockage",
+      ),
+    ).toEqual([
       { value: "256 Go", stock: 2 },
       { value: "512 Go", stock: 1 },
     ]);
-    expect(valuesOf(optionChoices(iphone18ProMax, keys, { Couleur: "Noir" }), "Stockage")).toEqual([
+    expect(
+      valuesOf(
+        optionChoices(iphone18ProMax, keys, { Couleur: "Noir" }),
+        "Stockage",
+      ),
+    ).toEqual([
       { value: "256 Go", stock: 1 },
       { value: "512 Go", stock: 0 },
     ]);
@@ -65,19 +91,34 @@ describe("optionChoices", () => {
 
 describe("initialSelection et selectOption", () => {
   it("part de la variante en stock la moins chère", () => {
-    expect(initialSelection(iphone18ProMax, keys)).toEqual({ Couleur: "Bordeaux", Stockage: "256 Go" });
+    expect(initialSelection(iphone18ProMax, keys)).toEqual({
+      Couleur: "Burgundy",
+      Stockage: "256 Go",
+    });
   });
 
   it("passe au premier stockage disponible quand la nouvelle couleur n'a pas le stockage choisi", () => {
     expect(
-      selectOption(iphone18ProMax, keys, { Couleur: "Bordeaux", Stockage: "512 Go" }, "Couleur", "Noir"),
+      selectOption(
+        iphone18ProMax,
+        keys,
+        { Couleur: "Burgundy", Stockage: "512 Go" },
+        "Couleur",
+        "Noir",
+      ),
     ).toEqual({ Couleur: "Noir", Stockage: "256 Go" });
   });
 
   it("garde le stockage choisi quand il existe dans la nouvelle couleur", () => {
     expect(
-      selectOption(iphone18ProMax, keys, { Couleur: "Noir", Stockage: "256 Go" }, "Couleur", "Bordeaux"),
-    ).toEqual({ Couleur: "Bordeaux", Stockage: "256 Go" });
+      selectOption(
+        iphone18ProMax,
+        keys,
+        { Couleur: "Noir", Stockage: "256 Go" },
+        "Couleur",
+        "Burgundy",
+      ),
+    ).toEqual({ Couleur: "Burgundy", Stockage: "256 Go" });
   });
 
   it("ne choisit rien pour un produit sans options", () => {
@@ -89,9 +130,24 @@ describe("conditionSummary", () => {
   it("résume le neuf scellé et les affaires en stock", () => {
     const variants = [
       ...iphone18ProMax,
-      variant({ Stockage: "256 Go", Couleur: "Noir" }, 1, 289000, "refurbished"),
-      variant({ Stockage: "256 Go", Couleur: "Bordeaux" }, 1, 275000, "refurbished"),
-      variant({ Stockage: "256 Go", Couleur: "Bleu" }, 0, 199000, "refurbished"),
+      variant(
+        { Stockage: "256 Go", Couleur: "Noir" },
+        1,
+        289000,
+        "refurbished",
+      ),
+      variant(
+        { Stockage: "256 Go", Couleur: "Burgundy" },
+        1,
+        275000,
+        "refurbished",
+      ),
+      variant(
+        { Stockage: "256 Go", Couleur: "Bleu" },
+        0,
+        199000,
+        "refurbished",
+      ),
     ];
     expect(conditionSummary(variants)).toEqual({
       newFrom: 335000,
@@ -114,6 +170,8 @@ describe("conditionSummary", () => {
 // L'étape Couleur (05/11) : la couleur est déjà choisie, la page Neuf ne la redemande pas.
 describe("optionKeys sans la couleur choisie", () => {
   it("retire la clé exclue", () => {
-    expect(optionKeys(iphone18ProMax, "phone", "Couleur")).toEqual(["Stockage"]);
+    expect(optionKeys(iphone18ProMax, "phone", "Couleur")).toEqual([
+      "Stockage",
+    ]);
   });
 });

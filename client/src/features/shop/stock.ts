@@ -2,17 +2,24 @@ import { OPTION_ORDER_BY_KIND } from "@/config/catalog";
 import type { ProductKind, Variant } from "@/types/api";
 
 // Les calculs du choix d'un neuf, sans React : ce qui reste dans chaque option.
-// Exemple de Mehdi : 3 Bordeaux (2 en 256 Go, 1 en 512 Go), 1 Noir, 1 Argent.
+// Exemple de Mehdi : 3 Burgundy (2 en 256 Go, 1 en 512 Go), 1 Noir, 1 Argent.
 
 type Selection = Record<string, string>;
 
 // Les clés d'options présentes dans les variantes, dans l'ordre de la sorte de produit ;
 // une clé inconnue de cet ordre passe après, par ordre alphabétique. `exclude` : une clé déjà
 // choisie avant (la couleur, à l'étape Couleur), que la page ne redemande pas.
-export function optionKeys(variants: Variant[], kind: ProductKind, exclude?: string): string[] {
+export function optionKeys(
+  variants: Variant[],
+  kind: ProductKind,
+  exclude?: string,
+): string[] {
   const order = OPTION_ORDER_BY_KIND[kind];
-  const rank = (key: string) => (order.includes(key) ? order.indexOf(key) : order.length);
-  const keys = [...new Set(variants.flatMap((variant) => Object.keys(variant.options)))].filter((key) => key !== exclude);
+  const rank = (key: string) =>
+    order.includes(key) ? order.indexOf(key) : order.length;
+  const keys = [
+    ...new Set(variants.flatMap((variant) => Object.keys(variant.options))),
+  ].filter((key) => key !== exclude);
   return keys.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b, "fr"));
 }
 
@@ -30,13 +37,21 @@ export function optionChoices(
 ): { key: string; values: { value: string; stock: number }[] }[] {
   return keys.map((key, index) => {
     const before = keys.slice(0, index);
-    const values = [...new Set(variants.map((variant) => variant.options[key]).filter(Boolean))];
+    const values = [
+      ...new Set(
+        variants.map((variant) => variant.options[key]).filter(Boolean),
+      ),
+    ];
     return {
       key,
       values: values.map((value) => ({
         value,
         stock: variants
-          .filter((variant) => variant.options[key] === value && matches(variant, selected, before))
+          .filter(
+            (variant) =>
+              variant.options[key] === value &&
+              matches(variant, selected, before),
+          )
           .reduce((sum, variant) => sum + variant.stock, 0),
       })),
     };
@@ -44,10 +59,17 @@ export function optionChoices(
 }
 
 // Le choix de départ : la variante en stock la moins chère, sinon la première.
-export function initialSelection(variants: Variant[], keys: string[]): Selection {
-  const inStock = variants.filter((variant) => variant.stock > 0).sort((a, b) => a.price - b.price);
+export function initialSelection(
+  variants: Variant[],
+  keys: string[],
+): Selection {
+  const inStock = variants
+    .filter((variant) => variant.stock > 0)
+    .sort((a, b) => a.price - b.price);
   const start = inStock[0] ?? variants[0];
-  return start ? Object.fromEntries(keys.map((key) => [key, start.options[key]])) : {};
+  return start
+    ? Object.fromEntries(keys.map((key) => [key, start.options[key]]))
+    : {};
 }
 
 // Le client choisit une valeur : les clés suivantes gardent leur valeur si elle est encore
@@ -79,10 +101,14 @@ export function conditionSummary(variants: Variant[]): {
 } {
   const lowest = (list: Variant[]) => {
     const inStock = list.filter((variant) => variant.stock > 0);
-    return inStock.length > 0 ? Math.min(...inStock.map((variant) => variant.price)) : null;
+    return inStock.length > 0
+      ? Math.min(...inStock.map((variant) => variant.price))
+      : null;
   };
   const fresh = variants.filter((variant) => variant.condition === "new");
-  const refurbished = variants.filter((variant) => variant.condition === "refurbished");
+  const refurbished = variants.filter(
+    (variant) => variant.condition === "refurbished",
+  );
   return {
     newFrom: lowest(fresh),
     newStock: fresh.reduce((sum, variant) => sum + variant.stock, 0),
