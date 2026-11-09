@@ -54,6 +54,15 @@ describe("GET /products, filtre par marque", () => {
 });
 
 describe("GET /products", () => {
+  it("cherche dans plusieurs catégories sélectionnées", async () => {
+    const response = await request(app).get("/products?category=smartphones&category=accessoires");
+    expect(response.status).toBe(200);
+    expect(response.body.data.map((product: { slug: string }) => product.slug)).toEqual(
+      expect.arrayContaining(["chargeur-usb-c-20-w", "coque-antichoc-iphone-15-pro-max", "iphone-15-pro-max"]),
+    );
+    expect(response.body.data).toHaveLength(3);
+  });
+
   it("ne montre que les produits publiés, avec la pagination", async () => {
     const response = await request(app).get("/products");
     expect(response.status).toBe(200);

@@ -106,7 +106,8 @@ function byRelease(a: ReleaseSortable, b: ReleaseSortable): number {
 export async function listProducts(query: ProductListQuery) {
   const filters: Prisma.ProductWhereInput[] = [];
   if (query.category) {
-    filters.push({ category: { slug: query.category } });
+    const categories = Array.isArray(query.category) ? query.category : [query.category];
+    filters.push({ category: { slug: { in: categories } } });
   }
   if (query.q) {
     const contains = escapeLike(query.q);

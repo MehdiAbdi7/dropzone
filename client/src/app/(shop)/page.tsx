@@ -141,7 +141,7 @@ export default function HomePage() {
                 <ArrowRightIcon size={18} />
               </Link>
               <Link
-                href="/produits?condition=affaire"
+                href="/boutique"
                 className="btn btn-outline"
               >
                 Les affaires
@@ -350,7 +350,7 @@ function DealsBanner({ stage }: { stage: ReactNode }) {
             boîte : chaque affaire a sa radiographie, et certaines ont des
             accessoires offerts.
           </p>
-          <Link href="/produits?condition=affaire" className="btn btn-primary">
+          <Link href="/boutique" className="btn btn-primary">
             Voir les affaires
             <ArrowRightIcon size={18} />
           </Link>

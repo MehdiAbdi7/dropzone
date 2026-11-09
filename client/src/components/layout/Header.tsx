@@ -36,7 +36,7 @@ export default function Header() {
           <span className="hidden lg:contents">
             <ThemeToggle />
           </span>
-          <Link href="/produits?condition=affaire" className="btn btn-primary btn-small ml-2 hidden lg:inline-flex">
+          <Link href="/boutique" className="btn btn-primary btn-small ml-2 hidden lg:inline-flex">
             Voir les affaires
           </Link>
           {/* Même place et même taille avant que le client ne prenne la main : rien ne bouge. */}

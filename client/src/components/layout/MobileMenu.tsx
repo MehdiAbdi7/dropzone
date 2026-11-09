@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useRef, type MouseEvent } from "react";
 import Logo from "@/components/ui/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -13,7 +13,7 @@ import NavLinks from "./NavLinks";
 // (piégé dans le menu, rendu au bouton à la fermeture) et la touche Échap.
 export default function MobileMenu() {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const active = activeNavKey(usePathname(), useSearchParams());
+  const active = activeNavKey(usePathname());
 
   // Un clic sur le fond (le <dialog> lui-même, hors du panneau) ou sur un lien ferme le menu :
   // l'en-tête ne se recharge pas d'une page à l'autre, le menu resterait sinon ouvert.
@@ -52,7 +52,7 @@ export default function MobileMenu() {
               Mon compte
             </Link>
             <ThemeToggle withLabel />
-            <Link href="/produits?condition=affaire" className="btn btn-primary w-full">
+            <Link href="/boutique" className="btn btn-primary w-full">
               Voir les affaires
             </Link>
           </div>

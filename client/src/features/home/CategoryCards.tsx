@@ -16,7 +16,7 @@ export const KIND_IMAGES: Record<ProductKind, string> = {
 
 // Les cinq entrées de l'accueil : ce que DropZone vend (relevé Instagram du 04/11, ni
 // montres ni audiovisuel). Les slugs sont ceux des catégories de l'API ; elles mènent
-// dans le parcours de la Boutique. Affaires est un filtre du catalogue.
+// dans le parcours de la Boutique.
 const CATEGORIES = [
   {
     label: "Smartphones",
@@ -40,7 +40,7 @@ const CATEGORIES = [
   },
   {
     label: "Affaires",
-    href: "/produits?condition=affaire",
+    href: "/boutique",
     image: KIND_IMAGES.phone,
   },
 ];

@@ -10,7 +10,7 @@ export const REFERENCE_PATTERN = /^[A-Z0-9-]{1,20}$/i;
 // ---------- Public ----------
 
 export const productListQuerySchema = z.object({
-  category: slug.optional(),
+  category: z.union([slug, z.array(slug).min(1).max(6)]).optional(),
   q: z.string().trim().min(1).max(100).optional(),
   // « affaire » est le mot du magasin ; « reconditionne » reste accepté (anciens liens).
   condition: z.enum(["neuf", "affaire", "reconditionne"]).optional(),
