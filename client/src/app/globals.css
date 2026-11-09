@@ -1053,6 +1053,10 @@
     overflow: hidden;
     pointer-events: none;
   }
+  html.page-transitioning,
+  body.page-transitioning {
+    overflow-x: clip;
+  }
   @keyframes shop-loading-enter {
     from {
       opacity: 0;

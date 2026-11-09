@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Manrope, Montserrat } from "next/font/google";
 import StoreProvider from "./StoreProvider";
 import ThemeScript from "@/components/ui/ThemeScript";
+import ShopPageTransition from "@/features/shop/ShopPageTransition";
 import "./globals.css";
+import { Suspense } from "react";
 
 // Manrope pour le texte, Montserrat pour les titres et le logo.
 const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"] });
@@ -41,7 +43,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <p className="bg-gradient-deep px-4 py-1.5 text-center text-xs font-semibold text-white sm:text-sm">
           {"Démo non officielle : ce site n'est pas celui de DropZone. Aucune commande n'est livrée."}
         </p>
-        <StoreProvider>{children}</StoreProvider>
+        <StoreProvider>
+          <Suspense fallback={children}>
+            <ShopPageTransition>{children}</ShopPageTransition>
+          </Suspense>
+        </StoreProvider>
       </body>
     </html>
   );

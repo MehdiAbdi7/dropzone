@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 
 type Snapshot = {
@@ -12,8 +12,11 @@ type Snapshot = {
 
 export default function ShopPageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const routeKey = `${pathname}?${searchParams.toString()}`;
   const contentRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
+  const previousRouteRef = useRef(routeKey);
   const previousPathRef = useRef(pathname);
   const snapshotRef = useRef<Snapshot | null>(null);
 
@@ -60,7 +63,13 @@ export default function ShopPageTransition({ children }: { children: ReactNode }
       }
 
       const destination = new URL(link.href, window.location.href);
-      if (destination.origin === window.location.origin && destination.pathname !== window.location.pathname) {
+      const current = new URL(window.location.href);
+      const pathChanged = destination.pathname !== current.pathname;
+      const selectedColorChanged =
+        destination.pathname === current.pathname &&
+        destination.pathname.startsWith("/produits/") &&
+        destination.searchParams.get("couleur") !== current.searchParams.get("couleur");
+      if (destination.origin === current.origin && (pathChanged || selectedColorChanged)) {
         saveCurrentPage();
       }
     }
@@ -84,19 +93,27 @@ export default function ShopPageTransition({ children }: { children: ReactNode }
   }, []);
 
   useLayoutEffect(() => {
-    if (previousPathRef.current === pathname) {
+    if (previousRouteRef.current === routeKey) {
       return;
     }
-    previousPathRef.current = pathname;
+    previousRouteRef.current = routeKey;
 
     const content = contentRef.current;
     const layer = layerRef.current;
     const snapshot = snapshotRef.current;
     snapshotRef.current = null;
+    const pathChanged = previousPathRef.current !== pathname;
+    previousPathRef.current = pathname;
+    if (!snapshot && !pathChanged) {
+      return;
+    }
     if (!content || !layer || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       layer?.replaceChildren();
       return;
     }
+
+    document.documentElement.classList.add("page-transitioning");
+    document.body.classList.add("page-transitioning");
 
     if (snapshot) {
       Object.assign(snapshot.content.style, {
@@ -130,12 +147,19 @@ export default function ShopPageTransition({ children }: { children: ReactNode }
         fill: "backwards",
       },
     );
+    enterAnimation.onfinish = () => {
+      layer.replaceChildren();
+      document.documentElement.classList.remove("page-transitioning");
+      document.body.classList.remove("page-transitioning");
+    };
 
     return () => {
       enterAnimation.cancel();
       layer.replaceChildren();
+      document.documentElement.classList.remove("page-transitioning");
+      document.body.classList.remove("page-transitioning");
     };
-  }, [pathname]);
+  }, [routeKey]);
 
   return (
     <>
