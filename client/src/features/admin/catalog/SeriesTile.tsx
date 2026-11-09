@@ -12,7 +12,13 @@ export default function SeriesTile({ series, palette }: { series: AdminSeriesTil
     <Link href={`/admin/catalogue/series/${series.id}`} className="series-card block">
       <div className="series-media">
         {series.coverUrl ? (
-          <Image src={series.coverUrl} alt="" fill sizes="(min-width: 1024px) 33vw, 50vw" className="object-cover" />
+          <Image
+            src={series.coverUrl}
+            alt=""
+            fill
+            sizes="(min-width: 1280px) 380px, 50vw"
+            className="object-cover"
+          />
         ) : (
           <div
             className="absolute inset-0"

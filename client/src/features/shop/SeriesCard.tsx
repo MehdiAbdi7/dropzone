@@ -27,7 +27,7 @@ export default function SeriesCard({
       src={series.coverUrl}
       alt=""
       fill
-      sizes="(min-width: 1280px) 380px, (min-width: 768px) 50vw, 100vw"
+      sizes="(min-width: 1280px) 380px, 50vw"
       priority={priority}
       className="object-cover"
     />
@@ -60,47 +60,37 @@ export default function SeriesCard({
   const body = (
     <>
       <div className="series-media">{media}</div>
-      {/* Le bouton reste sous le prix à toutes les tailles : à côté, il serrait les
-          modèles sur plusieurs lignes et le bloc sortait par le haut de l'affiche. */}
-      {/* Affiche « mini » sur téléphone (2 par ligne, choix de Mehdi du 05/11) : à 164 px
-          de large, les pastilles des modèles passaient une par ligne et le bloc montait
-          jusqu'à 82 px au-dessus de l'affiche. Sous 768 px : le prix et « Voir » seulement. */}
-      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 p-3 md:gap-3 md:p-5">
-        <div className="min-w-0 space-y-2">
-          {/* Le titre n'est plus affiché (la couverture porte déjà le nom), mais il
-              reste pour les lecteurs d'écran : un titre par série dans la page. */}
+      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 p-2.5 md:gap-3 md:p-5">
+        <div className="min-w-0">
           <h2 className="sr-only">{series.name}</h2>
           <ul
             aria-label="Modèles de la série"
-            className="hidden flex-wrap gap-1.5 md:flex"
+            className="series-models"
           >
             {series.models.map((model) => (
-              <li
-                key={model}
-                className="rounded-full border border-white/30 bg-black/40 px-2.5 py-1 text-xs font-semibold text-white"
-              >
-                {model}
-              </li>
+              <li key={model} className="series-model-tag">{model}</li>
             ))}
           </ul>
+        </div>
+        <div className="flex flex-row items-center justify-between gap-3">
           {series.fromPrice !== null ? (
-            <p className="text-sm text-white/85">
+            <p className="text-xs text-white/80 md:text-sm">
               dès{" "}
-              <span className="font-display text-base font-bold whitespace-nowrap text-white">
+              <span className="font-display text-sm font-bold whitespace-nowrap text-white md:text-base">
                 {formatPrice(series.fromPrice)}
               </span>
             </p>
           ) : null}
+          {series.soldOut ? (
+            <span className="badge badge-out">Épuisé</span>
+          ) : (
+            <span className="series-cta">
+              <span className="md:hidden">Voir</span>
+              <span className="hidden md:inline">{ctaLabel(series.name)}</span>
+              <ArrowRightIcon size={14} />
+            </span>
+          )}
         </div>
-        {series.soldOut ? (
-          <span className="badge badge-out self-start">Épuisé</span>
-        ) : (
-          <span className="series-cta w-full">
-            <span className="md:hidden">Voir</span>
-            <span className="hidden md:inline">{ctaLabel(series.name)}</span>
-            <ArrowRightIcon size={16} />
-          </span>
-        )}
       </div>
     </>
   );
