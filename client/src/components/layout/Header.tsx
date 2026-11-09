@@ -33,12 +33,7 @@ export default function Header() {
             <UserIcon />
           </Link>
           <CartLink />
-          <span className="hidden lg:contents">
-            <ThemeToggle />
-          </span>
-          <Link href="/boutique" className="btn btn-primary btn-small ml-2 hidden lg:inline-flex">
-            Voir les affaires
-          </Link>
+          <ThemeToggle />
           {/* Même place et même taille avant que le client ne prenne la main : rien ne bouge. */}
           <Suspense
             fallback={

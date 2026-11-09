@@ -32,7 +32,7 @@ export default function ShopPageTransition({ children }: { children: ReactNode }
         return;
       }
 
-      const page = current.closest("main") ?? current;
+      const page = current.querySelector<HTMLElement>("main#contenu") ?? current;
       const bounds = page.getBoundingClientRect();
       const clone = page.cloneNode(true) as HTMLElement;
       clone.setAttribute("aria-hidden", "true");
@@ -98,7 +98,8 @@ export default function ShopPageTransition({ children }: { children: ReactNode }
     }
     previousRouteRef.current = routeKey;
 
-    const content = contentRef.current;
+    const root = contentRef.current;
+    const content = root?.querySelector<HTMLElement>("main#contenu") ?? root;
     const layer = layerRef.current;
     const snapshot = snapshotRef.current;
     snapshotRef.current = null;

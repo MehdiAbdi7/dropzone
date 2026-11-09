@@ -3,8 +3,9 @@
 export const NAV_LINKS = [
   { key: "accueil", href: "/", label: "Accueil" },
   { key: "boutique", href: "/boutique", label: "Boutique" },
-  { key: "affaires", href: "/boutique", label: "Affaires" },
   { key: "suivi", href: "/suivi", label: "Suivi" },
+  { key: "conditions", href: "/conditions-generales-de-vente", label: "Conditions générales de vente" },
+  { key: "mentions", href: "/mentions-legales", label: "Mentions légales" },
 ] as const;
 
 export type NavKey = (typeof NAV_LINKS)[number]["key"];
@@ -20,6 +21,12 @@ export function activeNavKey(pathname: string): NavKey | null {
   }
   if (pathname.startsWith("/suivi")) {
     return "suivi";
+  }
+  if (pathname === "/conditions-generales-de-vente") {
+    return "conditions";
+  }
+  if (pathname === "/mentions-legales") {
+    return "mentions";
   }
   return null;
 }
