@@ -29,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="fr"
-      data-theme="light"
+      data-theme="dark"
       // ThemeScript peut changer data-theme avant React : on prévient React que
       // cet attribut peut différer du HTML du serveur.
       suppressHydrationWarning

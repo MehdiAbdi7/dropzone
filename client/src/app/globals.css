@@ -21,7 +21,7 @@
 
 /* ---------- 2. Les couleurs ---------- */
 
-/* Clair, le thème par défaut : fond gris très clair, cartes blanches. */
+/* Clair : fond gris très clair, cartes blanches. */
 :root,
 [data-theme="light"] {
   --bg: #f5f6fb;
