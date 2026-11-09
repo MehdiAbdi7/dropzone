@@ -169,15 +169,29 @@ model ModelColorPhoto {
 }
 
 model Choice {
-  id    Int         @id @default(autoincrement())
-  group ChoiceGroup
-  label String
+  id     Int          @id @default(autoincrement())
+  group  ChoiceGroup?
+  listId Int?         @map("list_id")
+  list   ChoiceList?  @relation(fields: [listId], references: [id], onDelete: Cascade)
+  label  String
   // La teinte d'une couleur (« #f47d3c »), réglée par le gérant dans Listes : la pastille
   // et la lueur de l'affiche la lisent. Seulement pour la liste des couleurs (CHECK).
-  hex   String?
+  hex    String?
 
   @@unique([group, label])
+  @@unique([listId, label])
   @@map("choices")
+}
+
+model ChoiceList {
+  id       Int           @id @default(autoincrement())
+  name     String        @unique
+  group    ChoiceGroup?  @unique
+  kinds    ProductKind[] @default([])
+  multiple Boolean       @default(false)
+  choices  Choice[]
+
+  @@map("choice_lists")
 }
 
 model Product {

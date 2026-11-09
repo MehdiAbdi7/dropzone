@@ -1,195 +1,301 @@
 "use client";
 
 import { useState } from "react";
-import { CHOICE_GROUP_LABELS, type ChoiceGroup } from "@/config/catalog";
+import { CHOICE_GROUP_LABELS, KIND_LABELS, type ChoiceGroup } from "@/config/catalog";
+import type { ProductKind } from "@/types/api";
 import {
   useChoicesQuery,
+  useCreateChoiceListMutation,
   useCreateChoiceMutation,
+  useDeleteChoiceListMutation,
   useDeleteChoiceMutation,
+  useUpdateChoiceListMutation,
+  useUpdateChoiceMutation,
   type Choice,
+  type ChoiceList,
 } from "@/features/admin/adminApi";
-import ColorHueChip, { DEFAULT_HUE } from "@/features/admin/ColorHueChip";
 import EditDialog from "@/features/admin/products/EditDialog";
 import { errorMessage } from "@/lib/errors";
 
-// Combien de valeurs on montre sur la carte de résumé avant « +N ».
-const PREVIEW_COUNT = 6;
-
-// ---------- Les listes à cocher ----------
-// Une carte courte par liste (05/11), comme la fiche produit : son nom, son nombre de valeurs
-// et les premières. « Modifier » ouvre une fenêtre où la recherche et l'ajout restent en haut.
+const KINDS = Object.keys(KIND_LABELS) as ProductKind[];
+const listKey = (list: ChoiceList) => list.group ?? `list:${list.id}`;
+const normalize = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
 export default function ChoicesSection() {
-  const { data: choices } = useChoicesQuery();
-  const [open, setOpen] = useState<ChoiceGroup | null>(null);
-  const groups = Object.keys(CHOICE_GROUP_LABELS) as ChoiceGroup[];
+  const { data, isLoading, error } = useChoicesQuery();
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [createList, createState] = useCreateChoiceListMutation();
+  const [name, setName] = useState("");
+  const [kinds, setKinds] = useState<ProductKind[]>([]);
+  const [multiple, setMultiple] = useState(false);
+  const [group, setGroup] = useState<ChoiceGroup | "">("");
+  const lists = data?.lists ?? [];
+  const usedGroups = new Set(lists.flatMap((list) => (list.group ? [list.group] : [])));
+  const missingGroups = (Object.keys(CHOICE_GROUP_LABELS) as ChoiceGroup[]).filter((value) => !usedGroups.has(value));
+  const active = lists.find((list) => list.id === selectedId) ?? null;
+
+  async function addList(event: React.FormEvent) {
+    event.preventDefault();
+    const listName = name.trim();
+    if (!listName || kinds.length === 0) return;
+    try {
+      await createList({ name: listName, kinds, multiple, ...(group ? { group } : {}) }).unwrap();
+      setName("");
+      setKinds([]);
+      setMultiple(false);
+      setGroup("");
+    } catch {
+      // L'erreur RTK Query est affichée sous le formulaire.
+    }
+  }
 
   return (
     <section aria-labelledby="choices" className="space-y-4">
-      <h2 id="choices" className="text-2xl">
-        Listes à cocher
-      </h2>
-      <p className="max-w-2xl text-ink-muted">
-        Les valeurs proposées dans le formulaire produit. Retirer une valeur ne change aucun produit : chaque variante
-        garde sa copie du texte.
-      </p>
+      <div className="space-y-1">
+        <h2 id="choices" className="text-2xl">Listes d&apos;options</h2>
+        <p className="max-w-3xl text-ink-muted">
+          Crée et organise les listes utilisées dans les fiches produit. Les valeurs enregistrées sur les produits
+          restent inchangées si une valeur est renommée ou supprimée.
+        </p>
+      </div>
+      {error ? <p className="field-error">{errorMessage(error)}</p> : null}
+      {isLoading ? <p className="text-ink-muted">Chargement des listes…</p> : null}
+
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {groups.map((group) => {
-          const values = choices?.[group] ?? [];
+        {lists.map((list) => {
+          const values = data?.values[listKey(list)] ?? [];
           return (
-            <li key={group}>
+            <li key={list.id}>
               <button
                 type="button"
-                onClick={() => setOpen(group)}
-                className="card flex h-full w-full flex-col gap-2 p-4 text-left transition-[border-color,box-shadow] hover:border-blue-ink hover:shadow-[var(--shadow)]"
+                onClick={() => setSelectedId(list.id)}
+                className="card flex h-full w-full flex-col gap-3 p-4 text-left transition-[border-color,box-shadow] hover:border-blue-ink hover:shadow-[var(--shadow)]"
               >
                 <span className="flex w-full items-baseline justify-between gap-2">
-                  <span className="font-display text-lg font-bold">{CHOICE_GROUP_LABELS[group]}</span>
-                  <span className="text-sm text-ink-muted">{values.length}</span>
+                  <span className="font-display text-lg font-bold">{list.name}</span>
+                  <span className="text-sm text-ink-muted">{values.length} valeurs</span>
                 </span>
-                <Preview group={group} values={values} />
-                <span className="mt-auto text-sm font-semibold text-blue-ink">Modifier →</span>
+                <span className="text-sm text-ink-muted">
+                  {list.kinds.length > 0 ? list.kinds.map((kind) => KIND_LABELS[kind]).join(" · ") : "Aucune catégorie visible"}
+                </span>
+                <span className="text-sm text-ink-muted">{list.multiple ? "Plusieurs choix" : "Un seul choix"}</span>
+                <span className="mt-auto text-sm font-semibold text-blue-ink">Gérer la liste →</span>
               </button>
             </li>
           );
         })}
       </ul>
-      {open ? <GroupDialog group={open} values={choices?.[open] ?? []} onClose={() => setOpen(null)} /> : null}
+
+      <form onSubmit={addList} className="card grid gap-4 p-4 sm:grid-cols-[minmax(12rem,1fr)_minmax(12rem,1.3fr)]">
+        <div className="space-y-3">
+          <label className="block">
+            <span className="label">Nouvelle liste</span>
+            <input className="input" placeholder="Ex. Fréquence d'écran" value={name} onChange={(event) => setName(event.target.value)} />
+          </label>
+          {missingGroups.length > 0 ? (
+            <label className="block">
+              <span className="label">Ou restaurer une liste standard</span>
+              <select
+                className="input"
+                value={group}
+                onChange={(event) => {
+                  const next = event.target.value as ChoiceGroup | "";
+                  setGroup(next);
+                  if (next) setName(CHOICE_GROUP_LABELS[next]);
+                }}
+              >
+                <option value="">Liste personnalisée</option>
+                {missingGroups.map((value) => <option key={value} value={value}>{CHOICE_GROUP_LABELS[value]}</option>)}
+              </select>
+            </label>
+          ) : null}
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" className="size-4" checked={multiple} onChange={(event) => setMultiple(event.target.checked)} />
+            Autoriser plusieurs choix
+          </label>
+          <button type="submit" className="btn btn-primary btn-small" disabled={createState.isLoading || !name.trim() || kinds.length === 0}>
+            Créer la liste
+          </button>
+          {createState.error ? <p className="field-error">{errorMessage(createState.error)}</p> : null}
+        </div>
+        <KindPicker value={kinds} onChange={setKinds} label="Visible dans les catégories" />
+      </form>
+
+      {active ? (
+        <ListDialog key={active.id} list={active} values={data?.values[listKey(active)] ?? []} onClose={() => setSelectedId(null)} />
+      ) : null}
     </section>
   );
 }
 
-// Les premières valeurs de la liste, en texte (avec la pastille pour les couleurs).
-function Preview({ group, values }: { group: ChoiceGroup; values: Choice[] }) {
-  if (values.length === 0) {
-    return <span className="text-sm text-ink-muted">Aucune valeur</span>;
-  }
-  const rest = values.length - PREVIEW_COUNT;
+function KindPicker({
+  value,
+  onChange,
+  label,
+}: {
+  value: ProductKind[];
+  onChange: (value: ProductKind[]) => void;
+  label: string;
+}) {
   return (
-    <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
-      {values.slice(0, PREVIEW_COUNT).map((choice) => (
-        <span key={choice.id} className="inline-flex items-center gap-1">
-          {group === "color" ? (
-            <span className="size-3 rounded-full border border-line" style={{ background: choice.hex ?? DEFAULT_HUE }} />
-          ) : null}
-          {choice.label}
-        </span>
-      ))}
-      {rest > 0 ? <span>+{rest}</span> : null}
-    </span>
+    <fieldset className="space-y-2">
+      <legend className="label">{label}</legend>
+      <div className="flex flex-wrap gap-2">
+        {KINDS.map((kind) => (
+          <button
+            key={kind}
+            type="button"
+            className="chip"
+            aria-pressed={value.includes(kind)}
+            onClick={() => onChange(value.includes(kind) ? value.filter((item) => item !== kind) : [...value, kind])}
+          >
+            {KIND_LABELS[kind]}
+          </button>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 
-// La recherche ignore la casse et les accents : « bleu » trouve « Bleu intense ».
-const normalize = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
-
-// La fenêtre d'une liste : la recherche et l'ajout dans la barre collée en haut,
-// toutes les valeurs (filtrées) en dessous.
-function GroupDialog({ group, values, onClose }: { group: ChoiceGroup; values: Choice[]; onClose: () => void }) {
+function ListDialog({ list, values, onClose }: { list: ChoiceList; values: Choice[]; onClose: () => void }) {
+  const [updateList, updateState] = useUpdateChoiceListMutation();
+  const [deleteList, deleteState] = useDeleteChoiceListMutation();
   const [createChoice, createState] = useCreateChoiceMutation();
-  const [deleteChoice] = useDeleteChoiceMutation();
+  const [name, setName] = useState(list.name);
+  const [kinds, setKinds] = useState(list.kinds);
+  const [multiple, setMultiple] = useState(list.multiple);
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
-  // La teinte de la nouvelle couleur : obligatoire, elle donne la pastille et la lueur.
-  const [newHue, setNewHue] = useState(DEFAULT_HUE);
-  const isColor = group === "color";
+  const [hue, setHue] = useState("#808080");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const filtered = values.filter((choice) => normalize(choice.label).includes(normalize(search.trim())));
+  const isColor = list.group === "color";
 
-  async function add() {
-    const label = draft.trim();
-    if (!label) {
-      return;
-    }
+  async function saveList() {
     try {
-      await createChoice(isColor ? { group, label, hex: newHue } : { group, label }).unwrap();
-      setDraft("");
-      setNewHue(DEFAULT_HUE);
+      await updateList({ id: list.id, name: name.trim(), kinds, multiple }).unwrap();
     } catch {
-      // Affiché sous la barre d'ajout.
+      // L'erreur RTK Query est affichée dans la fenêtre.
+    }
+  }
+
+  async function addValue(event: React.FormEvent) {
+    event.preventDefault();
+    const label = draft.trim();
+    if (!label) return;
+    try {
+      if (isColor) {
+        await createChoice({ group: "color", label, hex: hue }).unwrap();
+      } else if (list.group) {
+        await createChoice({ group: list.group, label }).unwrap();
+      } else {
+        await createChoice({ listId: list.id, label }).unwrap();
+      }
+      setDraft("");
+    } catch {
+      // L'erreur RTK Query est affichée dans la fenêtre.
+    }
+  }
+
+  async function removeList() {
+    try {
+      await deleteList(list.id).unwrap();
+      onClose();
+    } catch {
+      // L'erreur RTK Query est affichée dans la fenêtre.
     }
   }
 
   const toolbar = (
-    <>
-      <label className="block">
-        <span className="sr-only">Rechercher dans {CHOICE_GROUP_LABELS[group]}</span>
-        <input
-          type="search"
-          className="input min-h-9 py-1 text-sm"
-          placeholder={`Rechercher parmi ${values.length} valeurs…`}
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-      </label>
-      <div className="flex gap-2">
+    <div className="space-y-3">
+      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+        <label className="block">
+          <span className="label">Intitulé</span>
+          <input className="input" value={name} onChange={(event) => setName(event.target.value)} />
+        </label>
+        <label className="flex items-center gap-2 self-end pb-2 text-sm">
+          <input type="checkbox" className="size-4" checked={multiple} onChange={(event) => setMultiple(event.target.checked)} />
+          Plusieurs choix
+        </label>
+      </div>
+      <KindPicker value={kinds} onChange={setKinds} label="Visible dans les catégories" />
+      <button type="button" className="btn btn-secondary btn-small" disabled={updateState.isLoading || !name.trim()} onClick={saveList}>
+        Enregistrer la liste
+      </button>
+      {updateState.error ? <p className="field-error">{errorMessage(updateState.error)}</p> : null}
+      <form onSubmit={addValue} className="flex gap-2">
         {isColor ? (
-          <input
-            type="color"
-            aria-label="Teinte de la nouvelle couleur"
-            className="size-9 shrink-0 cursor-pointer rounded-lg"
-            value={newHue}
-            onChange={(event) => setNewHue(event.target.value)}
-          />
+          <input type="color" aria-label="Teinte de la nouvelle couleur" className="size-10 shrink-0" value={hue} onChange={(event) => setHue(event.target.value)} />
         ) : null}
         <label className="min-w-0 flex-1">
-          <span className="sr-only">Ajouter à {CHOICE_GROUP_LABELS[group]}</span>
-          <input
-            className="input min-h-9 py-1 text-sm"
-            placeholder="Nouvelle valeur…"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            // La fenêtre bloque Entrée dans les champs : ce champ-ci ajoute lui-même.
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                add();
-              }
-            }}
-          />
+          <span className="sr-only">Nouvelle valeur</span>
+          <input className="input" placeholder="Nouvelle valeur…" value={draft} onChange={(event) => setDraft(event.target.value)} />
         </label>
-        <button
-          type="button"
-          className="btn btn-secondary btn-small"
-          disabled={createState.isLoading || draft.trim() === ""}
-          onClick={add}
-        >
-          Ajouter
-        </button>
-      </div>
+        <button type="submit" className="btn btn-primary btn-small" disabled={createState.isLoading || !draft.trim()}>Ajouter</button>
+      </form>
       {createState.error ? <p className="field-error">{errorMessage(createState.error)}</p> : null}
-    </>
+      <label className="block">
+        <span className="sr-only">Rechercher une valeur</span>
+        <input type="search" className="input" placeholder={`Rechercher parmi ${values.length} valeurs…`} value={search} onChange={(event) => setSearch(event.target.value)} />
+      </label>
+    </div>
   );
 
   return (
-    <EditDialog open title={CHOICE_GROUP_LABELS[group]} onClose={onClose} toolbar={toolbar}>
-      {isColor ? (
-        <p className="text-sm text-ink-muted">
-          La teinte de chaque couleur donne sa pastille dans la boutique et la lueur derrière le modèle sur
-          l&apos;affiche de la série. Clique sur la pastille pour la changer.
-        </p>
-      ) : null}
+    <EditDialog open title={list.name} onClose={onClose} toolbar={toolbar}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-ink-muted">{values.length} valeurs dans cette liste.</p>
+        {confirmDelete ? (
+          <span className="flex items-center gap-2">
+            <span className="text-sm">Supprimer la liste et ses valeurs ?</span>
+            <button type="button" className="btn btn-danger btn-small" disabled={deleteState.isLoading} onClick={removeList}>Confirmer</button>
+            <button type="button" className="btn btn-secondary btn-small" onClick={() => setConfirmDelete(false)}>Annuler</button>
+          </span>
+        ) : (
+          <button type="button" className="btn btn-danger btn-small" onClick={() => setConfirmDelete(true)}>Supprimer la liste</button>
+        )}
+      </div>
+      {deleteState.error ? <p className="field-error">{errorMessage(deleteState.error)}</p> : null}
       {filtered.length === 0 ? (
         <p className="text-sm text-ink-muted">{search ? "Aucune valeur ne correspond." : "Aucune valeur."}</p>
       ) : (
-        <ul className="flex flex-wrap gap-2">
-          {filtered.map((choice) =>
-            isColor ? (
-              <ColorHueChip key={choice.id} choice={choice} onRemove={() => deleteChoice(choice.id)} />
-            ) : (
-              <li key={choice.id} className="chip cursor-default">
-                {choice.label}
-                <button
-                  type="button"
-                  className="text-ink-muted hover:text-red"
-                  aria-label={`Retirer ${choice.label}`}
-                  onClick={() => deleteChoice(choice.id)}
-                >
-                  ×
-                </button>
-              </li>
-            ),
-          )}
+        <ul className="space-y-2">
+          {filtered.map((choice) => <ChoiceRow key={choice.id} choice={choice} isColor={isColor} />)}
         </ul>
       )}
     </EditDialog>
+  );
+}
+
+function ChoiceRow({ choice, isColor }: { choice: Choice; isColor: boolean }) {
+  const [label, setLabel] = useState(choice.label);
+  const [hex, setHex] = useState(choice.hex ?? "#808080");
+  const [update, updateState] = useUpdateChoiceMutation();
+  const [remove, removeState] = useDeleteChoiceMutation();
+
+  async function save() {
+    try {
+      await update({ id: choice.id, label: label.trim(), ...(isColor ? { hex } : {}) }).unwrap();
+    } catch {
+      // L'erreur RTK Query est affichée dans la ligne.
+    }
+  }
+
+  async function removeValue() {
+    try {
+      await remove(choice.id).unwrap();
+    } catch {
+      // L'erreur RTK Query est affichée dans la ligne.
+    }
+  }
+
+  return (
+    <li className="flex flex-wrap items-center gap-2 rounded-lg border border-line p-2">
+      {isColor ? <input type="color" aria-label={`Teinte de ${choice.label}`} className="size-9 shrink-0" value={hex} onChange={(event) => setHex(event.target.value)} /> : null}
+      <input className="input min-w-0 flex-1" value={label} onChange={(event) => setLabel(event.target.value)} />
+      <button type="button" className="btn btn-secondary btn-small" disabled={updateState.isLoading || !label.trim()} onClick={save}>Enregistrer</button>
+      <button type="button" className="btn btn-danger btn-small" disabled={removeState.isLoading} aria-label={`Supprimer ${choice.label}`} onClick={removeValue}>Supprimer</button>
+      {updateState.error || removeState.error ? <p className="field-error w-full">{errorMessage(updateState.error ?? removeState.error)}</p> : null}
+    </li>
   );
 }

@@ -304,6 +304,25 @@ describe("Modèles, listes et catégories", () => {
     expect(response.body.data.storage).toEqual([]);
   });
 
+  it("crée, renomme et supprime une liste personnalisée et ses valeurs", async () => {
+    const created = await admin
+      .post("/admin/choice-lists")
+      .send({ name: "Fréquence d'écran", kinds: ["laptop"], multiple: true })
+      .expect(201);
+    const listId = created.body.data.id;
+    expect(created.body.data).toMatchObject({ name: "Fréquence d'écran", kinds: ["laptop"], multiple: true, group: null });
+    const value = await admin.post("/admin/choices").send({ listId, label: "120 Hz" }).expect(201);
+    await prisma.productVariant.update({ where: { sku: "IP-NEW-256" }, data: { options: { "Fréquence d'écran": "120 Hz" } } });
+
+    await admin.patch(`/admin/choice-lists/${listId}`).send({ name: "Rafraîchissement" }).expect(200);
+    expect((await prisma.productVariant.findUniqueOrThrow({ where: { sku: "IP-NEW-256" } })).options).toEqual({ Rafraîchissement: "120 Hz" });
+    const response = await admin.get("/admin/choices");
+    expect(response.body.data.values[`list:${listId}`]).toEqual([expect.objectContaining({ label: "120 Hz" })]);
+
+    await admin.delete(`/admin/choice-lists/${listId}`).expect(204);
+    expect(await prisma.choice.findUnique({ where: { id: value.body.data.id } })).toBeNull();
+  });
+
   it("refuse de supprimer une catégorie qui a des produits", async () => {
     const response = await admin.delete(`/admin/categories/${catalog.phones.id}`);
     expect(response.status).toBe(409);

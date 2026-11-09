@@ -7,8 +7,10 @@ import { useChoicesQuery, useCreateChoiceMutation } from "../adminApi";
 import { DEFAULT_HUE } from "../ColorHueChip";
 import { exactChoice, matchChoices } from "./choiceSearch";
 
-type Props = {
-  group: ChoiceGroup;
+type Selector =
+  | { group: ChoiceGroup; listId?: never }
+  | { group?: never; listId: number };
+type Props = Selector & {
   label: string;
   // Les valeurs à proposer d'abord (les couleurs officielles du modèle) : en puces, les autres
   // se trouvent par la recherche.
@@ -27,9 +29,9 @@ const SUGGESTIONS = 8;
 // Une liste du formulaire produit : les valeurs de la table `choices`, et l'ajout d'une valeur
 // qui manque (elle entre dans la liste pour les produits suivants, et se choisit tout de suite).
 export default function ChoicePicker(props: Props) {
-  const { group, label } = props;
+  const { group, listId, label } = props;
   const inputId = useId();
-  const listId = useId();
+  const inputListId = useId();
   const { data: choices } = useChoicesQuery();
   const [createChoice, { isLoading, error, reset }] = useCreateChoiceMutation();
   const [draft, setDraft] = useState("");
@@ -40,7 +42,8 @@ export default function ChoicePicker(props: Props) {
   const isColor = group === "color";
 
   const selected = props.multiple ? props.value : props.value ? [props.value] : [];
-  const labels = (choices?.[group] ?? []).map((choice) => choice.label);
+  const listKey = group ?? `list:${listId}`;
+  const labels = (choices?.values[listKey] ?? choices?.[listKey] ?? []).map((choice) => choice.label);
   // Une valeur déjà sur la variante mais retirée de la liste reste visible.
   const all = [...labels, ...selected.filter((value) => !labels.includes(value))];
   const only = props.only ?? [];
@@ -78,7 +81,15 @@ export default function ChoicePicker(props: Props) {
       return;
     }
     try {
-      await createChoice(isColor ? { group, label: value, hex: hue } : { group, label: value }).unwrap();
+      if (group === "color") {
+        await createChoice({ group, label: value, hex: hue }).unwrap();
+      } else if (group) {
+        await createChoice({ group, label: value }).unwrap();
+      } else if (listId !== undefined) {
+        await createChoice({ listId, label: value }).unwrap();
+      } else {
+        return;
+      }
       setHue(DEFAULT_HUE);
       pick(value);
     } catch {
@@ -210,9 +221,9 @@ export default function ChoicePicker(props: Props) {
             id={inputId}
             role="combobox"
             aria-expanded={showList}
-            aria-controls={listId}
+            aria-controls={inputListId}
             aria-autocomplete="list"
-            aria-activedescendant={showList ? `${listId}-${Math.min(active, rows.length - 1)}` : undefined}
+            aria-activedescendant={showList ? `${inputListId}-${Math.min(active, rows.length - 1)}` : undefined}
             autoComplete="off"
             className="input min-h-9 py-1 text-sm"
             placeholder={`Rechercher ou ajouter (${all.length} valeurs)…`}
@@ -230,7 +241,7 @@ export default function ChoicePicker(props: Props) {
         </div>
         {showList ? (
           <ul
-            id={listId}
+            id={inputListId}
             role="listbox"
             aria-label={label}
             className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-[var(--shadow)]"
@@ -238,7 +249,7 @@ export default function ChoicePicker(props: Props) {
             {rows.map((row, index) => (
               <li
                 key={row ?? "__add"}
-                id={`${listId}-${index}`}
+                id={`${inputListId}-${index}`}
                 role="option"
                 aria-selected={index === Math.min(active, rows.length - 1)}
                 // mousedown avant le blur du champ : sans ça, la liste disparaît avant le clic.

@@ -2,10 +2,10 @@
 
 import { Fragment, useState } from "react";
 import Field from "@/components/ui/Field";
-import { CONDITION_LABELS, FAMILIES, OPTION_FIELDS } from "@/config/catalog";
+import { CONDITION_LABELS, FAMILIES, OPTION_FIELDS, type ChoiceGroup } from "@/config/catalog";
 import { formatPrice } from "@/lib/format";
 import type { ProductKind } from "@/types/api";
-import type { GiftOption } from "../adminApi";
+import { useChoicesQuery, type GiftOption } from "../adminApi";
 import ChoicePicker from "./ChoicePicker";
 import ColorPhotoField from "./ColorPhotoField";
 import { type PartOrigin, type VariantDraft, withCondition, withReplacedParts } from "./productDraft";
@@ -28,6 +28,11 @@ type Props = {
   onSuggestSku: () => void;
 };
 
+type ChoiceField = { key: string; multiple?: boolean } & (
+  | { group: ChoiceGroup; listId?: never }
+  | { group?: never; listId: number }
+);
+
 // Une variante du formulaire : neuf scellé ou affaire, ses options à cocher, son prix et
 // son stock, la fiche d'une affaire (état, pièces d'origine ou compatibles, boîte,
 // détails), et ses articles offerts.
@@ -47,6 +52,36 @@ export default function VariantEditor({
   const set = (patch: Partial<VariantDraft>) => onChange({ ...variant, ...patch });
   const id = (name: string) => `${variant.key}-${name}`;
   const refurbished = variant.condition === "refurbished";
+  const { data: choiceData } = useChoicesQuery();
+  const customLists = choiceData?.lists.filter((list) => list.group === null && list.kinds.includes(kind)) ?? [];
+
+  function renderPicker(field: ChoiceField, only?: string[]) {
+    const savedValue = variant.options[field.key] ?? "";
+    const selector = "group" in field && field.group ? { group: field.group } : { listId: field.listId };
+    if (field.multiple) {
+      return (
+        <ChoicePicker
+          key={field.key}
+          {...selector}
+          label={field.key}
+          {...(only ? { only } : {})}
+          multiple
+          value={savedValue ? savedValue.split(" · ") : []}
+          onChange={(value) => set({ options: { ...variant.options, [field.key]: value.join(" · ") } })}
+        />
+      );
+    }
+    return (
+      <ChoicePicker
+        key={field.key}
+        {...selector}
+        label={field.key}
+        {...(only ? { only } : {})}
+        value={savedValue}
+        onChange={(value) => set({ options: { ...variant.options, [field.key]: value } })}
+      />
+    );
+  }
 
   return (
     <fieldset className={`card space-y-5 p-5 ${refurbished ? "neon-edge pl-6" : ""}`}>
@@ -91,16 +126,14 @@ export default function VariantEditor({
               <p className="input flex items-center bg-surface-2 font-semibold">{lockedColor}</p>
             </div>
           ) : (
-            <ChoicePicker
-              key={field.key}
-              group={field.group}
-              label={field.key}
-              only={field.group === "color" ? modelColors : undefined}
-              value={variant.options[field.key] ?? ""}
-              onChange={(value) => set({ options: { ...variant.options, [field.key]: value } })}
-            />
+            renderPicker({
+              key: field.key,
+              group: field.group,
+              multiple: choiceData?.lists.find((list) => list.group === field.group)?.multiple,
+            }, field.group === "color" ? modelColors : undefined)
           ),
         )}
+        {customLists.map((list) => renderPicker({ key: list.name, listId: list.id, multiple: list.multiple }))}
       </div>
 
       {/* La photo de la couleur, dès qu'un modèle et une couleur sont choisis. */}
