@@ -49,6 +49,8 @@ function SeriesView({ data }: { data: AdminSeriesPage }) {
   const ids = models.map((model) => model.id);
   const shopHref = `/boutique/${series.category.slug}/${series.brand.slug}/${series.slug}`;
   const cover = models.find((model) => model.product?.image);
+  const newStock = models.reduce((total, model) => total + (model.product?.newStock ?? 0), 0);
+  const dealCount = models.reduce((total, model) => total + (model.product?.dealCount ?? 0), 0);
   const error = setState.error ?? renameState.error ?? uploadState.error ?? removeState.error;
 
   const save = (modelIds: number[]) => setModels({ id: series.id, modelIds });
@@ -79,81 +81,106 @@ function SeriesView({ data }: { data: AdminSeriesPage }) {
         ]}
       />
 
-      <section aria-labelledby="series-title" className="card flex flex-wrap items-center gap-4 p-4">
-        <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-lg bg-black sm:h-28 sm:w-44">
-          {series.coverUrl ? (
-            <Image src={series.coverUrl} alt="" fill sizes="(min-width: 640px) 176px, 100vw" className="object-cover" />
-          ) : (
-            <div
-              className="absolute inset-0"
-              style={{ background: `radial-gradient(closest-side, ${glowColor(models[0]?.posterColor ?? null, palette)}, transparent), #07080c` }}
-            >
-              <ProductImage src={cover?.product?.image ?? null} alt="" sizes="176px" />
-            </div>
-          )}
-        </div>
-        {/* Sur téléphone, l'image prend la largeur et les réglages passent dessous (05/11). */}
-        <div className="min-w-0 flex-1 basis-full space-y-3 sm:basis-auto">
-          <h1 id="series-title" className="text-2xl">
-            {series.name}
-          </h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="btn btn-secondary btn-small cursor-pointer">
-              {uploadState.isLoading ? "Envoi…" : "Changer l'image"}
-              <input
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) {
-                    upload({ id: series.id, file });
-                  }
-                }}
-              />
-            </label>
-            <a href={shopHref} target="_blank" rel="noreferrer" className="btn btn-outline btn-small">
-              Voir l&apos;affiche dans la boutique ↗
-            </a>
-            <ConfirmDialog
-              trigger="Supprimer la série"
-              title={`Supprimer « ${series.name} » ?`}
-              confirmLabel="Supprimer"
-              onConfirm={onDelete}
-            >
-              {models.length === 0
-                ? "Elle n'a aucun modèle."
-                : models.length === 1
-                  ? "Son modèle redeviendra sans série."
-                  : `Ses ${models.length} modèles redeviendront sans série.`}
-            </ConfirmDialog>
+      <section aria-labelledby="series-title" className="card overflow-hidden p-3 sm:p-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative h-28 w-full shrink-0 overflow-hidden rounded-xl bg-black sm:h-24 sm:w-40">
+            {series.coverUrl ? (
+              <Image src={series.coverUrl} alt="" fill sizes="160px" className="object-cover" />
+            ) : (
+              <div
+                className="absolute inset-0"
+                style={{ background: `radial-gradient(closest-side, ${glowColor(models[0]?.posterColor ?? null, palette)}, transparent), #07080c` }}
+              >
+                <ProductImage src={cover?.product?.image ?? null} alt="" sizes="160px" />
+              </div>
+            )}
           </div>
-          <form
-            className="flex flex-wrap items-end gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              rename({ id: series.id, name });
-            }}
-          >
-            <label className="space-y-1">
-              <span className="label">Nom de la série</span>
-              <input className="input min-h-9 py-1" value={name} onChange={(event) => setName(event.target.value)} />
-            </label>
-            <button type="submit" className="btn btn-secondary btn-small" disabled={name.trim() === "" || name === series.name}>
-              Renommer
-            </button>
-          </form>
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-ink-muted">{series.category.name} / {series.brand.name}</p>
+                <h1 id="series-title" className="mt-1 truncate text-2xl sm:text-3xl">{series.name}</h1>
+              </div>
+              <a href={shopHref} target="_blank" rel="noreferrer" className="btn btn-primary btn-small min-h-10 shrink-0 justify-center">
+                Voir la boutique ↗
+              </a>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg bg-surface-2 px-2.5 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-muted">Modèles</p>
+                <p className="mt-0.5 text-sm font-bold">{models.length}</p>
+              </div>
+              <div className="rounded-lg bg-blue-soft/40 px-2.5 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-ink">Neufs</p>
+                <p className="mt-0.5 text-sm font-bold text-blue-ink">{newStock} en stock</p>
+              </div>
+              <div className="rounded-lg bg-red-soft/40 px-2.5 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-red">Affaires</p>
+                <p className="mt-0.5 text-sm font-bold text-red">{dealCount} disponible{dealCount === 1 ? "" : "s"}</p>
+              </div>
+            </div>
+          </div>
         </div>
+        <details className="mt-4 border-t border-line pt-3">
+          <summary className="cursor-pointer text-sm font-semibold text-ink-muted">Paramètres de la série</summary>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div className="space-y-3">
+              <label className="btn btn-secondary btn-small min-h-10 w-full cursor-pointer justify-center sm:w-auto">
+                {uploadState.isLoading ? "Envoi de l’image…" : "Changer la couverture"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) upload({ id: series.id, file });
+                  }}
+                />
+              </label>
+              <form
+                className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  rename({ id: series.id, name });
+                }}
+              >
+                <label className="min-w-0">
+                  <span className="label">Nom de la série</span>
+                  <input className="input" value={name} onChange={(event) => setName(event.target.value)} />
+                </label>
+                <button type="submit" className="btn btn-secondary min-h-10" disabled={name.trim() === "" || name === series.name}>
+                  Renommer
+                </button>
+              </form>
+            </div>
+            <div className="flex items-end sm:justify-end">
+              <ConfirmDialog
+                trigger="Supprimer la série"
+                triggerClassName="btn btn-danger min-h-10 w-full justify-center sm:w-auto"
+                title={`Supprimer « ${series.name} » ?`}
+                confirmLabel="Supprimer"
+                onConfirm={onDelete}
+              >
+                {models.length === 0
+                  ? "Elle n'a aucun modèle."
+                  : models.length === 1
+                    ? "Son modèle redeviendra sans série."
+                    : `Ses ${models.length} modèles redeviendront sans série.`}
+              </ConfirmDialog>
+            </div>
+          </div>
+        </details>
         {error ? <p className="field-error w-full">{errorMessage(error)}</p> : null}
       </section>
 
       <section aria-labelledby="models-title" className="space-y-3">
-        <h2 id="models-title" className="text-xl">
-          Les modèles de l&apos;affiche
-        </h2>
-        <p className="text-sm text-ink-muted">
-          Dans l&apos;ordre de l&apos;affiche : glisse ⋮⋮ ou utilise les flèches. La lueur : la couleur de la photo du modèle.
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 id="models-title" className="text-xl">Modèles de la série</h2>
+            <p className="mt-1 text-sm text-ink-muted">Réorganise l&apos;affiche avec les flèches ou en faisant glisser une carte.</p>
+          </div>
+          <span className="badge bg-surface-2 text-ink">{models.length} modèle{models.length === 1 ? "" : "s"}</span>
+        </div>
         <ol className="space-y-3">
           {models.map((model, index) => (
             <SeriesModelRow
@@ -215,59 +242,73 @@ function AddModel({
   }
 
   return (
-    <div className="space-y-4 rounded-xl border-2 border-dashed border-line p-4">
-      <h3 className="text-lg">+ Ajouter un modèle à la série</h3>
-      {candidates.length > 0 ? (
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="space-y-1">
-            <span className="label">Un modèle déjà connu</span>
-            <select className="input min-h-9 py-1" value={picked} onChange={(event) => setPicked(event.target.value)}>
-              <option value="">Choisir…</option>
-              {candidates.map((candidate) => (
-                <option key={candidate.id} value={candidate.id}>
-                  {candidate.name}
-                  {candidate.releaseYear ? ` (${candidate.releaseYear})` : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            className="btn btn-secondary btn-small"
-            disabled={!picked}
-            onClick={() => {
-              onAdd(Number(picked));
-              setPicked("");
-            }}
-          >
-            Ajouter
-          </button>
-        </div>
-      ) : null}
-      {maker ? (
-        <form onSubmit={onCreate} className="flex flex-wrap items-end gap-2">
-          <label className="space-y-1">
-            <span className="label">Ou un nouveau modèle ({maker})</span>
-            <input className="input min-h-9 py-1" placeholder="iPhone 19 Pro" value={name} onChange={(event) => setName(event.target.value)} />
-          </label>
-          <label className="space-y-1">
-            <span className="label">Année</span>
-            <input className="input min-h-9 w-24 py-1" inputMode="numeric" value={year} onChange={(event) => setYear(event.target.value)} />
-          </label>
-          <button
-            type="submit"
-            className="btn btn-primary btn-small"
-            disabled={createState.isLoading || name.trim() === "" || !/^\d{4}$/.test(year)}
-          >
-            Créer et ranger
-          </button>
-          {createState.error ? <p className="field-error w-full">{errorMessage(createState.error)}</p> : null}
-        </form>
-      ) : (
-        <p className="text-sm text-ink-muted">
-          Cette marque n&apos;a pas de fabricant renseigné : ajoute-le dans « Modifier la marque » pour créer un modèle ici.
-        </p>
-      )}
-    </div>
+    <section aria-labelledby="add-model-title" className="space-y-3">
+      <div>
+        <h3 id="add-model-title" className="text-lg font-bold">Ajouter à la série</h3>
+        <p className="mt-1 text-sm text-ink-muted">Choisis un modèle existant ou crée une nouvelle référence.</p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        {candidates.length > 0 ? (
+          <div className="card space-y-3 p-4">
+            <div>
+              <p className="font-semibold">Modèle existant</p>
+              <p className="text-xs text-ink-muted">Ranger un modèle déjà connu dans cette série.</p>
+            </div>
+            <label>
+              <span className="sr-only">Choisir un modèle existant</span>
+              <select className="input" value={picked} onChange={(event) => setPicked(event.target.value)}>
+                <option value="">Choisir un modèle…</option>
+                {candidates.map((candidate) => (
+                  <option key={candidate.id} value={candidate.id}>
+                    {candidate.name}{candidate.releaseYear ? ` (${candidate.releaseYear})` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="btn btn-secondary min-h-10 w-full justify-center"
+              disabled={!picked}
+              onClick={() => {
+                onAdd(Number(picked));
+                setPicked("");
+              }}
+            >
+              Ajouter le modèle
+            </button>
+          </div>
+        ) : null}
+        {maker ? (
+          <form onSubmit={onCreate} className="card space-y-3 p-4">
+            <div>
+              <p className="font-semibold">Nouveau modèle</p>
+              <p className="text-xs text-ink-muted">Marque : {maker}</p>
+            </div>
+            <label>
+              <span className="label">Nom du modèle</span>
+              <input className="input" placeholder="iPhone 19 Pro" value={name} onChange={(event) => setName(event.target.value)} />
+            </label>
+            <div className="flex items-end gap-2">
+              <label className="min-w-0 flex-1">
+                <span className="label">Année de sortie</span>
+                <input className="input" inputMode="numeric" value={year} onChange={(event) => setYear(event.target.value)} />
+              </label>
+              <button
+                type="submit"
+                className="btn btn-primary min-h-10 shrink-0"
+                disabled={createState.isLoading || name.trim() === "" || !/^\d{4}$/.test(year)}
+              >
+                {createState.isLoading ? "Création…" : "Créer et ajouter"}
+              </button>
+            </div>
+            {createState.error ? <p className="field-error">{errorMessage(createState.error)}</p> : null}
+          </form>
+        ) : (
+          <p className="card self-stretch p-4 text-sm text-ink-muted">
+            Cette marque n&apos;a pas de fabricant renseigné. Ajoute-le dans « Modifier la marque » pour créer un modèle ici.
+          </p>
+        )}
+      </div>
+    </section>
   );
 }

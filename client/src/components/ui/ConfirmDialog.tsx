@@ -10,12 +10,14 @@ export default function ConfirmDialog({
   children,
   confirmLabel,
   onConfirm,
+  triggerClassName = "btn btn-danger",
 }: {
   trigger: string;
   title: string;
   children: ReactNode;
   confirmLabel: string;
   onConfirm: () => void;
+  triggerClassName?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   // Un id par boîte : une liste peut en avoir plusieurs (un « Supprimer » par accessoire).
@@ -23,7 +25,7 @@ export default function ConfirmDialog({
 
   return (
     <>
-      <button type="button" className="btn btn-danger" onClick={() => dialog.current?.showModal()}>
+      <button type="button" className={triggerClassName} onClick={() => dialog.current?.showModal()}>
         {trigger}
       </button>
       <dialog

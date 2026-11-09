@@ -480,8 +480,8 @@
   /* ---------- Les affiches de séries ----------
      Toujours sombres, dans les deux thèmes : ce sont des affiches, posées sur une image. */
 
-  /* Une affiche de la page « choisis ta série » : un seul lien, l'image en fond, le texte
-     en bas sur un dégradé presque noir (le blanc y reste lisible sur toute image). */
+  /* Une affiche de la page « choisis ta série » : un seul lien, l'image en fond, les
+     informations pratiques dans un bandeau lisible en bas. */
   .series-card {
     position: relative;
     display: block;
@@ -598,16 +598,6 @@
   }
   .series-cta svg {
     transition: transform 0.25s;
-  }
-
-  /* Le nom de la série en grand, en lettres creuses, sur l'affiche de secours. */
-  .series-fallback-title {
-    font-family: var(--font-display);
-    font-weight: 800;
-    line-height: 0.9;
-    letter-spacing: -0.03em;
-    color: transparent;
-    -webkit-text-stroke: 1px rgb(255 255 255 / 0.35);
   }
 
   @media (prefers-reduced-motion: reduce) {
