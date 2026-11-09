@@ -377,7 +377,8 @@ model StageSlot {
   id       Int     @id @default(autoincrement())
   stage    String
   slot     String
-  url      String
+  url      String?
+  label    String?
   publicId String? @map("public_id")
   // La place choisie à la souris ou au doigt (06/11), en % du cadre du socle : `x` le bord
   // gauche, `y` la hauteur du bas de la photo, `w` la largeur ; `z` l'ordre (devant/derrière).

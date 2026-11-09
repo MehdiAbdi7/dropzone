@@ -17,9 +17,11 @@ import {
 const empty: StagePhotos = {
   hero: { laptop: null, phone: null, tablet: null, accessory1: null, accessory2: null, accessory3: null, accessory4: null },
   deal: { left: null, center: null, right: null },
+  labels: { hero: {}, deal: {} },
 };
 const photo = (url: string, place: Partial<{ x: number; y: number; w: number; z: number }> = {}) => ({
   url,
+  label: null,
   x: null,
   y: null,
   w: null,
@@ -89,6 +91,7 @@ describe("emplacements en plus", () => {
     expect(nextExtraSlot({ ...empty.hero, "extra-1": photo("a"), "extra-3": photo("b") })).toBe("extra-2");
     expect(nextExtraSlot(empty.hero)).toBe("extra-1");
     expect(slotLabel("extra-4")).toBe("Article en plus 4");
+    expect(slotLabel("extra-4", "Support casque")).toBe("Support casque");
     expect(slotLabel("phone")).toBe("Smartphone");
   });
 });

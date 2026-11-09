@@ -7,6 +7,7 @@ export const stageParamsSchema = z
   .refine(({ stage, slot }) => isSlotOf(stage, slot), { error: "Emplacement inconnu pour ce socle", path: ["slot"] });
 
 export const stageNameSchema = z.object({ stage: z.enum(STAGE_NAMES) });
+export const stageLabelSchema = z.object({ label: z.string().trim().min(1).max(60) });
 
 // La place d'une photo, en % du cadre (06/11). Bornes larges : le front empêche déjà une photo
 // de sortir du cadre, l'API refuse seulement l'absurde. Toutes nulles : la place de départ.

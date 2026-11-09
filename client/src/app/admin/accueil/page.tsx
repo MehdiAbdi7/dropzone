@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import ProductImage from "@/components/ui/ProductImage";
-import { useDeleteStagePhotoMutation, useStageQuery, useUploadStagePhotoMutation } from "@/features/admin/adminApi";
+import {
+  useDeleteStagePhotoMutation,
+  useStageQuery,
+  useUpdateStageLabelMutation,
+  useUploadStagePhotoMutation,
+} from "@/features/admin/adminApi";
 import StageEditor from "@/features/admin/StageEditor";
 import {
   DEAL_SLOTS,
@@ -60,6 +65,7 @@ export default function StageAdminPage() {
         editor={<HeroEditor photos={photos} />}
         named={HERO_SLOTS.map(({ slot }) => slot)}
         photos={photos.hero}
+        labels={photos.labels.hero}
       />
       <StageSection
         stage="deal"
@@ -68,6 +74,7 @@ export default function StageAdminPage() {
         editor={<DealEditor photos={photos} />}
         named={DEAL_SLOTS.map(({ slot }) => slot)}
         photos={photos.deal}
+        labels={photos.labels.deal}
       />
     </div>
   );
@@ -92,6 +99,7 @@ function StageSection({
   editor,
   named,
   photos,
+  labels,
 }: {
   stage: keyof StagePhotos;
   title: string;
@@ -99,6 +107,7 @@ function StageSection({
   editor: React.ReactNode;
   named: string[];
   photos: Record<string, StagePhoto | null>;
+  labels: Record<string, string | null>;
 }) {
   // Un emplacement en plus, créé par « Ajouter un emplacement » : une case vide jusqu'à
   // l'envoi de sa photo (l'API ne garde que les emplacements qui ont une photo).
@@ -126,14 +135,15 @@ function StageSection({
         <div className="brand-dark rounded-2xl p-4">{editor}</div>
       </div>
       <div className="space-y-3">
-        <ul className="grid content-start gap-3 sm:grid-cols-2">
+        <ul className="grid content-start gap-3">
           {slots.map((slot) => (
             <li key={slot}>
               <SlotRow
                 stage={stage}
                 slot={slot}
-                label={slotLabel(slot)}
+                label={slotLabel(slot, labels[slot] ?? photos[slot]?.label)}
                 url={photos[slot]?.url ?? null}
+                canRename={slot.startsWith("extra-") ? Boolean(photos[slot]?.url || slot === waiting) : true}
                 onCancel={slot === waiting ? () => setPending(null) : undefined}
               />
             </li>
@@ -166,32 +176,96 @@ function SlotRow({
   slot,
   label,
   url,
+  canRename,
   onCancel,
 }: {
   stage: string;
   slot: string;
   label: string;
   url: string | null;
+  canRename: boolean;
   // La case d'un emplacement en plus pas encore envoyé : « Annuler » la fait disparaître.
   onCancel?: () => void;
 }) {
   const [upload, uploadState] = useUploadStagePhotoMutation();
   const [remove, removeState] = useDeleteStagePhotoMutation();
-  const busy = uploadState.isLoading || removeState.isLoading;
-  const failure = uploadState.error ?? removeState.error;
+  const [updateLabel, labelState] = useUpdateStageLabelMutation();
+  const [title, setTitle] = useState(label);
+  const [editing, setEditing] = useState(false);
+  const busy = uploadState.isLoading || removeState.isLoading || labelState.isLoading;
+  const failure = uploadState.error ?? removeState.error ?? labelState.error;
+  const titleChanged = title.trim() !== label;
+
+  async function saveLabel() {
+    try {
+      await updateLabel({ stage, slot, label: title.trim() }).unwrap();
+      setTitle(title.trim());
+      setEditing(false);
+    } catch {
+      // L'erreur de la mutation est affichée dans la carte.
+    }
+  }
 
   return (
-    <div className="flex h-full gap-3 rounded-xl border border-line p-3">
+    <div className="flex gap-3 rounded-xl border border-line bg-surface p-3 sm:gap-4">
       {/* Un damier sous la photo : on voit si le fond est bien transparent. */}
-      <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-[repeating-conic-gradient(var(--surface-2)_0_25%,var(--surface)_0_50%)] bg-[length:16px_16px]">
+      <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-[repeating-conic-gradient(var(--surface-2)_0_25%,var(--surface)_0_50%)] bg-[length:16px_16px] sm:size-[4.5rem]">
         {url ? (
-          <ProductImage src={url} alt={label} sizes="80px" />
+          <ProductImage src={url} alt={label} sizes="72px" />
         ) : (
           <span className="flex h-full items-center justify-center text-xs text-ink-muted">Vide</span>
         )}
       </div>
-      <div className="min-w-0 flex-1 space-y-2">
-        <p className="text-sm font-semibold">{label}</p>
+      <div className="min-w-0 flex-1 space-y-2.5">
+        <div className="flex min-w-0 items-start justify-between gap-2">
+          <p className="min-w-0 break-words pt-1 text-sm font-semibold">{label}</p>
+          {canRename ? (
+            <button
+              type="button"
+              className="btn btn-outline btn-small shrink-0"
+              disabled={busy}
+              onClick={() => {
+                setTitle(label);
+                setEditing((current) => !current);
+              }}
+            >
+              {editing ? "Fermer" : "Renommer"}
+            </button>
+          ) : null}
+        </div>
+        {editing ? (
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="min-w-[12rem] flex-1 space-y-1 text-xs font-medium text-ink-muted">
+              <span>Nouvel intitulé</span>
+              <input
+                type="text"
+                maxLength={60}
+                value={title}
+                className="field-input w-full"
+                onChange={(event) => setTitle(event.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className="btn btn-secondary btn-small"
+              disabled={!titleChanged || !title.trim() || busy}
+              onClick={saveLabel}
+            >
+              {labelState.isLoading ? "Enregistrement…" : "Enregistrer"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline btn-small"
+              disabled={busy}
+              onClick={() => {
+                setTitle(label);
+                setEditing(false);
+              }}
+            >
+              Annuler
+            </button>
+          </div>
+        ) : null}
         <div className="flex flex-wrap gap-2">
           <label className="btn btn-secondary btn-small cursor-pointer">
             {uploadState.isLoading ? "Envoi…" : url ? "Changer" : "Ajouter une photo"}

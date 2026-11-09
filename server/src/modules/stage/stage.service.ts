@@ -5,8 +5,12 @@ import type { StageLayout } from "./stage.schema.js";
 import { EXTRA_SLOT, MAX_EXTRA_SLOTS, STAGE_SLOTS, type StageName } from "./stage.slots.js";
 
 // Une photo et sa place (x, y, w, z en % du cadre ; null : la place de départ, 06/11).
-type StagePhoto = { url: string; x: number | null; y: number | null; w: number | null; z: number | null };
-type StagePhotos = Record<StageName, Record<string, StagePhoto | null>>;
+type StagePhoto = { url: string; label: string | null; x: number | null; y: number | null; w: number | null; z: number | null };
+type StagePhotos = {
+  hero: Record<string, StagePhoto | null>;
+  deal: Record<string, StagePhoto | null>;
+  labels: Record<StageName, Record<string, string | null>>;
+};
 
 // Le numéro d'un emplacement en plus (« extra-12 » → 12), pour les ranger dans l'ordre.
 const extraNumber = (slot: string) => Number(slot.slice("extra-".length));
@@ -15,21 +19,24 @@ const extraNumber = (slot: string) => Number(slot.slice("extra-".length));
 // l'illustration de départ), puis les emplacements en plus qui ont une photo, dans l'ordre.
 export async function stagePhotos(): Promise<StagePhotos> {
   const rows = await prisma.stageSlot.findMany({
-    select: { stage: true, slot: true, url: true, x: true, y: true, w: true, z: true },
+    select: { stage: true, slot: true, url: true, label: true, x: true, y: true, w: true, z: true },
   });
-  const photo = (row: (typeof rows)[number]) => ({ url: row.url, x: row.x, y: row.y, w: row.w, z: row.z });
+  const photo = (row: (typeof rows)[number]): StagePhoto | null =>
+    row.url ? { url: row.url, label: row.label, x: row.x, y: row.y, w: row.w, z: row.z } : null;
   const photosOf = (stage: StageName) => {
     const named = STAGE_SLOTS[stage].map((slot) => {
       const row = rows.find((item) => item.stage === stage && item.slot === slot);
       return [slot, row ? photo(row) : null] as const;
     });
     const extras = rows
-      .filter((row) => row.stage === stage && EXTRA_SLOT.test(row.slot))
+      .filter((row) => row.stage === stage && EXTRA_SLOT.test(row.slot) && row.url)
       .sort((a, b) => extraNumber(a.slot) - extraNumber(b.slot))
       .map((row) => [row.slot, photo(row)] as const);
     return Object.fromEntries([...named, ...extras]);
   };
-  return { hero: photosOf("hero"), deal: photosOf("deal") };
+  const labelsOf = (stage: StageName) =>
+    Object.fromEntries(rows.filter((row) => row.stage === stage).map((row) => [row.slot, row.label]));
+  return { hero: photosOf("hero"), deal: photosOf("deal"), labels: { hero: labelsOf("hero"), deal: labelsOf("deal") } };
 }
 
 // La disposition réglée dans l'éditeur du back-office, en une transaction. Un emplacement
@@ -69,6 +76,21 @@ export async function removeStagePhoto(stage: string, slot: string) {
   if (!previous) {
     return;
   }
-  await prisma.stageSlot.delete({ where: { id: previous.id } });
+  if (previous.label) {
+    await prisma.stageSlot.update({
+      where: { id: previous.id },
+      data: { url: null, publicId: null, x: null, y: null, w: null, z: null },
+    });
+  } else {
+    await prisma.stageSlot.delete({ where: { id: previous.id } });
+  }
   await deleteFromCloudinary(previous.publicId);
+}
+
+export async function updateStageLabel(stage: string, slot: string, label: string) {
+  await prisma.stageSlot.upsert({
+    where: { stage_slot: { stage, slot } },
+    create: { stage, slot, url: null, label },
+    update: { label },
+  });
 }

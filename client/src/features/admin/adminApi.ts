@@ -503,6 +503,10 @@ const adminApi = api.injectEndpoints({
       query: ({ stage, slot }) => ({ url: `/admin/stage/${stage}/${slot}/photo`, method: "DELETE" }),
       invalidatesTags: ["Stage"],
     }),
+    updateStageLabel: build.mutation<void, { stage: string; slot: string; label: string }>({
+      query: ({ stage, slot, label }) => ({ url: `/admin/stage/${stage}/${slot}/label`, method: "PATCH", body: { label } }),
+      invalidatesTags: ["Stage"],
+    }),
     // La disposition réglée à la souris (06/11) ; des valeurs nulles remettent la place de départ.
     saveStageLayout: build.mutation<
       void,
@@ -609,6 +613,7 @@ export const {
   useStageQuery,
   useUploadStagePhotoMutation,
   useDeleteStagePhotoMutation,
+  useUpdateStageLabelMutation,
   useSaveStageLayoutMutation,
   useAddUnitMutation,
   useCatalogQuery,

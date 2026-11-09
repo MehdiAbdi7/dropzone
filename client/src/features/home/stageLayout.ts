@@ -10,7 +10,7 @@
 export type Box = { x: number; y: number; w: number; z: number };
 
 // Ce que l'API renvoie pour une photo : null sur x, y, w ou z = la place de départ.
-export type StagePhoto = { url: string; x: number | null; y: number | null; w: number | null; z: number | null };
+export type StagePhoto = { url: string; label: string | null; x: number | null; y: number | null; w: number | null; z: number | null };
 
 // Les emplacements nommés de chaque socle, puis ceux en plus du gérant (« extra-1 »…, 06/11),
 // présents seulement quand ils ont une photo.
@@ -18,9 +18,13 @@ export type StagePhotos = {
   hero: Record<"laptop" | "phone" | "tablet" | "accessory1" | "accessory2" | "accessory3" | "accessory4", StagePhoto | null> &
     Record<string, StagePhoto | null>;
   deal: Record<"left" | "center" | "right", StagePhoto | null> & Record<string, StagePhoto | null>;
+  labels: {
+    hero: Record<string, string | null>;
+    deal: Record<string, string | null>;
+  };
 };
 
-export type StageDevice = { slot: string; src: string; box: Box };
+export type StageDevice = { slot: string; src: string; box: Box; label?: string };
 
 export const HERO_SLOTS: { slot: keyof StagePhotos["hero"]; label: string; box: Box }[] = [
   { slot: "laptop", label: "Ordinateur portable", box: { x: 16, y: 25, w: 68, z: 1 } },
@@ -92,21 +96,21 @@ export function nextExtraSlot(photos: Record<string, StagePhoto | null>): string
 const NAMED_LABELS: Record<string, string> = Object.fromEntries(
   [...HERO_SLOTS, ...DEAL_SLOTS].map(({ slot, label }) => [slot, label]),
 );
-export function slotLabel(slot: string): string {
-  return EXTRA_SLOT.test(slot) ? `Article en plus ${extraNumber(slot)}` : (NAMED_LABELS[slot] ?? slot);
+export function slotLabel(slot: string, customLabel?: string | null): string {
+  return customLabel?.trim() || (EXTRA_SLOT.test(slot) ? `Article en plus ${extraNumber(slot)}` : (NAMED_LABELS[slot] ?? slot));
 }
 
 function extraDevices(photos: Record<string, StagePhoto | null>): StageDevice[] {
   return extraSlots(photos).map((slot) => {
     const photo = photos[slot]!;
-    return { slot, src: stagePhoto(photo.url), box: placeOf(photo, extraBox(extraNumber(slot))) };
+    return { slot, src: stagePhoto(photo.url), box: placeOf(photo, extraBox(extraNumber(slot))), label: photo.label ?? undefined };
   });
 }
 
 export function heroDevices(photos: StagePhotos | null): StageDevice[] {
   const filled = HERO_SLOTS.flatMap(({ slot, box }) => {
     const photo = photos?.hero[slot];
-    return photo ? [{ slot, src: stagePhoto(photo.url), box: placeOf(photo, box) }] : [];
+    return photo ? [{ slot, src: stagePhoto(photo.url), box: placeOf(photo, box), label: photo.label ?? undefined }] : [];
   });
   const all = [...filled, ...(photos ? extraDevices(photos.hero) : [])];
   return all.length > 0 ? all : HERO_DEFAULT;
@@ -117,7 +121,7 @@ export function heroDevices(photos: StagePhotos | null): StageDevice[] {
 export function dealDevices(photos: StagePhotos | null): StageDevice[] {
   const named = DEAL_SLOTS.map(({ slot, box, fallback }) => {
     const photo = photos?.deal[slot];
-    return photo ? { slot, src: stagePhoto(photo.url), box: placeOf(photo, box) } : { slot, src: fallback, box };
+    return photo ? { slot, src: stagePhoto(photo.url), box: placeOf(photo, box), label: photo.label ?? undefined } : { slot, src: fallback, box };
   });
   return [...named, ...(photos ? extraDevices(photos.deal) : [])];
 }

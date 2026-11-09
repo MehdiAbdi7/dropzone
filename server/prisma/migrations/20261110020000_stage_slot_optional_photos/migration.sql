@@ -1,0 +1,1 @@
+ALTER TABLE "stage_slots" ALTER COLUMN "url" DROP NOT NULL;

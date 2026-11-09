@@ -3,9 +3,9 @@ import type { Request } from "express";
 import { uploadImage } from "../../middlewares/upload.js";
 import { validate } from "../../middlewares/validate.js";
 import { AppError } from "../../utils/AppError.js";
-import { stageLayoutSchema, stageNameSchema, stageParamsSchema, unknownSlots, type StageLayout } from "./stage.schema.js";
+import { stageLabelSchema, stageLayoutSchema, stageNameSchema, stageParamsSchema, unknownSlots, type StageLayout } from "./stage.schema.js";
 import type { StageName } from "./stage.slots.js";
-import { removeStagePhoto, setStageLayout, setStagePhoto, stagePhotos } from "./stage.service.js";
+import { removeStagePhoto, setStageLayout, setStagePhoto, stagePhotos, updateStageLabel } from "./stage.service.js";
 
 const params = (req: Request) => [String(req.params.stage), String(req.params.slot)] as const;
 
@@ -24,6 +24,15 @@ stageAdminRouter.delete("/stage/:stage/:slot/photo", validate({ params: stagePar
   await removeStagePhoto(...params(req));
   res.status(204).end();
 });
+stageAdminRouter.patch(
+  "/stage/:stage/:slot/label",
+  validate({ params: stageParamsSchema, body: stageLabelSchema }),
+  async (req, res) => {
+    const [stage, slot] = params(req);
+    await updateStageLabel(stage, slot, req.body.label);
+    res.status(204).end();
+  },
+);
 // La disposition réglée à la souris ou au doigt (06/11) : place, taille et ordre des photos.
 stageAdminRouter.put(
   "/stage/:stage/layout",

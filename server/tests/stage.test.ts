@@ -47,7 +47,7 @@ describe("La photo d'un emplacement", () => {
     expect((await send("hero", "laptop")).status).toBe(200);
     const response = await request(app).get("/stage");
     // Sans place choisie : x, y, w et z à null, le front prend la place de départ.
-    expect(response.body.data.hero.laptop).toEqual({ url: "https://x/socle.webp", x: null, y: null, w: null, z: null });
+    expect(response.body.data.hero.laptop).toEqual({ url: "https://x/socle.webp", label: null, x: null, y: null, w: null, z: null });
   });
 
   it("remplace la photo d'un emplacement déjà rempli", async () => {
@@ -106,6 +106,27 @@ describe("Les emplacements en plus", () => {
     expect((await request(app).get("/stage")).body.data.hero["extra-1"]).toMatchObject({ x: 1, w: 20 });
     await admin.delete("/admin/stage/hero/extra-1/photo");
     expect((await request(app).get("/stage")).body.data.hero["extra-1"]).toBeUndefined();
+  });
+
+  it("permet de modifier l'intitulé d'un emplacement ajouté", async () => {
+    await send("hero", "extra-1");
+    const response = await admin.patch("/admin/stage/hero/extra-1/label").send({ label: " Support casque " });
+    expect(response.status).toBe(204);
+    expect((await request(app).get("/stage")).body.data.hero["extra-1"].label).toBe("Support casque");
+  });
+
+  it("permet de renommer un emplacement fixe vide, puis de le remplir sans perdre son nom", async () => {
+    const response = await admin.patch("/admin/stage/hero/laptop/label").send({ label: "PC gaming" });
+    expect(response.status).toBe(204);
+    expect((await request(app).get("/stage")).body.data.labels.hero.laptop).toBe("PC gaming");
+    await send("hero", "laptop");
+    expect((await request(app).get("/stage")).body.data.hero.laptop).toMatchObject({ label: "PC gaming" });
+  });
+
+  it("refuse un intitulé vide ou trop long", async () => {
+    await send("hero", "extra-1");
+    expect((await admin.patch("/admin/stage/hero/extra-1/label").send({ label: " " })).status).toBe(400);
+    expect((await admin.patch("/admin/stage/hero/extra-1/label").send({ label: "a".repeat(61) })).status).toBe(400);
   });
 });
 

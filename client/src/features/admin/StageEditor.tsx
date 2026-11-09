@@ -113,7 +113,7 @@ export default function StageEditor({
             <button
               key={slot}
               type="button"
-              aria-label={`${slotLabel(slot)} : glisser pour déplacer, flèches du clavier, + et − pour la taille`}
+              aria-label={`${slotLabel(slot, devices.find((device) => device.slot === slot)?.label)} : glisser pour déplacer, flèches du clavier, + et − pour la taille`}
               aria-pressed={active}
               className={`stage-item cursor-grab rounded-lg outline-offset-2 [&_img]:pointer-events-none ${
                 active ? "outline-2 outline-dashed outline-blue" : "hover:outline-1 hover:outline-dashed hover:outline-white/50"
@@ -143,7 +143,7 @@ export default function StageEditor({
         <div className="space-y-3 rounded-xl bg-surface-2 p-3">
           {selected && current ? (
             <>
-              <p className="text-sm font-semibold">{slotLabel(selected)}</p>
+              <p className="text-sm font-semibold">{slotLabel(selected, devices.find((device) => device.slot === selected)?.label)}</p>
               <label className="flex items-center gap-3 text-sm">
                 <span className="shrink-0">Taille</span>
                 <input
