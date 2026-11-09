@@ -21,7 +21,7 @@ export default function ChoiceColumn({
   const off = column.href === null;
   const body = (
     <>
-      <div className="relative h-36 w-full md:h-40">
+      <div className="choice-card-media relative h-48 w-full md:h-40">
         <div
           aria-hidden="true"
           className="poster-glow"
@@ -35,38 +35,48 @@ export default function ChoiceColumn({
         </span>
       ) : null}
       <h2 className={`text-lg font-bold text-white ${off ? "line-through" : ""}`}>{column.title}</h2>
+      <span className={`choice-stock-badge ${off ? "choice-stock-badge-off" : "choice-stock-badge-on"}`}>
+        {off ? "Indisponible" : "Disponible"}
+      </span>
       <div aria-hidden="true" className="h-px w-2/3 bg-white/15" />
-      <div className="space-y-0.5 text-xs text-white/75">
-        {column.price ? (
-          <p>
-            {column.price.prefix}
-            <span className="font-display text-base font-extrabold whitespace-nowrap text-white">
-              {formatPrice(column.price.value)}
-            </span>
-          </p>
-        ) : null}
-        {column.lines.map((line) => (
-          <p key={line} className={off ? "font-semibold text-white" : undefined}>
-            {line}
-          </p>
-        ))}
-      </div>
+      {off ? (
+        <div className="choice-empty-state">
+          <span aria-hidden="true" className="choice-empty-state-icon">
+            i
+          </span>
+          <p>{column.badge ? column.lines[0] : "Aucun article en stock dans cette couleur."}</p>
+        </div>
+      ) : (
+        <div className="space-y-0.5 text-xs text-white/75">
+          {column.price ? (
+            <p>
+              {column.price.prefix}
+              <span className="font-display text-base font-extrabold whitespace-nowrap text-white">
+                {formatPrice(column.price.value)}
+              </span>
+            </p>
+          ) : null}
+          {column.lines.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </div>
+      )}
       {off ? null : (
-        <span className="mt-auto rounded-full bg-white px-4 py-1.5 text-sm font-bold text-black">Choisir</span>
+        <span className="choice-card-cta mt-auto">Choisir</span>
       )}
     </>
   );
 
-  const className = "poster-column flex h-full flex-col items-center gap-2 rounded-2xl px-3 pb-3 text-center";
+  const className = "poster-column choice-card flex h-full flex-col items-center gap-2 rounded-2xl px-3 pb-3 text-center";
   if (off) {
     return (
-      <div aria-disabled="true" className={`${className} opacity-50`}>
+      <div aria-disabled="true" data-unavailable="true" className={className}>
         {body}
       </div>
     );
   }
   return (
-    <Link href={column.href!} className={className}>
+    <Link href={column.href!} data-available="true" className={className}>
       {body}
     </Link>
   );

@@ -12,10 +12,12 @@ import { swipeHint } from "./series";
 // Avec 4 modèles ou moins, l'ordinateur les montre en colonnes et cache les contrôles.
 export default function PosterSlider({
   names,
+  unavailable,
   layout,
   children,
 }: {
   names: string[];
+  unavailable?: boolean[];
   layout: "columns" | "slider";
   children: ReactNode;
 }) {
@@ -79,6 +81,8 @@ export default function PosterSlider({
               key={name}
               type="button"
               aria-current={i === index ? "true" : undefined}
+              aria-label={unavailable?.[i] ? `${name}, indisponible` : name}
+              data-unavailable={unavailable?.[i] ? "true" : undefined}
               onClick={() => goTo(i)}
               className="poster-chip"
             >

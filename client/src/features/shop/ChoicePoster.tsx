@@ -40,6 +40,7 @@ export default function ChoicePoster({
         {/* Les onglets du glissement : le nom court (« Neuf scellé », « Affaire »), pas le sous-titre. */}
         <PosterSlider
           names={columns.map((column) => (column.badge ? CONDITION_LABELS[column.badge === "new" ? "new" : "refurbished"] : column.title))}
+          unavailable={columns.map((column) => column.href === null)}
           layout={posterLayout(columns.length)}
         >
           {columns.map((column, index) => (
