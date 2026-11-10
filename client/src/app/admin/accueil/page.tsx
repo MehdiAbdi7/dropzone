@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import ProductImage from "@/components/ui/ProductImage";
-import {
-  useDeleteStagePhotoMutation,
-  useStageQuery,
-  useUpdateStageLabelMutation,
-  useUploadStagePhotoMutation,
-} from "@/features/admin/adminApi";
+import { useDeleteStagePhotoMutation, useStageQuery, useUpdateStageLabelMutation, useUploadStagePhotoMutation } from "@/features/admin/api/stageApi";
 import StageEditor from "@/features/admin/StageEditor";
 import {
   DEAL_SLOTS,

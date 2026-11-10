@@ -5,7 +5,7 @@ import { useState } from "react";
 import ProductImage from "@/components/ui/ProductImage";
 import { swatchOf } from "@/config/colors";
 import { errorMessage } from "@/lib/errors";
-import { useUpdateModelMutation, type AdminSeriesModel } from "../adminApi";
+import { useUpdateModelMutation, type AdminSeriesModel } from "@/features/admin/api/catalogApi";
 import ChoicePicker from "../products/ChoicePicker";
 import { usePalette } from "../usePalette";
 

@@ -3,13 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Field from "@/components/ui/Field";
 import { DEVICE_KINDS, KIND_LABELS } from "@/config/catalog";
-import {
-  useCreateModelMutation,
-  useDeleteModelMutation,
-  useModelsQuery,
-  useUpdateModelMutation,
-  type DeviceModel,
-} from "@/features/admin/adminApi";
+import { useCreateModelMutation, useDeleteModelMutation, useModelsQuery, useUpdateModelMutation, type DeviceModel } from "@/features/admin/api/catalogApi";
 import { errorMessage } from "@/lib/errors";
 import type { ProductKind } from "@/types/api";
 

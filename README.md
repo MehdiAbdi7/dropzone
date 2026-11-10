@@ -97,7 +97,8 @@ The admin router is protected in one line: `app.use("/admin", requireAuth, requi
 | Folder | What it holds |
 |---|---|
 | `app/` | The routes only: `(shop)` the public shop, `(account)` the customer area, `admin` the back-office. A page fetches data and composes components |
-| `features/` | One folder per business area (`shop`, `cart`, `orders`, `auth`, `home`, `products`, `admin`), with its components, its RTK Query endpoints (`*Api.ts`) and its pure logic. Logic without React sits next to its test (`stock.ts`, `stock.test.ts`) |
+| `features/` | One folder per business area (`shop`, `cart`, `orders`, `auth`, `home`, `products`, `admin`), with its components, its RTK Query endpoints (`*Api.ts`) and its pure logic. Logic without React sits next to its test (`stock.ts`, `stock.test.ts`). The back-office endpoints are one file per domain in `features/admin/api/` (`productsApi`, `catalogApi`, `colorsApi`, `stageApi`, `choicesApi`, `ordersApi`). A component stays under about 300 lines: when it grows, its parts go in their own files (`ProductForm` and its `VariantList`, `SaveBar`, `ConditionSheet`…) |
+| `styles/` | The CSS, one file per role (colours, Tailwind theme, base, components, series posters, spinner, utilities). `app/globals.css` only imports them, in an order that matters |
 | `components/` | What belongs to no business area: `layout` (header, footer, menu) and `ui` (icons, logo, spinner, confirm dialog, form field, theme toggle) |
 | `config/` | Fixed data and rules: catalogue options, colours, warranty, wilayas, shipping |
 | `lib/` | Technical helpers: API client, store, formatting, hooks |

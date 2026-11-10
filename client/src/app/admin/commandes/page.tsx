@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { STATUS_LABELS } from "@/config/catalog";
-import { useAdminOrdersQuery } from "@/features/admin/adminApi";
+import { useAdminOrdersQuery } from "@/features/admin/api/ordersApi";
 import { formatDate, formatPrice } from "@/lib/format";
 import type { OrderStatus } from "@/types/api";
 

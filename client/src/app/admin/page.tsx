@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { STATUS_LABELS } from "@/config/catalog";
-import { useStatsQuery } from "@/features/admin/adminApi";
+import { useStatsQuery } from "@/features/admin/api/ordersApi";
 import { formatPrice } from "@/lib/format";
 import type { OrderStatus } from "@/types/api";
 

@@ -6,12 +6,7 @@ import BrandLogo from "@/components/ui/BrandLogo";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { DEVICE_KINDS, KIND_LABELS } from "@/config/catalog";
 import BrandsEditor from "@/features/admin/BrandsEditor";
-import {
-  useCatalogCategoryQuery,
-  useDeleteCategoryMutation,
-  useUpdateCategoryMutation,
-  type AdminCatalogCategoryPage,
-} from "@/features/admin/adminApi";
+import { useCatalogCategoryQuery, useDeleteCategoryMutation, useUpdateCategoryMutation, type AdminCatalogCategoryPage } from "@/features/admin/api/catalogApi";
 import CatalogTile from "@/features/admin/catalog/CatalogTile";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import { errorMessage } from "@/lib/errors";

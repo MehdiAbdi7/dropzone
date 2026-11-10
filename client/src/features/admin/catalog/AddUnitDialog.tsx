@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { errorMessage } from "@/lib/errors";
 import type { Condition, ProductKind } from "@/types/api";
-import { useAddUnitMutation } from "../adminApi";
+import { useAddUnitMutation } from "@/features/admin/api/colorsApi";
 import EditDialog from "../products/EditDialog";
 import { suggestSku, unitDraft, variantBody, type VariantDraft } from "../products/productDraft";
 import VariantEditor from "../products/VariantEditor";

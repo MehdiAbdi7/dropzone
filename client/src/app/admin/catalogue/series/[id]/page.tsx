@@ -5,15 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ProductImage from "@/components/ui/ProductImage";
-import {
-  useCatalogSeriesQuery,
-  useCreateModelMutation,
-  useDeleteSeriesMutation,
-  useRenameSeriesMutation,
-  useSetSeriesModelsMutation,
-  useUploadSeriesCoverMutation,
-  type AdminSeriesPage,
-} from "@/features/admin/adminApi";
+import { useCatalogSeriesQuery, useCreateModelMutation, useDeleteSeriesMutation, useRenameSeriesMutation, useSetSeriesModelsMutation, useUploadSeriesCoverMutation, type AdminSeriesPage } from "@/features/admin/api/catalogApi";
 import SeriesModelRow from "@/features/admin/catalog/SeriesModelRow";
 import { moveItem } from "@/features/admin/catalog/reorder";
 import { usePalette } from "@/features/admin/usePalette";

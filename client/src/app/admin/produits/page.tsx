@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import ProductImage from "@/components/ui/ProductImage";
-import { useAdminProductsQuery, useBrandsQuery, useCategoriesQuery } from "@/features/admin/adminApi";
+import { useAdminProductsQuery } from "@/features/admin/api/productsApi";
+import { useBrandsQuery, useCategoriesQuery } from "@/features/admin/api/catalogApi";
 import { formatPrice } from "@/lib/format";
 
 const SORT_OPTIONS = [

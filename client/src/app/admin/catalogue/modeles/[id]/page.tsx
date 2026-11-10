@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useModelColorsQuery } from "@/features/admin/adminApi";
+import { useModelColorsQuery } from "@/features/admin/api/colorsApi";
 import ColorTileAdmin from "@/features/admin/catalog/ColorTileAdmin";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import { errorMessage } from "@/lib/errors";

@@ -8,7 +8,7 @@ import { swipeHint } from "./series";
 // indices : les noms en haut, les voisins qui dépassent, la flèche ronde, le texte « Glisse
 // pour voir… », une petite poussée à l'arrivée et le compteur.
 // Le modèle affiché est toujours au centre, du premier au dernier (06/11) : les marges de
-// chaque côté sont calculées en CSS (.poster-track dans globals.css), sans JavaScript.
+// chaque côté sont calculées en CSS (.poster-track dans styles/series-posters.css), sans JavaScript.
 // Avec 4 modèles ou moins, l'ordinateur les montre en colonnes et cache les contrôles.
 export default function PosterSlider({
   names,

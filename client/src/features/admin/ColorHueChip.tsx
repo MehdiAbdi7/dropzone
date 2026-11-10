@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { errorMessage } from "@/lib/errors";
-import { useUpdateChoiceMutation, type Choice } from "./adminApi";
+import { useUpdateChoiceMutation, type Choice } from "@/features/admin/api/choicesApi";
 
 // Le gris proposé à une couleur qui n'a pas encore de teinte (une couleur ajoutée par l'import).
 export const DEFAULT_HUE = "#808080";

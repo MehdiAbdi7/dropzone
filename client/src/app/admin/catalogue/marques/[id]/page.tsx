@@ -3,12 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import {
-  useCatalogBrandQuery,
-  useCreateSeriesMutation,
-  useSetSeriesModelsMutation,
-  type AdminCatalogBrandPage,
-} from "@/features/admin/adminApi";
+import { useCatalogBrandQuery, useCreateSeriesMutation, useSetSeriesModelsMutation, type AdminCatalogBrandPage } from "@/features/admin/api/catalogApi";
 import { AddTile } from "@/features/admin/catalog/CatalogTile";
 import SeriesTile from "@/features/admin/catalog/SeriesTile";
 import { usePalette } from "@/features/admin/usePalette";
