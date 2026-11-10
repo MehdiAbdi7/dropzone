@@ -4,7 +4,7 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { StageDecor, StageItem, boxStyle } from "@/features/home/DeviceStage";
 import { clampBox, moveBox, reorder, resizeBox, slotLabel, type Box, type StageDevice } from "@/features/home/stageLayout";
 import { errorMessage } from "@/lib/errors";
-import { useSaveStageLayoutMutation } from "./adminApi";
+import { useSaveStageLayoutMutation } from "@/features/admin/api/stageApi";
 
 type Drag = { slot: string; mode: "move" | "resize"; startX: number; startY: number; start: Box };
 

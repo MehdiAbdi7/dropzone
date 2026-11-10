@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Field from "@/components/ui/Field";
 import { KIND_LABELS } from "@/config/catalog";
-import { useModelsQuery } from "../adminApi";
+import { useModelsQuery } from "@/features/admin/api/catalogApi";
 
 // Pour un accessoire (coque, verre trempé) : les modèles avec lesquels il est
 // compatible, à cocher. Une coque peut aller sur plusieurs modèles de même taille.

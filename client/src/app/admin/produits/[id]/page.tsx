@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import { useAdminProductQuery, useDeleteProductMutation } from "@/features/admin/adminApi";
+import { useAdminProductQuery, useDeleteProductMutation } from "@/features/admin/api/productsApi";
 import ImageManager from "@/features/admin/products/ImageManager";
 import ProductForm from "@/features/admin/products/ProductForm";
 import { draftFromProduct } from "@/features/admin/products/productDraft";

@@ -3,14 +3,7 @@
 import { useState, type FormEvent } from "react";
 import BrandLogo from "@/components/ui/BrandLogo";
 import { errorMessage } from "@/lib/errors";
-import {
-  useBrandsQuery,
-  useCreateBrandMutation,
-  useDeleteBrandMutation,
-  useUpdateBrandMutation,
-  useUploadBrandLogoMutation,
-  type AdminBrand,
-} from "./adminApi";
+import { useBrandsQuery, useCreateBrandMutation, useDeleteBrandMutation, useUpdateBrandMutation, useUploadBrandLogoMutation, type AdminBrand } from "@/features/admin/api/catalogApi";
 
 // Les marques d'une catégorie, dans l'ordre des puces de la Boutique. L'API pose
 // toute seule le logo d'une marque connue (Simple Icons) ; sinon, on envoie le sien.

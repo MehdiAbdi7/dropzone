@@ -2,7 +2,7 @@
 
 import ProductImage from "@/components/ui/ProductImage";
 import { errorMessage } from "@/lib/errors";
-import { useDeleteImageMutation, useUploadImageMutation, type AdminProduct } from "../adminApi";
+import { useDeleteImageMutation, useUploadImageMutation, type AdminProduct } from "@/features/admin/api/productsApi";
 
 const MAX_IMAGES = 6;
 

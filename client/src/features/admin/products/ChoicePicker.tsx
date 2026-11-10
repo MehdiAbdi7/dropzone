@@ -3,7 +3,7 @@
 import { useId, useState, type KeyboardEvent } from "react";
 import type { ChoiceGroup } from "@/config/catalog";
 import { errorMessage } from "@/lib/errors";
-import { useChoicesQuery, useCreateChoiceMutation } from "../adminApi";
+import { useChoicesQuery, useCreateChoiceMutation } from "@/features/admin/api/choicesApi";
 import { DEFAULT_HUE } from "../ColorHueChip";
 import { exactChoice, matchChoices } from "./choiceSearch";
 

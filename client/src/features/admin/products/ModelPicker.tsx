@@ -4,7 +4,7 @@ import { useState } from "react";
 import Field from "@/components/ui/Field";
 import { errorMessage } from "@/lib/errors";
 import type { ProductKind } from "@/types/api";
-import { useCreateModelMutation, useModelsQuery, type DeviceModel } from "../adminApi";
+import { useCreateModelMutation, useModelsQuery, type DeviceModel } from "@/features/admin/api/catalogApi";
 
 const MAX_SHOWN = 12;
 

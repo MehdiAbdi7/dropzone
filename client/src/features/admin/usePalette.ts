@@ -1,7 +1,7 @@
 "use client";
 
 import { paletteFromChoices, type Palette } from "@/config/colors";
-import { useChoicesQuery } from "./adminApi";
+import { useChoicesQuery } from "@/features/admin/api/choicesApi";
 
 // La palette du back-office : les teintes de la liste « Couleurs », lues par RTK Query.
 // Une teinte changée dans Listes invalide le cache « Choices » : pastilles et lueurs

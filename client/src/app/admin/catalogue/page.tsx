@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import Field from "@/components/ui/Field";
 import { DEVICE_KINDS, KIND_LABELS } from "@/config/catalog";
-import { useCatalogQuery, useCreateCategoryMutation } from "@/features/admin/adminApi";
+import { useCatalogQuery, useCreateCategoryMutation } from "@/features/admin/api/catalogApi";
 import CatalogTile, { AddTile } from "@/features/admin/catalog/CatalogTile";
 import { errorMessage } from "@/lib/errors";
 import type { ProductKind } from "@/types/api";

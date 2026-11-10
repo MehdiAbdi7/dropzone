@@ -3,7 +3,7 @@ import Link from "next/link";
 import ProductImage from "@/components/ui/ProductImage";
 import type { Palette } from "@/config/colors";
 import { glowColor } from "@/features/shop/series";
-import type { AdminSeriesTile } from "../adminApi";
+import type { AdminSeriesTile } from "@/features/admin/api/catalogApi";
 
 // Une série dans le Catalogue : couverture, nom et stocks regroupés dans un bandeau.
 export default function SeriesTile({ series, palette }: { series: AdminSeriesTile; palette: Palette }) {

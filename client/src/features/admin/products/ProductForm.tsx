@@ -8,16 +8,8 @@ import Field from "@/components/ui/Field";
 import { CONDITION_LABELS, KIND_LABELS, SPEC_SUGGESTIONS } from "@/config/catalog";
 import { formatPrice } from "@/lib/format";
 import { errorMessage, fieldErrors } from "@/lib/errors";
-import {
-  useBrandsQuery,
-  useCategoriesQuery,
-  useCreateProductMutation,
-  useGiftOptionsQuery,
-  useModelsQuery,
-  useUploadImageMutation,
-  useUpdateProductMutation,
-  type DeviceModel,
-} from "../adminApi";
+import { useBrandsQuery, useCategoriesQuery, useModelsQuery, type DeviceModel } from "@/features/admin/api/catalogApi";
+import { useCreateProductMutation, useGiftOptionsQuery, useUploadImageMutation, useUpdateProductMutation } from "@/features/admin/api/productsApi";
 import CompatibleModelsPicker from "./CompatibleModelsPicker";
 import EditDialog from "./EditDialog";
 import ModelPicker from "./ModelPicker";

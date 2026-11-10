@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AdminProduct } from "../adminApi";
+import type { AdminProduct } from "@/features/admin/api/productsApi";
 import {
   bodyFromDraft,
   draftFromProduct,

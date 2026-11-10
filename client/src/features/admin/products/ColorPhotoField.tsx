@@ -2,7 +2,7 @@
 
 import ProductImage from "@/components/ui/ProductImage";
 import { errorMessage } from "@/lib/errors";
-import { useDeleteColorPhotoMutation, useModelColorsQuery, useUploadColorPhotoMutation } from "../adminApi";
+import { useDeleteColorPhotoMutation, useModelColorsQuery, useUploadColorPhotoMutation } from "@/features/admin/api/colorsApi";
 
 // La photo de la couleur d'une variante (06/11) : « j'ajoute un iPhone rose, je mets la
 // photo de l'iPhone rose ». Elle appartient au modèle et à la couleur (table

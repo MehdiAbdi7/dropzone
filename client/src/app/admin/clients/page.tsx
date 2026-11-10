@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useCustomersQuery } from "@/features/admin/adminApi";
+import { useCustomersQuery } from "@/features/admin/api/ordersApi";
 import { formatDate } from "@/lib/format";
 
 // La liste des clients, en lecture seule.

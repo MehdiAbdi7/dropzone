@@ -3,17 +3,7 @@
 import { useState } from "react";
 import { CHOICE_GROUP_LABELS, KIND_LABELS, type ChoiceGroup } from "@/config/catalog";
 import type { ProductKind } from "@/types/api";
-import {
-  useChoicesQuery,
-  useCreateChoiceListMutation,
-  useCreateChoiceMutation,
-  useDeleteChoiceListMutation,
-  useDeleteChoiceMutation,
-  useUpdateChoiceListMutation,
-  useUpdateChoiceMutation,
-  type Choice,
-  type ChoiceList,
-} from "@/features/admin/adminApi";
+import { useChoicesQuery, useCreateChoiceListMutation, useCreateChoiceMutation, useDeleteChoiceListMutation, useDeleteChoiceMutation, useUpdateChoiceListMutation, useUpdateChoiceMutation, type Choice, type ChoiceList } from "@/features/admin/api/choicesApi";
 import EditDialog from "@/features/admin/products/EditDialog";
 import { errorMessage } from "@/lib/errors";
 

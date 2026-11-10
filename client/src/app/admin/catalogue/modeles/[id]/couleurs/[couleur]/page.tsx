@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import ProductImage from "@/components/ui/ProductImage";
 import { CONDITION_LABELS } from "@/config/catalog";
-import { useDeleteColorPhotoMutation, useModelColorQuery, useUploadColorPhotoMutation } from "@/features/admin/adminApi";
+import { useDeleteColorPhotoMutation, useModelColorQuery, useUploadColorPhotoMutation } from "@/features/admin/api/colorsApi";
 import AddUnitDialog from "@/features/admin/catalog/AddUnitDialog";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import { kindIcon } from "@/features/shop/colors";

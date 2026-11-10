@@ -1,7 +1,7 @@
 import { DEVICE_KINDS } from "@/config/catalog";
 import { defaultWarrantyMonths } from "@/config/warranty";
 import type { Condition, Options, ProductKind, ProductStatus } from "@/types/api";
-import type { AdminProduct, ProductBody } from "../adminApi";
+import type { AdminProduct, ProductBody } from "@/features/admin/api/productsApi";
 
 // L'état du formulaire produit. Les nombres restent en texte tant qu'on tape
 // (un champ vide n'est pas 0) et sont convertis à l'envoi.

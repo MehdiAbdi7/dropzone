@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { CONDITION_LABELS, STATUS_LABELS } from "@/config/catalog";
 import { warrantyLabel } from "@/config/warranty";
-import { useAdminOrderQuery, useChangeStatusMutation } from "@/features/admin/adminApi";
+import { useAdminOrderQuery, useChangeStatusMutation } from "@/features/admin/api/ordersApi";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatOptions, formatPrice } from "@/lib/format";
 
