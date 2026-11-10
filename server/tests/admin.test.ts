@@ -356,6 +356,55 @@ describe("Modèles, listes et catégories", () => {
     expect(await prisma.choice.findUnique({ where: { id: value.body.data.id } })).toBeNull();
   });
 
+  // Les produits recopient le nom d'une valeur (« Couleur: "Bordeaux" »), pas son id :
+  // renommer la valeur doit renommer toutes ses copies, sinon les produits la perdent (10/11).
+  it("renomme une couleur dans les variantes, les couleurs du modèle, la lueur et les photos", async () => {
+    const color = await admin.post("/admin/choices").send({ group: "color", label: "Bordeaux", hex: "#6b1f2e" }).expect(201);
+    await prisma.productVariant.update({
+      where: { sku: "IP-NEW-256" },
+      data: { options: { Stockage: "256 Go", Couleur: "Bordeaux" } },
+    });
+    await prisma.deviceModel.update({
+      where: { id: catalog.iphone.id },
+      data: { colors: ["Noir", "Bordeaux"], posterColor: "Bordeaux" },
+    });
+    await prisma.modelColorPhoto.create({ data: { deviceModelId: catalog.iphone.id, color: "Bordeaux", url: "https://x/b.webp" } });
+
+    await admin.patch(`/admin/choices/${color.body.data.id}`).send({ label: "Burgundy" }).expect(200);
+
+    expect((await prisma.productVariant.findUniqueOrThrow({ where: { sku: "IP-NEW-256" } })).options).toEqual({
+      Stockage: "256 Go",
+      Couleur: "Burgundy",
+    });
+    expect(await prisma.deviceModel.findUniqueOrThrow({ where: { id: catalog.iphone.id } })).toMatchObject({
+      colors: ["Noir", "Burgundy"],
+      posterColor: "Burgundy",
+    });
+    expect(await prisma.modelColorPhoto.count({ where: { deviceModelId: catalog.iphone.id, color: "Burgundy" } })).toBe(1);
+    // Une commande est un fait passé : elle garde l'ancien nom.
+  });
+
+  it("renomme un défaut, une origine et la valeur d'une liste à choix multiples", async () => {
+    const defect = await admin.post("/admin/choices").send({ group: "defect", label: "Rayure" }).expect(201);
+    const origin = await admin.post("/admin/choices").send({ group: "origin", label: "Allemagne" }).expect(201);
+    const list = await admin.post("/admin/choice-lists").send({ name: "Ports", kinds: ["phone"], multiple: true }).expect(201);
+    const port = await admin.post("/admin/choices").send({ listId: list.body.data.id, label: "USB C" }).expect(201);
+    await prisma.productVariant.update({
+      where: { sku: "IP-R-DEAL" },
+      data: { defects: ["Rayure", "Choc"], origin: "Allemagne", options: { Ports: ["USB C", "Jack"] } },
+    });
+
+    await admin.patch(`/admin/choices/${defect.body.data.id}`).send({ label: "Rayure légère" }).expect(200);
+    await admin.patch(`/admin/choices/${origin.body.data.id}`).send({ label: "Europe" }).expect(200);
+    await admin.patch(`/admin/choices/${port.body.data.id}`).send({ label: "USB-C" }).expect(200);
+
+    expect(await prisma.productVariant.findUniqueOrThrow({ where: { sku: "IP-R-DEAL" } })).toMatchObject({
+      defects: ["Rayure légère", "Choc"],
+      origin: "Europe",
+      options: { Ports: ["USB-C", "Jack"] },
+    });
+  });
+
   it("refuse de supprimer une catégorie qui a des produits", async () => {
     const response = await admin.delete(`/admin/categories/${catalog.phones.id}`);
     expect(response.status).toBe(409);
@@ -404,7 +453,9 @@ describe("Commandes", () => {
       ordersToday: 1,
       ordersByStatus: { pending: 1 },
       refurbishedAvailable: 1,
-      refurbishedSold: 2,
+      // Les appareils commandés (hors annulations), pas les fiches à 0 : une affaire peut
+      // avoir plusieurs exemplaires depuis le 10/11. Ici, l'unique affaire de la commande.
+      refurbishedSold: 1,
     });
   });
 });

@@ -15,7 +15,7 @@ FROM (VALUES
   ('Argent', '#d9d9de'), ('Gris sidéral', '#535150'), ('Minuit', '#232a35'),
   ('Lumière stellaire', '#ece5d8'), ('Titane naturel', '#bfb6a8'), ('Titane noir', '#3c3c3d'),
   ('Titane bleu', '#3c4a63'), ('Titane blanc', '#efeee9'), ('Titane gris', '#8a8a87'),
-  ('Graphite', '#41424c'), ('Burgundy', '#6b1f2e'), ('Glacier', '#cfe3ee'),
+  ('Graphite', '#41424c'), ('Bordeaux', '#6b1f2e'), ('Glacier', '#cfe3ee'),
   ('Orange', '#f47d3c'), ('Or rose', '#e6c7c2')
 ) AS v(label, hex)
 WHERE c."group" = 'color' AND c."label" = v.label;

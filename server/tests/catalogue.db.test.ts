@@ -58,8 +58,14 @@ describe("La base du vrai catalogue", () => {
     expect(variant).toMatchObject({ grade: null, batteryHealth: null, withBox: null });
   });
 
-  it("refuse toujours une affaire en plusieurs exemplaires", async () => {
-    await expect(affaire("IG-DEUX", { stock: 2 })).rejects.toThrow();
+  // Un arrivage peut apporter plusieurs appareils identiques (même état, même couleur) :
+  // une seule fiche avec leur nombre (décision de Mehdi, 10/11). La base garde un plafond.
+  it("accepte une affaire en plusieurs exemplaires", async () => {
+    await expect(affaire("IG-DEUX", { stock: 3 })).resolves.toMatchObject({ stock: 3 });
+  });
+
+  it("refuse un stock au-delà du plafond de la base", async () => {
+    await expect(affaire("IG-TROP", { stock: 10001 })).rejects.toThrow();
   });
 
   it("refuse une boîte sur un neuf scellé", async () => {

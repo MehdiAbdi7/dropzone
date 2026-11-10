@@ -202,16 +202,13 @@ function WindowLine({ line, gifts }: { line: CartLine; gifts: CartLine[] }) {
         <p className="font-display font-bold whitespace-nowrap tabular-nums">{formatPrice(line.lineTotal)}</p>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 pl-19">
-        {line.condition === "refurbished" ? (
-          <span className="text-sm text-ink-muted">Appareil unique</span>
-        ) : (
-          <QuantityStepper
-            value={quantity}
-            max={line.maxQuantity}
-            label={`Quantité de ${line.name}`}
-            onChange={(next) => dispatch(setQuantity({ sku: line.sku, quantity: next, max: line.maxQuantity }))}
-          />
-        )}
+        {/* Une affaire peut avoir plusieurs exemplaires identiques (arrivage, 10/11) : même « − + » qu'un neuf. */}
+        <QuantityStepper
+          value={quantity}
+          max={line.maxQuantity}
+          label={`Quantité de ${line.name}`}
+          onChange={(next) => dispatch(setQuantity({ sku: line.sku, quantity: next, max: line.maxQuantity }))}
+        />
         <button type="button" className="text-sm text-red underline" onClick={() => dispatch(removeItem(line.sku))}>
           Retirer
         </button>

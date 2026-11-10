@@ -3,12 +3,38 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+// Garde-fou (10/11) : depuis le 06/11, le `.env` du PC pointe sur la base de production (Neon).
+// Prisma lit ce fichier avant chaque commande : on y refuse ce qui modifie le schéma d'une base
+// qui n'est pas sur le PC.
+//  - `migrate dev`, `migrate reset` et `db push` peuvent proposer de tout effacer : jamais sur
+//    une base distante (on les lance sur la base du PC, puis on pousse).
+//  - `migrate deploy` : seulement sur Render (variable RENDER posée par Render), après le push,
+//    pour que la production ne change pas avant que le code soit relu.
+// Pour forcer en connaissance de cause : ALLOW_REMOTE_PRISMA=1 devant la commande.
+const url = process.env["DATABASE_URL"];
+const args = process.argv.slice(2).filter((arg) => !arg.startsWith("-"));
+const command = args.slice(0, 2).join(" ");
+const destructive = ["migrate dev", "migrate reset", "db push"].includes(command);
+const deploy = command === "migrate deploy";
+
+if (url && (destructive || deploy) && process.env["ALLOW_REMOTE_PRISMA"] !== "1") {
+  const host = new URL(url).hostname;
+  const local = ["localhost", "127.0.0.1", "::1"].includes(host);
+  if (!local && (destructive || !process.env["RENDER"])) {
+    throw new Error(
+      `« prisma ${command} » refusé sur la base distante ${host}. ` +
+        "Lance-le sur la base du PC (ou laisse Render appliquer les migrations après le push). " +
+        "Pour forcer : ALLOW_REMOTE_PRISMA=1.",
+    );
+  }
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url,
   },
 });
