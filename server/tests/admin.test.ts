@@ -404,7 +404,9 @@ describe("Commandes", () => {
       ordersToday: 1,
       ordersByStatus: { pending: 1 },
       refurbishedAvailable: 1,
-      refurbishedSold: 2,
+      // Les appareils commandés (hors annulations), pas les fiches à 0 : une affaire peut
+      // avoir plusieurs exemplaires depuis le 10/11. Ici, l'unique affaire de la commande.
+      refurbishedSold: 1,
     });
   });
 });

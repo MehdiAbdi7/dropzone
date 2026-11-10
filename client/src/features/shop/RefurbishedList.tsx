@@ -29,13 +29,15 @@ export default function RefurbishedList({
 }) {
   const [sort, setSort] = useState<RefurbSort>("price");
   const sorted = [...variants].sort(SORTS[sort].compare);
+  // Une fiche peut couvrir plusieurs exemplaires identiques : on compte les appareils, pas les fiches.
+  const units = variants.reduce((sum, variant) => sum + variant.stock, 0);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-ink-muted">
-          {variants.length} appareil{variants.length > 1 ? "s" : ""} disponible{variants.length > 1 ? "s" : ""}. Chacun est
-          unique : en bleu ce qui a été changé, en rouge les défauts.
+          {units} appareil{units > 1 ? "s" : ""} disponible{units > 1 ? "s" : ""}. Chaque fiche décrit l&apos;état réel de
+          ses appareils : en bleu ce qui a été changé, en rouge les défauts.
         </p>
         <label className="flex items-center gap-2 text-sm">
           <span className="text-ink-muted">Trier</span>

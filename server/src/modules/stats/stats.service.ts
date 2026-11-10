@@ -42,10 +42,14 @@ export async function getStats() {
 
   const [refurbished] = await prisma.$queryRaw<{ available: bigint; sold: bigint }[]>`
     SELECT
-      COALESCE(SUM(stock) FILTER (WHERE stock > 0), 0) AS available,
-      COUNT(*) FILTER (WHERE stock = 0) AS sold
-    FROM product_variants
-    WHERE condition = 'refurbished'
+      (SELECT COALESCE(SUM(stock), 0) FROM product_variants WHERE condition = 'refurbished') AS available,
+      -- Les appareils commandés, pas les fiches à 0 : une fiche peut avoir plusieurs exemplaires
+      -- (10/11), et une fiche créée sans stock n'a rien vendu. Les cadeaux et les annulations
+      -- ne comptent pas.
+      (SELECT COALESCE(SUM(i.quantity), 0)
+         FROM order_items i
+         JOIN orders o ON o.id = i.order_id
+        WHERE i.condition = 'refurbished' AND NOT i.is_gift AND o.status <> 'cancelled') AS sold
   `;
 
   // PostgreSQL renvoie COUNT et SUM en bigint, que JSON ne sait pas écrire : Number().
