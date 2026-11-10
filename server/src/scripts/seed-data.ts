@@ -2,7 +2,7 @@
 // des exemples. Les images sont des illustrations servies par le front (client/public)
 // ou des photos préparées par `npm run photos` (Cloudinary), en attendant les autres.
 
-export type SeedVariant = {
+type SeedVariant = {
   sku: string;
   options: Record<string, string>;
   price: number;
@@ -25,7 +25,7 @@ export type SeedVariant = {
   gifts?: { sku: string; quantity?: number }[];
 };
 
-export type SeedProduct = {
+type SeedProduct = {
   name: string;
   category: string;
   // « Marque|Nom » d'un modèle de device-models.ts.

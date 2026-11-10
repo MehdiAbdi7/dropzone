@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/db.js";
-import { fillSeries, seriesNameOf } from "../src/scripts/series.js";
+import { fillSeries, seriesNameOf } from "../src/scripts/lib/series.js";
 import { createCatalog, resetDb } from "./helpers.js";
 
 describe("seriesNameOf : la série d'un modèle d'après son nom", () => {

@@ -1,9 +1,9 @@
 // Le rangement de départ des modèles en séries. Ce n'est qu'un point de départ : la
 // Boutique ne devine jamais la série dans le nom, elle lit `device_models.series_id`,
 // et le gérant range ensuite ses modèles lui-même dans le back-office (« Catalogue »).
-import type { Tx } from "../config/db.js";
-import type { ProductKind } from "../generated/prisma/client.js";
-import { slugify } from "../utils/slugify.js";
+import type { Tx } from "../../config/db.js";
+import type { ProductKind } from "../../generated/prisma/client.js";
+import { slugify } from "../../utils/slugify.js";
 
 type Rule = [pattern: RegExp, series: string | ((match: RegExpMatchArray) => string)];
 

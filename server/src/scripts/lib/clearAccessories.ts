@@ -4,7 +4,7 @@
 // et photos supprimées (CASCADE), cadeaux des affaires supprimés (CASCADE sur variant_gifts),
 // lignes de commandes passées gardées sans produit (SET NULL).
 // Utilisé par `npm run accessories:clear`. Rejouable : un deuxième passage ne change rien.
-import type { Tx } from "../config/db.js";
+import type { Tx } from "../../config/db.js";
 
 export type ClearReport = {
   products: number;

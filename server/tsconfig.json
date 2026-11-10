@@ -37,5 +37,8 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
   },
-  "include": ["src", "tests", "*.ts"]
+  "include": ["src", "tests", "*.ts"],
+  // Ce test importe des fichiers de client/ (réglages de module différents) : Vitest le lance
+  // sans souci, mais tsc de l'API ne sait pas les vérifier.
+  "exclude": ["tests/copiesDuFront.test.ts"]
 }

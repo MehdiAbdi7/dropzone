@@ -29,7 +29,7 @@ app.use(express.json({ limit: "100kb" }));
 app.use(cookieParser());
 
 //routes
-app.get("/health", (req, res) => {
+app.get("/health", (_req, res) => {
   res.json({ data: { status: "ok" } });
 });
 

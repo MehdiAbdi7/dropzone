@@ -1,13 +1,9 @@
 import { z } from "zod";
+import { idParamsSchema } from "../../utils/idParams.js";
 import { variantSchema } from "../products/product.schema.js";
 
-export const modelParamsSchema = z.object({ id: z.coerce.number().int().positive() });
-
 // Express décode déjà l'adresse : « Orange%20cosmique » arrive en « Orange cosmique ».
-export const colorParamsSchema = z.object({
-  id: z.coerce.number().int().positive(),
-  color: z.string().trim().min(1).max(60),
-});
+export const colorParamsSchema = idParamsSchema.extend({ color: z.string().trim().min(1).max(60) });
 
 // Un exemplaire ajouté depuis la page d'une couleur : la variante du formulaire produit,
 // plus sa couleur (imposée à l'option « Couleur »). Les articles offerts s'ajoutent ensuite

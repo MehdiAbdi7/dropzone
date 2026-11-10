@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { uploadImage } from "../../middlewares/upload.js";
 import { validate } from "../../middlewares/validate.js";
+import { idParamsSchema } from "../../utils/idParams.js";
 import {
   getGiftOptions,
   getProduct,
@@ -13,7 +14,6 @@ import {
 } from "./productAdmin.controller.js";
 import {
   adminProductListQuerySchema,
-  idParamsSchema,
   imageParamsSchema,
   productBodySchema,
 } from "./product.schema.js";

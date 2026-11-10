@@ -71,7 +71,7 @@ export function posterLayout(count: number): "columns" | "slider" {
   return count <= 4 ? "columns" : "slider";
 }
 
-export type SpecIcon =
+type SpecIcon =
   | "screen"
   | "chip"
   | "camera"

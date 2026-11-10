@@ -3,7 +3,7 @@
 //   npm run colors:variants -- --apply   → écrit, en une seule transaction
 // Une couleur déjà posée (ou corrigée par le gérant) n'est pas touchée.
 import { prisma } from "../config/db.js";
-import { type FillReport, fillVariantColors } from "./fillVariantColors.js";
+import { type FillReport, fillVariantColors } from "./lib/fillVariantColors.js";
 
 const apply = process.argv.includes("--apply");
 

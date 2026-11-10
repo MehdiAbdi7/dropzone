@@ -1,13 +1,13 @@
 # DropZone
 
-Full stack e-commerce app for an Algerian reseller of laptops, smartphones and watches imported from Europe, sold **new or refurbished**. Built with Next.js, Express, PostgreSQL (Prisma) and TypeScript.
+Full stack e-commerce app for an Algerian reseller of laptops, smartphones and tablets imported from Europe, sold **new or refurbished**. Built with Next.js, Express, PostgreSQL (Prisma) and TypeScript.
 
 Unofficial demo built for DropZone. Not affiliated with or endorsed by DropZone. The site shows a demo banner and is not indexed.
 
 ## What makes it specific
 
 - **One product per device model**, sold new (classic variants with stock) or refurbished.
-- **Every refurbished device is unique** (stock 0 or 1, enforced by a PostgreSQL `CHECK`) and has its own condition report: grade out of 10, battery health, replaced parts, visible defects and functional limitations. Limitations are shown first and must be accepted at checkout.
+- **Every refurbished listing has its own condition report**: grade out of 10, battery health, replaced parts, visible defects and functional limitations. Limitations are shown first and must be accepted at checkout. One listing can cover several identical units from the same shipment (same condition, same colour): its stock is the number of units, up to 10 per cart line.
 - **Deals**: a variant can come with free accessories taken from the catalogue. They become 0 DA order lines and their stock goes down in the same transaction.
 - **A checkbox-driven back-office form**: category, device model (194 models seeded, more can be added inline), options, condition report and gifts are picked from lists that grow as the shop adds values.
 - **The customer always confirms what they saw**: the cart preview returns a hash of its lines; the order is refused (409) if prices, stock or gifts changed in between.
@@ -18,7 +18,7 @@ Unofficial demo built for DropZone. Not affiliated with or endorsed by DropZone.
 |---|---|
 | API | Node 22, Express 5, Prisma 7 with PostgreSQL 18, Zod 4, JWT in an httpOnly cookie, bcrypt, express-rate-limit, Cloudinary |
 | Front | Next.js 16 (App Router), React 19, Tailwind CSS 4, Redux Toolkit and RTK Query, React Hook Form |
-| Tests | Vitest and Supertest against a dedicated PostgreSQL database (57 tests) |
+| Tests | API: Vitest and Supertest against a dedicated PostgreSQL database. Front: Vitest on the pure logic |
 | Ops | Docker Compose (PostgreSQL, migrations, API, front) |
 
 ## Run locally
@@ -41,7 +41,7 @@ npm ci
 npm run dev
 ```
 
-Tests: `cd server && npx vitest run` (the test database receives the migrations automatically).
+Tests: `cd server && npx vitest run` (the test database receives the migrations automatically) and `cd client && npx vitest run`. Before opening a pull request: `npx tsc --noEmit` in both folders, `npx eslint .` in `client/`.
 
 ### The real catalog
 
@@ -61,14 +61,55 @@ docker compose run --rm migrate npm run seed -- --apply
 
 The shop is then on http://localhost:3000.
 
-## Project layout
+## Where to find things
 
 ```
-client/   Next.js: app/ (shop, account, admin), features/ (cart, products, orders, auth, admin), lib/, config/
-server/   Express: modules/ (products, orders, auth, categories, models, choices, users, stats), middlewares/, prisma/
+client/   Next.js front (the shop and the back-office)
+server/   Express API, Prisma schema and migrations, import scripts
 ```
 
-Each API module keeps its routes, validation (Zod) and, when there is business logic, a service. The admin router is protected in one line: `app.use("/admin", requireAuth, requireRole("admin"), adminRouter)`.
+### API (`server/src`)
+
+Every module in `modules/` follows the same chain, one file per role:
+
+```
+<module>.routes.ts      the URL, the validation, and which controller answers. No logic.
+<module>.controller.ts  HTTP in, HTTP out: reads the request, calls the service, sends the response.
+<module>.service.ts     the business rules and every Prisma query.
+<module>.schema.ts      the Zod schemas of what the module accepts, and their TypeScript types.
+```
+
+A file exists only when the module needs it (`stats` has no schema, `choices` has an extra `choiceRename.ts` for one rule). To find a feature, start from its `*.routes.ts` and follow the imports. To add an endpoint: schema, then service, then controller, then route, with its test in `server/tests/`.
+
+| Folder | What it holds |
+|---|---|
+| `modules/` | `auth`, `brands`, `categories`, `choices` (the lists of the product form), `models` (device models and their colours), `orders`, `products`, `series`, `stage` (the home page photos), `stats`, `users` |
+| `middlewares/` | `requireAuth`, `requireRole`, `validate` (Zod), rate limiters, image upload, error handler |
+| `utils/` | Small shared helpers (`idParams`, `pagination`, `slugify`, `escapeLike`, `AppError`) |
+| `config/` | Environment, database client, shipping fees, wilayas |
+| `scripts/` | Command-line tools (`npm run seed`, `import:dropzone`, and so on). The file named after the command is a thin wrapper, its logic is in `scripts/lib/` and its data in `scripts/import/` or the `*-data.ts` files |
+| `prisma/` | `schema.prisma` and the migrations |
+
+The admin router is protected in one line: `app.use("/admin", requireAuth, requireRole("admin"), adminRouter)`.
+
+### Front (`client/src`)
+
+| Folder | What it holds |
+|---|---|
+| `app/` | The routes only: `(shop)` the public shop, `(account)` the customer area, `admin` the back-office. A page fetches data and composes components |
+| `features/` | One folder per business area (`shop`, `cart`, `orders`, `auth`, `home`, `products`, `admin`), with its components, its RTK Query endpoints (`*Api.ts`) and its pure logic. Logic without React sits next to its test (`stock.ts`, `stock.test.ts`) |
+| `components/` | What belongs to no business area: `layout` (header, footer, menu) and `ui` (icons, logo, spinner, confirm dialog, form field, theme toggle) |
+| `config/` | Fixed data and rules: catalogue options, colours, warranty, wilayas, shipping |
+| `lib/` | Technical helpers: API client, store, formatting, hooks |
+| `types/` | The shapes of the API responses |
+
+### Conventions
+
+- **KISS**: the simplest thing that works. No abstraction before the third use; a plain function before a class; the database does what it can do (constraints, `UNIQUE`, `CHECK`).
+- **DRY**: one rule, one place. A rule needed by several modules lives in `utils/` or `config/`. Three rules exist in both `client/` and `server/` because the two folders are deployed separately (wilayas, default warranty, brand logos): `server/tests/copiesDuFront.test.ts` fails if the copies drift apart.
+- **YAGNI**: no code for a need that does not exist yet. An unused export, file or table is deleted, not kept "just in case": Git remembers it.
+- A migration that has been applied is never edited: write a new one. Run `prisma migrate dev` on a local database only (a guard in `server/prisma.config.ts` refuses it on a remote one).
+- Commits follow `type(scope): message` (`feat`, `fix`, `refactor`, `test`, `chore`). One branch per task, merged by pull request.
 
 ## Credits
 

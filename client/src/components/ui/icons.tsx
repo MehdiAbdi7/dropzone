@@ -70,12 +70,6 @@ export const ArrowRightIcon = (props: IconProps) => (
   </Icon>
 );
 
-export const CheckIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="m5 12 5 5 9-10" />
-  </Icon>
-);
-
 export const InstagramIcon = (props: IconProps) => (
   <Icon {...props}>
     <rect x="3" y="3" width="18" height="18" rx="5" />
@@ -145,13 +139,6 @@ export const AlertIcon = (props: IconProps) => (
 export const SwapIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M4 8h14l-3-3M20 16H6l3 3" />
-  </Icon>
-);
-
-export const GiftIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <rect x="3" y="8" width="18" height="4" rx="1" />
-    <path d="M5 12v8h14v-8M12 8v12M12 8c-1.5-3-5.5-3.5-5.5-1.5S10 8 12 8c2 0 5.5.5 5.5-1.5S13.5 5 12 8Z" />
   </Icon>
 );
 

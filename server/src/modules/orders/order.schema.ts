@@ -3,7 +3,7 @@ import { WILAYAS } from "../../config/wilayas.js";
 import { paginationQuery } from "../../utils/pagination.js";
 
 // Le client n'envoie que des SKU et des quantités : jamais de prix.
-export const cartItemsSchema = z
+const cartItemsSchema = z
   .array(
     z.object({
       sku: z.string().trim().toUpperCase().min(3).max(40),
@@ -47,7 +47,7 @@ export const trackOrderSchema = z.object({
 
 export const orderNumberParamsSchema = z.object({ number: z.coerce.number().int().min(1) });
 
-export const orderStatusSchema = z.enum(["pending", "confirmed", "shipped", "delivered", "cancelled"]);
+const orderStatusSchema = z.enum(["pending", "confirmed", "shipped", "delivered", "cancelled"]);
 
 export const adminOrderListQuerySchema = z.object({
   status: orderStatusSchema.optional(),
@@ -57,5 +57,4 @@ export const adminOrderListQuerySchema = z.object({
 });
 export type AdminOrderListQuery = z.infer<typeof adminOrderListQuerySchema>;
 
-export const orderIdParamsSchema = z.object({ id: z.coerce.number().int().positive() });
 export const statusBodySchema = z.object({ status: orderStatusSchema });

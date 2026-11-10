@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 // Le stock en deux pastilles : « 5 neufs scellés » (bleu) et « 3 affaires » (rouge).
 // Rien n'est affiché pour zéro : la tuile reste lisible.
-export function StockPills({ newStock, dealCount }: { newStock: number; dealCount: number }) {
+function StockPills({ newStock, dealCount }: { newStock: number; dealCount: number }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {newStock > 0 ? (

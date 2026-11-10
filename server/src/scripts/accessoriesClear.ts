@@ -3,7 +3,7 @@
 //   npm run accessories:clear -- --apply   → écrit, en une seule transaction, puis retire les photos de Cloudinary
 import { deleteFromCloudinary } from "../config/cloudinary.js";
 import { prisma } from "../config/db.js";
-import { type ClearReport, clearAccessories } from "./clearAccessories.js";
+import { type ClearReport, clearAccessories } from "./lib/clearAccessories.js";
 
 const apply = process.argv.includes("--apply");
 

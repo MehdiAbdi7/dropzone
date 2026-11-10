@@ -1,4 +1,4 @@
-export type PhoneSpecs = {
+type PhoneSpecs = {
   Puce: string;
   Écran: string;
   Batterie: string;

@@ -1,7 +1,7 @@
 import { api } from "@/lib/api";
 import type { CartItem, CartPreview, OrderDetail } from "@/types/api";
 
-export type CheckoutInput = {
+type CheckoutInput = {
   items: CartItem[];
   fullName: string;
   phone: string;

@@ -1,12 +1,13 @@
 import { z } from "zod";
 
-export const productKindSchema = z.enum(["phone", "tablet", "laptop", "watch", "accessory", "audiovisual"]);
+const productKindSchema = z.enum(["phone", "tablet", "laptop", "watch", "accessory", "audiovisual"]);
 
 export const categoryBodySchema = z.object({
   name: z.string().trim().min(2).max(60),
   kind: productKindSchema,
 });
 
-export const categoryPatchSchema = categoryBodySchema.partial();
+export type CategoryBody = z.infer<typeof categoryBodySchema>;
 
-export const categoryIdSchema = z.object({ id: z.coerce.number().int().positive() });
+export const categoryPatchSchema = categoryBodySchema.partial();
+export type CategoryPatch = z.infer<typeof categoryPatchSchema>;

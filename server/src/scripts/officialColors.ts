@@ -3,7 +3,7 @@
 //   npm run colors:official -- --apply   → écrit, en une seule transaction
 // Un modèle qui a déjà des couleurs n'est pas touché (le gérant a le dernier mot).
 import { prisma } from "../config/db.js";
-import { applyOfficialColors } from "./applyOfficialColors.js";
+import { applyOfficialColors } from "./lib/applyOfficialColors.js";
 
 const apply = process.argv.includes("--apply");
 

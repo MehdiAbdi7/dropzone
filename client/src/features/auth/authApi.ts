@@ -9,7 +9,7 @@ export type RegisterInput = {
   phone: string;
 };
 
-export type ProfileInput = Partial<
+type ProfileInput = Partial<
   Pick<User, "firstName" | "lastName" | "phone" | "addressWilaya" | "addressCommune" | "addressLine">
 >;
 

@@ -91,7 +91,3 @@ export const OFFICIAL_SPECS: Record<string, Specs> = {
   // vivo.com.cn/vivo/param/x200ultra
   "Vivo|X200 Ultra": device("6,82 pouces AMOLED, 120 Hz", "Snapdragon 8 Elite", "50 Mpx principal, 50 Mpx ultra grand-angle et 200 Mpx téléobjectif", "6 000 mAh"),
 };
-
-// Les modèles dont la page officielle reste introuvable, avec la raison : ils sont
-// importés sans caractéristiques. Aucun au 04/11/2026.
-export const SPECS_MISSING: Record<string, string> = {};

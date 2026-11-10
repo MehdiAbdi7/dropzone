@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import { prisma } from "../../config/db.js";
 import type { AdminOrderListQuery } from "./order.schema.js";
 import {
   changeOrderStatus,
@@ -8,12 +7,12 @@ import {
   getMyOrder,
   listAdminOrders,
   listMyOrders,
-  priceCart,
+  previewCart,
   trackOrder,
 } from "./order.service.js";
 
 export async function postPreview(req: Request, res: Response) {
-  res.json({ data: await priceCart(prisma, req.body.items) });
+  res.json({ data: await previewCart(req.body.items) });
 }
 
 export async function postOrder(req: Request, res: Response) {

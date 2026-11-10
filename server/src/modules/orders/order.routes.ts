@@ -2,6 +2,7 @@ import { Router } from "express";
 import { optionalAuth, requireAuth } from "../../middlewares/auth.js";
 import { orderLimiter, trackLimiter } from "../../middlewares/rateLimiters.js";
 import { validate } from "../../middlewares/validate.js";
+import { idParamsSchema } from "../../utils/idParams.js";
 import {
   getAdminOrderOne,
   getAdminOrders,
@@ -15,7 +16,6 @@ import {
 import {
   adminOrderListQuerySchema,
   createOrderSchema,
-  orderIdParamsSchema,
   orderNumberParamsSchema,
   previewBodySchema,
   statusBodySchema,
@@ -33,9 +33,9 @@ orderRouter.get("/mine/:number", requireAuth, validate({ params: orderNumberPara
 // Monté sous /admin, déjà protégé.
 export const orderAdminRouter = Router();
 orderAdminRouter.get("/orders", validate({ query: adminOrderListQuerySchema }), getAdminOrders);
-orderAdminRouter.get("/orders/:id", validate({ params: orderIdParamsSchema }), getAdminOrderOne);
+orderAdminRouter.get("/orders/:id", validate({ params: idParamsSchema }), getAdminOrderOne);
 orderAdminRouter.patch(
   "/orders/:id/status",
-  validate({ params: orderIdParamsSchema, body: statusBodySchema }),
+  validate({ params: idParamsSchema, body: statusBodySchema }),
   patchStatus,
 );

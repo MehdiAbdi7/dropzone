@@ -6,9 +6,9 @@
 // Décision de Mehdi : un exemplaire sans couleur reçoit une des couleurs officielles de son
 // modèle (choix de Claude : la première). C'est une couleur de démo, pas la vraie couleur de
 // l'appareil : le gérant la corrige dans le back-office.
-import type { Tx } from "../config/db.js";
-import type { Prisma } from "../generated/prisma/client.js";
-import { addMissingModelColors, sameColor } from "../modules/models/modelColors.js";
+import type { Tx } from "../../config/db.js";
+import type { Prisma } from "../../generated/prisma/client.js";
+import { addMissingModelColors, sameColor } from "../../modules/models/modelColors.js";
 import { applyOfficialColors } from "./applyOfficialColors.js";
 
 const DEVICE_KINDS = ["phone", "tablet", "laptop", "watch"] as const;
@@ -16,7 +16,7 @@ const DEVICE_KINDS = ["phone", "tablet", "laptop", "watch"] as const;
 // Les couleurs en base au nom non officiel, renommées quand l'équivalent est évident (accord
 // de Mehdi du 05/11, comme « Orange » devenu « Orange cosmique »). Galaxy A55 : produit
 // d'exemple du seed, sans noir officiel, bleu ambigu (choix de Claude).
-export const RENAMES: Record<string, Record<string, string>> = {
+const RENAMES: Record<string, Record<string, string>> = {
   "Apple|iPhone 15 Pro": { Blanc: "Titane blanc" },
   "Apple|iPhone Air": { Noir: "Noir sidéral" },
   "Apple|MacBook Air 13 pouces Intel (2018)": { "Or rose": "Or" },

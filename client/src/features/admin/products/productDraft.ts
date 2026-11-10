@@ -51,7 +51,7 @@ export type ProductDraft = {
 };
 
 let counter = 0;
-export const newKey = () => `v${Date.now()}-${counter++}`;
+const newKey = () => `v${Date.now()}-${counter++}`;
 
 // La garantie proposée en texte (« 6 »), vide sans sorte connue ou pour un accessoire.
 const defaultWarrantyText = (kind: ProductKind | undefined, condition: Condition) => {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { idParamsSchema } from "../../utils/idParams.js";
 import { paginationQuery } from "../../utils/pagination.js";
 
 const slug = z.string().trim().regex(/^[a-z0-9-]{1,120}$/);
@@ -33,11 +34,7 @@ export const slugParamsSchema = z.object({ slug });
 
 // ---------- Admin ----------
 
-export const idParamsSchema = z.object({ id: z.coerce.number().int().positive() });
-export const imageParamsSchema = z.object({
-  id: z.coerce.number().int().positive(),
-  imageId: z.coerce.number().int().positive(),
-});
+export const imageParamsSchema = idParamsSchema.extend({ imageId: z.coerce.number().int().positive() });
 
 export const adminProductListQuerySchema = z.object({
   q: z.string().trim().min(1).max(100).optional(),

@@ -12,8 +12,6 @@ export const seriesParamsSchema = z.object({ category: slug, brand: slug, serie:
 
 // ---------- Le back-office ----------
 
-export const idParamsSchema = z.object({ id: z.coerce.number().int().positive() });
-
 export const seriesBodySchema = z.object({ name: z.string().trim().min(1).max(60) });
 
 // Tous les modèles de la série, dans l'ordre de l'affiche.
