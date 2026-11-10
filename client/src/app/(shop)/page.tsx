@@ -1,105 +1,21 @@
 import Link from "next/link";
-import { Suspense, type ReactNode } from "react";
-import {
-  AlertIcon,
-  ArrowRightIcon,
-  CashIcon,
-  ClipboardCheckIcon,
-  DocumentIcon,
-  EyeIcon,
-  GlobeIcon,
-  InstagramIcon,
-  PackageIcon,
-  StoreIcon,
-  SwapIcon,
-  TruckIcon,
-} from "@/components/ui/icons";
+import { Suspense } from "react";
+import { ArrowRightIcon, InstagramIcon } from "@/components/ui/icons";
 import ScrollToHash from "@/components/ui/ScrollToHash";
-import Spinner from "@/components/ui/Spinner";
-import { FREE_SHIPPING_FROM } from "@/config/shipping";
 import { STORE_INFO } from "@/config/storeInfo";
 import CategoryCards from "@/features/home/CategoryCards";
-import DeviceStage, { StageLoading } from "@/features/home/DeviceStage";
-import { dealDevices, heroDevices, type StagePhotos } from "@/features/home/stageLayout";
-import Guarantees, { type Guarantee } from "@/features/home/Guarantees";
-import { showcaseUnit } from "@/features/home/showcase";
-import ConditionReport from "@/features/products/ConditionReport";
-import ProductGrid from "@/features/products/ProductGrid";
-import { formatPrice } from "@/lib/format";
-import { publicFetch, publicFetchPage } from "@/lib/publicFetch";
-import type { ProductCard, ProductDetail } from "@/types/api";
-
-// Rien d'inventé : chaque garantie est un fait (règle du serveur, façon de vendre
-// du magasin, chiffre relevé sur Instagram).
-const TOP_GUARANTEES: Guarantee[] = [
-  {
-    icon: <GlobeIcon />,
-    title: "Sélectionnés d'Europe",
-    text: "Smartphones, PC et tablettes",
-  },
-  {
-    icon: <TruckIcon />,
-    title: "Livraison dans les 58 wilayas",
-    text: `Offerte dès ${formatPrice(FREE_SHIPPING_FROM)}`,
-  },
-  {
-    icon: <CashIcon />,
-    title: "Paiement à la livraison",
-    text: "Vous payez en recevant",
-  },
-  {
-    icon: <ClipboardCheckIcon />,
-    title: "Affaires décrites",
-    text: "Note, batterie, pièces et défauts",
-  },
-];
-
-const BOTTOM_GUARANTEES: Guarantee[] = [
-  {
-    icon: <StoreIcon />,
-    title: `Magasin à ${STORE_INFO.town}`,
-    text: STORE_INFO.city,
-  },
-  {
-    icon: <PackageIcon />,
-    title: "Suivi de commande",
-    text: "Avec votre numéro et votre téléphone",
-  },
-  {
-    icon: <InstagramIcon />,
-    title: `${STORE_INFO.instagramFollowers} abonnés`,
-    text: "Sur Instagram",
-  },
-  {
-    icon: <DocumentIcon />,
-    title: "Conditions claires",
-    text: "Mentions légales et CGV",
-  },
-];
-
-const FAMILIES = [
-  {
-    title: "Limitations",
-    icon: <AlertIcon />,
-    tone: "bg-red-soft text-red",
-    text: "Ce que l'appareil ne fait pas, par exemple « Wi-Fi seulement ». Toujours affiché en premier, et à accepter avant de commander.",
-  },
-  {
-    title: "Pièces remplacées",
-    icon: <SwapIcon />,
-    tone: "bg-blue-soft text-blue-ink",
-    text: "Caméra, batterie ou écran changés : d'origine ou compatibles, on vous le dit pièce par pièce.",
-  },
-  {
-    title: "Défauts visibles",
-    icon: <EyeIcon />,
-    tone: "bg-amber-soft text-amber",
-    text: "Une rayure, un cache arrière fissuré : rien qui gêne l'usage, souvent invisible sous une coque.",
-  },
-];
-
-const HERO_STAGE = "mx-auto w-full max-w-[360px] sm:max-w-[460px] lg:max-w-[580px]";
-const DEALS_STAGE = "mx-auto w-full max-w-[300px] md:max-w-[380px]";
+import { StageLoading } from "@/features/home/DeviceStage";
+import Guarantees from "@/features/home/Guarantees";
+import {
+  AffairSheet,
+  AffairShowcase,
+  Deals,
+  DealsBanner,
+  HeroStage,
+  LatestProducts,
+  SectionLoading,
+} from "@/features/home/HomeSections";
+import { BOTTOM_GUARANTEES, DEALS_STAGE, HERO_STAGE, TOP_GUARANTEES } from "@/features/home/homeContent";
 
 // L'accueil s'affiche tout de suite (06/11). Avant, la page attendait toutes les réponses de
 // l'API pour s'afficher d'un bloc : quand Render réveille le serveur endormi (jusqu'à une
@@ -107,7 +23,8 @@ const DEALS_STAGE = "mx-auto w-full max-w-[300px] md:max-w-[380px]";
 // qui lisent l'API attendent, chacune dans son <Suspense> avec une roue de chargement : le
 // serveur de Next envoie d'abord le reste de la page, puis chaque partie dès qu'elle est
 // prête (le « streaming »). La page elle-même n'attend rien, donc loading.tsx ne s'affiche
-// plus ici.
+// plus ici. Les parties qui lisent l'API sont dans features/home/HomeSections.tsx, les
+// textes dans features/home/homeContent.tsx.
 export default function HomePage() {
   return (
     <>
@@ -288,185 +205,5 @@ export default function HomePage() {
         </div>
       </section>
     </>
-  );
-}
-
-// ---------- Les parties qui lisent l'API ----------
-// Chacune est un Server Component async : tant que son `await` attend l'API, React montre
-// à sa place le `fallback` de son <Suspense>. Le hero et le bandeau demandent tous deux
-// /stage : dans un même rendu, Next ne fait qu'un appel par adresse (voir publicFetch.ts).
-
-// La roue à la place d'une partie qui attend l'API. min-h : la place réservée limite le
-// saut de la page quand le contenu arrive.
-function SectionLoading({ label }: { label: string }) {
-  return (
-    <div className="grid min-h-72 place-items-center text-ink-muted">
-      <Spinner label={label} />
-    </div>
-  );
-}
-
-// Les photos des deux socles, choisies dans le back-office (06/11) ; null : les dessins.
-async function HeroStage() {
-  const stage = await publicFetch<StagePhotos>("/stage");
-  return <DeviceStage id="hero" devices={heroDevices(stage)} className={HERO_STAGE} />;
-}
-
-async function Deals() {
-  const [deals, stage] = await Promise.all([
-    publicFetchPage<ProductCard>("/products?condition=affaire&limit=1"),
-    publicFetch<StagePhotos>("/stage"),
-  ]);
-  // Le bandeau des affaires n'apparaît que s'il y a vraiment des affaires en stock.
-  if ((deals?.pagination.total ?? 0) === 0) {
-    return null;
-  }
-  return (
-    <DealsBanner
-      stage={<DeviceStage id="deals" devices={dealDevices(stage)} className={DEALS_STAGE} />}
-    />
-  );
-}
-
-// Le bandeau lui-même : le même pendant l'attente (avec la roue) et une fois prêt.
-function DealsBanner({ stage }: { stage: ReactNode }) {
-  return (
-    <section aria-labelledby="deals-title" className="scroll-mt-4 px-8 py-14">
-      {/* La bordure ne se voit qu'en thème sombre, où le bandeau touche un fond aussi noir que lui. */}
-      <div className="brand-dark hero-glow relative grid items-center gap-6 overflow-hidden rounded-[var(--radius-block)] border border-line px-6 py-8 sm:px-10 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] md:py-6">
-        <div className="relative z-10 space-y-4">
-          <p className="text-sm font-bold tracking-[0.14em] text-red uppercase">
-            Les affaires du moment
-          </p>
-          <h2
-            id="deals-title"
-            className="text-3xl font-extrabold tracking-tight sm:text-4xl"
-          >
-            Testées et{" "}
-            <span className="text-gradient">décrites pièce par pièce</span>
-          </h2>
-          <p className="max-w-md text-ink-muted">
-            Note, batterie, pièces d&apos;origine ou compatibles, avec ou sans
-            boîte : chaque affaire a sa radiographie, et certaines ont des
-            accessoires offerts.
-          </p>
-          <Link href="/boutique" className="btn btn-primary">
-            Voir les affaires
-            <ArrowRightIcon size={18} />
-          </Link>
-        </div>
-        {stage}
-      </div>
-    </section>
-  );
-}
-
-async function LatestProducts() {
-  const latest = await publicFetchPage<ProductCard>("/products?limit=5");
-  if (!latest) {
-    return (
-      <p role="alert" className="card p-6">
-        Le catalogue ne répond pas pour le moment. Rechargez la page dans
-        quelques secondes.
-      </p>
-    );
-  }
-  return <ProductGrid products={latest.data} wide />;
-}
-
-// Une vraie affaire du stock, montrée avec sa fiche d'état.
-async function AffairShowcase() {
-  const [complete, refurbished] = await Promise.all([
-    // La vitrine : un smartphone dont une affaire dit sa note et sa batterie (les annonces
-    // importées n'en disent souvent rien) ; à défaut, le plus récent qui a une affaire.
-    publicFetchPage<ProductCard>(
-      "/products?category=smartphones&condition=affaire&fiche=complete&limit=1",
-    ),
-    publicFetchPage<ProductCard>(
-      "/products?category=smartphones&condition=affaire&limit=1",
-    ),
-  ]);
-  const showcaseSlug = complete?.data[0]?.slug ?? refurbished?.data[0]?.slug;
-  const showcase = showcaseSlug
-    ? await publicFetch<ProductDetail>(`/products/${showcaseSlug}`)
-    : null;
-  // En vitrine : la fiche la plus complète, puis l'exemple le plus rassurant.
-  const unit = showcase ? showcaseUnit(showcase.variants) : null;
-  if (!showcase || !unit) {
-    return <AffairSheet example={null} />;
-  }
-  const refurbishedUnits = showcase.variants.filter(
-    (variant) => variant.condition === "refurbished",
-  );
-  const refurbishedCount = refurbishedUnits.reduce((sum, variant) => sum + variant.stock, 0);
-  return (
-    <AffairSheet
-      example={
-        <div className="space-y-3">
-          <p className="text-sm text-ink-muted">
-            En stock en ce moment :{" "}
-            <Link
-              href={`/produits/${showcase.slug}`}
-              className="font-semibold text-ink underline"
-            >
-              {showcase.name} en affaire
-            </Link>
-          </p>
-          <ConditionReport
-            variant={unit}
-            action={
-              <Link
-                href={`/produits/${showcase.slug}`}
-                className="btn btn-primary w-full"
-              >
-                {refurbishedCount > 1
-                  ? `Comparer les ${refurbishedCount} appareils disponibles`
-                  : "Voir l'appareil"}
-              </Link>
-            }
-          />
-        </div>
-      }
-    />
-  );
-}
-
-// Les trois familles de la fiche, et à côté l'exemple (ou la roue pendant l'attente).
-// Sans exemple, les familles prennent toute la largeur, sur trois colonnes.
-function AffairSheet({ example }: { example: ReactNode | null }) {
-  return (
-    <section aria-labelledby="families-title" className="container-page pb-14">
-      <div
-        className={`grid gap-8 ${example ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start" : ""}`}
-      >
-        <div className="space-y-5">
-          <div>
-            <h2 id="families-title" className="text-2xl sm:text-3xl">
-              Ce que dit la fiche d&apos;une affaire
-            </h2>
-            <p className="mt-2 max-w-xl text-ink-muted">
-              Avant de commander, vous voyez la note, la batterie et tout ce qui
-              a été changé. Trois familles, toujours dans le même ordre.
-            </p>
-          </div>
-          <ul className={`grid gap-3 ${example ? "" : "md:grid-cols-3"}`}>
-            {FAMILIES.map((family) => (
-              <li key={family.title} className="card flex gap-4 p-4">
-                <span
-                  className={`grid size-11 shrink-0 place-items-center rounded-full ${family.tone}`}
-                >
-                  {family.icon}
-                </span>
-                <div>
-                  <h3 className="text-base">{family.title}</h3>
-                  <p className="mt-1 text-sm text-ink-muted">{family.text}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-        {example}
-      </div>
-    </section>
   );
 }
