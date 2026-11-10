@@ -14,6 +14,7 @@ import {
   useCreateProductMutation,
   useGiftOptionsQuery,
   useModelsQuery,
+  useUploadImageMutation,
   useUpdateProductMutation,
   type DeviceModel,
 } from "../adminApi";
@@ -59,6 +60,7 @@ export default function ProductForm({
   const [missingBoxes, setMissingBoxes] = useState<string[]>([]);
   // Les SKU des variantes dont la garantie sort de 1 à 36 mois.
   const [badWarranties, setBadWarranties] = useState<string[]>([]);
+  const [coverPhoto, setCoverPhoto] = useState<File | null>(null);
   const { data: categories = [] } = useCategoriesQuery();
   const { data: allBrands = [] } = useBrandsQuery();
   const { data: giftOptionsAll = [] } = useGiftOptionsQuery();
@@ -66,8 +68,10 @@ export default function ProductForm({
   // La fenêtre ouverte : une partie de la fiche, ou une variante ("variant:<clé>").
   const [open, setOpen] = useState<string | null>(initial.categoryId ? null : "category");
   const [createProduct, createState] = useCreateProductMutation();
+  const [uploadImage, uploadState] = useUploadImageMutation();
   const [updateProduct, updateState] = useUpdateProductMutation();
-  const { error, isLoading } = productId ? updateState : createState;
+  const { error } = productId ? updateState : createState;
+  const isLoading = productId ? updateState.isLoading : createState.isLoading || uploadState.isLoading;
 
   const category = categories.find((item) => item.id === draft.categoryId);
   const kind = category?.kind;
@@ -135,6 +139,14 @@ export default function ProductForm({
         onSaved?.();
       } else {
         const created = await createProduct(body).unwrap();
+        if (coverPhoto) {
+          try {
+            await uploadImage({ id: created.id, file: coverPhoto }).unwrap();
+          } catch {
+            router.push(`/admin/produits/${created.id}?cree=1&photoErreur=1`);
+            return;
+          }
+        }
         router.push(`/admin/produits/${created.id}?cree=1`);
       }
     } catch {
@@ -160,16 +172,39 @@ export default function ProductForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-6" noValidate>
-      {/* Une seule page : le résumé de chaque partie, et une fenêtre au centre pour la
-          modifier (refonte du 05/11, demande de Mehdi : la page était trop longue). */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      {!productId ? (
+        <section className="space-y-4 rounded-xl border border-blue-ink/40 bg-blue-soft/40 p-4 sm:p-5">
+          <SectionHeading
+            number="01"
+            title="Photo du produit"
+            description="Choisis la photo principale maintenant. Elle sera envoyée à la création."
+          />
+          <label className="block rounded-lg border border-dashed border-line bg-surface p-4">
+            <span className="label">Photo principale (JPEG, PNG ou WebP, 5 Mo maximum)</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="mt-2 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue file:px-3 file:py-2 file:font-semibold file:text-on-brand"
+              onChange={(event) => setCoverPhoto(event.target.files?.[0] ?? null)}
+            />
+            {coverPhoto ? <span className="mt-2 block truncate text-sm font-semibold">{coverPhoto.name}</span> : null}
+          </label>
+        </section>
+      ) : null}
+
+      <div className="grid gap-4 lg:grid-cols-2">
         <SummaryCard
+          step="02"
           title="Catégorie et modèle"
+          description="Définit les champs et les options disponibles."
+          status={category && (!isDevice || modelName) ? "Complété" : "À compléter"}
+          complete={Boolean(category && (!isDevice || modelName))}
           action={kind ? "Modifier" : "Choisir"}
           onEdit={() => setOpen("category")}
+          className="lg:col-span-2"
         >
           {category ? (
-            <dl className="space-y-1 text-sm">
+            <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
               <SummaryLine label="Catégorie" value={`${category.name} (${KIND_LABELS[category.kind]})`} />
               {isDevice ? <SummaryLine label="Modèle" value={modelName ?? "À choisir"} missing={!modelName} /> : null}
               {kind === "accessory" ? (
@@ -188,12 +223,28 @@ export default function ProductForm({
 
         {kind ? (
           <>
-            <SummaryCard title="Fiche du produit" action="Modifier" onEdit={() => setOpen("info")}>
+            <SummaryCard
+              step="03"
+              title="Fiche du produit"
+              description="Le nom et le texte visibles dans la boutique."
+              status={draft.name.trim() && draft.description.trim() ? "Complété" : "À compléter"}
+              complete={Boolean(draft.name.trim() && draft.description.trim())}
+              action="Modifier"
+              onEdit={() => setOpen("info")}
+            >
               <p className="font-semibold">{draft.name || <span className="text-red">Nom à écrire</span>}</p>
               <p className="line-clamp-3 text-sm text-ink-muted">{draft.description || "Pas encore de description."}</p>
             </SummaryCard>
 
-            <SummaryCard title={`Caractéristiques (${filledSpecs.length})`} action="Modifier" onEdit={() => setOpen("specs")}>
+            <SummaryCard
+              step="04"
+              title="Caractéristiques"
+              description="Les informations techniques du modèle."
+              status={filledSpecs.length > 0 ? `${filledSpecs.length} renseignée${filledSpecs.length > 1 ? "s" : ""}` : "Facultatif"}
+              complete={filledSpecs.length > 0}
+              action="Modifier"
+              onEdit={() => setOpen("specs")}
+            >
               {filledSpecs.length > 0 ? (
                 <dl className="space-y-1 text-sm">
                   {filledSpecs.slice(0, 4).map((row) => (
@@ -212,9 +263,11 @@ export default function ProductForm({
       {kind ? (
         <section id="variantes" aria-labelledby="step-variants" className="card scroll-mt-6 space-y-3 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="step-variants" className="text-xl">
-              Variantes ({draft.variants.length})
-            </h2>
+            <div>
+              <p className="text-xs font-bold tracking-wider text-blue-ink">ÉTAPE 05</p>
+              <h2 id="step-variants" className="text-xl">Stock et variantes ({draft.variants.length})</h2>
+              <p className="mt-1 text-sm text-ink-muted">Chaque combinaison de modèle, couleur ou stockage a son prix et son stock.</p>
+            </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn btn-secondary btn-small" onClick={() => addVariant("new")}>
                 + Neuf scellé
@@ -229,7 +282,7 @@ export default function ProductForm({
           {draft.variants.length === 0 ? (
             <p className="text-sm text-ink-muted">Aucune variante : ajoute un neuf scellé ou une affaire.</p>
           ) : (
-            <ul className="divide-y divide-line">
+            <ul className="grid gap-3 md:grid-cols-2">
               {draft.variants.map((variant) => {
                 const options = Object.values(variant.options).filter(Boolean).join(" · ");
                 // Ce qui bloquera l'envoi, signalé sur la ligne avant même d'enregistrer.
@@ -240,33 +293,39 @@ export default function ProductForm({
                   !variant.price ? "prix" : null,
                 ].filter(Boolean);
                 return (
-                  <li key={variant.key} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
-                    <span
-                      className={`badge ${variant.condition === "refurbished" ? "bg-red-soft text-red" : "bg-blue-soft text-blue-ink"}`}
-                    >
-                      {CONDITION_LABELS[variant.condition]}
-                    </span>
-                    <span className="min-w-0 flex-1 basis-48">
-                      <span className="font-semibold">{options || "Sans option"}</span>
-                      <span className="block text-xs text-ink-muted">
-                        {variant.sku || "SKU à écrire"}
-                        {variant.reference ? ` · Réf. ${variant.reference}` : ""}
-                      </span>
-                    </span>
-                    <span className="text-sm whitespace-nowrap">
-                      {variant.price ? formatPrice(Number(variant.price)) : "—"} · stock {variant.stock || 0}
-                    </span>
-                    {problems.length > 0 ? (
-                      <span className="badge bg-[#ffb547] text-black">À compléter : {problems.join(", ")}</span>
-                    ) : null}
-                    {/* ml-auto : « Modifier » reste à droite, même quand la ligne passe à la ligne. */}
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-small ml-auto"
-                      onClick={() => setOpen(`variant:${variant.key}`)}
-                    >
-                      Modifier
-                    </button>
+                  <li key={variant.key} className="flex min-w-0 flex-col gap-3 rounded-xl border border-line bg-surface-2/40 p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <span
+                          className={`badge ${variant.condition === "refurbished" ? "bg-red-soft text-red" : "bg-blue-soft text-blue-ink"}`}
+                        >
+                          {CONDITION_LABELS[variant.condition]}
+                        </span>
+                        <p className="mt-2 truncate font-semibold">{options || "Options à choisir"}</p>
+                        <p className="mt-0.5 truncate text-xs text-ink-muted">
+                          {variant.sku || "SKU à écrire"}
+                          {variant.reference ? ` · Réf. ${variant.reference}` : ""}
+                        </p>
+                      </div>
+                      <div className="text-right text-sm">
+                        <p className="font-semibold">{variant.price ? formatPrice(Number(variant.price)) : "Prix à saisir"}</p>
+                        <p className="text-ink-muted">Stock : {variant.stock || 0}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
+                      {problems.length > 0 ? (
+                        <span className="badge bg-[#ffb547] text-black">À compléter : {problems.join(", ")}</span>
+                      ) : (
+                        <span className="text-xs font-semibold text-ink-muted">Variante prête</span>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-small ml-auto"
+                        onClick={() => setOpen(`variant:${variant.key}`)}
+                      >
+                        Modifier la variante
+                      </button>
+                    </div>
                   </li>
                 );
               })}
@@ -276,8 +335,9 @@ export default function ProductForm({
       ) : null}
 
       <EditDialog open={open === "category"} title="Catégorie et modèle" onClose={() => setOpen(null)}>
-        <fieldset className="space-y-2">
-          <legend className="label">Catégorie</legend>
+        <fieldset className="space-y-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
+          <legend className="sr-only">Catégorie</legend>
+          <SectionHeading number="01" title="Catégorie" description="Choisis la famille de produits." />
           <div className="flex flex-wrap gap-2">
             {categories.map((item) => (
               <button
@@ -293,22 +353,26 @@ export default function ProductForm({
           </div>
         </fieldset>
         {kind && isDevice ? (
-          <div className="space-y-2">
-            <p className="label">Modèle de l&apos;appareil</p>
+          <section className="space-y-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
+            <SectionHeading number="02" title="Modèle de l'appareil" description="Recherche puis sélectionne le modèle concerné." />
             <ModelPicker kind={kind} value={draft.deviceModelId} onChange={chooseModel} />
-          </div>
+          </section>
         ) : null}
         {kind === "accessory" ? (
-          <div className="space-y-2">
-            <p className="label">Modèles compatibles</p>
-            <p className="text-sm text-ink-muted">Pour une coque ou un verre trempé. Laisse vide pour un chargeur universel.</p>
+          <section className="space-y-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
+            <SectionHeading number="02" title="Compatibilité" description="Laisse vide pour un accessoire universel." />
             <CompatibleModelsPicker value={draft.compatibleModelIds} onChange={(ids) => set({ compatibleModelIds: ids })} />
-          </div>
+          </section>
         ) : null}
         {kind ? (
-          <fieldset className="space-y-2">
+          <fieldset className="space-y-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
             {/* Pour un accessoire, la « marque » est son type (Coques, Chargeurs…, 06/11). */}
-            <legend className="label">{kind === "accessory" ? "Type d'accessoire" : "Marque"}</legend>
+            <legend className="sr-only">{kind === "accessory" ? "Type d'accessoire" : "Marque"}</legend>
+            <SectionHeading
+              number="03"
+              title={kind === "accessory" ? "Type d'accessoire" : "Marque"}
+              description="Associe le produit à une marque du catalogue."
+            />
             {brands.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 <button type="button" className="chip" aria-pressed={draft.brandId === null} onClick={() => set({ brandId: null })}>
@@ -343,25 +407,29 @@ export default function ProductForm({
       </EditDialog>
 
       <EditDialog open={open === "info"} title="Fiche du produit" onClose={() => setOpen(null)}>
-        <Field id="name" label="Nom affiché">
-          <input id="name" className="input" value={draft.name} onChange={(event) => set({ name: event.target.value })} />
-        </Field>
-        <Field id="description" label="Description">
-          <textarea
-            id="description"
-            className="input min-h-24"
-            rows={5}
-            value={draft.description}
-            onChange={(event) => set({ description: event.target.value })}
-          />
-        </Field>
+        <section className="space-y-4 rounded-xl border border-line bg-surface p-4 sm:p-5">
+          <SectionHeading number="01" title="Présentation" description="Ce nom et cette description apparaîtront sur la boutique." />
+          <Field id="name" label="Nom affiché">
+            <input id="name" className="input" value={draft.name} onChange={(event) => set({ name: event.target.value })} />
+          </Field>
+          <Field id="description" label="Description">
+            <textarea
+              id="description"
+              className="input min-h-24"
+              rows={5}
+              value={draft.description}
+              onChange={(event) => set({ description: event.target.value })}
+            />
+          </Field>
+        </section>
       </EditDialog>
 
       <EditDialog open={open === "specs"} title="Caractéristiques du modèle" onClose={() => setOpen(null)}>
-        <fieldset className="space-y-2">
+        <fieldset className="space-y-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
           <legend className="sr-only">Caractéristiques du modèle</legend>
+          <SectionHeading number="01" title="Caractéristiques techniques" description="Ajoute une ligne par caractéristique et sa valeur." />
           {draft.specs.map((row, index) => (
-            <div key={index} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]">
+            <div key={index} className="grid gap-2 rounded-lg border border-line bg-surface-2/50 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]">
               <input
                 aria-label={`Caractéristique ${index + 1}`}
                 className="input"
@@ -429,24 +497,7 @@ export default function ProductForm({
         ) : null}
       </EditDialog>
 
-      <div className="card sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center gap-4 p-4 lg:bottom-0">
-        <fieldset className="flex gap-2">
-          <legend className="sr-only">Statut</legend>
-          {(["draft", "published"] as const).map((status) => (
-            <button
-              key={status}
-              type="button"
-              className="chip"
-              aria-pressed={draft.status === status}
-              onClick={() => set({ status })}
-            >
-              {status === "draft" ? "Brouillon" : "Publié"}
-            </button>
-          ))}
-        </fieldset>
-        <button type="submit" className="btn btn-primary" disabled={isLoading || !kind}>
-          {isLoading ? "Enregistrement…" : productId ? "Enregistrer les modifications" : "Créer le produit"}
-        </button>
+      <div className="card sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 space-y-3 p-4 lg:bottom-0">
         <div aria-live="polite" className="text-sm">
           {missingOrigins.length > 0 || missingBoxes.length > 0 || badWarranties.length > 0 ? (
             <>
@@ -479,22 +530,88 @@ export default function ProductForm({
             </div>
           ) : null}
         </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
+          <fieldset className="flex flex-wrap items-center gap-2">
+            <legend className="sr-only">Statut du produit</legend>
+            <span className="mr-1 text-sm font-semibold">Statut :</span>
+            {(["draft", "published"] as const).map((status) => (
+              <button
+                key={status}
+                type="button"
+                className="chip"
+                aria-pressed={draft.status === status}
+                onClick={() => set({ status })}
+              >
+                {status === "draft" ? "Brouillon" : "Publié"}
+              </button>
+            ))}
+          </fieldset>
+          <button type="submit" className="btn btn-primary" disabled={isLoading || !kind}>
+            {isLoading ? "Enregistrement…" : productId ? "Enregistrer les modifications" : "Créer le produit"}
+          </button>
+        </div>
       </div>
     </form>
   );
 }
 
-// Une partie de la fiche, résumée, avec le bouton qui ouvre sa fenêtre.
-function SummaryCard({ title, action, onEdit, children }: { title: string; action: string; onEdit: () => void; children: ReactNode }) {
+function SectionHeading({ number, title, description }: { number: string; title: string; description: string }) {
   return (
-    <section className="card flex flex-col gap-3 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg">{title}</h2>
+    <div className="flex items-start gap-3 border-b border-line pb-3">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-soft text-xs font-bold text-blue-ink">
+        {number}
+      </span>
+      <div>
+        <h3 className="font-display font-bold">{title}</h3>
+        <p className="mt-0.5 text-sm text-ink-muted">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function SummaryCard({
+  step,
+  title,
+  description,
+  status,
+  complete,
+  action,
+  onEdit,
+  className = "",
+  children,
+}: {
+  step: string;
+  title: string;
+  description: string;
+  status: string;
+  complete: boolean;
+  action: string;
+  onEdit: () => void;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className={`card flex flex-col gap-3 p-4 sm:p-5 ${className}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-soft text-xs font-bold text-blue-ink">{step}</span>
+          <div className="min-w-0">
+            <h2 className="text-lg">{title}</h2>
+            <p className="text-sm text-ink-muted">{description}</p>
+          </div>
+        </div>
         <button type="button" className="btn btn-secondary btn-small" onClick={onEdit}>
           {action}
         </button>
       </div>
-      {children}
+      <div className="flex items-center gap-2 border-t border-line pt-3">
+        <span
+          className={`size-2 rounded-full ${status === "Facultatif" ? "bg-line" : complete ? "bg-blue" : "bg-amber"}`}
+          aria-hidden="true"
+        />
+        <span className="text-xs font-semibold text-ink-muted">{status}</span>
+      </div>
+      <div className="min-w-0">{children}</div>
     </section>
   );
 }

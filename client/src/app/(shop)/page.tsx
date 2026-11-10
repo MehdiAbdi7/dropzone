@@ -398,6 +398,7 @@ async function AffairShowcase() {
   const refurbishedUnits = showcase.variants.filter(
     (variant) => variant.condition === "refurbished",
   );
+  const refurbishedCount = refurbishedUnits.reduce((sum, variant) => sum + variant.stock, 0);
   return (
     <AffairSheet
       example={
@@ -418,8 +419,8 @@ async function AffairShowcase() {
                 href={`/produits/${showcase.slug}`}
                 className="btn btn-primary w-full"
               >
-                {refurbishedUnits.length > 1
-                  ? `Comparer les ${refurbishedUnits.length} appareils disponibles`
+                {refurbishedCount > 1
+                  ? `Comparer les ${refurbishedCount} appareils disponibles`
                   : "Voir l'appareil"}
               </Link>
             }

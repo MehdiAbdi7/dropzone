@@ -80,7 +80,7 @@ const recond = (
   price: number,
   grade: number,
   batteryHealth: number,
-  // Une affaire est unique : stock 1, ou 0 si elle est déjà vendue.
+  // Les exemples d'affaires du seed ont une unité en stock, ou 0 si déjà vendue.
   {
     stock = 1,
     ...details

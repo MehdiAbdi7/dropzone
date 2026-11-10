@@ -3,10 +3,9 @@ import { MAX_PER_LINE } from "./cartSlice";
 
 // La quantité et la barre du panier (05/11), sans React.
 
-// Ce qu'on peut encore ajouter d'une variante : tout le stock d'un neuf (10 au plus par
-// ligne, contre les commandes abusives), une seule affaire, moins ce qui est déjà au panier.
+// Ce qu'on peut encore ajouter d'une variante : le stock disponible, plafonné à 10 par ligne.
 export function quantityLimit(variant: Pick<Variant, "stock" | "condition">, inCart: number): number {
-  const max = variant.condition === "refurbished" ? Math.min(variant.stock, 1) : Math.min(variant.stock, MAX_PER_LINE);
+  const max = Math.min(variant.stock, MAX_PER_LINE);
   return Math.max(0, max - inCart);
 }
 

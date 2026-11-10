@@ -132,9 +132,6 @@ export const variantSchema = z
         message: "Une pièce compatible doit être une pièce changée",
       });
     }
-    if (variant.stock > 1) {
-      ctx.addIssue({ code: "custom", path: ["stock"], message: "Un reconditionné est unique : stock 0 ou 1" });
-    }
     // La note et la batterie sont facultatives : les annonces de PC n'en donnent
     // presque jamais, et la boutique dit alors « non précisée » plutôt que d'inventer.
   });

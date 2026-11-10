@@ -25,7 +25,7 @@ const cartSlice = createSlice({
       state.items = action.payload;
       state.hydrated = true;
     },
-    // `max` : 1 pour un reconditionné (appareil unique), sinon le stock ou 10.
+    // `max` : le stock de la variante, plafonné à 10 par ligne.
     addItem(state, action: PayloadAction<{ sku: string; quantity: number; max: number }>) {
       const { sku, quantity, max } = action.payload;
       const line = state.items.find((item) => item.sku === sku);

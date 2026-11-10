@@ -83,14 +83,14 @@ export function emptyVariant(condition: Condition = "new", kind?: ProductKind): 
   };
 }
 
-// Neuf scellé ↔ Affaire : une affaire est unique (stock 1), et la garantie suit le nouvel
+// Neuf scellé ↔ Affaire : le stock est saisi par le gérant, et la garantie suit le nouvel
 // état seulement si elle était encore celle proposée (une durée tapée à la main reste).
 export function withCondition(variant: VariantDraft, kind: ProductKind, condition: Condition): VariantDraft {
   const wasDefault = variant.warrantyMonths === defaultWarrantyText(kind, variant.condition);
   return {
     ...variant,
     condition,
-    stock: condition === "refurbished" ? "1" : variant.stock,
+    stock: condition === "refurbished" && !variant.stock ? "1" : variant.stock,
     warrantyMonths: wasDefault ? defaultWarrantyText(kind, condition) : variant.warrantyMonths,
   };
 }

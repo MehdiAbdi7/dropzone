@@ -132,7 +132,7 @@ describe("conditionSummary", () => {
       ...iphone18ProMax,
       variant(
         { Stockage: "256 Go", Couleur: "Noir" },
-        1,
+        2,
         289000,
         "refurbished",
       ),
@@ -153,7 +153,7 @@ describe("conditionSummary", () => {
       newFrom: 335000,
       newStock: 5,
       refurbishedFrom: 275000,
-      refurbishedCount: 2,
+      refurbishedCount: 3,
     });
   });
 

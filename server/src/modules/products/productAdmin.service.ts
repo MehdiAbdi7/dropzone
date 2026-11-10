@@ -56,7 +56,9 @@ export async function listAdminProducts(query: AdminProductListQuery) {
     image: images[0]?.url ?? null,
     variantCount: variants.length,
     newStock: variants.filter((v) => v.condition === "new").reduce((sum, v) => sum + v.stock, 0),
-    refurbishedAvailable: variants.filter((v) => v.condition === "refurbished" && v.stock > 0).length,
+    refurbishedAvailable: variants
+      .filter((v) => v.condition === "refurbished")
+      .reduce((sum, variant) => sum + variant.stock, 0),
   }));
   return { data, pagination: paginationMeta(query.page, query.limit, total) };
 }

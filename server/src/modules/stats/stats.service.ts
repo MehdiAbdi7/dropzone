@@ -42,7 +42,7 @@ export async function getStats() {
 
   const [refurbished] = await prisma.$queryRaw<{ available: bigint; sold: bigint }[]>`
     SELECT
-      COUNT(*) FILTER (WHERE stock > 0) AS available,
+      COALESCE(SUM(stock) FILTER (WHERE stock > 0), 0) AS available,
       COUNT(*) FILTER (WHERE stock = 0) AS sold
     FROM product_variants
     WHERE condition = 'refurbished'

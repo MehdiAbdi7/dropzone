@@ -40,7 +40,7 @@ export default function DashboardPage() {
         {[
           { label: "Ventes du jour", value: formatPrice(stats.revenueToday), hint: `${stats.ordersToday} commande(s)` },
           { label: "Ventes du mois", value: formatPrice(stats.revenueMonth), hint: "hors annulations" },
-          { label: "Affaires en stock", value: String(stats.refurbishedAvailable), hint: "appareils uniques" },
+          { label: "Affaires en stock", value: String(stats.refurbishedAvailable), hint: "unités disponibles" },
           { label: "Affaires vendues", value: String(stats.refurbishedSold), hint: "depuis le début" },
         ].map((item) => (
           <div key={item.label} className="card p-5">

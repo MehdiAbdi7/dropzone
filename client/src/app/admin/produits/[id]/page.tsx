@@ -13,6 +13,7 @@ import { errorMessage } from "@/lib/errors";
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
   const created = useSearchParams().get("cree") === "1";
+  const photoError = useSearchParams().get("photoErreur") === "1";
   const router = useRouter();
   const { data: product, isError } = useAdminProductQuery(Number(id));
   const [deleteProduct, { error: deleteError }] = useDeleteProductMutation();
@@ -40,7 +41,7 @@ export default function EditProductPage() {
       </div>
       {created ? (
         <p role="status" className="rounded-lg border border-blue-ink bg-blue-soft p-3 font-semibold">
-          Produit créé. Ajoutez maintenant ses photos.
+          Produit créé. {photoError ? "La photo n’a pas pu être envoyée ; réessayez ci-dessous." : "Vous pouvez compléter ses photos ci-dessous."}
         </p>
       ) : null}
 

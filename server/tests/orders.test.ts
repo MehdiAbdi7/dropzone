@@ -41,13 +41,26 @@ describe("POST /orders/preview", () => {
     ]);
   });
 
-  it("signale un reconditionné demandé deux fois et un article inconnu", async () => {
+  it("signale un stock insuffisant et un article inconnu", async () => {
     const response = await request(app)
       .post("/orders/preview")
       .send({ items: [{ sku: "IP-R-DEAL", quantity: 2 }, { sku: "N-EXISTE-PAS", quantity: 1 }] });
     expect(response.body.data.canOrder).toBe(false);
     expect(response.body.data.unavailable).toEqual(["N-EXISTE-PAS"]);
     expect(response.body.data.lines[0].problem).toBe("Il n'en reste que 1");
+  });
+
+  it("permet de commander plusieurs unités d'une affaire quand le stock le permet", async () => {
+    await prisma.productVariant.update({ where: { sku: "IP-R-DEAL" }, data: { stock: 3 } });
+    const response = await request(app)
+      .post("/orders/preview")
+      .send({ items: [{ sku: "IP-R-DEAL", quantity: 2 }] });
+    expect(response.body.data.canOrder).toBe(true);
+    expect(response.body.data.lines[0]).toMatchObject({ quantity: 2, maxQuantity: 3 });
+
+    const order = await previewThenOrder([{ sku: "IP-R-DEAL", quantity: 2 }]);
+    expect(order.status).toBe(201);
+    expect(await stockOf("IP-R-DEAL")).toBe(1);
   });
 
   it("garde la boîte, l'origine des pièces et les détails d'une affaire jusqu'à la commande", async () => {

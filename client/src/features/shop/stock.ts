@@ -113,6 +113,6 @@ export function conditionSummary(variants: Variant[]): {
     newFrom: lowest(fresh),
     newStock: fresh.reduce((sum, variant) => sum + variant.stock, 0),
     refurbishedFrom: lowest(refurbished),
-    refurbishedCount: refurbished.filter((variant) => variant.stock > 0).length,
+    refurbishedCount: refurbished.reduce((sum, variant) => sum + variant.stock, 0),
   };
 }

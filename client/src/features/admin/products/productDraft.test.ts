@@ -143,6 +143,12 @@ describe("La garantie proposée par le formulaire", () => {
     expect(withCondition(typed, "phone", "refurbished").warrantyMonths).toBe("24");
   });
 
+  it("permet de saisir plusieurs unités pour une même affaire", () => {
+    const changed = withCondition({ ...emptyVariant("new", "phone"), stock: "4" }, "phone", "refurbished");
+    expect(changed.stock).toBe("4");
+    expect(sent(deal({ stock: "4" })).stock).toBe(4);
+  });
+
   it("envoie la garantie en nombre, et null pour un champ vide", () => {
     expect(sent(deal({ warrantyMonths: "6" })).warrantyMonths).toBe(6);
     expect(sent(deal({ warrantyMonths: "" })).warrantyMonths).toBeNull();

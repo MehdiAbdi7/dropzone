@@ -73,12 +73,13 @@ describe("Produits", () => {
     expect(response.status).toBe(400);
   });
 
-  it("refuse un reconditionné avec un stock de 2", async () => {
+  it("accepte plusieurs unités d'une même affaire en stock", async () => {
     const response = await admin
       .post("/admin/products")
       .send({ ...body(), variants: [{ ...refurbished, stock: 2 }] });
-    expect(response.status).toBe(400);
-    expect(response.body.error.details).toBeDefined();
+    expect(response.status).toBe(201);
+    const detail = await admin.get(`/admin/products/${response.body.data.id}`);
+    expect(detail.body.data.variants[0]).toMatchObject({ condition: "refurbished", stock: 2 });
   });
 
   it("refuse un téléphone comme article offert", async () => {

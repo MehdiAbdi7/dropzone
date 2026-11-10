@@ -46,9 +46,9 @@ export default function EditDialog({
       onClose={onClose}
       onKeyDown={onKeyDown}
       aria-label={title}
-      className="m-auto max-h-[calc(100dvh-2rem)] w-[min(48rem,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-line bg-surface p-0 text-ink backdrop:bg-black/70"
+      className="m-auto max-h-[calc(100dvh-2rem)] w-[min(64rem,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-line bg-surface p-0 text-ink backdrop:bg-black/70"
     >
-      <div className="sticky top-0 z-10 border-b border-line bg-surface">
+      <div className="sticky top-0 z-10 border-b border-line border-l-4 border-l-blue bg-surface">
         <div className="flex items-center justify-between gap-3 px-5 py-3">
           <h2 className="text-lg">{title}</h2>
           <button type="button" className="btn btn-primary btn-small" onClick={onClose}>
@@ -58,7 +58,7 @@ export default function EditDialog({
         {open && toolbar ? <div className="space-y-2 px-5 pb-3">{toolbar}</div> : null}
       </div>
       {/* Le contenu n'est monté que fenêtre ouverte : la page reste légère. */}
-      <div className="space-y-4 p-5">{open ? children : null}</div>
+      <div className="space-y-4 bg-surface-2/40 p-4 sm:p-5">{open ? children : null}</div>
     </dialog>
   );
 }

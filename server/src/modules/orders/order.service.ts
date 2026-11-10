@@ -89,8 +89,7 @@ export async function priceCart(db: Tx, items: CartItemInput[]) {
       unavailable.push(sku);
       continue;
     }
-    // Un reconditionné est unique : on ne peut pas en commander deux.
-    const maxQuantity = variant.condition === "refurbished" ? 1 : MAX_QUANTITY;
+    const maxQuantity = MAX_QUANTITY;
     let problem: string | null = null;
     if (variant.stock === 0) {
       problem = "Rupture de stock";

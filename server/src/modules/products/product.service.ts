@@ -204,7 +204,7 @@ export async function listProducts(query: ProductListQuery) {
       newFrom: lowestInStock(fresh),
       refurbishedFrom: lowestInStock(refurbished),
       newStock: fresh.reduce((sum, variant) => sum + variant.stock, 0),
-      refurbishedCount: refurbished.filter((variant) => variant.stock > 0).length,
+      refurbishedCount: refurbished.reduce((sum, variant) => sum + variant.stock, 0),
     };
   });
 

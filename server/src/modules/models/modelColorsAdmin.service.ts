@@ -72,7 +72,9 @@ export async function modelColors(id: number) {
         name,
         photoUrl: photoOf(model, name)?.url ?? null,
         newStock: own.filter((v) => v.condition === "new").reduce((sum, v) => sum + v.stock, 0),
-        refurbishedCount: own.filter((v) => v.condition === "refurbished" && v.stock > 0).length,
+        refurbishedCount: own
+          .filter((variant) => variant.condition === "refurbished")
+          .reduce((sum, variant) => sum + variant.stock, 0),
       };
     }),
   };

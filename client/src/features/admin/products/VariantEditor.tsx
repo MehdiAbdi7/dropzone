@@ -54,6 +54,7 @@ export default function VariantEditor({
   const refurbished = variant.condition === "refurbished";
   const { data: choiceData } = useChoicesQuery();
   const customLists = choiceData?.lists.filter((list) => list.group === null && list.kinds.includes(kind)) ?? [];
+  const sectionNumber = (base: number) => String(base + (modelId ? 1 : 0)).padStart(2, "0");
 
   function renderPicker(field: ChoiceField, only?: string[]) {
     const savedValue = variant.options[field.key] ?? "";
@@ -84,228 +85,279 @@ export default function VariantEditor({
   }
 
   return (
-    <fieldset className={`card space-y-5 p-5 ${refurbished ? "neon-edge pl-6" : ""}`}>
+    <fieldset className={`overflow-hidden rounded-xl border border-line bg-surface ${refurbished ? "neon-edge" : ""}`}>
       <legend className="sr-only">Variante {index + 1}</legend>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="font-display text-lg font-bold">
-          Variante {index + 1}
-          {variant.id ? null : <span className="ml-2 text-sm font-semibold text-blue-ink">nouvelle</span>}
-        </p>
+      <div className={`flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-4 sm:px-5 ${refurbished ? "bg-red-soft" : "bg-blue-soft"}`}>
+        <div>
+          <p className={`text-xs font-bold tracking-widest ${refurbished ? "text-red" : "text-blue-ink"}`}>
+            VARIANTE {String(index + 1).padStart(2, "0")}
+          </p>
+          <p className="mt-1 font-display text-lg font-bold">
+            {refurbished ? "Affaire" : "Neuf scellé"}
+            {variant.id ? null : <span className="ml-2 text-sm font-semibold text-blue-ink">· nouvelle</span>}
+          </p>
+        </div>
         {onRemove ? (
           <button type="button" className="btn btn-danger btn-small" onClick={onRemove}>
-            Retirer la variante
+            Retirer cette variante
           </button>
         ) : null}
       </div>
 
-      {canBeRefurbished ? (
-        <fieldset>
-          <legend className="label">État</legend>
-          <div className="flex gap-2">
-            {(["new", "refurbished"] as const).map((condition) => (
-              <button
-                key={condition}
-                type="button"
-                className="chip"
-                aria-pressed={variant.condition === condition}
-                onClick={() => onChange(withCondition(variant, kind, condition))}
-              >
-                {CONDITION_LABELS[condition]}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-      ) : null}
-
-      <div className="grid gap-5 md:grid-cols-2">
-        {OPTION_FIELDS[kind].map((field) =>
-          field.group === "color" && lockedColor ? (
-            // Ajouté depuis la page d'une couleur : la couleur est celle de la page.
-            <div key={field.key}>
-              <p className="label">{field.key}</p>
-              <p className="input flex items-center bg-surface-2 font-semibold">{lockedColor}</p>
-            </div>
-          ) : (
-            renderPicker({
-              key: field.key,
-              group: field.group,
-              multiple: choiceData?.lists.find((list) => list.group === field.group)?.multiple,
-            }, field.group === "color" ? modelColors : undefined)
-          ),
-        )}
-        {customLists.map((list) => renderPicker({ key: list.name, listId: list.id, multiple: list.multiple }))}
-      </div>
-
-      {/* La photo de la couleur, dès qu'un modèle et une couleur sont choisis. */}
-      {modelId && (lockedColor ?? variant.options.Couleur) ? (
-        <ColorPhotoField modelId={modelId} color={lockedColor ?? variant.options.Couleur} />
-      ) : null}
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Field id={id("price")} label="Prix TTC (DA)">
-          <input
-            id={id("price")}
-            className="input"
-            inputMode="numeric"
-            value={variant.price}
-            onChange={(event) => set({ price: event.target.value.replace(/\D/g, "") })}
-          />
-        </Field>
-        {refurbished ? (
-          <div>
-            <p className="label">Disponibilité</p>
-            <label className="flex min-h-11 items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="size-5"
-                checked={variant.stock === "1"}
-                onChange={(event) => set({ stock: event.target.checked ? "1" : "0" })}
-              />
-              En stock (appareil unique)
-            </label>
-          </div>
-        ) : (
-          <Field id={id("stock")} label="Stock">
-            <input
-              id={id("stock")}
-              className="input"
-              inputMode="numeric"
-              value={variant.stock}
-              onChange={(event) => set({ stock: event.target.value.replace(/\D/g, "") })}
+      <div className="divide-y divide-line">
+        {modelId ? (
+          <section className="space-y-4 bg-blue-soft/30 p-4 sm:p-5">
+            <SectionHeading
+              number="01"
+              title="Photo de la couleur"
+              description="Ajoute ou modifie la photo associée à la couleur de cette variante."
             />
-          </Field>
-        )}
-        <Field id={id("sku")} label="Référence (SKU)">
-          <div className="flex gap-2">
-            <input
-              id={id("sku")}
-              className="input uppercase"
-              value={variant.sku}
-              onChange={(event) => set({ sku: event.target.value.toUpperCase() })}
-            />
-            <button type="button" className="btn btn-secondary btn-small" onClick={onSuggestSku}>
-              Proposer
-            </button>
-          </div>
-        </Field>
-      </div>
+            {lockedColor ?? variant.options.Couleur ? (
+              <ColorPhotoField modelId={modelId} color={lockedColor ?? variant.options.Couleur} />
+            ) : (
+              <p className="rounded-lg border border-line bg-surface p-3 text-sm text-ink-muted">
+                Choisis d’abord une couleur dans « Options du produit » pour gérer sa photo.
+              </p>
+            )}
+          </section>
+        ) : null}
 
-      {/* La garantie (proposée selon le type et l'état), et la référence du magasin, que
-          le client donne au téléphone (« 51057 »). */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        {/* La règle dans le libellé : le gérant la lit avant de taper (vérifiée à l'envoi). */}
-        <Field id={id("warranty")} label="Garantie (1 à 36 mois)">
-          <input
-            id={id("warranty")}
-            className="input"
-            inputMode="numeric"
-            value={variant.warrantyMonths}
-            onChange={(event) => set({ warrantyMonths: event.target.value.replace(/\D/g, "").slice(0, 2) })}
-          />
-        </Field>
-        <Field id={id("reference")} label="Référence du magasin (facultatif)">
-          <input
-            id={id("reference")}
-            className="input uppercase"
-            maxLength={20}
-            value={variant.reference}
-            onChange={(event) => set({ reference: event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "") })}
-          />
-        </Field>
-      </div>
-      <ChoicePicker
-        group="origin"
-        label="Origine (facultatif)"
-        value={variant.origin}
-        onChange={(origin) => set({ origin })}
-      />
-
-      {refurbished ? (
-        <div className="space-y-5 border-t border-line pt-5">
-          <p className="font-display font-bold">Fiche d&apos;état</p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field id={id("grade")} label="Note d'état (sur 10, facultatif)">
-              <select id={id("grade")} className="input" value={variant.grade} onChange={(event) => set({ grade: event.target.value })}>
-                <option value="">Choisir…</option>
-                {Array.from({ length: 10 }, (_, i) => 10 - i).map((grade) => (
-                  <option key={grade} value={grade}>
-                    {grade}/10
-                  </option>
+        {canBeRefurbished ? (
+          <section className="space-y-3 p-4 sm:p-5">
+            <SectionHeading number={sectionNumber(1)} title="État du produit" description="Choisis la condition de cette variante." />
+            <fieldset>
+              <legend className="sr-only">État</legend>
+              <div className="flex flex-wrap gap-2">
+                {(["new", "refurbished"] as const).map((condition) => (
+                  <button
+                    key={condition}
+                    type="button"
+                    className="chip"
+                    aria-pressed={variant.condition === condition}
+                    onClick={() => onChange(withCondition(variant, kind, condition))}
+                  >
+                    {CONDITION_LABELS[condition]}
+                  </button>
                 ))}
-              </select>
-            </Field>
-            <Field id={id("battery")} label="Santé de la batterie (%, facultatif)">
+              </div>
+            </fieldset>
+          </section>
+        ) : null}
+
+        <section className="space-y-4 p-4 sm:p-5">
+          <SectionHeading
+            number={sectionNumber(canBeRefurbished ? 2 : 1)}
+            title="Options du produit"
+            description="Sélectionne les caractéristiques de cette combinaison."
+          />
+          <div className="grid gap-5 md:grid-cols-2">
+            {OPTION_FIELDS[kind].map((field) =>
+              field.group === "color" && lockedColor ? (
+                <div key={field.key}>
+                  <p className="label">{field.key}</p>
+                  <p className="input flex items-center bg-surface-2 font-semibold">{lockedColor}</p>
+                </div>
+              ) : (
+                renderPicker({
+                  key: field.key,
+                  group: field.group,
+                  multiple: choiceData?.lists.find((list) => list.group === field.group)?.multiple,
+                }, field.group === "color" ? modelColors : undefined)
+              ),
+            )}
+            {customLists.map((list) => renderPicker({ key: list.name, listId: list.id, multiple: list.multiple }))}
+          </div>
+        </section>
+
+        <section className="space-y-4 bg-surface-2/40 p-4 sm:p-5">
+          <SectionHeading
+            number={sectionNumber(canBeRefurbished ? 3 : 2)}
+            title="Prix et stock"
+            description="Définis le prix de vente et la quantité disponible."
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field id={id("price")} label="Prix TTC (DA)">
               <input
-                id={id("battery")}
+                id={id("price")}
                 className="input"
                 inputMode="numeric"
-                value={variant.batteryHealth}
-                onChange={(event) => set({ batteryHealth: event.target.value.replace(/\D/g, "").slice(0, 3) })}
+                value={variant.price}
+                onChange={(event) => set({ price: event.target.value.replace(/\D/g, "") })}
+              />
+            </Field>
+            <Field id={id("stock")} label={refurbished ? "Stock de cette affaire" : "Stock"}>
+              <input
+                id={id("stock")}
+                className="input"
+                inputMode="numeric"
+                value={variant.stock}
+                onChange={(event) => set({ stock: event.target.value.replace(/\D/g, "") })}
               />
             </Field>
           </div>
-          {FAMILIES.map((family) => (
-            <Fragment key={family.field}>
-              <ChoicePicker
-                multiple
-                group={family.group}
-                label={family.label}
-                value={variant[family.field]}
-                // Une pièce décochée perd aussi son choix « d'origine / compatible ».
-                onChange={(values) =>
-                  family.field === "replacedParts"
-                    ? onChange(withReplacedParts(variant, values))
-                    : set({ [family.field]: values })
-                }
-              />
-              {family.field === "replacedParts" && variant.replacedParts.length > 0 ? (
-                <PartOriginPicker variant={variant} onChange={(partOrigins) => set({ partOrigins })} />
-              ) : null}
-            </Fragment>
-          ))}
-          <fieldset className="space-y-2">
-            <legend className="label">Boîte d&apos;origine</legend>
-            {/* Une affaire importée d'une annonce qui n'en parlait pas : à choisir avant d'enregistrer. */}
-            {variant.withBox === null ? (
-              <p role="note" className="rounded-lg border border-amber bg-amber-soft p-3 text-sm font-semibold">
-                Boîte non précisée (annonce importée) : à corriger.
-              </p>
-            ) : null}
-            <div className="flex flex-wrap gap-2">
-              {([true, false] as const).map((withBox) => (
-                <button
-                  key={String(withBox)}
-                  type="button"
-                  className="chip"
-                  aria-pressed={variant.withBox === withBox}
-                  onClick={() => set({ withBox })}
-                >
-                  {withBox ? "Avec sa boîte" : "Sans boîte"}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          <Field id={id("details")} label="Détails pour le client (facultatif)" hint={`${variant.details.length}/200 caractères`}>
-            <textarea
-              id={id("details")}
-              className="input"
-              rows={2}
-              maxLength={200}
-              placeholder="Comme neuf, vendu avec sa boîte d'origine"
-              value={variant.details}
-              onChange={(event) => set({ details: event.target.value })}
-            />
-          </Field>
-        </div>
-      ) : null}
+        </section>
 
-      {/* Depuis la page d'une couleur, les articles offerts s'ajoutent ensuite dans la fiche. */}
-      {lockedColor ? null : <GiftEditor variant={variant} giftOptions={giftOptions} onChange={(gifts) => set({ gifts })} />}
+        <section className="space-y-4 p-4 sm:p-5">
+          <SectionHeading
+            number={sectionNumber(canBeRefurbished ? 4 : 3)}
+            title="Références et garantie"
+            description="Informations de suivi et d'origine."
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field id={id("sku")} label="Référence (SKU)">
+              <div className="flex gap-2">
+                <input
+                  id={id("sku")}
+                  className="input uppercase"
+                  value={variant.sku}
+                  onChange={(event) => set({ sku: event.target.value.toUpperCase() })}
+                />
+                <button type="button" className="btn btn-secondary btn-small" onClick={onSuggestSku}>
+                  Proposer
+                </button>
+              </div>
+            </Field>
+            <Field id={id("warranty")} label="Garantie (1 à 36 mois)">
+              <input
+                id={id("warranty")}
+                className="input"
+                inputMode="numeric"
+                value={variant.warrantyMonths}
+                onChange={(event) => set({ warrantyMonths: event.target.value.replace(/\D/g, "").slice(0, 2) })}
+              />
+            </Field>
+            <Field id={id("reference")} label="Référence magasin (facultatif)">
+              <input
+                id={id("reference")}
+                className="input uppercase"
+                maxLength={20}
+                value={variant.reference}
+                onChange={(event) => set({ reference: event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "") })}
+              />
+            </Field>
+            <ChoicePicker
+              group="origin"
+              label="Origine (facultatif)"
+              value={variant.origin}
+              onChange={(origin) => set({ origin })}
+            />
+          </div>
+        </section>
+
+        {refurbished ? (
+          <section className="space-y-5 bg-red-soft/50 p-4 sm:p-5">
+            <SectionHeading
+              number={sectionNumber(canBeRefurbished ? 5 : 4)}
+              title="Fiche d’état de l’affaire"
+              description="Détaille l'état réel et le contenu de l'appareil."
+            />
+            <div className="grid gap-4 rounded-lg border border-line bg-surface p-4 sm:grid-cols-2">
+              <Field id={id("grade")} label="Note d'état (sur 10, facultatif)">
+                <select id={id("grade")} className="input" value={variant.grade} onChange={(event) => set({ grade: event.target.value })}>
+                  <option value="">Choisir…</option>
+                  {Array.from({ length: 10 }, (_, i) => 10 - i).map((grade) => (
+                    <option key={grade} value={grade}>
+                      {grade}/10
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field id={id("battery")} label="Santé de la batterie (%, facultatif)">
+                <input
+                  id={id("battery")}
+                  className="input"
+                  inputMode="numeric"
+                  value={variant.batteryHealth}
+                  onChange={(event) => set({ batteryHealth: event.target.value.replace(/\D/g, "").slice(0, 3) })}
+                />
+              </Field>
+            </div>
+            {FAMILIES.map((family) => (
+              <Fragment key={family.field}>
+                <ChoicePicker
+                  multiple
+                  group={family.group}
+                  label={family.label}
+                  value={variant[family.field]}
+                  onChange={(values) =>
+                    family.field === "replacedParts"
+                      ? onChange(withReplacedParts(variant, values))
+                      : set({ [family.field]: values })
+                  }
+                />
+                {family.field === "replacedParts" && variant.replacedParts.length > 0 ? (
+                  <div className="rounded-lg border border-line bg-surface p-4">
+                    <PartOriginPicker variant={variant} onChange={(partOrigins) => set({ partOrigins })} />
+                  </div>
+                ) : null}
+              </Fragment>
+            ))}
+            <fieldset className="space-y-2 rounded-lg border border-line bg-surface p-4">
+              <legend className="label px-1">Boîte d&apos;origine</legend>
+              {variant.withBox === null ? (
+                <p role="note" className="rounded-lg border border-amber bg-amber-soft p-3 text-sm font-semibold">
+                  Boîte non précisée (annonce importée) : à corriger.
+                </p>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                {([true, false] as const).map((withBox) => (
+                  <button
+                    key={String(withBox)}
+                    type="button"
+                    className="chip"
+                    aria-pressed={variant.withBox === withBox}
+                    onClick={() => set({ withBox })}
+                  >
+                    {withBox ? "Avec sa boîte" : "Sans boîte"}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <Field id={id("details")} label="Détails pour le client (facultatif)" hint={`${variant.details.length}/200 caractères`}>
+              <textarea
+                id={id("details")}
+                className="input"
+                rows={2}
+                maxLength={200}
+                placeholder="Comme neuf, vendu avec sa boîte d'origine"
+                value={variant.details}
+                onChange={(event) => set({ details: event.target.value })}
+              />
+            </Field>
+          </section>
+        ) : null}
+
+        {lockedColor ? null : (
+          <section className="space-y-4 bg-surface-2/40 p-4 sm:p-5">
+            <SectionHeading
+              number={sectionNumber(refurbished ? 6 : canBeRefurbished ? 5 : 4)}
+              title="Articles offerts"
+              description="Ajoute un accessoire inclus avec cette variante, si nécessaire."
+            />
+            <GiftEditor variant={variant} giftOptions={giftOptions} onChange={(gifts) => set({ gifts })} />
+          </section>
+        )}
+      </div>
+
     </fieldset>
   );
 }
 
 const ORIGIN_LABELS: Record<PartOrigin, string> = { origine: "D'origine", compatible: "Compatible" };
+
+function SectionHeading({ number, title, description }: { number: string; title: string; description: string }) {
+  return (
+    <div className="flex items-start gap-3 border-b border-line pb-3">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-soft text-xs font-bold text-blue-ink">
+        {number}
+      </span>
+      <div>
+        <h3 className="font-display font-bold">{title}</h3>
+        <p className="mt-0.5 text-sm text-ink-muted">{description}</p>
+      </div>
+    </div>
+  );
+}
 
 // Pour chaque pièce changée : d'origine ou compatible. Rien n'est choisi au départ ; le
 // formulaire refuse l'envoi tant qu'une pièce n'a pas son choix.
@@ -354,8 +406,7 @@ function GiftEditor({
   const available = giftOptions.filter((option) => !variant.gifts.some((gift) => gift.giftVariantId === option.id));
 
   return (
-    <div className="space-y-3 border-t border-line pt-5">
-      <p className="font-display font-bold">Articles offerts</p>
+    <div className="space-y-3">
       {variant.gifts.length === 0 ? <p className="text-sm text-ink-muted">Aucun article offert.</p> : null}
       <ul className="space-y-2">
         {variant.gifts.map((gift) => {

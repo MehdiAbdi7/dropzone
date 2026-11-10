@@ -12,7 +12,9 @@ import { colorsOf, compareSeries, resolvePosterColor } from "./series.service.js
 function stockOf(variants: { condition: Condition; stock: number }[]) {
   return {
     newStock: variants.filter((v) => v.condition === "new").reduce((sum, v) => sum + v.stock, 0),
-    dealCount: variants.filter((v) => v.condition === "refurbished" && v.stock > 0).length,
+    dealCount: variants
+      .filter((variant) => variant.condition === "refurbished")
+      .reduce((sum, variant) => sum + variant.stock, 0),
   };
 }
 
