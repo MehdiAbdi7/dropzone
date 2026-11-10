@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// Les règles de l'affiche que les tests de fonctions ne voient pas, lues dans globals.css.
-const css = readFileSync(fileURLToPath(new URL("../../app/globals.css", import.meta.url)), "utf-8");
+// Les règles de l'affiche que les tests de fonctions ne voient pas, lues dans styles/series-posters.css.
+const css = readFileSync(fileURLToPath(new URL("../../styles/series-posters.css", import.meta.url)), "utf-8");
 
 describe("Les animations de l'affiche", () => {
   // WCAG 2.2.2 : un mouvement qui démarre tout seul ne dure pas plus de 5 secondes.

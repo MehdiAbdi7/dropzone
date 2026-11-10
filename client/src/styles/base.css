@@ -1,0 +1,88 @@
+/* ---------- 4. La base ---------- */
+
+@layer base {
+  html {
+    background: var(--bg);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  a {
+    text-underline-offset: 3px;
+  }
+
+  /* scrollbar-hide : pour les pistes de modèles (poster-track) et les listes horizontales
+     de cartes (horizontal-list). */
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  ::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-surface-2);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-blue);
+    border-radius: 9999px;
+    cursor: -webkit-grab;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-red);
+  }
+
+  /* Un focus clavier toujours visible, dans la couleur de la marque. */
+  :focus-visible {
+    outline: 2px solid var(--blue-ink);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--blue);
+    color: var(--on-brand);
+  }
+
+  /* Le menu mobile ouvert (un <dialog> modal) bloque le défilement de la page, sans JavaScript. */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    /* Sauf la roue de chargement (06/11) : elle tourne plus lentement, c'est le seul signe
+       que la page attend. Ici, dans la même couche : un !important d'une couche suivante
+       (components) ne passerait pas devant celui-ci. */
+    .spinner {
+      animation-duration: 2.4s !important;
+    }
+  }
+}

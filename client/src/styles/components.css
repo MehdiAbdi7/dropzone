@@ -1,0 +1,243 @@
+/* Les composants réutilisés partout : boutons, champs, cartes, puces, badges, menu mobile. */
+
+@layer components {
+  .container-page {
+    width: 100%;
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: 16px;
+  }
+
+  /* Un bloc de marque : les variables sombres (section 2), plus le fond et la
+     couleur du texte, qui sinon resteraient ceux calculés sur <body>. */
+  .brand-dark {
+    background-color: var(--bg);
+    color: var(--ink);
+  }
+
+  /* Les boutons. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.625rem 1.125rem;
+    border-radius: var(--radius-field);
+    border: 1px solid transparent;
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    cursor: pointer;
+    transition:
+      background-color 150ms,
+      border-color 150ms,
+      color 150ms;
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--blue);
+    color: var(--on-brand);
+  }
+  .btn-primary:not(:disabled):hover {
+    background: var(--blue-hover);
+  }
+  /* Le léger halo des boutons pleins, seulement sur fond sombre. */
+  .brand-dark .btn-primary,
+  [data-theme="dark"] .btn-primary {
+    box-shadow: 0 8px 24px -10px rgb(61 75 255 / 0.9);
+  }
+  .btn-secondary {
+    background: var(--surface);
+    border-color: var(--line);
+    color: var(--ink);
+  }
+  .btn-secondary:not(:disabled):hover {
+    border-color: var(--blue-ink);
+  }
+  /* Un bouton contour, sans fond : « Les reconditionnés », « Tout voir ». */
+  .btn-outline {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--ink) 35%, transparent);
+    color: var(--ink);
+  }
+  .btn-outline:not(:disabled):hover {
+    border-color: var(--blue-ink);
+    color: var(--blue-ink);
+  }
+  .btn-danger {
+    background: transparent;
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .btn-danger:not(:disabled):hover {
+    background: var(--red-soft);
+  }
+  .btn-small {
+    min-height: 36px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  .btn-pill {
+    border-radius: 999px;
+  }
+
+  /* Un bouton icône rond de l'en-tête (recherche, compte, panier, thème, menu). */
+  .icon-btn {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background-color 150ms;
+  }
+  .icon-btn:hover {
+    background: var(--surface-2);
+  }
+
+  /* Les champs de formulaire. */
+  .label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .input {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-field);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+  }
+  .input::placeholder {
+    color: var(--ink-muted);
+  }
+  .input:focus {
+    border-color: var(--blue-ink);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--blue-soft);
+  }
+  .input[aria-invalid="true"] {
+    border-color: var(--red);
+  }
+  .field-error {
+    margin-top: 0.375rem;
+    color: var(--red);
+    font-size: 0.875rem;
+  }
+  .field-hint {
+    margin-top: 0.375rem;
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+  }
+
+  /* Les cartes : une ombre très légère en clair, aucune en sombre. */
+  .card {
+    border-radius: var(--radius-card);
+    border: 1px solid transparent;
+    backdrop-filter: blur(16px);
+    background:
+      linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+      linear-gradient(90deg, #3d4affc0, #a23bf0c0, #ff2e4dc2) border-box;
+  }
+
+  /* Les puces à cocher : une valeur d'une liste (stockage, couleur, défaut…). */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 36px;
+    padding: 0.375rem 0.875rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .chip:hover {
+    border-color: var(--blue-ink);
+  }
+  .chip[aria-pressed="true"],
+  .chip[aria-checked="true"] {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: var(--on-brand);
+  }
+  .chip:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    text-decoration: line-through;
+  }
+  /* Les badges des cartes produit. */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+  .badge-refurb {
+    background: var(--blue-soft);
+    color: var(--blue-ink);
+  }
+  .badge-out {
+    background: var(--surface-2);
+    color: var(--ink-muted);
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  .table th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--ink-muted);
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+
+  /* Le menu mobile : un panneau qui s'ouvre sur la droite, par-dessus la page. */
+  .mobile-menu {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(340px, 88vw);
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    border-left: 1px solid var(--line);
+  }
+  .mobile-menu::backdrop {
+    background: rgb(0 0 0 / 0.6);
+  }
+
+  /* La recherche de l'en-tête : un <details>, qui s'ouvre même sans JavaScript. */
+  .search-toggle > summary {
+    list-style: none;
+  }
+  .search-toggle > summary::-webkit-details-marker {
+    display: none;
+  }
+}

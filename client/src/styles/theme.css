@@ -1,0 +1,50 @@
+/* ---------- 3. Le thème Tailwind ---------- */
+
+/* `inline` : les classes (bg-surface, text-ink…) lisent les variables ci-dessus,
+   donc changer de thème ne demande aucune classe dark: dans les composants. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-blue: var(--blue);
+  --color-blue-ink: var(--blue-ink);
+  --color-blue-soft: var(--blue-soft);
+  --color-violet: var(--violet);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+  --color-on-red: var(--on-red);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-on-brand: var(--on-brand);
+
+  /* Les polices, chargées par next/font dans layout.tsx : Montserrat pour les
+     titres et le logo (proche du logo des bannières de DropZone), Manrope pour le texte. */
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-display: var(--font-montserrat), var(--font-manrope), sans-serif;
+  --font-logo: var(--font-montserrat), sans-serif;
+}
+
+@theme {
+  /* Des rayons qui suivent la hiérarchie : champs et boutons, cartes, grands blocs. */
+  --radius-field: 10px;
+  --radius-card: 16px;
+  --radius-block: 20px;
+
+  /* Le dégradé du logo, du bleu électrique au rouge, en passant par le violet. */
+  --gradient-brand: linear-gradient(
+    90deg,
+    #3d4bff 0%,
+    #a33bf0 50%,
+    #ff2e4d 100%
+  );
+  /* Le même, assombri pour porter du texte blanc : 5,3:1 au moins sur toute la bande. */
+  --gradient-deep: linear-gradient(
+    90deg,
+    #2b37e0 0%,
+    #8a2be2 50%,
+    #d4143a 100%
+  );
+}
