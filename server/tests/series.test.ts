@@ -241,7 +241,7 @@ describe("GET /series : les séries d'une marque", () => {
 });
 
 describe("GET /series/:category/:brand/:serie : l'affiche", () => {
-  it("donne les modèles dans l'ordre, avec 4 caractéristiques, leurs couleurs officielles et leurs prix", async () => {
+  it("donne les modèles dans l'ordre, avec les caractéristiques téléphone dont le connecteur, leurs couleurs et leurs prix", async () => {
     const { model, product } = await addIphone15();
     await fillSeries(prisma);
     // Les couleurs de l'iPhone 15 dans le monde : Jaune et Bleu ne sont pas en boutique,
@@ -277,6 +277,7 @@ describe("GET /series/:category/:brand/:serie : l'affiche", () => {
         ["Puce", "A16 Bionic"],
         ["Appareil photo", "48 Mpx"],
         ["Batterie", "3 349 mAh"],
+        ["Connecteur", "USB-C"],
       ],
       colors: ["Noir", "Bleu", "Vert", "Jaune", "Rose"],
       newFrom: 165000,

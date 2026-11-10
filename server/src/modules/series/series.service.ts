@@ -78,7 +78,7 @@ const SERIES_SELECT = {
   name: true,
   slug: true,
   coverUrl: true,
-  brand: { select: { name: true, slug: true, category: { select: { name: true, slug: true } } } },
+  brand: { select: { name: true, slug: true, category: { select: { name: true, slug: true, kind: true } } } },
   models: {
     orderBy: [{ seriesPosition: "asc" }, { id: "asc" }],
     select: {
@@ -137,7 +137,7 @@ function posterModels(series: SeriesRow) {
       releaseYear: model.releaseYear,
       productSlug: product.slug,
       image: product.images[0]?.url ?? null,
-      specs: posterSpecs(product.specs as Record<string, string>),
+      specs: posterSpecs(product.specs as Record<string, string>, series.brand.category.kind === "phone" ? 5 : 4),
       colors,
       newFrom,
       dealFrom,
