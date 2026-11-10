@@ -160,7 +160,7 @@ export default function ShopPageTransition({ children }: { children: ReactNode }
       document.documentElement.classList.remove("page-transitioning");
       document.body.classList.remove("page-transitioning");
     };
-  }, [routeKey]);
+  }, [pathname, routeKey]); // pathname est dans routeKey : aucune exécution en plus.
 
   return (
     <>

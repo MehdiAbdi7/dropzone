@@ -11,10 +11,14 @@ export default function ProductSearch({ categories }: { categories: Category[] }
   const query = searchParams.get("q") ?? "";
   const selectedCategories = searchParams.getAll("category");
   const [value, setValue] = useState(query);
-
-  useEffect(() => {
+  // Quand l'URL change (retour arrière, lien), le champ reprend sa recherche. On le fait pendant
+  // le rendu en comparant à la dernière recherche vue, plutôt que dans un effet : un effet ferait
+  // un premier rendu avec l'ancien texte, puis un second (règle react-hooks/set-state-in-effect).
+  const [seenQuery, setSeenQuery] = useState(query);
+  if (query !== seenQuery) {
+    setSeenQuery(query);
     setValue(query);
-  }, [query]);
+  }
 
   useEffect(() => {
     const trimmed = value.trim();
