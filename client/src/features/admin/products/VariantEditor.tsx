@@ -1,15 +1,16 @@
 "use client";
 
-import { Fragment, useState } from "react";
 import Field from "@/components/ui/Field";
-import { CONDITION_LABELS, FAMILIES, OPTION_FIELDS, type ChoiceGroup } from "@/config/catalog";
-import { formatPrice } from "@/lib/format";
+import { CONDITION_LABELS, OPTION_FIELDS, type ChoiceGroup } from "@/config/catalog";
 import type { ProductKind } from "@/types/api";
 import { useChoicesQuery } from "@/features/admin/api/choicesApi";
 import { type GiftOption } from "@/features/admin/api/productsApi";
 import ChoicePicker from "./ChoicePicker";
 import ColorPhotoField from "./ColorPhotoField";
-import { type PartOrigin, type VariantDraft, withCondition, withReplacedParts } from "./productDraft";
+import ConditionSheet from "./ConditionSheet";
+import { SectionHeading } from "./FormParts";
+import GiftEditor from "./GiftEditor";
+import { type VariantDraft, withCondition } from "./productDraft";
 
 type Props = {
   variant: VariantDraft;
@@ -35,8 +36,7 @@ type ChoiceField = { key: string; multiple?: boolean } & (
 );
 
 // Une variante du formulaire : neuf scellé ou affaire, ses options à cocher, son prix et
-// son stock, la fiche d'une affaire (état, pièces d'origine ou compatibles, boîte,
-// détails), et ses articles offerts.
+// son stock, la fiche d'une affaire (ConditionSheet), et ses articles offerts (GiftEditor).
 export default function VariantEditor({
   variant,
   index,
@@ -246,86 +246,13 @@ export default function VariantEditor({
         </section>
 
         {refurbished ? (
-          <section className="space-y-5 bg-red-soft/50 p-4 sm:p-5">
-            <SectionHeading
-              number={sectionNumber(canBeRefurbished ? 5 : 4)}
-              title="Fiche d’état de l’affaire"
-              description="Détaille l'état réel et le contenu de l'appareil."
-            />
-            <div className="grid gap-4 rounded-lg border border-line bg-surface p-4 sm:grid-cols-2">
-              <Field id={id("grade")} label="Note d'état (sur 10, facultatif)">
-                <select id={id("grade")} className="input" value={variant.grade} onChange={(event) => set({ grade: event.target.value })}>
-                  <option value="">Choisir…</option>
-                  {Array.from({ length: 10 }, (_, i) => 10 - i).map((grade) => (
-                    <option key={grade} value={grade}>
-                      {grade}/10
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field id={id("battery")} label="Santé de la batterie (%, facultatif)">
-                <input
-                  id={id("battery")}
-                  className="input"
-                  inputMode="numeric"
-                  value={variant.batteryHealth}
-                  onChange={(event) => set({ batteryHealth: event.target.value.replace(/\D/g, "").slice(0, 3) })}
-                />
-              </Field>
-            </div>
-            {FAMILIES.map((family) => (
-              <Fragment key={family.field}>
-                <ChoicePicker
-                  multiple
-                  group={family.group}
-                  label={family.label}
-                  value={variant[family.field]}
-                  onChange={(values) =>
-                    family.field === "replacedParts"
-                      ? onChange(withReplacedParts(variant, values))
-                      : set({ [family.field]: values })
-                  }
-                />
-                {family.field === "replacedParts" && variant.replacedParts.length > 0 ? (
-                  <div className="rounded-lg border border-line bg-surface p-4">
-                    <PartOriginPicker variant={variant} onChange={(partOrigins) => set({ partOrigins })} />
-                  </div>
-                ) : null}
-              </Fragment>
-            ))}
-            <fieldset className="space-y-2 rounded-lg border border-line bg-surface p-4">
-              <legend className="label px-1">Boîte d&apos;origine</legend>
-              {variant.withBox === null ? (
-                <p role="note" className="rounded-lg border border-amber bg-amber-soft p-3 text-sm font-semibold">
-                  Boîte non précisée (annonce importée) : à corriger.
-                </p>
-              ) : null}
-              <div className="flex flex-wrap gap-2">
-                {([true, false] as const).map((withBox) => (
-                  <button
-                    key={String(withBox)}
-                    type="button"
-                    className="chip"
-                    aria-pressed={variant.withBox === withBox}
-                    onClick={() => set({ withBox })}
-                  >
-                    {withBox ? "Avec sa boîte" : "Sans boîte"}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-            <Field id={id("details")} label="Détails pour le client (facultatif)" hint={`${variant.details.length}/200 caractères`}>
-              <textarea
-                id={id("details")}
-                className="input"
-                rows={2}
-                maxLength={200}
-                placeholder="Comme neuf, vendu avec sa boîte d'origine"
-                value={variant.details}
-                onChange={(event) => set({ details: event.target.value })}
-              />
-            </Field>
-          </section>
+          <ConditionSheet
+            variant={variant}
+            number={sectionNumber(canBeRefurbished ? 5 : 4)}
+            idOf={id}
+            set={set}
+            onChange={onChange}
+          />
         ) : null}
 
         {lockedColor ? null : (
@@ -341,134 +268,5 @@ export default function VariantEditor({
       </div>
 
     </fieldset>
-  );
-}
-
-const ORIGIN_LABELS: Record<PartOrigin, string> = { origine: "D'origine", compatible: "Compatible" };
-
-function SectionHeading({ number, title, description }: { number: string; title: string; description: string }) {
-  return (
-    <div className="flex items-start gap-3 border-b border-line pb-3">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-soft text-xs font-bold text-blue-ink">
-        {number}
-      </span>
-      <div>
-        <h3 className="font-display font-bold">{title}</h3>
-        <p className="mt-0.5 text-sm text-ink-muted">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-// Pour chaque pièce changée : d'origine ou compatible. Rien n'est choisi au départ ; le
-// formulaire refuse l'envoi tant qu'une pièce n'a pas son choix.
-function PartOriginPicker({
-  variant,
-  onChange,
-}: {
-  variant: VariantDraft;
-  onChange: (partOrigins: VariantDraft["partOrigins"]) => void;
-}) {
-  return (
-    <fieldset className="space-y-2">
-      <legend className="label">Origine des pièces changées</legend>
-      {variant.replacedParts.map((part) => (
-        <div key={part} role="group" aria-label={part} className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="min-w-28 font-semibold">{part}</span>
-          {(["origine", "compatible"] as const).map((origin) => (
-            <button
-              key={origin}
-              type="button"
-              className="chip"
-              aria-pressed={variant.partOrigins[part] === origin}
-              onClick={() => onChange({ ...variant.partOrigins, [part]: origin })}
-            >
-              {ORIGIN_LABELS[origin]}
-            </button>
-          ))}
-        </div>
-      ))}
-    </fieldset>
-  );
-}
-
-// Les articles offerts : pris dans les accessoires du catalogue (GET /admin/gift-options).
-function GiftEditor({
-  variant,
-  giftOptions,
-  onChange,
-}: {
-  variant: VariantDraft;
-  giftOptions: GiftOption[];
-  onChange: (gifts: VariantDraft["gifts"]) => void;
-}) {
-  const [choice, setChoice] = useState("");
-  const labelOf = (id: number) => giftOptions.find((option) => option.id === id);
-  const available = giftOptions.filter((option) => !variant.gifts.some((gift) => gift.giftVariantId === option.id));
-
-  return (
-    <div className="space-y-3">
-      {variant.gifts.length === 0 ? <p className="text-sm text-ink-muted">Aucun article offert.</p> : null}
-      <ul className="space-y-2">
-        {variant.gifts.map((gift) => {
-          const option = labelOf(gift.giftVariantId);
-          return (
-            <li key={gift.giftVariantId} className="flex flex-wrap items-center gap-3 text-sm">
-              <span className="flex-1">
-                {option ? `${option.label}, ${formatPrice(option.price)} (stock ${option.stock})` : `Article n° ${gift.giftVariantId}`}
-              </span>
-              <label className="flex items-center gap-2">
-                Quantité
-                <input
-                  className="input min-h-9 w-16 py-1"
-                  inputMode="numeric"
-                  value={gift.quantity}
-                  onChange={(event) =>
-                    onChange(
-                      variant.gifts.map((g) =>
-                        g.giftVariantId === gift.giftVariantId
-                          ? { ...g, quantity: Math.max(1, Math.min(5, Number(event.target.value) || 1)) }
-                          : g,
-                      ),
-                    )
-                  }
-                />
-              </label>
-              <button
-                type="button"
-                className="text-red underline"
-                onClick={() => onChange(variant.gifts.filter((g) => g.giftVariantId !== gift.giftVariantId))}
-              >
-                Retirer
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-      <div className="flex max-w-xl gap-2">
-        <label htmlFor={`${variant.key}-gift`} className="sr-only">
-          Article à offrir
-        </label>
-        <select id={`${variant.key}-gift`} className="input" value={choice} onChange={(event) => setChoice(event.target.value)}>
-          <option value="">Choisir un accessoire à offrir…</option>
-          {available.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label} ({formatPrice(option.price)}, stock {option.stock})
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className="btn btn-secondary btn-small"
-          disabled={!choice}
-          onClick={() => {
-            onChange([...variant.gifts, { giftVariantId: Number(choice), quantity: 1 }]);
-            setChoice("");
-          }}
-        >
-          Offrir
-        </button>
-      </div>
-    </div>
   );
 }

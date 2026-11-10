@@ -1,18 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent, type ReactNode } from "react";
-import BrandLogo from "@/components/ui/BrandLogo";
-import Field from "@/components/ui/Field";
+import { useState, type FormEvent } from "react";
 import { CONDITION_LABELS, KIND_LABELS, SPEC_SUGGESTIONS } from "@/config/catalog";
-import { formatPrice } from "@/lib/format";
-import { errorMessage, fieldErrors } from "@/lib/errors";
 import { useBrandsQuery, useCategoriesQuery, useModelsQuery, type DeviceModel } from "@/features/admin/api/catalogApi";
 import { useCreateProductMutation, useGiftOptionsQuery, useUploadImageMutation, useUpdateProductMutation } from "@/features/admin/api/productsApi";
-import CompatibleModelsPicker from "./CompatibleModelsPicker";
 import EditDialog from "./EditDialog";
-import ModelPicker from "./ModelPicker";
+import { SectionHeading, SummaryCard, SummaryLine } from "./FormParts";
+import { CategoryFields, InfoFields, SpecsFields } from "./ProductFormDialogs";
 import {
   bodyFromDraft,
   emptyVariant,
@@ -23,15 +18,18 @@ import {
   missingPartOrigins,
   suggestSku,
   type ProductDraft,
-  WARRANTY_MAX,
 } from "./productDraft";
 import type { ProductKind } from "@/types/api";
+import SaveBar from "./SaveBar";
 import VariantEditor from "./VariantEditor";
+import VariantList from "./VariantList";
 
 // Le formulaire produit, rempli dans l'ordre où le vendeur pense :
 // la catégorie, le modèle, les caractéristiques, puis chaque variante.
 // Un état React unique plutôt que React Hook Form : presque tous les champs sont
 // des listes à cocher maison, pas des <input> que RHF sait brancher seul.
+// Ce fichier garde l'état et l'envoi ; l'affichage est découpé : FormParts (cartes),
+// ProductFormDialogs (champs des fenêtres), VariantList, VariantEditor et SaveBar.
 export default function ProductForm({
   productId,
   initial,
@@ -146,8 +144,6 @@ export default function ProductForm({
     }
   }
 
-  const serverErrors = Object.entries(fieldErrors(error));
-
   // Les noms lisibles du résumé : la catégorie, le modèle et la marque choisis.
   const modelName = models.find((model) => model.id === draft.deviceModelId)?.name ?? null;
   const brandName = brands.find((brand) => brand.id === draft.brandId)?.name ?? null;
@@ -253,210 +249,33 @@ export default function ProductForm({
       </div>
 
       {kind ? (
-        <section id="variantes" aria-labelledby="step-variants" className="card scroll-mt-6 space-y-3 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-xs font-bold tracking-wider text-blue-ink">ÉTAPE 05</p>
-              <h2 id="step-variants" className="text-xl">Stock et variantes ({draft.variants.length})</h2>
-              <p className="mt-1 text-sm text-ink-muted">Chaque combinaison de modèle, couleur ou stockage a son prix et son stock.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn btn-secondary btn-small" onClick={() => addVariant("new")}>
-                + Neuf scellé
-              </button>
-              {isDevice ? (
-                <button type="button" className="btn btn-secondary btn-small" onClick={() => addVariant("refurbished")}>
-                  + Affaire
-                </button>
-              ) : null}
-            </div>
-          </div>
-          {draft.variants.length === 0 ? (
-            <p className="text-sm text-ink-muted">Aucune variante : ajoute un neuf scellé ou une affaire.</p>
-          ) : (
-            <ul className="grid gap-3 md:grid-cols-2">
-              {draft.variants.map((variant) => {
-                const options = Object.values(variant.options).filter(Boolean).join(" · ");
-                // Ce qui bloquera l'envoi, signalé sur la ligne avant même d'enregistrer.
-                const problems = [
-                  missingBox(variant) ? "boîte à choisir" : null,
-                  missingPartOrigins(variant).length > 0 ? "origine des pièces" : null,
-                  invalidWarranty(variant) ? "garantie" : null,
-                  !variant.price ? "prix" : null,
-                ].filter(Boolean);
-                return (
-                  <li key={variant.key} className="flex min-w-0 flex-col gap-3 rounded-xl border border-line bg-surface-2/40 p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <span
-                          className={`badge ${variant.condition === "refurbished" ? "bg-red-soft text-red" : "bg-blue-soft text-blue-ink"}`}
-                        >
-                          {CONDITION_LABELS[variant.condition]}
-                        </span>
-                        <p className="mt-2 truncate font-semibold">{options || "Options à choisir"}</p>
-                        <p className="mt-0.5 truncate text-xs text-ink-muted">
-                          {variant.sku || "SKU à écrire"}
-                          {variant.reference ? ` · Réf. ${variant.reference}` : ""}
-                        </p>
-                      </div>
-                      <div className="text-right text-sm">
-                        <p className="font-semibold">{variant.price ? formatPrice(Number(variant.price)) : "Prix à saisir"}</p>
-                        <p className="text-ink-muted">Stock : {variant.stock || 0}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
-                      {problems.length > 0 ? (
-                        <span className="badge bg-[#ffb547] text-black">À compléter : {problems.join(", ")}</span>
-                      ) : (
-                        <span className="text-xs font-semibold text-ink-muted">Variante prête</span>
-                      )}
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-small ml-auto"
-                        onClick={() => setOpen(`variant:${variant.key}`)}
-                      >
-                        Modifier la variante
-                      </button>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
+        <VariantList
+          variants={draft.variants}
+          canAddRefurbished={isDevice}
+          onAdd={addVariant}
+          onEdit={(key) => setOpen(`variant:${key}`)}
+        />
       ) : null}
 
       <EditDialog open={open === "category"} title="Catégorie et modèle" onClose={() => setOpen(null)}>
-        <fieldset className="space-y-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
-          <legend className="sr-only">Catégorie</legend>
-          <SectionHeading number="01" title="Catégorie" description="Choisis la famille de produits." />
-          <div className="flex flex-wrap gap-2">
-            {categories.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="chip"
-                aria-pressed={item.id === draft.categoryId}
-                onClick={() => chooseCategory(item.id)}
-              >
-                {item.name} <span className="font-normal opacity-75">({KIND_LABELS[item.kind]})</span>
-              </button>
-            ))}
-          </div>
-        </fieldset>
-        {kind && isDevice ? (
-          <section className="space-y-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
-            <SectionHeading number="02" title="Modèle de l'appareil" description="Recherche puis sélectionne le modèle concerné." />
-            <ModelPicker kind={kind} value={draft.deviceModelId} onChange={chooseModel} />
-          </section>
-        ) : null}
-        {kind === "accessory" ? (
-          <section className="space-y-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
-            <SectionHeading number="02" title="Compatibilité" description="Laisse vide pour un accessoire universel." />
-            <CompatibleModelsPicker value={draft.compatibleModelIds} onChange={(ids) => set({ compatibleModelIds: ids })} />
-          </section>
-        ) : null}
-        {kind ? (
-          <fieldset className="space-y-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
-            {/* Pour un accessoire, la « marque » est son type (Coques, Chargeurs…, 06/11). */}
-            <legend className="sr-only">{kind === "accessory" ? "Type d'accessoire" : "Marque"}</legend>
-            <SectionHeading
-              number="03"
-              title={kind === "accessory" ? "Type d'accessoire" : "Marque"}
-              description="Associe le produit à une marque du catalogue."
-            />
-            {brands.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                <button type="button" className="chip" aria-pressed={draft.brandId === null} onClick={() => set({ brandId: null })}>
-                  {kind === "accessory" ? "Sans type" : "Sans marque"}
-                </button>
-                {brands.map((brand) => (
-                  <button
-                    key={brand.id}
-                    type="button"
-                    className="chip"
-                    aria-pressed={draft.brandId === brand.id}
-                    onClick={() => set({ brandId: brand.id })}
-                  >
-                    <BrandLogo url={brand.logoUrl} />
-                    {brand.name}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-ink-muted">
-                {kind === "accessory" ? "Aucun type dans cette catégorie." : "Aucune marque dans cette catégorie."}{" "}
-                <Link
-                  href={draft.categoryId ? `/admin/catalogue/${draft.categoryId}#marques` : "/admin/catalogue"}
-                  className="font-semibold text-blue-ink underline"
-                >
-                  En ajouter dans le Catalogue
-                </Link>
-              </p>
-            )}
-          </fieldset>
-        ) : null}
+        <CategoryFields
+          draft={draft}
+          categories={categories}
+          brands={brands}
+          kind={kind}
+          isDevice={isDevice}
+          onChooseCategory={chooseCategory}
+          onChooseModel={chooseModel}
+          set={set}
+        />
       </EditDialog>
 
       <EditDialog open={open === "info"} title="Fiche du produit" onClose={() => setOpen(null)}>
-        <section className="space-y-4 rounded-xl border border-line bg-surface p-4 sm:p-5">
-          <SectionHeading number="01" title="Présentation" description="Ce nom et cette description apparaîtront sur la boutique." />
-          <Field id="name" label="Nom affiché">
-            <input id="name" className="input" value={draft.name} onChange={(event) => set({ name: event.target.value })} />
-          </Field>
-          <Field id="description" label="Description">
-            <textarea
-              id="description"
-              className="input min-h-24"
-              rows={5}
-              value={draft.description}
-              onChange={(event) => set({ description: event.target.value })}
-            />
-          </Field>
-        </section>
+        <InfoFields draft={draft} set={set} />
       </EditDialog>
 
       <EditDialog open={open === "specs"} title="Caractéristiques du modèle" onClose={() => setOpen(null)}>
-        <fieldset className="space-y-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
-          <legend className="sr-only">Caractéristiques du modèle</legend>
-          <SectionHeading number="01" title="Caractéristiques techniques" description="Ajoute une ligne par caractéristique et sa valeur." />
-          {draft.specs.map((row, index) => (
-            <div key={index} className="grid gap-2 rounded-lg border border-line bg-surface-2/50 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]">
-              <input
-                aria-label={`Caractéristique ${index + 1}`}
-                className="input"
-                placeholder="Écran"
-                value={row.key}
-                onChange={(event) =>
-                  set({ specs: draft.specs.map((r, i) => (i === index ? { ...r, key: event.target.value } : r)) })
-                }
-              />
-              <input
-                aria-label={`Valeur de ${row.key || `la caractéristique ${index + 1}`}`}
-                className="input"
-                placeholder="6,7 pouces OLED, 120 Hz"
-                value={row.value}
-                onChange={(event) =>
-                  set({ specs: draft.specs.map((r, i) => (i === index ? { ...r, value: event.target.value } : r)) })
-                }
-              />
-              <button
-                type="button"
-                className="btn btn-secondary btn-small"
-                onClick={() => set({ specs: draft.specs.filter((_, i) => i !== index) })}
-              >
-                Retirer
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            className="text-sm font-semibold text-blue-ink underline"
-            onClick={() => set({ specs: [...draft.specs, { key: "", value: "" }] })}
-          >
-            Ajouter une caractéristique
-          </button>
-        </fieldset>
+        <SpecsFields draft={draft} set={set} />
       </EditDialog>
 
       <EditDialog
@@ -489,130 +308,17 @@ export default function ProductForm({
         ) : null}
       </EditDialog>
 
-      <div className="card sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 space-y-3 p-4 lg:bottom-0">
-        <div aria-live="polite" className="text-sm">
-          {missingOrigins.length > 0 || missingBoxes.length > 0 || badWarranties.length > 0 ? (
-            <>
-              {missingOrigins.length > 0 ? (
-                <p className="font-semibold text-red">
-                  Dites si chaque pièce changée est d&apos;origine ou compatible : {missingOrigins.join(", ")}.
-                </p>
-              ) : null}
-              {missingBoxes.length > 0 ? (
-                <p className="font-semibold text-red">Choisissez la boîte de : {missingBoxes.join(", ")}.</p>
-              ) : null}
-              {badWarranties.length > 0 ? (
-                <p className="font-semibold text-red">
-                  La garantie va de 1 à {WARRANTY_MAX} mois : {badWarranties.join(", ")}.
-                </p>
-              ) : null}
-            </>
-          ) : error ? (
-            <div className="text-red">
-              <p className="font-semibold">{errorMessage(error)}</p>
-              {serverErrors.length > 0 ? (
-                <ul className="list-disc pl-5">
-                  {serverErrors.map(([field, messages]) => (
-                    <li key={field}>
-                      {field} : {messages.join(", ")}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
-          <fieldset className="flex flex-wrap items-center gap-2">
-            <legend className="sr-only">Statut du produit</legend>
-            <span className="mr-1 text-sm font-semibold">Statut :</span>
-            {(["draft", "published"] as const).map((status) => (
-              <button
-                key={status}
-                type="button"
-                className="chip"
-                aria-pressed={draft.status === status}
-                onClick={() => set({ status })}
-              >
-                {status === "draft" ? "Brouillon" : "Publié"}
-              </button>
-            ))}
-          </fieldset>
-          <button type="submit" className="btn btn-primary" disabled={isLoading || !kind}>
-            {isLoading ? "Enregistrement…" : productId ? "Enregistrer les modifications" : "Créer le produit"}
-          </button>
-        </div>
-      </div>
+      <SaveBar
+        missingOrigins={missingOrigins}
+        missingBoxes={missingBoxes}
+        badWarranties={badWarranties}
+        error={error}
+        status={draft.status}
+        onStatusChange={(status) => set({ status })}
+        isLoading={isLoading}
+        canSubmit={Boolean(kind)}
+        submitLabel={productId ? "Enregistrer les modifications" : "Créer le produit"}
+      />
     </form>
-  );
-}
-
-function SectionHeading({ number, title, description }: { number: string; title: string; description: string }) {
-  return (
-    <div className="flex items-start gap-3 border-b border-line pb-3">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-soft text-xs font-bold text-blue-ink">
-        {number}
-      </span>
-      <div>
-        <h3 className="font-display font-bold">{title}</h3>
-        <p className="mt-0.5 text-sm text-ink-muted">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-function SummaryCard({
-  step,
-  title,
-  description,
-  status,
-  complete,
-  action,
-  onEdit,
-  className = "",
-  children,
-}: {
-  step: string;
-  title: string;
-  description: string;
-  status: string;
-  complete: boolean;
-  action: string;
-  onEdit: () => void;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className={`card flex flex-col gap-3 p-4 sm:p-5 ${className}`}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-soft text-xs font-bold text-blue-ink">{step}</span>
-          <div className="min-w-0">
-            <h2 className="text-lg">{title}</h2>
-            <p className="text-sm text-ink-muted">{description}</p>
-          </div>
-        </div>
-        <button type="button" className="btn btn-secondary btn-small" onClick={onEdit}>
-          {action}
-        </button>
-      </div>
-      <div className="flex items-center gap-2 border-t border-line pt-3">
-        <span
-          className={`size-2 rounded-full ${status === "Facultatif" ? "bg-line" : complete ? "bg-blue" : "bg-amber"}`}
-          aria-hidden="true"
-        />
-        <span className="text-xs font-semibold text-ink-muted">{status}</span>
-      </div>
-      <div className="min-w-0">{children}</div>
-    </section>
-  );
-}
-
-function SummaryLine({ label, value, missing = false }: { label: string; value: string; missing?: boolean }) {
-  return (
-    <div className="flex gap-2">
-      <dt className="shrink-0 text-ink-muted">{label} :</dt>
-      <dd className={`min-w-0 truncate font-semibold ${missing ? "text-red" : ""}`}>{value}</dd>
-    </div>
   );
 }
