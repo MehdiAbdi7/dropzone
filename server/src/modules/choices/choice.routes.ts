@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../../config/db.js";
 import { validate } from "../../middlewares/validate.js";
 import { AppError } from "../../utils/AppError.js";
+import { renameChoiceEverywhere } from "./choiceRename.js";
 
 // Les valeurs des listes à cocher du formulaire produit (stockage, couleurs, pièces
 // remplacées, défauts, limitations…). La variante recopie le texte choisi : retirer
@@ -113,7 +114,8 @@ async function postChoice(req: Request, res: Response) {
   res.status(201).json({ data: choice });
 }
 
-// Changer la teinte d'une couleur : pastilles et lueurs suivent, aucun produit ne change.
+// Changer la teinte d'une couleur (pastilles et lueurs suivent) ou renommer une valeur
+// (ses copies dans les produits suivent, voir choiceRename.ts).
 async function patchChoice(req: Request, res: Response) {
   const choice = await prisma.choice.findUnique({ where: { id: Number(req.params.id) } });
   if (!choice) {
@@ -137,7 +139,15 @@ async function patchChoice(req: Request, res: Response) {
   ) {
     throw new AppError(409, "Cette valeur existe déjà dans la liste");
   }
-  res.json({ data: await prisma.choice.update({ where: { id: choice.id }, data: body }) });
+  // Renommer : la valeur et toutes ses copies dans les produits, ensemble ou pas du tout.
+  const saved = await prisma.$transaction(async (tx) => {
+    if (body.label && body.label !== choice.label) {
+      const list = choice.listId !== null ? await tx.choiceList.findUnique({ where: { id: choice.listId } }) : null;
+      await renameChoiceEverywhere(tx, { group: choice.group, listName: list?.name ?? null }, choice.label, body.label);
+    }
+    return tx.choice.update({ where: { id: choice.id }, data: body });
+  });
+  res.json({ data: saved });
 }
 
 // La palette publique : { "Orange": "#f47d3c", … }, pour les pastilles et les lueurs de la

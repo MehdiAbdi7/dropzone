@@ -11,6 +11,9 @@ export async function resetDb() {
   await prisma.$executeRaw`TRUNCATE order_items, orders, users, variant_gifts, product_images,
     product_variants, "_ProductCompatibleModels", products, series, brands, choices, device_models, categories, import_records
     RESTART IDENTITY CASCADE`;
+  // Les listes fixes (Stockage, Couleurs…) viennent de la migration et restent ; les listes
+  // personnalisées d'un test ne doivent pas fuiter dans le suivant.
+  await prisma.$executeRaw`DELETE FROM choice_lists WHERE "group" IS NULL`;
 }
 
 // Un petit catalogue : un iPhone vendu neuf et en reconditionné (dont une affaire
