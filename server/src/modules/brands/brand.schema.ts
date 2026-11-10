@@ -21,5 +21,3 @@ export const brandPatchSchema = z.object({
     .optional(),
 });
 export type BrandPatch = z.infer<typeof brandPatchSchema>;
-
-export const brandIdSchema = z.object({ id: z.coerce.number().int().positive() });

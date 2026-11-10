@@ -7,6 +7,7 @@ export const categoryBodySchema = z.object({
   kind: productKindSchema,
 });
 
-export const categoryPatchSchema = categoryBodySchema.partial();
+export type CategoryBody = z.infer<typeof categoryBodySchema>;
 
-export const categoryIdSchema = z.object({ id: z.coerce.number().int().positive() });
+export const categoryPatchSchema = categoryBodySchema.partial();
+export type CategoryPatch = z.infer<typeof categoryPatchSchema>;

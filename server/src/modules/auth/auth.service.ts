@@ -24,6 +24,18 @@ export async function register(input: RegisterInput) {
   }
 }
 
+export async function getProfile(id: number) {
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) {
+    throw new AppError(401, "Connexion requise");
+  }
+  return user;
+}
+
+export async function updateProfile(id: number, data: Prisma.UserUpdateInput) {
+  return prisma.user.update({ where: { id }, data });
+}
+
 export async function login(email: string, password: string) {
   const user = await prisma.user.findUnique({
     where: { email },

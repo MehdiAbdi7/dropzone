@@ -57,5 +57,4 @@ export const adminOrderListQuerySchema = z.object({
 });
 export type AdminOrderListQuery = z.infer<typeof adminOrderListQuerySchema>;
 
-export const orderIdParamsSchema = z.object({ id: z.coerce.number().int().positive() });
 export const statusBodySchema = z.object({ status: orderStatusSchema });

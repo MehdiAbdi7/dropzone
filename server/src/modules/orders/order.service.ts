@@ -182,6 +182,11 @@ function hashLines(lines: CartLine[]): string {
   return createHash("sha256").update(text).digest("hex");
 }
 
+// L'aperçu du panier (POST /orders/preview) : ce que le client voit avant de commander.
+export async function previewCart(items: CartItemInput[]) {
+  return priceCart(prisma, items);
+}
+
 export async function createOrder(input: CreateOrderInput, userId: number | undefined) {
   return prisma.$transaction(async (tx) => {
     const cart = await priceCart(tx, input.items);
