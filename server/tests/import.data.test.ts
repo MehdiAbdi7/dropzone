@@ -4,7 +4,7 @@ import { modelSlug } from "../src/modules/models/modelSlug.js";
 import { DEVICE_MODELS } from "../src/scripts/device-models.js";
 import { type Listing, parseListing, readTsv } from "../src/scripts/import/listing.js";
 import { IGNORED, MAKERS, MODEL_MAP } from "../src/scripts/import/models-map.js";
-import { OFFICIAL_SPECS, SPECS_MISSING } from "../src/scripts/import/official-specs.js";
+import { OFFICIAL_SPECS } from "../src/scripts/import/official-specs.js";
 
 // Les données vérifiées à la main, confrontées au vrai relevé (server/data).
 const rows = readTsv(readFileSync(new URL("../data/dropzone-annonces.tsv", import.meta.url), "utf8"));
@@ -62,11 +62,8 @@ describe("Les caractéristiques officielles des téléphones et tablettes", () =
     ),
   ];
 
-  it("en donne exactement 4 à chaque modèle, ou dit pourquoi il n'en a pas", () => {
+  it("en donne exactement 4 à chaque modèle", () => {
     for (const device of devices) {
-      if (device in SPECS_MISSING) {
-        continue;
-      }
       expect(Object.keys(OFFICIAL_SPECS[device] ?? {}).sort(), device).toEqual(["Appareil photo", "Batterie", "Puce", "Écran"].sort());
     }
   });

@@ -13,7 +13,7 @@ import type {
 
 // ---------- Les formes propres au back-office ----------
 
-export type AdminProductRow = {
+type AdminProductRow = {
   id: number;
   name: string;
   slug: string;
@@ -27,7 +27,7 @@ export type AdminProductRow = {
   refurbishedAvailable: number;
 };
 
-export type AdminVariant = {
+type AdminVariant = {
   id: number;
   sku: string;
   options: Options;
@@ -95,7 +95,7 @@ export type AdminBrand = {
 
 type Stock = { newStock: number; dealCount: number };
 
-export type AdminCatalogCategory = Stock & {
+type AdminCatalogCategory = Stock & {
   id: number;
   name: string;
   slug: string;
@@ -106,7 +106,7 @@ export type AdminCatalogCategory = Stock & {
   productCount: number;
 };
 
-export type AdminCatalogBrand = Stock & {
+type AdminCatalogBrand = Stock & {
   id: number;
   name: string;
   slug: string;
@@ -152,7 +152,7 @@ export type AdminSeriesModel = {
 };
 
 // Les pages Couleur du Catalogue (étape Couleur, 05/11) : Catalogue › modèle › couleur.
-export type AdminColorModel = {
+type AdminColorModel = {
   id: number;
   brand: string;
   name: string;
@@ -160,14 +160,14 @@ export type AdminColorModel = {
   series: { id: number; name: string } | null;
 };
 
-export type AdminModelColors = {
+type AdminModelColors = {
   model: AdminColorModel;
   // La fiche du modèle ; null tant qu'aucun exemplaire n'a été ajouté.
   productId: number | null;
   colors: { name: string; photoUrl: string | null; newStock: number; refurbishedCount: number }[];
 };
 
-export type AdminModelColor = {
+type AdminModelColor = {
   model: AdminColorModel;
   productId: number | null;
   color: { name: string; photoUrl: string | null };
@@ -189,7 +189,7 @@ export type AdminSeriesPage = {
   candidates: { id: number; name: string; releaseYear: number | null }[];
 };
 
-export type AdminSeries = { id: number; brandId: number; name: string; slug: string; coverUrl: string | null };
+type AdminSeries = { id: number; brandId: number; name: string; slug: string; coverUrl: string | null };
 
 export type DeviceModel = {
   id: number;
@@ -218,7 +218,7 @@ export type Choices = Record<string, Choice[]> & { values: Record<string, Choice
 
 export type GiftOption = { id: number; sku: string; label: string; price: number; stock: number };
 
-export type AdminOrderRow = {
+type AdminOrderRow = {
   id: number;
   number: number;
   fullName: string;
@@ -230,7 +230,7 @@ export type AdminOrderRow = {
   _count: { items: number };
 };
 
-export type AdminOrder = {
+type AdminOrder = {
   id: number;
   number: number;
   status: OrderStatus;
@@ -272,7 +272,7 @@ export type Stats = {
   refurbishedSold: number;
 };
 
-export type Customer = {
+type Customer = {
   id: number;
   firstName: string;
   lastName: string;

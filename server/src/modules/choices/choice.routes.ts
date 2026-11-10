@@ -9,7 +9,7 @@ import { renameChoiceEverywhere } from "./choiceRename.js";
 // Les valeurs des listes à cocher du formulaire produit (stockage, couleurs, pièces
 // remplacées, défauts, limitations…). La variante recopie le texte choisi : retirer
 // une valeur de la liste ne change aucun produit.
-export const choiceGroupSchema = z.enum([
+const choiceGroupSchema = z.enum([
   "storage",
   "color",
   "ram",

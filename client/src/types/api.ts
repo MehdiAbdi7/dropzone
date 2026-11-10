@@ -7,11 +7,11 @@ export type OrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "c
 export type Role = "customer" | "admin";
 export type Options = Record<string, string>;
 
-export type Pagination = { page: number; limit: number; total: number; pages: number };
+type Pagination = { page: number; limit: number; total: number; pages: number };
 export type Page<T> = { data: T[]; pagination: Pagination };
 
 // Une marque telle que la Boutique la voit : seulement celles qui ont des produits publiés.
-export type Brand = {
+type Brand = {
   name: string;
   slug: string;
   logoUrl: string | null;
@@ -82,7 +82,7 @@ export type Variant = {
   gifts: Gift[];
 };
 
-export type ModelRef = { brand: string; name: string; slug: string };
+type ModelRef = { brand: string; name: string; slug: string };
 
 export type ProductDetail = {
   id: number;
@@ -183,7 +183,7 @@ export type CartPreview = {
   cartHash: string;
 };
 
-export type OrderItem = {
+type OrderItem = {
   sku: string;
   name: string;
   options: Options;

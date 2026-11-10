@@ -17,7 +17,7 @@ const cookieOptions: CookieOptions = {
 
 type TokenPayload = { sub: string; role: Role };
 
-export function signToken(userId: number, role: Role): string {
+function signToken(userId: number, role: Role): string {
   return jwt.sign({ role }, env.JWT_SECRET, { subject: String(userId), expiresIn: "7d" });
 }
 

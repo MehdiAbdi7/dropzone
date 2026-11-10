@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { REFERENCE_PATTERN } from "../../modules/products/product.schema.js";
 
-export const COLUMNS = [
+const COLUMNS = [
   "date", "code", "type", "modele", "cpu", "ram", "stockage", "ecran", "gpu", "prix_da",
   "reference", "garantie", "etat", "batterie", "origine", "sim", "neuf",
 ] as const;

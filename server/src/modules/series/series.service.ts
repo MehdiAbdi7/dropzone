@@ -48,7 +48,7 @@ const SPEC_ORDER = [
   "Ports",
 ];
 
-export function posterSpecs(specs: Record<string, string>, count = 4): [string, string][] {
+function posterSpecs(specs: Record<string, string>, count = 4): [string, string][] {
   const rank = (key: string) => {
     const index = SPEC_ORDER.indexOf(key);
     return index === -1 ? SPEC_ORDER.length : index;
