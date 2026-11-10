@@ -6,9 +6,9 @@
 // Décision de Mehdi : un exemplaire sans couleur reçoit une des couleurs officielles de son
 // modèle (choix de Claude : la première). C'est une couleur de démo, pas la vraie couleur de
 // l'appareil : le gérant la corrige dans le back-office.
-import type { Tx } from "../config/db.js";
-import type { Prisma } from "../generated/prisma/client.js";
-import { addMissingModelColors, sameColor } from "../modules/models/modelColors.js";
+import type { Tx } from "../../config/db.js";
+import type { Prisma } from "../../generated/prisma/client.js";
+import { addMissingModelColors, sameColor } from "../../modules/models/modelColors.js";
 import { applyOfficialColors } from "./applyOfficialColors.js";
 
 const DEVICE_KINDS = ["phone", "tablet", "laptop", "watch"] as const;

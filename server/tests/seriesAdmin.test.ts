@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/db.js";
-import { fillSeries } from "../src/scripts/series.js";
+import { fillSeries } from "../src/scripts/lib/series.js";
 import { createCatalog, loginAs, resetDb } from "./helpers.js";
 
 let catalog: Awaited<ReturnType<typeof createCatalog>>;

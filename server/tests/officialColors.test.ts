@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/db.js";
 import { COLOR_HEX, DEVICE_MODELS } from "../src/scripts/device-models.js";
 import { MODEL_MAP } from "../src/scripts/import/models-map.js";
-import { applyOfficialColors } from "../src/scripts/applyOfficialColors.js";
+import { applyOfficialColors } from "../src/scripts/lib/applyOfficialColors.js";
 import { OFFICIAL_COLORS } from "../src/scripts/official-colors.js";
 import { resetDb } from "./helpers.js";
 

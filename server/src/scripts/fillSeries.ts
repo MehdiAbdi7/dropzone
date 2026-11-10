@@ -2,7 +2,7 @@
 //   npm run series:fill
 // Sert à remplir une base existante (celle de la copie) après la migration des séries.
 import { prisma } from "../config/db.js";
-import { fillSeries } from "./series.js";
+import { fillSeries } from "./lib/series.js";
 
 const { created, assigned } = await fillSeries(prisma);
 console.log(`Séries créées : ${created}, modèles rangés : ${assigned}`);

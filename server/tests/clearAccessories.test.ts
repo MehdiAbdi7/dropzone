@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/db.js";
-import { clearAccessories } from "../src/scripts/clearAccessories.js";
+import { clearAccessories } from "../src/scripts/lib/clearAccessories.js";
 import { createCatalog, resetDb } from "./helpers.js";
 
 // La remise à zéro des accessoires (06/11, demande de Mehdi : « supprime ce qu'il y a

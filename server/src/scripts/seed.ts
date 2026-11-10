@@ -11,9 +11,9 @@ import { computeMinNewPrice, computeMinPrice } from "../modules/products/product
 import { defaultWarrantyMonths } from "../modules/products/warranty.js";
 import { slugify } from "../utils/slugify.js";
 import { CHOICES, COLOR_HEX, DEVICE_MODELS } from "./device-models.js";
-import { applyOfficialColors } from "./applyOfficialColors.js";
-import { fillVariantColors } from "./fillVariantColors.js";
-import { fillSeries } from "./series.js";
+import { applyOfficialColors } from "./lib/applyOfficialColors.js";
+import { fillVariantColors } from "./lib/fillVariantColors.js";
+import { fillSeries } from "./lib/series.js";
 import { BRANDS, CATEGORIES, PRODUCTS } from "./seed-data.js";
 
 const apply = process.argv.includes("--apply");

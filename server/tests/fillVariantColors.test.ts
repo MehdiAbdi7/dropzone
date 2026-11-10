@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/db.js";
-import { fillVariantColors } from "../src/scripts/fillVariantColors.js";
+import { fillVariantColors } from "../src/scripts/lib/fillVariantColors.js";
 import { createCatalog, resetDb } from "./helpers.js";
 
 // Le remplissage de l'étape Couleur (05/11) : chaque exemplaire d'appareil reçoit une couleur
