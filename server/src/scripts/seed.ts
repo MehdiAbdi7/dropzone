@@ -7,7 +7,7 @@ import { prisma } from "../config/db.js";
 import { env } from "../config/env.js";
 import type { ChoiceGroup } from "../generated/prisma/client.js";
 import { modelSlug } from "../modules/models/modelSlug.js";
-import { computeMinPrice } from "../modules/products/product.service.js";
+import { computeMinNewPrice, computeMinPrice } from "../modules/products/product.service.js";
 import { defaultWarrantyMonths } from "../modules/products/warranty.js";
 import { slugify } from "../utils/slugify.js";
 import { CHOICES, COLOR_HEX, DEVICE_MODELS } from "./device-models.js";
@@ -144,6 +144,7 @@ for (const [index, product] of PRODUCTS.entries()) {
       specs: product.specs ?? {},
       status: product.status ?? "published",
       minPrice: computeMinPrice(product.variants),
+      newPrice: computeMinNewPrice(product.variants),
       createdAt: new Date(Date.now() - minutesAgo * 60_000),
       images: { create: [{ url: product.image, position: 0 }] },
       variants: {

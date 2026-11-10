@@ -210,6 +210,7 @@ model Product {
   specs            Json             @default("{}")
   status           ProductStatus    @default(draft)
   minPrice         Int              @default(0) @map("min_price")
+  newPrice         Int?             @map("new_price")
   createdAt        DateTime         @default(now()) @map("created_at")
   variants         ProductVariant[]
   images           ProductImage[]
@@ -217,6 +218,7 @@ model Product {
 
   @@index([status, categoryId, createdAt(sort: Desc)])
   @@index([status, minPrice])
+  @@index([newPrice])
   @@index([categoryId])
   @@index([deviceModelId])
   @@index([brandId])

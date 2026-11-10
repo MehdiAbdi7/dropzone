@@ -56,6 +56,8 @@ describe("Produits", () => {
     expect(response.status).toBe(201);
     const product = await request(app).get(`/products/${response.body.data.slug}`);
     expect(product.body.data.minPrice).toBe(169000);
+    const adminListing = await admin.get("/admin/products").query({ q: "Samsung Galaxy S24 Ultra" });
+    expect(adminListing.body.data[0].newPrice).toBe(215000);
     const variant = product.body.data.variants.find((v: { sku: string }) => v.sku === "S24U-R-001");
     expect(variant).toMatchObject({ grade: 9, batteryHealth: 94, defects: ["Rayures légères sur l'écran"] });
     expect(variant.gifts[0].sku).toBe("CHG-20W");
@@ -265,6 +267,36 @@ describe("Produits", () => {
     const response = await admin.get(`/admin/products?brand=${catalog.ankerBrand.id}`);
     expect(response.status).toBe(200);
     expect(response.body.data.map((p: { name: string }) => p.name)).toEqual(["Chargeur USB-C 20 W"]);
+  });
+
+  it("filtre les produits par catégorie et les trie par nom ou par prix", async () => {
+    const category = await admin.get("/admin/products?status=published&category=smartphones");
+    expect(category.body.data.map((p: { name: string }) => p.name)).toEqual(["iPhone 15 Pro Max"]);
+    const categoryAndBrand = await admin.get(
+      `/admin/products?status=published&category=smartphones&brand=${catalog.iphoneBrand.id}`,
+    );
+    expect(categoryAndBrand.body.data.map((p: { name: string }) => p.name)).toEqual(["iPhone 15 Pro Max"]);
+
+    const byName = await admin.get("/admin/products?status=published&sort=name-asc");
+    expect(byName.body.data.map((p: { name: string }) => p.name)).toEqual([
+      "Chargeur USB-C 20 W",
+      "Coque antichoc iPhone 15 Pro Max",
+      "iPhone 15 Pro Max",
+    ]);
+
+    const byPriceAsc = await admin.get("/admin/products?status=published&sort=price-asc");
+    expect(byPriceAsc.body.data.map((p: { name: string }) => p.name)).toEqual([
+      "Coque antichoc iPhone 15 Pro Max",
+      "Chargeur USB-C 20 W",
+      "iPhone 15 Pro Max",
+    ]);
+    expect(byPriceAsc.body.data.find((p: { name: string }) => p.name === "iPhone 15 Pro Max").newPrice).toBe(245000);
+    const byPriceDesc = await admin.get("/admin/products?status=published&sort=price-desc");
+    expect(byPriceDesc.body.data.map((p: { name: string }) => p.name)).toEqual([
+      "iPhone 15 Pro Max",
+      "Chargeur USB-C 20 W",
+      "Coque antichoc iPhone 15 Pro Max",
+    ]);
   });
 });
 

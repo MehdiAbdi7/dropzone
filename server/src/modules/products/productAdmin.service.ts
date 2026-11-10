@@ -7,9 +7,17 @@ import { paginate, paginationMeta } from "../../utils/pagination.js";
 import { slugify } from "../../utils/slugify.js";
 import type { AdminProductListQuery, ProductBody } from "./product.schema.js";
 import { addMissingModelColors, alignVariantColors, variantColors } from "../models/modelColors.js";
-import { DEVICE_KINDS, computeMinPrice, refreshMinPrice } from "./product.service.js";
+import { DEVICE_KINDS, computeMinNewPrice, computeMinPrice, refreshMinPrice } from "./product.service.js";
 
 const MAX_IMAGES = 6;
+
+const ADMIN_PRODUCT_SORTS = {
+  recent: [{ createdAt: "desc" }, { id: "desc" }],
+  "name-asc": [{ name: "asc" }, { id: "asc" }],
+  "name-desc": [{ name: "desc" }, { id: "desc" }],
+  "price-asc": [{ newPrice: { sort: "asc", nulls: "last" } }, { name: "asc" }, { id: "asc" }],
+  "price-desc": [{ newPrice: { sort: "desc", nulls: "last" } }, { name: "asc" }, { id: "asc" }],
+} satisfies Record<AdminProductListQuery["sort"], Prisma.ProductOrderByWithRelationInput[]>;
 
 export async function listAdminProducts(query: AdminProductListQuery) {
   // La recherche du gérant : le nom du produit, ou le SKU ou la référence d'une variante
@@ -23,11 +31,12 @@ export async function listAdminProducts(query: AdminProductListQuery) {
       ? [{ name: contains }, { variants: { some: { OR: [{ sku: contains }, { reference: contains }] } } }]
       : undefined,
   };
+  const orderBy = ADMIN_PRODUCT_SORTS[query.sort];
   const [total, products] = await prisma.$transaction([
     prisma.product.count({ where }),
     prisma.product.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy,
       ...paginate(query.page, query.limit),
       select: {
         id: true,
@@ -35,7 +44,8 @@ export async function listAdminProducts(query: AdminProductListQuery) {
         slug: true,
         status: true,
         minPrice: true,
-        category: { select: { name: true } },
+        newPrice: true,
+        category: { select: { name: true, slug: true } },
         images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
         variants: { select: { condition: true, stock: true } },
       },
@@ -207,6 +217,7 @@ export async function createProduct(input: ProductBody) {
         specs: input.specs,
         status: input.status,
         minPrice: computeMinPrice(rules.variants),
+        newPrice: computeMinNewPrice(rules.variants),
         compatibleModels: { connect: rules.compatibleModelIds.map((id) => ({ id })) },
         variants: {
           create: rules.variants.map((variant) => ({

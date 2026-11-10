@@ -56,6 +56,7 @@ export async function createCatalog() {
       brandId: ankerBrand.id,
       status: "published",
       minPrice: 2500,
+      newPrice: 2500,
       variants: { create: [{ sku: "CHG-20W", price: 2500, stock: 5 }] },
     },
   });
@@ -67,6 +68,7 @@ export async function createCatalog() {
       categoryId: accessories.id,
       status: "published",
       minPrice: 1800,
+      newPrice: 1800,
       compatibleModels: { connect: [{ id: iphone.id }] },
       variants: { create: [{ sku: "COQ-IP15PM", price: 1800, stock: 10 }] },
     },
@@ -81,6 +83,7 @@ export async function createCatalog() {
       brandId: iphoneBrand.id,
       status: "published",
       minPrice: 150000,
+      newPrice: 245000,
       variants: {
         create: [
           { sku: "IP-NEW-256", price: 245000, stock: 3, options: { Stockage: "256 Go" } },
@@ -136,6 +139,7 @@ export async function createCatalog() {
       ).id,
       brandId: samsungBrand.id,
       status: "draft",
+      newPrice: 175000,
       variants: { create: [{ sku: "ZFLIP6", price: 175000, stock: 2 }] },
     },
   });

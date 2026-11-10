@@ -19,16 +19,26 @@ export function computeMinPrice(variants: { price: number; stock: number }[]): n
   return Math.min(...pool.map((variant) => variant.price));
 }
 
-// Recalcule minPrice après une commande, une annulation ou une modification.
-// Reçoit le client de la transaction : le prix change en même temps que le stock.
+export function computeMinNewPrice(
+  variants: { condition?: Condition; price: number; stock: number }[],
+): number | null {
+  const newVariants = variants.filter((variant) => (variant.condition ?? "new") === "new");
+  return newVariants.length > 0 ? computeMinPrice(newVariants) : null;
+}
+
+// Recalcule les prix affichés après une commande, une annulation ou une modification.
+// Reçoit le client de la transaction : les prix changent en même temps que le stock.
 export async function refreshMinPrice(tx: Tx, productIds: (number | null)[]): Promise<void> {
   const ids = new Set(productIds.filter((id): id is number => id !== null));
   for (const id of ids) {
     const variants = await tx.productVariant.findMany({
       where: { productId: id },
-      select: { price: true, stock: true },
+      select: { condition: true, price: true, stock: true },
     });
-    await tx.product.update({ where: { id }, data: { minPrice: computeMinPrice(variants) } });
+    await tx.product.update({
+      where: { id },
+      data: { minPrice: computeMinPrice(variants), newPrice: computeMinNewPrice(variants) },
+    });
   }
 }
 

@@ -19,8 +19,9 @@ export type AdminProductRow = {
   slug: string;
   status: ProductStatus;
   minPrice: number;
+  newPrice: number | null;
   image: string | null;
-  category: { name: string };
+  category: { name: string; slug: string };
   variantCount: number;
   newStock: number;
   refurbishedAvailable: number;
@@ -296,7 +297,7 @@ const adminApi = api.injectEndpoints({
     // `brand` : les produits d'une marque ou d'un type d'accessoires (page d'un type, 06/11).
     adminProducts: build.query<
       Page<AdminProductRow>,
-      { q?: string; status?: string; brand?: number; limit?: number; page: number }
+      { q?: string; status?: string; category?: string; sort?: "recent" | "name-asc" | "name-desc" | "price-asc" | "price-desc"; brand?: number; limit?: number; page: number }
     >({
       query: (params) => ({ url: "/admin/products", params }),
       providesTags: ["Products"],
