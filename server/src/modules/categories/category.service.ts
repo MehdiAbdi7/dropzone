@@ -4,25 +4,18 @@ import { slugify } from "../../utils/slugify.js";
 import { categoryCompositions, removeCategoryStage } from "../stage/stage.service.js";
 import type { CategoryBody, CategoryPatch } from "./category.schema.js";
 
-// Pour chaque catégorie (ou marque), la première photo du produit publié le plus récent qui en a
-// une : le secours d'une tuile sans photo à elle. Une seule requête, pas une par catégorie.
+// Pour chaque catégorie, la première photo du produit publié le plus récent qui en a une : le
+// secours d'une tuile sans composition. Une seule requête, pas une par catégorie.
 type LatestImage = { id: number; url: string };
 const latestImageByCategory = () => prisma.$queryRaw<LatestImage[]>`
   SELECT DISTINCT ON (p.category_id) p.category_id AS id, i.url
   FROM products p JOIN product_images i ON i.product_id = p.id
   WHERE p.status = 'published'
   ORDER BY p.category_id, p.id DESC, i.position ASC, i.id ASC`;
-const latestImageByBrand = () => prisma.$queryRaw<LatestImage[]>`
-  SELECT DISTINCT ON (p.brand_id) p.brand_id AS id, i.url
-  FROM products p JOIN product_images i ON i.product_id = p.id
-  WHERE p.status = 'published' AND p.brand_id IS NOT NULL
-  ORDER BY p.brand_id, p.id DESC, i.position ASC, i.id ASC`;
-
-const urlById = (rows: LatestImage[]) => new Map(rows.map((row) => [row.id, row.url]));
 
 export async function listCategories() {
   const published = { status: "published" } as const;
-  const [categories, unbranded, categoryPrices, brandPrices, categoryImages, brandImages, compositions] = await Promise.all([
+  const [categories, unbranded, categoryPrices, categoryImages, compositions] = await Promise.all([
     prisma.category.findMany({
       orderBy: { id: "asc" },
       select: {
@@ -35,11 +28,9 @@ export async function listCategories() {
         brands: {
           orderBy: [{ position: "asc" }, { name: "asc" }],
           select: {
-            id: true,
             name: true,
             slug: true,
             logoUrl: true,
-            photoUrl: true,
             _count: { select: { products: { where: published } } },
           },
         },
@@ -47,18 +38,14 @@ export async function listCategories() {
     }),
     // Les catégories qui ont des produits publiés sans marque : la Boutique leur ajoute une carte « Autres ».
     prisma.product.groupBy({ by: ["categoryId"], where: { ...published, brandId: null } }),
-    // Le prix de départ de chaque catégorie et de chaque marque : « dès 38 000 DA » sur les tuiles.
+    // Le prix de départ de chaque catégorie : « dès 38 000 DA » sur les tuiles de l'accueil.
     prisma.product.groupBy({ by: ["categoryId"], where: published, _min: { minPrice: true } }),
-    prisma.product.groupBy({ by: ["brandId"], where: { ...published, brandId: { not: null } }, _min: { minPrice: true } }),
     latestImageByCategory(),
-    latestImageByBrand(),
     categoryCompositions(),
   ]);
   const withUnbranded = new Set(unbranded.map((group) => group.categoryId));
   const priceOfCategory = new Map(categoryPrices.map((group) => [group.categoryId, group._min.minPrice]));
-  const priceOfBrand = new Map(brandPrices.map((group) => [group.brandId, group._min.minPrice]));
-  const imageOfCategory = urlById(categoryImages);
-  const imageOfBrand = urlById(brandImages);
+  const imageOfCategory = new Map(categoryImages.map((row) => [row.id, row.url]));
 
   // La catégorie mise en avant : celle que le gérant a choisie si elle a des produits, sinon la
   // plus fournie (les égalités vont à la plus ancienne).
@@ -78,13 +65,7 @@ export async function listCategories() {
     // Une marque sans produit publié n'aurait qu'une liste vide derrière sa puce.
     brands: brands
       .filter((brand) => brand._count.products > 0)
-      .map(({ id, _count: brandCount, photoUrl, ...brand }) => ({
-        ...brand,
-        productCount: brandCount.products,
-        minPrice: priceOfBrand.get(id) ?? null,
-        // La photo de la marque, sinon celle de son produit le plus récent.
-        photoUrl: photoUrl ?? imageOfBrand.get(id) ?? null,
-      })),
+      .map(({ _count: brandCount, ...brand }) => ({ ...brand, productCount: brandCount.products })),
   }));
 }
 

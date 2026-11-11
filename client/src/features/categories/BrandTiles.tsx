@@ -1,16 +1,15 @@
-import Image from "next/image";
 import Link from "next/link";
 import BrandLogo from "@/components/ui/BrandLogo";
 import { DEVICE_KINDS } from "@/config/catalog";
 import type { Category } from "@/types/api";
-import { countLabel, startingPrice } from "./labels";
+import { countLabel } from "./labels";
 import { splitBrands } from "./tiles";
 
 // Les marques d'une catégorie (11/11). Les plus demandées (au plus trois, chacune avec au moins
-// 15 % des produits) ont une grande tuile avec une photo et un prix de départ ; les autres sont
-// des tuiles compactes, qui tiennent en peu de place même quand il y en a douze. La photo d'une
-// marque est la même partout : celle réglée dans Personnalisation, sinon celle de son produit
-// le plus récent (l'API choisit).
+// 15 % des produits) ont une grande tuile : leur logo en grand, en filigrane, sur une lueur, le
+// nom et le nombre de modèles. Ni photo, ni prix, ni bouton « Voir » (choix de Mehdi : toute la
+// tuile est le lien). Les autres sont des tuiles compactes, qui tiennent en peu de place même
+// quand il y en a douze.
 
 // Écrites en entier : Tailwind ne devine pas les noms construits.
 const COLUMNS: Record<number, string> = { 1: "", 2: "sm:grid-cols-2", 3: "sm:grid-cols-3" };
@@ -35,46 +34,24 @@ export default function BrandTiles({ category }: { category: Category }) {
               <li key={brand.slug} className="flex">
                 <Link
                   href={href(brand.slug)}
-                  className="card group relative flex min-h-40 w-full flex-col justify-between overflow-hidden p-5 transition-[border-color,transform] hover:-translate-y-0.5 sm:min-h-52"
+                  className="card group relative flex min-h-36 w-full flex-col justify-center overflow-hidden p-5 transition-[border-color,transform] hover:-translate-y-0.5 sm:min-h-44"
                 >
                   <div
                     aria-hidden="true"
                     className="absolute inset-0"
                     style={{ background: `radial-gradient(55% 70% at 78% 45%, ${GLOWS[index % GLOWS.length]}, transparent 70%)` }}
                   />
-                  {/* Une vraie photo (celle de la marque, ou celle de son dernier produit). Un dessin de
-                      départ (.svg) serait le même pour toutes les marques : le logo en grand le remplace. */}
-                  {brand.photoUrl && !brand.photoUrl.endsWith(".svg") ? (
-                    <div aria-hidden="true" className="absolute inset-y-3 right-3 w-[46%] transition-transform duration-300 group-hover:scale-105">
-                      <Image
-                        src={brand.photoUrl}
-                        alt=""
-                        fill
-                        sizes="(min-width: 640px) 220px, 46vw"
-                        className="object-contain object-right drop-shadow-[0_14px_18px_rgb(0_0_0/0.45)]"
-                      />
-                    </div>
-                  ) : brand.logoUrl ? (
+                  {/* Le logo en grand, en filigrane, sur la lueur (choix de Mehdi : pas de photo). */}
+                  {brand.logoUrl ? (
                     <div aria-hidden="true" className="absolute inset-y-0 right-6 grid place-items-center text-ink opacity-15 transition-opacity group-hover:opacity-25">
                       <BrandLogo url={brand.logoUrl} size={112} />
                     </div>
                   ) : null}
-                  <div className="relative z-10 max-w-[54%] space-y-1">
+                  <div className="relative z-10 max-w-[60%] space-y-1">
                     <BrandLogo url={brand.logoUrl} size={30} />
                     <h3 className="font-display text-xl font-extrabold sm:text-2xl">{brand.name}</h3>
-                    <p className="text-sm text-ink-muted">
-                      <span className="font-semibold text-ink">{countLabel(category.kind, brand.productCount)}</span>
-                      {startingPrice(brand.minPrice) ? (
-                        <>
-                          {" · "}
-                          <span className="whitespace-nowrap">{startingPrice(brand.minPrice)}</span>
-                        </>
-                      ) : null}
-                    </p>
+                    <p className="text-sm font-semibold">{countLabel(category.kind, brand.productCount)}</p>
                   </div>
-                  <span className="relative z-10 text-sm font-bold text-red">
-                    {isDevice ? "Voir les séries" : "Voir les produits"} →
-                  </span>
                 </Link>
               </li>
             ))}

@@ -16,11 +16,6 @@ export type Brand = {
   slug: string;
   logoUrl: string | null;
   productCount: number;
-  // Le prix le plus bas de ses produits publiés (« dès 38 000 DA »).
-  minPrice: number | null;
-  // La photo de la marque réglée dans Personnalisation, sinon celle de son produit le plus
-  // récent (11/11) ; null si elle n'a aucune image.
-  photoUrl: string | null;
 };
 
 // Une photo de la composition d'une catégorie : sa place en % du cadre 5:4, comme sur le socle

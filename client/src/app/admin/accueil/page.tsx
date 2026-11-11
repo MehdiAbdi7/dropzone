@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useStageQuery } from "@/features/admin/api/stageApi";
-import BrandsSection from "@/features/admin/personalization/BrandsSection";
 import CategoriesSection from "@/features/admin/personalization/CategoriesSection";
 import PersonalizationCard from "@/features/admin/personalization/PersonalizationCard";
 import EditDialog from "@/features/admin/products/EditDialog";
@@ -35,7 +34,7 @@ function split(devices: StageDevice[], filled: Record<string, unknown>) {
 // Personnalisation (11/11) : tout ce que le gérant règle en photos, une seule fois, et qui
 // s'affiche partout sur le site. L'accueil (06/11) : les photos des deux socles, le hero et le
 // bandeau des affaires. Les catégories : leur composition, la même sur l'accueil et dans la
-// Boutique. Les marques : la photo de leur tuile dans la Boutique.
+// Boutique. (Les marques n'ont pas de photo : leur tuile montre leur logo, choix de Mehdi.)
 export default function PersonalizationPage() {
   return (
     <div className="max-w-6xl space-y-12">
@@ -48,7 +47,6 @@ export default function PersonalizationPage() {
       </div>
       <HomeSection />
       <CategoriesSection />
-      <BrandsSection />
     </div>
   );
 }

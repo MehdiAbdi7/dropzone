@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  ctaLabel,
   glowColor,
   posterLayout,
   posterStatus,
@@ -67,12 +66,6 @@ describe("swipeHint", () => {
 
   it("ne dit rien pour un seul modèle", () => {
     expect(swipeHint(["iPhone 13"], 0)).toBeNull();
-  });
-});
-
-describe("ctaLabel", () => {
-  it("nomme la série dans le bouton d'achat", () => {
-    expect(ctaLabel("MacBook Air")).toBe("Acheter un MacBook Air");
   });
 });
 

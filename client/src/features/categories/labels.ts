@@ -12,8 +12,3 @@ export function countLabel(kind: ProductKind, count: number): string {
 export function startingPrice(minPrice: number | null): string | null {
   return minPrice !== null && minPrice > 0 ? `dès ${formatPrice(minPrice)}` : null;
 }
-
-// La ligne d'une tuile : « 127 modèles · dès 38 000 DA ».
-export function tileMeta(kind: ProductKind, count: number, minPrice: number | null): string {
-  return [countLabel(kind, count), startingPrice(minPrice)].filter(Boolean).join(" · ");
-}

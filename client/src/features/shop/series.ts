@@ -45,10 +45,6 @@ export function posterStatus(model: {
   return model.soldOut ? "Épuisé" : null;
 }
 
-export function ctaLabel(seriesName: string): string {
-  return `Acheter un ${seriesName}`;
-}
-
 const NEUTRAL_GLOW = "rgba(155, 77, 255, 0.35)";
 
 // La lueur derrière la photo d'un modèle : la teinte de sa couleur (palette réglée dans

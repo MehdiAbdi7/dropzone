@@ -12,9 +12,6 @@ export type AdminBrand = {
   slug: string;
   makerName: string | null;
   logoUrl: string | null;
-  // La photo de sa tuile dans la Boutique, réglée dans Personnalisation (null : celle du produit
-  // le plus récent de la marque).
-  photoUrl: string | null;
   position: number;
   productCount: number;
 };
@@ -151,15 +148,6 @@ const catalogApi = api.injectEndpoints({
       query: ({ id, file }) => ({ url: `/admin/brands/${id}/logo`, method: "POST", body: imageForm(file) }),
       invalidatesTags: ["Brands", "Categories"],
     }),
-    // La photo de la marque sur sa tuile de la Boutique (11/11).
-    uploadBrandPhoto: build.mutation<unknown, { id: number; file: File }>({
-      query: ({ id, file }) => ({ url: `/admin/brands/${id}/photo`, method: "POST", body: imageForm(file) }),
-      invalidatesTags: ["Brands", "Categories"],
-    }),
-    deleteBrandPhoto: build.mutation<void, number>({
-      query: (id) => ({ url: `/admin/brands/${id}/photo`, method: "DELETE" }),
-      invalidatesTags: ["Brands", "Categories"],
-    }),
     deleteBrand: build.mutation<void, number>({
       query: (id) => ({ url: `/admin/brands/${id}`, method: "DELETE" }),
       invalidatesTags: ["Brands", "Categories"],
@@ -250,8 +238,6 @@ export const {
   useCreateBrandMutation,
   useUpdateBrandMutation,
   useUploadBrandLogoMutation,
-  useUploadBrandPhotoMutation,
-  useDeleteBrandPhotoMutation,
   useDeleteBrandMutation,
   useModelsQuery,
   useCreateModelMutation,
