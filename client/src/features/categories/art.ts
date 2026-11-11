@@ -37,6 +37,41 @@ export function defaultBox(index: number, count: number): Box {
   return { x: index * (60 / (count - 1)), y: index % 2 === 0 ? 14 : 6, w: 40, z: index + 1 };
 }
 
+// ---------- Le cadrage automatique (11/11) ----------
+// Une composition est réglée dans un cadre 5:4. Affichée telle quelle dans une tuile large et
+// basse, ce cadre ne tient que par sa hauteur : la photo paraît minuscule. On calcule donc la
+// zone que les photos occupent vraiment, puis `CategoryArt` agrandit le cadre jusqu'à ce que
+// cette zone remplisse la place. Les positions réglées par le gérant ne changent pas, seule
+// l'échelle change.
+//
+// Les mesures sont en largeurs de cadre (le cadre fait 1 de large et 0,8 de haut), y compté
+// depuis le bas. Une case est carrée (w × w) ; la photo y est contenue et posée en bas
+// (`object-contain object-bottom`) : une photo large n'occupe que le bas de sa case, une photo
+// haute en occupe le milieu. `aspect` = largeur / hauteur de la photo, mesuré à son chargement.
+const FRAME_HEIGHT = 0.8;
+
+export type Bounds = { minX: number; minY: number; width: number; height: number };
+
+export function contentBounds(items: { box: Box; aspect: number }[]): Bounds {
+  if (items.length === 0) {
+    return { minX: 0, minY: 0, width: 1, height: FRAME_HEIGHT };
+  }
+  const rects = items.map(({ box, aspect }) => {
+    const side = box.w / 100;
+    const left = box.x / 100;
+    const bottom = (box.y / 100) * FRAME_HEIGHT;
+    return aspect >= 1
+      ? { left, bottom, width: side, height: side / aspect }
+      : { left: left + (side - side * aspect) / 2, bottom, width: side * aspect, height: side };
+  });
+  const minX = Math.min(...rects.map((rect) => rect.left));
+  const minY = Math.min(...rects.map((rect) => rect.bottom));
+  const maxX = Math.max(...rects.map((rect) => rect.left + rect.width));
+  const maxY = Math.max(...rects.map((rect) => rect.bottom + rect.height));
+  // Jamais zéro : une division par zéro donnerait un cadre infini.
+  return { minX, minY, width: Math.max(maxX - minX, 0.01), height: Math.max(maxY - minY, 0.01) };
+}
+
 // Les photos réglées d'une catégorie, chacune à sa place (celle de départ si le gérant ne l'a
 // pas bougée). Une photo du gérant est déjà sans fond : Cloudinary coupe seulement le vide
 // transparent autour (`stagePhoto`). L'éditeur du back-office n'utilise que celles-là.
