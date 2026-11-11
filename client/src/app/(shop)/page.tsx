@@ -33,35 +33,37 @@ export default function HomePage() {
         aria-labelledby="hero-title"
         className="hero-glow relative overflow-hidden"
       >
-        <div className="container-page grid items-center gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:py-16">
-          <div className="space-y-6">
+        {/* Sur mobile (11/11), le hero est resserré pour que « Voir la boutique » reste visible
+            sans défiler, même sur un petit écran : espacements, titre et texte plus courts. */}
+        <div className="container-page grid items-center gap-6 py-6 sm:gap-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:py-16">
+          <div className="space-y-4 sm:space-y-6">
             <p className="text-sm font-bold tracking-[0.14em] text-red uppercase">
               Sélectionnés d&apos;Europe
             </p>
             <h1
               id="hero-title"
-              className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-[3.5rem]"
+              className="text-3xl font-extrabold tracking-tight sm:text-5xl lg:text-[3.5rem]"
             >
               Le bon appareil.
               <span className="text-gradient block w-fit pb-1">
                 Neuf scellé ou en affaire.
               </span>
             </h1>
-            <p className="max-w-lg text-lg text-ink-muted">
-              Smartphones, PC portables et tablettes importés d&apos;Europe.
-              Chaque affaire est testée et décrite pièce par pièce : note,
-              batterie, pièces changées et boîte.
+            <p className="max-w-lg text-base text-ink-muted sm:text-lg">
+              {/* Sur mobile, une phrase : le détail de la fiche est expliqué plus bas dans la page. */}
+              <span className="sm:hidden">
+                Chaque affaire est testée et décrite pièce par pièce.
+              </span>
+              <span className="hidden sm:inline">
+                Smartphones, PC portables et tablettes importés d&apos;Europe.
+                Chaque affaire est testée et décrite pièce par pièce : note,
+                batterie, pièces changées et boîte.
+              </span>
             </p>
             <div className="flex flex-wrap gap-3">
               <Link href="/boutique" className="btn btn-primary">
                 Voir la boutique
                 <ArrowRightIcon size={18} />
-              </Link>
-              <Link
-                href="/boutique"
-                className="btn btn-outline"
-              >
-                Les affaires
               </Link>
             </div>
             {/* Une simple form GET : chercher marche même sans JavaScript. */}
