@@ -9,5 +9,6 @@ export const categoryBodySchema = z.object({
 
 export type CategoryBody = z.infer<typeof categoryBodySchema>;
 
-export const categoryPatchSchema = categoryBodySchema.partial();
+// `featured` : la catégorie mise en avant sur l'accueil (une seule à la fois, 11/11).
+export const categoryPatchSchema = categoryBodySchema.partial().extend({ featured: z.boolean().optional() });
 export type CategoryPatch = z.infer<typeof categoryPatchSchema>;

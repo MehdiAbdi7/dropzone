@@ -72,6 +72,9 @@ model Category {
   name     String      @unique
   slug     String      @unique
   kind     ProductKind @default(accessory)
+  // La catégorie mise en avant sur l'accueil (grande tuile, 11/11) : une seule à la fois, garanti
+  // par un index unique partiel écrit à la main dans la migration (Prisma ne sait pas l'écrire).
+  featured Boolean     @default(false)
   products Product[]
   brands   Brand[]
 
@@ -93,6 +96,10 @@ model Brand {
   makerName  String?   @map("maker_name")
   // « /brands/apple.svg » (bibliothèque Simple Icons) ou une URL Cloudinary.
   logoUrl    String?   @map("logo_url")
+  // La photo de la marque sur sa tuile de la Boutique (11/11), envoyée depuis Personnalisation.
+  // Sans elle, la tuile prend la photo du produit publié le plus récent de la marque.
+  photoUrl      String? @map("photo_url")
+  photoPublicId String? @map("photo_public_id")
   position   Int       @default(0)
   createdAt  DateTime  @default(now()) @map("created_at")
   products   Product[]

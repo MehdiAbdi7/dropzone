@@ -1,5 +1,5 @@
 import { findLibraryLogo } from "../../config/brandLogos.js";
-import { uploadToCloudinary } from "../../config/cloudinary.js";
+import { deleteFromCloudinary, uploadToCloudinary } from "../../config/cloudinary.js";
 import { prisma } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
 import { requireSlug } from "../../utils/slugify.js";
@@ -61,7 +61,35 @@ export async function setBrandLogo(id: number, file: Express.Multer.File | undef
   return prisma.brand.update({ where: { id }, data: { logoUrl: uploaded.url } });
 }
 
+// La photo de la marque sur sa tuile de la Boutique (11/11) : déjà sans fond, comme celles du
+// socle de l'accueil. L'ancienne part de Cloudinary.
+export async function setBrandPhoto(id: number, file: Express.Multer.File | undefined) {
+  if (!file) {
+    throw new AppError(400, "Choisissez une image");
+  }
+  const brand = await prisma.brand.findUnique({ where: { id }, select: { photoPublicId: true } });
+  if (!brand) {
+    throw new AppError(404, "Marque introuvable");
+  }
+  const uploaded = await uploadToCloudinary(file.buffer, "dropzone/brands");
+  await prisma.brand.update({ where: { id }, data: { photoUrl: uploaded.url, photoPublicId: uploaded.publicId } });
+  await deleteFromCloudinary(brand.photoPublicId);
+  return { url: uploaded.url };
+}
+
+// Sans photo à elle, la tuile reprend celle du produit le plus récent de la marque.
+export async function removeBrandPhoto(id: number) {
+  const brand = await prisma.brand.findUnique({ where: { id }, select: { photoPublicId: true } });
+  if (!brand) {
+    return;
+  }
+  await prisma.brand.update({ where: { id }, data: { photoUrl: null, photoPublicId: null } });
+  await deleteFromCloudinary(brand.photoPublicId);
+}
+
 // ON DELETE RESTRICT : une marque utilisée par un produit est refusée par la base (P2003 → 409).
 export async function deleteBrand(id: number) {
+  const brand = await prisma.brand.findUnique({ where: { id }, select: { photoPublicId: true } });
   await prisma.brand.delete({ where: { id } });
+  await deleteFromCloudinary(brand?.photoPublicId ?? null);
 }

@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
 import { AppError } from "../../utils/AppError.js";
 import { unknownSlots, type StageLayout } from "./stage.schema.js";
-import type { StageName } from "./stage.slots.js";
 import { removeStagePhoto, setStageLayout, setStagePhoto, stagePhotos, updateStageLabel } from "./stage.service.js";
 
 const params = (req: Request) => [String(req.params.stage), String(req.params.slot)] as const;
@@ -28,7 +27,7 @@ export async function patchStageLabel(req: Request, res: Response) {
 
 // La disposition réglée à la souris ou au doigt (06/11) : place, taille et ordre des photos.
 export async function putStageLayout(req: Request, res: Response) {
-  const stage = String(req.params.stage) as StageName;
+  const stage = String(req.params.stage);
   const layout = req.body as StageLayout;
   if (unknownSlots(stage, layout).length > 0) {
     throw new AppError(400, "Emplacement inconnu pour ce socle");
