@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowRightIcon, InstagramIcon } from "@/components/ui/icons";
+import { ArrowRightIcon, InstagramIcon, SearchIcon } from "@/components/ui/icons";
 import ScrollToHash from "@/components/ui/ScrollToHash";
 import { STORE_INFO } from "@/config/storeInfo";
 import CategoryCards from "@/features/home/CategoryCards";
@@ -34,22 +34,26 @@ export default function HomePage() {
         className="hero-glow relative overflow-hidden"
       >
         {/* Sur mobile (11/11), le hero est resserré pour que « Voir la boutique » reste visible
-            sans défiler, même sur un petit écran : espacements, titre et texte plus courts. */}
+            sans défiler, même sur un petit écran : espacements, titre et texte plus courts.
+            Il est centré, comme l'image du dessous, avec un bouton pleine largeur et une seule
+            barre de recherche (la loupe dedans). À partir de sm, la mise en page d'origine. */}
         <div className="container-page grid items-center gap-6 py-6 sm:gap-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:py-16">
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-5 text-center sm:space-y-6 sm:text-left">
             <p className="text-sm font-bold tracking-[0.14em] text-red uppercase">
               Sélectionnés d&apos;Europe
             </p>
             <h1
               id="hero-title"
-              className="text-3xl font-extrabold tracking-tight sm:text-5xl lg:text-[3.5rem]"
+              // Sur mobile, la taille suit la largeur de l'écran : 32 px sur un petit
+              // téléphone, environ 39 px sur un grand, pour tenir face à l'image.
+              className="text-[clamp(2rem,9vw,2.5rem)] leading-[1.1] text-balance font-extrabold sm:text-wrap tracking-tight sm:text-5xl lg:text-[3.5rem]"
             >
               Le bon appareil.
-              <span className="text-gradient block w-fit pb-1">
+              <span className="text-gradient mx-auto block w-fit pb-1 sm:mx-0">
                 Neuf scellé ou en affaire.
               </span>
             </h1>
-            <p className="max-w-lg text-base text-ink-muted sm:text-lg">
+            <p className="mx-auto max-w-lg text-base text-ink-muted sm:mx-0 sm:text-lg">
               {/* Sur mobile, une phrase : le détail de la fiche est expliqué plus bas dans la page. */}
               <span className="sm:hidden">
                 Chaque affaire est testée et décrite pièce par pièce.
@@ -61,7 +65,7 @@ export default function HomePage() {
               </span>
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/boutique" className="btn btn-primary">
+              <Link href="/boutique" className="btn btn-primary w-full sm:w-auto">
                 Voir la boutique
                 <ArrowRightIcon size={18} />
               </Link>
@@ -70,7 +74,7 @@ export default function HomePage() {
             <form
               action="/produits"
               role="search"
-              className="flex max-w-lg gap-2"
+              className="relative mx-auto flex max-w-lg gap-2 sm:mx-0"
             >
               <label htmlFor="hero-search" className="sr-only">
                 Quel modèle cherchez-vous ?
@@ -79,10 +83,18 @@ export default function HomePage() {
                 id="hero-search"
                 name="q"
                 type="search"
-                className="input min-w-0 flex-1"
+                className="input min-w-0 flex-1 pr-12 sm:pr-3"
                 placeholder="Chercher un modèle…"
               />
-              <button type="submit" className="btn btn-secondary">
+              {/* Mobile : la loupe dans le champ. Ordinateur : le bouton « Chercher ». */}
+              <button
+                type="submit"
+                aria-label="Chercher"
+                className="absolute inset-y-0 right-0 grid w-12 place-items-center text-ink-muted hover:text-ink sm:hidden"
+              >
+                <SearchIcon size={20} />
+              </button>
+              <button type="submit" className="btn btn-secondary hidden sm:inline-flex">
                 Chercher
               </button>
             </form>
@@ -90,7 +102,7 @@ export default function HomePage() {
               href={STORE_INFO.instagram}
               rel="noopener noreferrer"
               target="_blank"
-              className="group inline-flex items-center gap-3 text-sm"
+              className="group mx-auto flex w-fit items-center gap-3 text-left text-sm sm:mx-0"
             >
               <span className="grid size-10 place-items-center rounded-full bg-surface-2 text-ink">
                 <InstagramIcon size={18} />
@@ -99,7 +111,7 @@ export default function HomePage() {
                 <strong className="font-display text-ink group-hover:underline">
                   {STORE_INFO.instagramFollowers} abonnés
                 </strong>{" "}
-                suivent DropZone sur Instagram
+                <span className="hidden sm:inline">suivent DropZone </span>sur Instagram
               </span>
             </a>
           </div>
