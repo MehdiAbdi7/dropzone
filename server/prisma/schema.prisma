@@ -96,8 +96,9 @@ model Brand {
   makerName  String?   @map("maker_name")
   // « /brands/apple.svg » (bibliothèque Simple Icons) ou une URL Cloudinary.
   logoUrl    String?   @map("logo_url")
-  // La photo de la marque sur sa tuile de la Boutique (11/11), envoyée depuis Personnalisation.
-  // Sans elle, la tuile prend la photo du produit publié le plus récent de la marque.
+  // Plus utilisées depuis le 11/11 (choix de Mehdi : la tuile d'une marque montre son logo, pas
+  // de photo). À supprimer par une migration séparée, une fois ce code en ligne : dans la même
+  // livraison, l'ancienne API encore en route les lirait après la migration, le temps du déploiement.
   photoUrl      String? @map("photo_url")
   photoPublicId String? @map("photo_public_id")
   position   Int       @default(0)

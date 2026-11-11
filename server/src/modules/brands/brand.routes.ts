@@ -2,15 +2,7 @@ import { Router } from "express";
 import { uploadImage } from "../../middlewares/upload.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParamsSchema } from "../../utils/idParams.js";
-import {
-  getBrands,
-  patchBrand,
-  postBrand,
-  postBrandLogo,
-  postBrandPhoto,
-  removeBrand,
-  removeBrandPhotoHandler,
-} from "./brand.controller.js";
+import { getBrands, patchBrand, postBrand, postBrandLogo, removeBrand } from "./brand.controller.js";
 import { brandBodySchema, brandPatchSchema } from "./brand.schema.js";
 
 // Monté sous /admin, déjà protégé par requireAuth et requireRole("admin").
@@ -24,6 +16,4 @@ brandAdminRouter.post(
 );
 brandAdminRouter.patch("/brands/:id", validate({ params: idParamsSchema, body: brandPatchSchema }), patchBrand);
 brandAdminRouter.post("/brands/:id/logo", validate({ params: idParamsSchema }), uploadImage, postBrandLogo);
-brandAdminRouter.post("/brands/:id/photo", validate({ params: idParamsSchema }), uploadImage, postBrandPhoto);
-brandAdminRouter.delete("/brands/:id/photo", validate({ params: idParamsSchema }), removeBrandPhotoHandler);
 brandAdminRouter.delete("/brands/:id", validate({ params: idParamsSchema }), removeBrand);

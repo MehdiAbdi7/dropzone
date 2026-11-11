@@ -33,13 +33,10 @@ const categories = async () => (await request(app).get("/categories")).body.data
 const bySlug = async (slug: string) => (await categories()).find((category) => category.slug === slug)!;
 
 describe("GET /categories : ce que l'affichage lit", () => {
-  it("donne le prix de départ de chaque catégorie et de chaque marque, sur les produits publiés", async () => {
-    const phones = await bySlug("smartphones");
+  it("donne le prix de départ de chaque catégorie, sur les produits publiés", async () => {
     // Le Galaxy Z Flip6 est en brouillon : seul l'iPhone (150 000 DA) compte.
-    expect(phones.minPrice).toBe(150000);
-    expect(phones.brands.find((brand: any) => brand.slug === "iphone").minPrice).toBe(150000);
+    expect((await bySlug("smartphones")).minPrice).toBe(150000);
     expect((await bySlug("accessoires")).minPrice).toBe(1800);
-    expect((await bySlug("accessoires")).brands[0].minPrice).toBe(2500);
   });
 
   it("n'a aucune composition au départ", async () => {
@@ -56,13 +53,6 @@ describe("GET /categories : ce que l'affichage lit", () => {
     expect((await bySlug("smartphones")).fallbackImage).toBeNull();
     await prisma.productImage.create({ data: { productId: catalog.phone.id, url: "https://x/iphone.webp", position: 0 } });
     expect((await bySlug("smartphones")).fallbackImage).toBe("https://x/iphone.webp");
-  });
-
-  it("donne à une marque la photo de son produit le plus récent tant qu'elle n'a pas la sienne", async () => {
-    const iphone = async () => (await bySlug("smartphones")).brands.find((brand: any) => brand.slug === "iphone");
-    expect((await iphone()).photoUrl).toBeNull();
-    await prisma.productImage.create({ data: { productId: catalog.phone.id, url: "https://x/iphone.webp", position: 0 } });
-    expect((await iphone()).photoUrl).toBe("https://x/iphone.webp");
   });
 });
 
@@ -144,35 +134,17 @@ describe("La catégorie mise en avant", () => {
   });
 });
 
-describe("La photo d'une marque", () => {
-  const brandPhoto = (id: number) =>
-    admin.post(`/admin/brands/${id}/photo`).attach("image", Buffer.from("fake"), { filename: "p.png", contentType: "image/png" });
-  const iphone = async () => (await bySlug("smartphones")).brands.find((brand: any) => brand.slug === "iphone");
-
-  it("remplace la photo du produit, et le retrait la rend", async () => {
-    await prisma.productImage.create({ data: { productId: catalog.phone.id, url: "https://x/iphone.webp", position: 0 } });
-    expect((await brandPhoto(catalog.iphoneBrand.id)).status).toBe(200);
-    expect((await iphone()).photoUrl).toBe("https://x/socle.webp");
-
-    expect((await admin.delete(`/admin/brands/${catalog.iphoneBrand.id}/photo`)).status).toBe(204);
-    expect((await iphone()).photoUrl).toBe("https://x/iphone.webp");
-    expect(deleteFromCloudinary).toHaveBeenCalledWith("dropzone/stage/socle");
+// 11/11 : les marques n'ont plus de photo (choix de Mehdi : leur tuile montre leur logo).
+describe("Les marques", () => {
+  it("n'ont ni photo ni prix dans GET /categories", async () => {
+    const iphone = (await bySlug("smartphones")).brands.find((brand: any) => brand.slug === "iphone");
+    expect(Object.keys(iphone).sort()).toEqual(["logoUrl", "name", "productCount", "slug"]);
   });
 
-  it("part de Cloudinary avec la marque", async () => {
-    const brand = await prisma.brand.create({
-      data: { categoryId: catalog.phones.id, name: "Nothing", slug: "nothing", photoUrl: "https://x/n.webp", photoPublicId: "dropzone/brands/n" },
-    });
-    expect((await admin.delete(`/admin/brands/${brand.id}`)).status).toBe(204);
-    expect(deleteFromCloudinary).toHaveBeenCalledWith("dropzone/brands/n");
-  });
-
-  it("refuse une marque qui n'existe pas, et un envoi sans image", async () => {
-    expect((await brandPhoto(9999)).status).toBe(404);
-    expect((await admin.post(`/admin/brands/${catalog.iphoneBrand.id}/photo`)).status).toBe(400);
-  });
-
-  it("est réservée à l'admin", async () => {
-    expect((await request(app).post(`/admin/brands/${catalog.iphoneBrand.id}/photo`)).status).toBe(401);
+  it("n'ont plus de route pour envoyer une photo", async () => {
+    const response = await admin
+      .post(`/admin/brands/${catalog.iphoneBrand.id}/photo`)
+      .attach("image", Buffer.from("fake"), { filename: "p.png", contentType: "image/png" });
+    expect(response.status).toBe(404);
   });
 });
