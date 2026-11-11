@@ -43,6 +43,12 @@ export function homeCategories<T extends { featured: boolean; productCount: numb
   return { shown: ordered.slice(0, MAX_ON_HOME), hidden: Math.max(0, ordered.length - MAX_ON_HOME) };
 }
 
+// La catégorie que `/boutique` ouvre : la plus fournie, sans compter les vides. `sort` est stable,
+// donc à égalité c'est la première de l'API.
+export function defaultCategory<T extends { productCount: number }>(categories: T[]): T | undefined {
+  return categories.filter((category) => category.productCount > 0).sort((a, b) => b.productCount - a.productCount)[0];
+}
+
 // La Boutique : au plus trois grandes marques, chacune avec au moins 15 % des produits de la
 // catégorie (« Les plus demandées »). Les autres passent en tuiles compactes, dans l'ordre du
 // back-office. Calcul en entiers : 15 produits sur 100, c'est pile 15 %.

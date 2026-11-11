@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { homeCategories, layoutTiles, splitBrands, type TileSize } from "./tiles";
+import { defaultCategory, homeCategories, layoutTiles, splitBrands, type TileSize } from "./tiles";
 
 // Les cases que prend chaque taille dans une grille de `columns` colonnes : [colonnes, lignes].
 const SPAN: Record<number, Record<TileSize, [number, number]>> = {
@@ -121,6 +121,29 @@ describe("homeCategories", () => {
 
   it("n'a rien à montrer sans catégorie", () => {
     expect(homeCategories([])).toEqual({ shown: [], hidden: 0 });
+  });
+});
+
+// `/boutique` ouvre directement une catégorie : celle qui a le plus de produits publiés.
+describe("defaultCategory", () => {
+  const category = (name: string, productCount: number) => ({ name, productCount });
+
+  it("choisit la catégorie la plus fournie, comme les PC portables", () => {
+    const picked = defaultCategory([category("Smartphones", 48), category("PC", 127), category("Tablettes", 7)]);
+    expect(picked?.name).toBe("PC");
+  });
+
+  it("ignore les catégories vides, même seules en tête de liste", () => {
+    expect(defaultCategory([category("Accessoires", 0), category("Tablettes", 7)])?.name).toBe("Tablettes");
+  });
+
+  it("garde la première de l'API à égalité", () => {
+    expect(defaultCategory([category("A", 5), category("B", 5)])?.name).toBe("A");
+  });
+
+  it("n'en choisit aucune quand toutes sont vides", () => {
+    expect(defaultCategory([category("A", 0)])).toBeUndefined();
+    expect(defaultCategory([])).toBeUndefined();
   });
 });
 
