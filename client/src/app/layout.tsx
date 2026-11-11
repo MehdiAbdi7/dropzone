@@ -3,6 +3,8 @@ import { Manrope, Montserrat } from "next/font/google";
 import StoreProvider from "./StoreProvider";
 import ThemeScript from "@/components/ui/ThemeScript";
 import ShopPageTransition from "@/features/shop/ShopPageTransition";
+import { SITE_INDEXABLE, SITE_URL } from "@/config/site";
+import { STORE_INFO } from "@/config/storeInfo";
 import "./globals.css";
 
 // Manrope pour le texte, Montserrat pour les titres et le logo.
@@ -13,10 +15,24 @@ const montserrat = Montserrat({
   weight: ["600", "700", "800"],
 });
 
+const DESCRIPTION = "Démo non officielle d'une boutique en ligne pour DropZone.";
+
+// metadataBase : les images et adresses relatives (Open Graph, canonical) deviennent absolues.
+// L'aperçu d'un lien partagé (WhatsApp, Instagram, Facebook) vient d'openGraph, l'image
+// d'app/opengraph-image.tsx ; une fiche produit la remplace par sa propre photo.
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: "DropZone (démo)", template: "%s · DropZone (démo)" },
-  description: "Démo non officielle d'une boutique en ligne pour DropZone.",
-  robots: { index: false, follow: false },
+  description: DESCRIPTION,
+  robots: SITE_INDEXABLE ? { index: true, follow: true } : { index: false, follow: false },
+  openGraph: {
+    type: "website",
+    locale: "fr_DZ",
+    siteName: "DropZone (démo)",
+    title: "DropZone (démo)",
+    description: `${STORE_INFO.tagline}. ${DESCRIPTION}`,
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 // L'en-tête est noir dans les deux thèmes : la barre du navigateur mobile aussi.
