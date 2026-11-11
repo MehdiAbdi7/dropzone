@@ -1,45 +1,57 @@
 import Link from "next/link";
 import type { Category } from "@/types/api";
 import CategoryArt from "./CategoryArt";
-import { countLabel } from "./labels";
 
-// La barre des catégories de la Boutique (11/11) : toujours visible au-dessus des marques, la
-// catégorie en cours marquée. On change de catégorie en un clic, sans repasser par une page.
-// La vignette est la même composition que sur l'accueil (CategoryArt), à plus petite échelle.
-// Une catégorie sans produit reste visible, barrée et sans lien : ce qui manque se voit, mais
-// ne se clique pas (règle du parcours). Sur téléphone, la barre défile à l'horizontale.
+// La barre des catégories de la Boutique (11/11) : toujours visible au-dessus des marques. Chaque
+// carte montre l'image de la catégorie en grand (la même composition que sur l'accueil,
+// CategoryArt) et son nom, rien d'autre (demande de Mehdi). La catégorie en cours se voit d'un
+// coup d'œil : fond et bordure bleus pleins, nom en bleu ; les autres ont une bordure simple,
+// sans le dégradé des cartes, pour que les deux états ne se mélangent pas.
+// Une catégorie sans produit reste visible, grisée, barrée et sans lien : ce qui manque se voit,
+// mais ne se clique pas (règle du parcours). Sur téléphone, la barre défile à l'horizontale.
 export default function CategoryRail({ categories, currentSlug }: { categories: Category[]; currentSlug: string }) {
   return (
     <nav aria-label="Catégories">
-      <ul className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0">
+      <ul className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0">
         {categories.map((category) => {
           const current = category.slug === currentSlug;
           const empty = category.productCount === 0;
           const body = (
             <>
-              <span className="relative size-12 shrink-0 overflow-hidden rounded-field bg-surface-2">
-                <CategoryArt category={category} />
+              <span className="relative block h-24 sm:h-28">
+                <CategoryArt
+                  category={{ kind: category.kind, photos: category.photos, fallbackImage: category.fallbackImage }}
+                  className="absolute inset-x-3 top-3 bottom-1"
+                  sizes="200px"
+                />
               </span>
-              <span className="min-w-0">
-                <span className={`block truncate font-display font-bold ${empty ? "line-through" : ""}`}>{category.name}</span>
-                <span className="block text-xs text-ink-muted">
-                  {empty ? "Bientôt" : countLabel(category.kind, category.productCount)}
-                </span>
+              <span
+                className={`block truncate px-3 pt-1 pb-3 text-center font-display text-sm font-bold sm:text-base ${
+                  current ? "text-blue-ink" : ""
+                } ${empty ? "line-through" : ""}`}
+              >
+                {category.name}
               </span>
             </>
           );
-          const className = `card flex min-w-44 shrink-0 items-center gap-3 p-2 pe-4 sm:min-w-0 sm:flex-1 ${current ? "shadow-(--shadow)" : ""}`;
+          // La largeur est sur l'élément de liste : 9 rem chacune sur téléphone (la barre défile),
+          // parts égales à partir de sm.
+          const frame = "block rounded-[var(--radius-card)] border-2";
           return (
-            <li key={category.slug} className="flex">
+            <li key={category.slug} className="flex w-36 shrink-0 sm:w-auto sm:min-w-0 sm:flex-1">
               {empty ? (
-                <div aria-disabled="true" className={`${className} opacity-50`}>
+                <div aria-disabled="true" className={`${frame} w-full border-line bg-surface opacity-45`}>
                   {body}
                 </div>
               ) : (
                 <Link
                   href={`/boutique/${category.slug}`}
                   aria-current={current ? "page" : undefined}
-                  className={`${className} transition-[border-color,transform] hover:-translate-y-0.5 ${current ? "ring-2 ring-blue" : ""}`}
+                  className={`${frame} w-full transition-[border-color,background-color,transform] ${
+                    current
+                      ? "border-blue bg-blue-soft"
+                      : "border-line bg-surface hover:-translate-y-0.5 hover:border-ink-muted"
+                  }`}
                 >
                   {body}
                 </Link>

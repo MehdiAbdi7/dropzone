@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Category } from "@/types/api";
-import { categoryDevices, defaultBox, KIND_ICONS } from "./art";
+import { categoryDevices, contentBounds, defaultBox, KIND_ICONS } from "./art";
 
 const category = (extra: Partial<Category> = {}): Category => ({
   id: 1,
@@ -64,6 +64,50 @@ describe("categoryDevices", () => {
   it("préfère la composition à la photo de secours", () => {
     const devices = categoryDevices(category({ photos: [photo("extra-1")], fallbackImage: "https://x/iphone.webp" }));
     expect(devices.map((device) => device.slot)).toEqual(["extra-1"]);
+  });
+});
+
+// Le cadrage automatique (11/11) : la composition est agrandie jusqu'à remplir la place, d'après
+// ce que les photos occupent vraiment. Tout est en largeurs de cadre (F = 1), y vers le haut.
+describe("contentBounds", () => {
+  it("donne la place d'une photo carrée : toute sa case", () => {
+    const bounds = contentBounds([{ box: { x: 10, y: 0, w: 50, z: 1 }, aspect: 1 }]);
+    expect(bounds.minX).toBeCloseTo(0.1);
+    expect(bounds.width).toBeCloseTo(0.5);
+    expect(bounds.minY).toBeCloseTo(0);
+    expect(bounds.height).toBeCloseTo(0.5);
+  });
+
+  it("ne garde que le bas de la case pour une photo large, comme la photo des Smartphones", () => {
+    // Trois fois plus large que haute : elle occupe le bas de sa case, sur un tiers de hauteur.
+    const bounds = contentBounds([{ box: { x: 15.5, y: 29, w: 70, z: 1 }, aspect: 3 }]);
+    expect(bounds.width).toBeCloseTo(0.7);
+    expect(bounds.height).toBeCloseTo(0.7 / 3);
+    // Le bas est à 29 % de la hauteur du cadre, qui fait 0,8 de sa largeur.
+    expect(bounds.minY).toBeCloseTo(0.29 * 0.8);
+  });
+
+  it("centre une photo haute dans sa case", () => {
+    const bounds = contentBounds([{ box: { x: 0, y: 0, w: 40, z: 1 }, aspect: 0.5 }]);
+    expect(bounds.minX).toBeCloseTo(0.1);
+    expect(bounds.width).toBeCloseTo(0.2);
+    expect(bounds.height).toBeCloseTo(0.4);
+  });
+
+  it("réunit plusieurs photos", () => {
+    const bounds = contentBounds([
+      { box: { x: 0, y: 0, w: 20, z: 1 }, aspect: 1 },
+      { box: { x: 60, y: 10, w: 30, z: 1 }, aspect: 1 },
+    ]);
+    expect(bounds.minX).toBeCloseTo(0);
+    expect(bounds.width).toBeCloseTo(0.9);
+    expect(bounds.height).toBeCloseTo(0.08 + 0.3);
+  });
+
+  it("ne divise jamais par zéro, même sans photo", () => {
+    const bounds = contentBounds([]);
+    expect(bounds.width).toBeGreaterThan(0);
+    expect(bounds.height).toBeGreaterThan(0);
   });
 });
 

@@ -65,7 +65,7 @@ export default async function CategoryTiles() {
               />
               {/* Sur téléphone, la tuile d'une case est étroite : l'image reste au-dessus d'un nom qui peut passer sur deux lignes. */}
               <CategoryArt
-                category={category}
+                category={{ kind: category.kind, photos: category.photos, fallbackImage: category.fallbackImage }}
                 className={`absolute inset-x-2 top-3 transition-transform duration-300 group-hover:-translate-y-1 lg:bottom-[34%] ${phone[index] === "tile" ? "bottom-[46%]" : "bottom-[34%]"}`}
               />
               <div
@@ -75,7 +75,8 @@ export default async function CategoryTiles() {
               />
               <span
                 aria-hidden="true"
-                className="absolute top-3 right-3 grid size-9 place-items-center rounded-full border border-line bg-surface-2/70 text-ink transition-colors group-hover:border-red group-hover:bg-red group-hover:text-on-red"
+                // Sur une petite tuile du téléphone, la flèche chevaucherait la photo : masquée (toute la tuile est le lien).
+                className={`absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-full border border-line bg-surface-2/70 text-ink transition-colors group-hover:border-red group-hover:bg-red group-hover:text-on-red ${phone[index] === "tile" ? "max-sm:hidden" : ""}`}
               >
                 <ArrowRightIcon size={16} />
               </span>

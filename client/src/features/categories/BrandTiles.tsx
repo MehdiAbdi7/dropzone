@@ -42,16 +42,21 @@ export default function BrandTiles({ category }: { category: Category }) {
                     className="absolute inset-0"
                     style={{ background: `radial-gradient(55% 70% at 78% 45%, ${GLOWS[index % GLOWS.length]}, transparent 70%)` }}
                   />
-                  {brand.photoUrl ? (
+                  {/* Une vraie photo (celle de la marque, ou celle de son dernier produit). Un dessin de
+                      départ (.svg) serait le même pour toutes les marques : le logo en grand le remplace. */}
+                  {brand.photoUrl && !brand.photoUrl.endsWith(".svg") ? (
                     <div aria-hidden="true" className="absolute inset-y-3 right-3 w-[46%] transition-transform duration-300 group-hover:scale-105">
                       <Image
                         src={brand.photoUrl}
                         alt=""
                         fill
                         sizes="(min-width: 640px) 220px, 46vw"
-                        unoptimized={brand.photoUrl.endsWith(".svg")}
-                        className="object-contain object-right"
+                        className="object-contain object-right drop-shadow-[0_14px_18px_rgb(0_0_0/0.45)]"
                       />
+                    </div>
+                  ) : brand.logoUrl ? (
+                    <div aria-hidden="true" className="absolute inset-y-0 right-6 grid place-items-center text-ink opacity-15 transition-opacity group-hover:opacity-25">
+                      <BrandLogo url={brand.logoUrl} size={112} />
                     </div>
                   ) : null}
                   <div className="relative z-10 max-w-[54%] space-y-1">
