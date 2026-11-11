@@ -1,0 +1,24 @@
+# Garde l'API réveillée. L'offre gratuite de Render endort le serveur après 15 minutes sans
+# requête, et le réveil prend jusqu'à une minute : le premier visiteur ne voyait que les
+# roues de chargement de l'accueil. Un appel à /health toutes les 10 minutes l'en empêche.
+# Il passe par le relais /api du front (next.config.ts), donc il réveille aussi Vercel.
+# Une seule instance allumée en permanence tient dans les 750 heures gratuites par mois de Render.
+# Autre adresse : variable de dépôt KEEPALIVE_URL (Settings > Secrets and variables > Actions).
+# GitHub suspend les tâches planifiées après 60 jours sans activité sur le dépôt.
+name: Garder l'API réveillée
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Appeler /health
+        env:
+          URL: ${{ vars.KEEPALIVE_URL || 'https://dropzone-eight.vercel.app/api/health' }}
+        # Jusqu'à 90 s : le temps d'un réveil si le serveur s'est quand même endormi.
+        run: curl --fail --silent --show-error --max-time 90 --retry 2 "$URL"
