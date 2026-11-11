@@ -1,7 +1,14 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import {
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
 type Snapshot = {
   content: HTMLElement;
@@ -10,14 +17,14 @@ type Snapshot = {
   width: number;
 };
 
+// Les pages sont rendues directement, hors de tout <Suspense>. Avant (11/11), le layout
+// enveloppait tout dans <Suspense fallback={children}> à cause de useSearchParams : le
+// serveur envoyait alors la page deux fois dans le HTML (deux <h1>, deux menus, HTML
+// doublé). Seul RouteTransition, qui ne rend rien, lit maintenant les paramètres d'URL,
+// dans son propre <Suspense>.
 export default function ShopPageTransition({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const routeKey = `${pathname}?${searchParams.toString()}`;
   const contentRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
-  const previousRouteRef = useRef(routeKey);
-  const previousPathRef = useRef(pathname);
   const snapshotRef = useRef<Snapshot | null>(null);
 
   useEffect(() => {
@@ -92,6 +99,33 @@ export default function ShopPageTransition({ children }: { children: ReactNode }
     };
   }, []);
 
+  return (
+    <>
+      <Suspense fallback={null}>
+        <RouteTransition contentRef={contentRef} layerRef={layerRef} snapshotRef={snapshotRef} />
+      </Suspense>
+      <div ref={layerRef} className="shop-transition-layer" aria-hidden="true" />
+      <div ref={contentRef}>{children}</div>
+    </>
+  );
+}
+
+// Joue l'animation quand l'adresse change. Ne rend rien.
+function RouteTransition({
+  contentRef,
+  layerRef,
+  snapshotRef,
+}: {
+  contentRef: RefObject<HTMLDivElement | null>;
+  layerRef: RefObject<HTMLDivElement | null>;
+  snapshotRef: RefObject<Snapshot | null>;
+}) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const routeKey = `${pathname}?${searchParams.toString()}`;
+  const previousRouteRef = useRef(routeKey);
+  const previousPathRef = useRef(pathname);
+
   useLayoutEffect(() => {
     if (previousRouteRef.current === routeKey) {
       return;
@@ -160,12 +194,7 @@ export default function ShopPageTransition({ children }: { children: ReactNode }
       document.documentElement.classList.remove("page-transitioning");
       document.body.classList.remove("page-transitioning");
     };
-  }, [pathname, routeKey]); // pathname est dans routeKey : aucune exécution en plus.
+  }, [pathname, routeKey, contentRef, layerRef, snapshotRef]); // les refs ne changent jamais.
 
-  return (
-    <>
-      <div ref={layerRef} className="shop-transition-layer" aria-hidden="true" />
-      <div ref={contentRef}>{children}</div>
-    </>
-  );
+  return null;
 }

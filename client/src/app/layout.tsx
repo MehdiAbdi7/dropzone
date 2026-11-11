@@ -4,7 +4,6 @@ import StoreProvider from "./StoreProvider";
 import ThemeScript from "@/components/ui/ThemeScript";
 import ShopPageTransition from "@/features/shop/ShopPageTransition";
 import "./globals.css";
-import { Suspense } from "react";
 
 // Manrope pour le texte, Montserrat pour les titres et le logo.
 const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"] });
@@ -44,9 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {"Démo non officielle : ce site n'est pas celui de DropZone. Aucune commande n'est livrée."}
         </p>
         <StoreProvider>
-          <Suspense fallback={children}>
-            <ShopPageTransition>{children}</ShopPageTransition>
-          </Suspense>
+          <ShopPageTransition>{children}</ShopPageTransition>
         </StoreProvider>
       </body>
     </html>
