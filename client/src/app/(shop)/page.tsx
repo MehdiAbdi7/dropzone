@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowRightIcon, InstagramIcon, SearchIcon } from "@/components/ui/icons";
+import {
+  ArrowRightIcon,
+  InstagramIcon,
+  SearchIcon,
+} from "@/components/ui/icons";
 import ScrollToHash from "@/components/ui/ScrollToHash";
 import { STORE_INFO } from "@/config/storeInfo";
 import HomeCategories from "@/features/categories/HomeCategories";
+import { NeonSides } from "@/features/home/NeonLines";
 import { StageLoading } from "@/features/home/DeviceStage";
 import Guarantees from "@/features/home/Guarantees";
 import {
@@ -15,7 +20,12 @@ import {
   LatestProducts,
   SectionLoading,
 } from "@/features/home/HomeSections";
-import { BOTTOM_GUARANTEES, DEALS_STAGE, HERO_STAGE, TOP_GUARANTEES } from "@/features/home/homeContent";
+import {
+  BOTTOM_GUARANTEES,
+  DEALS_STAGE,
+  HERO_STAGE,
+  TOP_GUARANTEES,
+} from "@/features/home/homeContent";
 
 // L'accueil s'affiche tout de suite (06/11). Avant, la page attendait toutes les réponses de
 // l'API pour s'afficher d'un bloc : quand Render réveille le serveur endormi (jusqu'à une
@@ -66,7 +76,10 @@ export default function HomePage() {
               </span>
             </p>
             <div className="flex flex-wrap justify-center gap-3 max-sm:mb-5 sm:justify-start">
-              <Link href="/boutique" className="btn btn-primary max-sm:min-h-12 max-sm:px-8">
+              <Link
+                href="/boutique"
+                className="btn btn-primary max-sm:min-h-12 max-sm:px-8"
+              >
                 Voir la boutique
                 <ArrowRightIcon size={18} />
               </Link>
@@ -95,7 +108,10 @@ export default function HomePage() {
               >
                 <SearchIcon size={20} />
               </button>
-              <button type="submit" className="btn btn-secondary hidden sm:inline-flex">
+              <button
+                type="submit"
+                className="btn btn-secondary hidden sm:inline-flex"
+              >
                 Chercher
               </button>
             </form>
@@ -112,11 +128,14 @@ export default function HomePage() {
                 <strong className="font-display text-ink group-hover:underline">
                   {STORE_INFO.instagramFollowers} abonnés
                 </strong>{" "}
-                <span className="hidden sm:inline">suivent DropZone </span>sur Instagram
+                <span className="hidden sm:inline">suivent DropZone </span>sur
+                Instagram
               </span>
             </a>
           </div>
-          <Suspense fallback={<StageLoading id="hero" className={HERO_STAGE} />}>
+          <Suspense
+            fallback={<StageLoading id="hero" className={HERO_STAGE} />}
+          >
             <HeroStage />
           </Suspense>
         </div>
@@ -132,36 +151,43 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. Les catégories. */}
+      {/* 3. Les catégories. La section prend toute la largeur pour que les traits de néon
+          (rouges à gauche, bleus à droite, comme derrière le socle) touchent les bords de
+          l'écran ; le contenu reste centré au-dessus, dans container-page. */}
       <section
         id="categories"
         aria-labelledby="categories-title"
-        className="container-page scroll-mt-4 py-14"
+        className="relative scroll-mt-4 overflow-hidden"
       >
-        <ScrollToHash id="categories" />
-        <div className="mb-8 text-center">
-          <div className="flex items-center justify-center gap-4">
-            {/* Les filets seulement à partir de sm : sur mobile, ils feraient passer le titre sur deux lignes. */}
-            <span
-              className="rule-gradient hidden w-16 sm:block"
-              aria-hidden="true"
-            />
-            <h2 id="categories-title" className="text-2xl sm:text-3xl">
-              Acheter par catégorie
-            </h2>
-            <span
-              className="rule-gradient hidden w-16 -scale-x-100 sm:block"
-              aria-hidden="true"
-            />
+        <NeonSides id="categories" />
+        <div className="container-page relative py-14">
+          <ScrollToHash id="categories" />
+          <div className="mb-8 text-center">
+            <div className="flex items-center justify-center gap-4">
+              {/* Les filets seulement à partir de sm : sur mobile, ils feraient passer le titre sur deux lignes. */}
+              <span
+                className="rule-gradient hidden w-16 sm:block"
+                aria-hidden="true"
+              />
+              <h2 id="categories-title" className="text-2xl sm:text-3xl">
+                Acheter par catégorie
+              </h2>
+              <span
+                className="rule-gradient hidden w-16 -scale-x-100 sm:block"
+                aria-hidden="true"
+              />
+            </div>
+            <p className="mt-2 text-ink-muted">
+              Trouvez l&apos;appareil qu&apos;il vous faut.
+            </p>
           </div>
-          <p className="mt-2 text-ink-muted">
-            Trouvez l&apos;appareil qu&apos;il vous faut.
-          </p>
+          {/* Lues dans l'API : la roue pendant l'attente, comme les autres parties de l'accueil. */}
+          <Suspense
+            fallback={<SectionLoading label="Chargement des catégories…" />}
+          >
+            <HomeCategories />
+          </Suspense>
         </div>
-        {/* Lues dans l'API : la roue pendant l'attente, comme les autres parties de l'accueil. */}
-        <Suspense fallback={<SectionLoading label="Chargement des catégories…" />}>
-          <HomeCategories />
-        </Suspense>
       </section>
 
       {/* 4. Le bandeau des affaires : affiché avec sa roue pendant l'attente, retiré s'il n'y
