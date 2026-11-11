@@ -1,0 +1,81 @@
+# Vérifie chaque push et chaque pull request : types, lint et tests de l'API et du front.
+# L'API est testée contre une vraie base PostgreSQL 18, comme en local (server/.env.test).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: API (types et tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dropzone_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d dropzone_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      # La même chose que le server/.env.test local, avec la base du service ci-dessus.
+      - name: Écrire .env.test
+        run: |
+          cat > .env.test <<'ENV'
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/dropzone_test
+          JWT_SECRET=ci-only-secret-0123456789abcdef0123456789abcdef
+          CORS_ORIGINS=http://localhost:3000
+          ENV
+      - run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dropzone_test
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+      - run: npm audit --omit=dev --audit-level=high
+
+  client:
+    name: Front (types, lint, tests et build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      # Les types PageProps et LayoutProps des routes sont générés par Next.
+      - run: npx next typegen
+      - run: npx tsc --noEmit
+      - run: npx eslint .
+      - run: npx vitest run
+      # Le build ne lit pas l'API (toutes ses lectures sont en no-store) : une adresse factice suffit.
+      - run: npm run build
+        env:
+          API_URL: http://localhost:5000
+      - run: npm audit --omit=dev --audit-level=high

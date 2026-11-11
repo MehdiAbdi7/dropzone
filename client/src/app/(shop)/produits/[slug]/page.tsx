@@ -21,9 +21,23 @@ export async function generateMetadata({ params }: PageProps<"/produits/[slug]">
   if (!product) {
     return { title: "Produit introuvable" };
   }
+  const description = `${product.name} à partir de ${formatPrice(product.minPrice)}. ${product.description.slice(0, 120)}`;
+  const photo = product.images[0]?.url;
   return {
     title: product.name,
-    description: `${product.name} à partir de ${formatPrice(product.minPrice)}. ${product.description.slice(0, 120)}`,
+    description,
+    // ?couleur=… affiche la même fiche : les moteurs gardent une seule adresse.
+    alternates: { canonical: `/produits/${product.slug}` },
+    // openGraph remplace celui du layout en entier : siteName et locale sont repris ici.
+    openGraph: {
+      type: "website",
+      locale: "fr_DZ",
+      siteName: "DropZone (démo)",
+      title: product.name,
+      description,
+      url: `/produits/${product.slug}`,
+      ...(photo ? { images: [{ url: photo, alt: product.name }] } : {}),
+    },
   };
 }
 
