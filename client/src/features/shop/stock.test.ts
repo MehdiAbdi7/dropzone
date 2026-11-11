@@ -6,6 +6,7 @@ import {
   optionChoices,
   optionKeys,
   selectOption,
+  withOriginOption,
 } from "./stock";
 
 const variant = (
@@ -173,5 +174,35 @@ describe("optionKeys sans la couleur choisie", () => {
     expect(optionKeys(iphone18ProMax, "phone", "Couleur")).toEqual([
       "Stockage",
     ]);
+  });
+});
+
+describe("withOriginOption", () => {
+  const europe = { ...variant({ Stockage: "256 Go", Couleur: "Noir" }, 2), origin: "Europe" };
+  const japon = { ...variant({ Stockage: "256 Go", Couleur: "Noir" }, 1, 320000), origin: "Japon" };
+
+  it("fait de l'origine un choix quand deux neufs identiques viennent de deux pays", () => {
+    const pickable = withOriginOption([europe, japon]);
+    const withOrigin = ["Couleur", "Stockage", "Origine"];
+    expect(pickable.map((item) => item.options.Origine)).toEqual(["Europe", "Japon"]);
+    expect(
+      valuesOf(optionChoices(pickable, withOrigin, { Couleur: "Noir", Stockage: "256 Go" }), "Origine"),
+    ).toEqual([
+      { value: "Europe", stock: 2 },
+      { value: "Japon", stock: 1 },
+    ]);
+    // Le départ : le moins cher en stock, ici le Japon.
+    expect(initialSelection(pickable, withOrigin).Origine).toBe("Japon");
+  });
+
+  it("nomme l'origine manquante quand les autres en ont une", () => {
+    const unknown = variant({ Stockage: "256 Go", Couleur: "Noir" }, 1);
+    expect(withOriginOption([europe, unknown])[1].options.Origine).toBe("Non précisée");
+  });
+
+  it("ne change rien quand tous les neufs ont la même origine, ou aucune", () => {
+    const same = [europe, { ...europe, options: { Stockage: "512 Go", Couleur: "Noir" } }];
+    expect(withOriginOption(same)).toBe(same);
+    expect(withOriginOption(iphone18ProMax)).toBe(iphone18ProMax);
   });
 });

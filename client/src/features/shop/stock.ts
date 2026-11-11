@@ -23,6 +23,23 @@ export function optionKeys(
   return keys.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b, "fr"));
 }
 
+// Le même neuf (même couleur, même stockage) peut venir de deux pays : « Europe » et
+// « Japon ». L'origine devient alors un choix comme les autres, le dernier. Quand tous les
+// neufs ont la même origine (ou aucune), rien ne change : elle reste une simple information.
+export const ORIGIN_KEY = "Origine";
+const NO_ORIGIN = "Non précisée";
+
+export function withOriginOption(variants: Variant[]): Variant[] {
+  const origins = new Set(variants.map((variant) => variant.origin ?? null));
+  if (origins.size < 2) {
+    return variants;
+  }
+  return variants.map((variant) => ({
+    ...variant,
+    options: { ...variant.options, [ORIGIN_KEY]: variant.origin ?? NO_ORIGIN },
+  }));
+}
+
 // Une variante a-t-elle les valeurs choisies pour les clés données ?
 const matches = (variant: Variant, selected: Selection, keys: string[]) =>
   keys.every((key) => variant.options[key] === selected[key]);
