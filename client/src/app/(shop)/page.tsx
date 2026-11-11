@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { ArrowRightIcon, InstagramIcon, SearchIcon } from "@/components/ui/icons";
 import ScrollToHash from "@/components/ui/ScrollToHash";
 import { STORE_INFO } from "@/config/storeInfo";
-import CategoryCards from "@/features/home/CategoryCards";
+import CategoryTiles from "@/features/categories/CategoryTiles";
 import { StageLoading } from "@/features/home/DeviceStage";
 import Guarantees from "@/features/home/Guarantees";
 import {
@@ -158,7 +158,10 @@ export default function HomePage() {
             Trouvez l&apos;appareil qu&apos;il vous faut.
           </p>
         </div>
-        <CategoryCards />
+        {/* Lues dans l'API : la roue pendant l'attente, comme les autres parties de l'accueil. */}
+        <Suspense fallback={<SectionLoading label="Chargement des catégories…" />}>
+          <CategoryTiles />
+        </Suspense>
       </section>
 
       {/* 4. Le bandeau des affaires : affiché avec sa roue pendant l'attente, retiré s'il n'y

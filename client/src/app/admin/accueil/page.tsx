@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import ProductImage from "@/components/ui/ProductImage";
-import { useDeleteStagePhotoMutation, useStageQuery, useUpdateStageLabelMutation, useUploadStagePhotoMutation } from "@/features/admin/api/stageApi";
+import { useStageQuery } from "@/features/admin/api/stageApi";
+import BrandsSection from "@/features/admin/personalization/BrandsSection";
+import CategoriesSection from "@/features/admin/personalization/CategoriesSection";
+import SlotRow from "@/features/admin/SlotRow";
 import StageEditor from "@/features/admin/StageEditor";
 import {
   DEAL_SLOTS,
@@ -27,11 +29,31 @@ function split(devices: StageDevice[], filled: Record<string, unknown>) {
   };
 }
 
-// L'accueil de la boutique (06/11) : les photos des deux socles, le hero et le bandeau des
-// affaires. Le gérant envoie une photo déjà sans fond (PNG ou WebP transparent) dans chaque
-// emplacement, en ajoute d'autres s'il veut, puis les place à la souris ou au doigt sur
-// l'aperçu, le même décor que la boutique.
-export default function StageAdminPage() {
+// Personnalisation (11/11) : tout ce que le gérant règle en photos, une seule fois, et qui
+// s'affiche partout sur le site. L'accueil (06/11) : les photos des deux socles, le hero et le
+// bandeau des affaires. Les catégories : leur composition, la même sur l'accueil et dans la
+// Boutique. Les marques : la photo de leur tuile dans la Boutique.
+export default function PersonalizationPage() {
+  return (
+    <div className="max-w-6xl space-y-12">
+      <div className="space-y-1">
+        <h1 className="text-3xl">Personnalisation</h1>
+        <p className="text-ink-muted">
+          Ce que tu règles ici s&apos;affiche partout sur le site : une photo changée ici change sur l&apos;accueil comme
+          dans la Boutique.
+        </p>
+      </div>
+      <HomeSection />
+      <CategoriesSection />
+      <BrandsSection />
+    </div>
+  );
+}
+
+// L'accueil de la boutique : le gérant envoie une photo déjà sans fond (PNG ou WebP
+// transparent) dans chaque emplacement, en ajoute d'autres s'il veut, puis les place à la souris
+// ou au doigt sur l'aperçu, le même décor que la boutique.
+function HomeSection() {
   const { data: photos, isLoading, error } = useStageQuery();
 
   if (isLoading) {
@@ -42,11 +64,13 @@ export default function StageAdminPage() {
   }
 
   return (
-    <div className="max-w-6xl space-y-8">
+    <section aria-labelledby="home-title" className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-3xl">Personnalisation</h1>
+        <h2 id="home-title" className="text-2xl">
+          L&apos;accueil
+        </h2>
         <p className="text-ink-muted">
-          L&apos;accueil de la boutique : envoie une photo déjà sans fond (PNG ou WebP transparent) dans chaque emplacement, ajoute-en d&apos;autres si
+          Envoie une photo déjà sans fond (PNG ou WebP transparent) dans chaque emplacement, ajoute-en d&apos;autres si
           tu veux, puis place-les sur le socle : glisse-les avec la souris ou le doigt, tire le rond bleu du coin (ou le
           curseur) pour changer leur taille. Le vide autour de l&apos;objet est coupé tout seul. Sans aucune photo, le
           hero garde ses dessins.
@@ -71,7 +95,7 @@ export default function StageAdminPage() {
         photos={photos.deal}
         labels={photos.labels.deal}
       />
-    </div>
+    </section>
   );
 }
 
@@ -121,9 +145,9 @@ function StageSection({
     <section aria-labelledby={`${stage}-title`} className="card grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <div className="space-y-3">
         <div>
-          <h2 id={`${stage}-title`} className="text-xl">
+          <h3 id={`${stage}-title`} className="text-xl">
             {title}
-          </h2>
+          </h3>
           <p className="text-sm text-ink-muted">{hint}</p>
         </div>
         {/* L'éditeur : le même décor que la boutique, sur le fond sombre du hero. */}
@@ -163,134 +187,5 @@ function StageSection({
         </div>
       </div>
     </section>
-  );
-}
-
-function SlotRow({
-  stage,
-  slot,
-  label,
-  url,
-  canRename,
-  onCancel,
-}: {
-  stage: string;
-  slot: string;
-  label: string;
-  url: string | null;
-  canRename: boolean;
-  // La case d'un emplacement en plus pas encore envoyé : « Annuler » la fait disparaître.
-  onCancel?: () => void;
-}) {
-  const [upload, uploadState] = useUploadStagePhotoMutation();
-  const [remove, removeState] = useDeleteStagePhotoMutation();
-  const [updateLabel, labelState] = useUpdateStageLabelMutation();
-  const [title, setTitle] = useState(label);
-  const [editing, setEditing] = useState(false);
-  const busy = uploadState.isLoading || removeState.isLoading || labelState.isLoading;
-  const failure = uploadState.error ?? removeState.error ?? labelState.error;
-  const titleChanged = title.trim() !== label;
-
-  async function saveLabel() {
-    try {
-      await updateLabel({ stage, slot, label: title.trim() }).unwrap();
-      setTitle(title.trim());
-      setEditing(false);
-    } catch {
-      // L'erreur de la mutation est affichée dans la carte.
-    }
-  }
-
-  return (
-    <div className="flex gap-3 rounded-xl border border-line bg-surface p-3 sm:gap-4">
-      {/* Un damier sous la photo : on voit si le fond est bien transparent. */}
-      <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-[repeating-conic-gradient(var(--surface-2)_0_25%,var(--surface)_0_50%)] bg-[length:16px_16px] sm:size-[4.5rem]">
-        {url ? (
-          <ProductImage src={url} alt={label} sizes="72px" />
-        ) : (
-          <span className="flex h-full items-center justify-center text-xs text-ink-muted">Vide</span>
-        )}
-      </div>
-      <div className="min-w-0 flex-1 space-y-2.5">
-        <div className="flex min-w-0 items-start justify-between gap-2">
-          <p className="min-w-0 break-words pt-1 text-sm font-semibold">{label}</p>
-          {canRename ? (
-            <button
-              type="button"
-              className="btn btn-outline btn-small shrink-0"
-              disabled={busy}
-              onClick={() => {
-                setTitle(label);
-                setEditing((current) => !current);
-              }}
-            >
-              {editing ? "Fermer" : "Renommer"}
-            </button>
-          ) : null}
-        </div>
-        {editing ? (
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="min-w-[12rem] flex-1 space-y-1 text-xs font-medium text-ink-muted">
-              <span>Nouvel intitulé</span>
-              <input
-                type="text"
-                maxLength={60}
-                value={title}
-                className="field-input w-full"
-                onChange={(event) => setTitle(event.target.value)}
-              />
-            </label>
-            <button
-              type="button"
-              className="btn btn-secondary btn-small"
-              disabled={!titleChanged || !title.trim() || busy}
-              onClick={saveLabel}
-            >
-              {labelState.isLoading ? "Enregistrement…" : "Enregistrer"}
-            </button>
-            <button
-              type="button"
-              className="btn btn-outline btn-small"
-              disabled={busy}
-              onClick={() => {
-                setTitle(label);
-                setEditing(false);
-              }}
-            >
-              Annuler
-            </button>
-          </div>
-        ) : null}
-        <div className="flex flex-wrap gap-2">
-          <label className="btn btn-secondary btn-small cursor-pointer">
-            {uploadState.isLoading ? "Envoi…" : url ? "Changer" : "Ajouter une photo"}
-            <input
-              type="file"
-              accept="image/png,image/webp"
-              className="sr-only"
-              disabled={busy}
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                event.target.value = "";
-                if (file) {
-                  upload({ stage, slot, file });
-                }
-              }}
-            />
-          </label>
-          {url ? (
-            <button type="button" className="btn btn-outline btn-small" disabled={busy} onClick={() => remove({ stage, slot })}>
-              Retirer
-            </button>
-          ) : null}
-          {onCancel ? (
-            <button type="button" className="btn btn-outline btn-small" disabled={busy} onClick={onCancel}>
-              Annuler
-            </button>
-          ) : null}
-        </div>
-        {failure ? <p className="field-error">{errorMessage(failure)}</p> : null}
-      </div>
-    </div>
   );
 }

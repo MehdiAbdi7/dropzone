@@ -11,11 +11,27 @@ type Pagination = { page: number; limit: number; total: number; pages: number };
 export type Page<T> = { data: T[]; pagination: Pagination };
 
 // Une marque telle que la Boutique la voit : seulement celles qui ont des produits publiés.
-type Brand = {
+export type Brand = {
   name: string;
   slug: string;
   logoUrl: string | null;
   productCount: number;
+  // Le prix le plus bas de ses produits publiés (« dès 38 000 DA »).
+  minPrice: number | null;
+  // La photo de la marque réglée dans Personnalisation, sinon celle de son produit le plus
+  // récent (11/11) ; null si elle n'a aucune image.
+  photoUrl: string | null;
+};
+
+// Une photo de la composition d'une catégorie : sa place en % du cadre 5:4, comme sur le socle
+// de l'accueil (null : la place de départ, choisie par le front).
+export type CategoryPhoto = {
+  slot: string;
+  url: string;
+  x: number | null;
+  y: number | null;
+  w: number | null;
+  z: number | null;
 };
 
 export type Category = {
@@ -27,6 +43,13 @@ export type Category = {
   brands: Brand[];
   // Des produits publiés sans marque : la Boutique ajoute une carte « Autres ».
   hasUnbranded: boolean;
+  // La catégorie mise en avant sur l'accueil : une seule, calculée par l'API (11/11).
+  featured: boolean;
+  minPrice: number | null;
+  // La composition de photos réglée dans Personnalisation (vide si rien n'est réglé), et la photo
+  // du produit le plus récent, pour une catégorie sans composition.
+  photos: CategoryPhoto[];
+  fallbackImage: string | null;
 };
 
 export type ProductCard = {

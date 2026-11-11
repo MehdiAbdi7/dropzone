@@ -24,8 +24,13 @@ describe("GET /categories", () => {
     const response = await request(app).get("/categories");
     const [phones, accessories] = response.body.data;
     // Samsung n'a qu'un brouillon : pas de puce.
-    expect(phones.brands).toEqual([{ name: "iPhone", slug: "iphone", logoUrl: "/brands/apple.svg", productCount: 1 }]);
-    expect(accessories.brands).toEqual([{ name: "Anker", slug: "anker", logoUrl: null, productCount: 1 }]);
+    // Depuis le 11/11, une marque porte aussi son prix de départ et sa photo (null sans image).
+    expect(phones.brands).toEqual([
+      { name: "iPhone", slug: "iphone", logoUrl: "/brands/apple.svg", productCount: 1, minPrice: 150000, photoUrl: null },
+    ]);
+    expect(accessories.brands).toEqual([
+      { name: "Anker", slug: "anker", logoUrl: null, productCount: 1, minPrice: 2500, photoUrl: null },
+    ]);
   });
 });
 
