@@ -35,8 +35,8 @@ const LINKS: NavLink[] = [
   { href: "/admin/catalogue", label: "Catalogue", icon: GridIcon, primary: true },
   { href: "/admin/produits", label: "Produits", icon: PhoneIcon, primary: true },
   { href: "/admin/listes", label: "Listes", icon: ListIcon },
-  // Les photos du socle de l'accueil de la boutique (06/11).
-  { href: "/admin/accueil", label: "Accueil de la boutique", short: "Accueil boutique", icon: StoreIcon },
+  // La personnalisation de la boutique : pour l'instant, les photos du socle de l'accueil (06/11).
+  { href: "/admin/accueil", label: "Personnalisation", icon: StoreIcon },
   { href: "/admin/clients", label: "Clients", icon: UsersIcon },
   { href: "/", label: "Voir la boutique", short: "Boutique", icon: StoreIcon },
 ];
