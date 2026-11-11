@@ -25,7 +25,8 @@ export function boxLabel(withBox: boolean | null | undefined): string | null {
 }
 
 // Les lignes d'information d'un appareil, dans cet ordre : la garantie, l'origine (une
-// information, pas un choix) et la référence du magasin, à donner au téléphone.
+// information ; un choix seulement entre deux neufs identiques, voir stock.ts) et la référence
+// du magasin, à donner au téléphone.
 export function dealFacts(variant: Partial<Pick<Variant, "warrantyMonths" | "origin" | "reference">>): string[] {
   const warranty = warrantyLabel(variant.warrantyMonths);
   return [

@@ -7,7 +7,7 @@ import GiftList from "@/features/products/GiftList";
 import { formatPrice } from "@/lib/format";
 import type { ProductKind, Variant } from "@/types/api";
 import { dealFacts } from "./dealLabels";
-import { initialSelection, optionChoices, optionKeys, selectOption } from "./stock";
+import { initialSelection, ORIGIN_KEY, optionChoices, optionKeys, selectOption, withOriginOption } from "./stock";
 
 // Ce qui reste, écrit sur chaque puce. La première option compte tout le stock
 // (« 3 en stock ») ; les suivantes comptent dans les choix d'avant (« 2 restants »).
@@ -36,10 +36,17 @@ export default function NewPicker({
   palette: Palette;
   colorChosen?: boolean;
 }) {
-  const keys = optionKeys(variants, kind, colorChosen ? "Couleur" : undefined);
-  const [selected, setSelected] = useState(() => initialSelection(variants, keys));
-  const choices = optionChoices(variants, keys, selected);
-  const current = variants.find((variant) => keys.every((key) => variant.options[key] === selected[key])) ?? variants[0];
+  // Deux neufs identiques mais d'origines différentes : l'origine se choisit, en dernier.
+  const pickable = withOriginOption(variants);
+  const keys = [
+    ...optionKeys(variants, kind, colorChosen ? "Couleur" : undefined),
+    ...(pickable === variants ? [] : [ORIGIN_KEY]),
+  ];
+  const [selected, setSelected] = useState(() => initialSelection(pickable, keys));
+  const choices = optionChoices(pickable, keys, selected);
+  // La variante d'origine (sans l'option ajoutée) part au panier.
+  const index = pickable.findIndex((variant) => keys.every((key) => variant.options[key] === selected[key]));
+  const current = variants[Math.max(index, 0)];
 
   return (
     <div className="space-y-5">
@@ -56,7 +63,7 @@ export default function NewPicker({
                   className="chip"
                   aria-pressed={selected[key] === value}
                   disabled={stock === 0}
-                  onClick={() => setSelected(selectOption(variants, keys, selected, key, value))}
+                  onClick={() => setSelected(selectOption(pickable, keys, selected, key, value))}
                 >
                   {swatch ? (
                     <span
