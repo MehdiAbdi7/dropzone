@@ -44,9 +44,9 @@ export default function StageAdminPage() {
   return (
     <div className="max-w-6xl space-y-8">
       <div className="space-y-1">
-        <h1 className="text-3xl">Accueil de la boutique</h1>
+        <h1 className="text-3xl">Personnalisation</h1>
         <p className="text-ink-muted">
-          Envoie une photo déjà sans fond (PNG ou WebP transparent) dans chaque emplacement, ajoute-en d&apos;autres si
+          L&apos;accueil de la boutique : envoie une photo déjà sans fond (PNG ou WebP transparent) dans chaque emplacement, ajoute-en d&apos;autres si
           tu veux, puis place-les sur le socle : glisse-les avec la souris ou le doigt, tire le rond bleu du coin (ou le
           curseur) pour changer leur taille. Le vide autour de l&apos;objet est coupé tout seul. Sans aucune photo, le
           hero garde ses dessins.
