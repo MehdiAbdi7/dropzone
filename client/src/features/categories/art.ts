@@ -1,5 +1,5 @@
 import { placeOf, stagePhoto, type Box, type StageDevice } from "@/features/home/stageLayout";
-import type { Category, ProductKind } from "@/types/api";
+import type { Category, CategoryPhoto, ProductKind } from "@/types/api";
 
 // L'image d'une catégorie, la même partout (11/11) : l'accueil, la Boutique et la recherche
 // dessinent la même composition de photos, réglée une seule fois dans Personnalisation. Ce
@@ -37,17 +37,22 @@ export function defaultBox(index: number, count: number): Box {
   return { x: index * (60 / (count - 1)), y: index % 2 === 0 ? 14 : 6, w: 40, z: index + 1 };
 }
 
+// Les photos réglées d'une catégorie, chacune à sa place (celle de départ si le gérant ne l'a
+// pas bougée). Une photo du gérant est déjà sans fond : Cloudinary coupe seulement le vide
+// transparent autour (`stagePhoto`). L'éditeur du back-office n'utilise que celles-là.
+export function compositionDevices(photos: CategoryPhoto[]): StageDevice[] {
+  return photos.map((photo, index) => ({
+    slot: photo.slot,
+    src: stagePhoto(photo.url),
+    box: placeOf(photo, defaultBox(index, photos.length)),
+  }));
+}
+
 // Ce que la tuile d'une catégorie dessine : sa composition réglée ; sinon la photo de son
-// produit le plus récent ; sinon l'icône de sa sorte. Une photo du gérant est déjà sans fond :
-// Cloudinary coupe seulement le vide transparent autour (`stagePhoto`).
+// produit le plus récent ; sinon l'icône de sa sorte.
 export function categoryDevices(category: Pick<Category, "kind" | "photos" | "fallbackImage">): StageDevice[] {
-  const { photos } = category;
-  if (photos.length > 0) {
-    return photos.map((photo, index) => ({
-      slot: photo.slot,
-      src: stagePhoto(photo.url),
-      box: placeOf(photo, defaultBox(index, photos.length)),
-    }));
+  if (category.photos.length > 0) {
+    return compositionDevices(category.photos);
   }
   return [{ slot: "fallback", src: category.fallbackImage ?? KIND_ICONS[category.kind], box: defaultBox(0, 1) }];
 }

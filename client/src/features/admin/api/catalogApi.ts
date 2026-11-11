@@ -12,6 +12,9 @@ export type AdminBrand = {
   slug: string;
   makerName: string | null;
   logoUrl: string | null;
+  // La photo de sa tuile dans la Boutique, réglée dans Personnalisation (null : celle du produit
+  // le plus récent de la marque).
+  photoUrl: string | null;
   position: number;
   productCount: number;
 };
@@ -108,13 +111,15 @@ const catalogApi = api.injectEndpoints({
     categories: build.query<Category[], void>({
       query: () => "/categories",
       transformResponse: data<Category[]>,
-      providesTags: ["Categories"],
+      // « Stage » aussi : la composition d'une catégorie est rangée avec les photos du socle.
+      providesTags: ["Categories", "Stage"],
     }),
     createCategory: build.mutation<Category, { name: string; kind: ProductKind }>({
       query: (body) => ({ url: "/admin/categories", method: "POST", body }),
       invalidatesTags: ["Categories"],
     }),
-    updateCategory: build.mutation<Category, { id: number; name?: string; kind?: ProductKind }>({
+    // `featured: true` : la catégorie mise en avant sur l'accueil (les autres la perdent).
+    updateCategory: build.mutation<Category, { id: number; name?: string; kind?: ProductKind; featured?: boolean }>({
       query: ({ id, ...body }) => ({ url: `/admin/categories/${id}`, method: "PATCH", body }),
       invalidatesTags: ["Categories"],
     }),
@@ -144,6 +149,15 @@ const catalogApi = api.injectEndpoints({
     }),
     uploadBrandLogo: build.mutation<unknown, { id: number; file: File }>({
       query: ({ id, file }) => ({ url: `/admin/brands/${id}/logo`, method: "POST", body: imageForm(file) }),
+      invalidatesTags: ["Brands", "Categories"],
+    }),
+    // La photo de la marque sur sa tuile de la Boutique (11/11).
+    uploadBrandPhoto: build.mutation<unknown, { id: number; file: File }>({
+      query: ({ id, file }) => ({ url: `/admin/brands/${id}/photo`, method: "POST", body: imageForm(file) }),
+      invalidatesTags: ["Brands", "Categories"],
+    }),
+    deleteBrandPhoto: build.mutation<void, number>({
+      query: (id) => ({ url: `/admin/brands/${id}/photo`, method: "DELETE" }),
       invalidatesTags: ["Brands", "Categories"],
     }),
     deleteBrand: build.mutation<void, number>({
@@ -236,6 +250,8 @@ export const {
   useCreateBrandMutation,
   useUpdateBrandMutation,
   useUploadBrandLogoMutation,
+  useUploadBrandPhotoMutation,
+  useDeleteBrandPhotoMutation,
   useDeleteBrandMutation,
   useModelsQuery,
   useCreateModelMutation,

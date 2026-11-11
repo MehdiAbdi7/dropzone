@@ -20,12 +20,19 @@ export default function StageEditor({
   stage,
   devices,
   fixed,
+  decor = true,
+  nameOf = slotLabel,
 }: {
-  stage: "hero" | "deal";
+  // « hero » ou « deal » (l'accueil), ou « category-<id> » (11/11 : la composition d'une catégorie).
+  stage: string;
   // Les photos du gérant, déplaçables (emplacements nommés et en plus).
   devices: StageDevice[];
   // Les dessins des emplacements vides (bandeau des affaires) : visibles, pas déplaçables.
   fixed: StageDevice[];
+  // Le décor néon du socle de l'accueil. Une catégorie n'en a pas : son cadre est uni.
+  decor?: boolean;
+  // Le nom d'une photo dans l'éditeur (« Article en plus 2 » sur l'accueil, « Photo 2 » sur une catégorie).
+  nameOf?: (slot: string, customLabel?: string | null) => string;
 }) {
   const frame = useRef<HTMLDivElement>(null);
   const initial = Object.fromEntries(devices.map((device) => [device.slot, device.box]));
@@ -95,12 +102,12 @@ export default function StageEditor({
     <div className="space-y-3">
       <div
         ref={frame}
-        className="stage touch-none select-none"
+        className={`stage touch-none select-none ${decor ? "" : "rounded-xl border border-dashed border-line bg-surface"}`}
         onPointerMove={onPointerMove}
         onPointerUp={() => setDrag(null)}
         onPointerCancel={() => setDrag(null)}
       >
-        <StageDecor id={`editor-${stage}`} />
+        {decor ? <StageDecor id={`editor-${stage}`} /> : null}
         {fixed.map((device) => (
           <div key={device.slot} className="opacity-40">
             <StageItem device={device} />
@@ -113,7 +120,7 @@ export default function StageEditor({
             <button
               key={slot}
               type="button"
-              aria-label={`${slotLabel(slot, devices.find((device) => device.slot === slot)?.label)} : glisser pour déplacer, flèches du clavier, + et − pour la taille`}
+              aria-label={`${nameOf(slot, devices.find((device) => device.slot === slot)?.label)} : glisser pour déplacer, flèches du clavier, + et − pour la taille`}
               aria-pressed={active}
               className={`stage-item cursor-grab rounded-lg outline-offset-2 [&_img]:pointer-events-none ${
                 active ? "outline-2 outline-dashed outline-blue" : "hover:outline-1 hover:outline-dashed hover:outline-white/50"
@@ -143,7 +150,7 @@ export default function StageEditor({
         <div className="space-y-3 rounded-xl bg-surface-2 p-3">
           {selected && current ? (
             <>
-              <p className="text-sm font-semibold">{slotLabel(selected, devices.find((device) => device.slot === selected)?.label)}</p>
+              <p className="text-sm font-semibold">{nameOf(selected, devices.find((device) => device.slot === selected)?.label)}</p>
               <label className="flex items-center gap-3 text-sm">
                 <span className="shrink-0">Taille</span>
                 <input
@@ -186,7 +193,7 @@ export default function StageEditor({
             </button>
             {saved && !changed ? (
               <span role="status" className="text-sm font-semibold text-blue-ink">
-                Enregistré, visible sur l&apos;accueil.
+                Enregistré, visible sur le site.
               </span>
             ) : null}
           </div>
