@@ -1,126 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { defaultCategory, homeCategories, layoutTiles, splitBrands, type TileSize } from "./tiles";
+import { categorySlugFromPath, defaultCategory, homeCategories, isCategorySwitch } from "./tiles";
 
-// Les cases que prend chaque taille dans une grille de `columns` colonnes : [colonnes, lignes].
-const SPAN: Record<number, Record<TileSize, [number, number]>> = {
-  4: { full: [4, 2], big: [2, 2], wide: [2, 1], tile: [1, 1] },
-  2: { full: [2, 1], big: [2, 1], wide: [2, 1], tile: [1, 1] },
-};
-
-// Pose les tuiles comme le fait CSS (`grid-auto-flow: row`) : chacune à la première place libre
-// qui la contient, sans jamais revenir en arrière. Rend le nombre de cases vides à l'intérieur de
-// la grille une fois tout posé : zéro, c'est une grille sans trou.
-function holesAfterPacking(sizes: TileSize[], columns: 2 | 4): number {
-  const taken = new Set<string>();
-  let cursor = 0;
-  let rows = 0;
-  for (const size of sizes) {
-    const [width, height] = SPAN[columns][size];
-    for (;; cursor++) {
-      const column = cursor % columns;
-      const row = Math.floor(cursor / columns);
-      const fits =
-        column + width <= columns &&
-        Array.from({ length: width * height }, (_, i) => `${row + Math.floor(i / width)}:${column + (i % width)}`).every(
-          (cell) => !taken.has(cell),
-        );
-      if (fits) {
-        for (let i = 0; i < width * height; i++) {
-          taken.add(`${row + Math.floor(i / width)}:${column + (i % width)}`);
-        }
-        rows = Math.max(rows, row + height);
-        cursor += width;
-        break;
-      }
-    }
-  }
-  return rows * columns - taken.size;
-}
-
-// L'accueil (11/11) : la catégorie mise en avant prend 2×2, les autres 1×1, et les dernières
-// tuiles s'élargissent pour qu'il n'y ait aucun trou, quel que soit le nombre de catégories.
-describe("layoutTiles sur 4 colonnes", () => {
-  it("n'a rien à poser sans catégorie", () => {
-    expect(layoutTiles(0, 4)).toEqual([]);
-  });
-
-  it("donne les tailles des maquettes", () => {
-    // Une seule : elle prend toute la largeur. Deux : deux grandes. Trois : la grande, puis
-    // deux larges qui remplissent ses deux lignes.
-    expect(layoutTiles(1, 4)).toEqual(["full"]);
-    expect(layoutTiles(2, 4)).toEqual(["big", "big"]);
-    expect(layoutTiles(3, 4)).toEqual(["big", "wide", "wide"]);
-    // Quatre : la dernière s'élargit. Cinq : le compte tombe juste. Sept : les deux dernières.
-    expect(layoutTiles(4, 4)).toEqual(["big", "tile", "tile", "wide"]);
-    expect(layoutTiles(5, 4)).toEqual(["big", "tile", "tile", "tile", "tile"]);
-    expect(layoutTiles(7, 4)).toEqual(["big", "tile", "tile", "tile", "tile", "wide", "wide"]);
-  });
-
-  it("ne laisse aucun trou, de 1 à 24 catégories", () => {
-    for (let count = 1; count <= 24; count++) {
-      expect(holesAfterPacking(layoutTiles(count, 4), 4), `${count} catégories`).toBe(0);
-    }
-  });
-
-  it("met la grande en premier et ne s'élargit que par le bas", () => {
-    for (let count = 2; count <= 24; count++) {
-      const sizes = layoutTiles(count, 4);
-      expect(sizes[0]).toMatch(/big|full/);
-      expect(sizes).toHaveLength(count);
-      // Toutes les larges sont à la fin, derrière les tuiles simples.
-      const firstWide = sizes.indexOf("wide");
-      if (firstWide !== -1 && count > 3) {
-        expect(sizes.slice(firstWide).every((size) => size === "wide")).toBe(true);
-      }
-    }
-  });
-});
-
-describe("layoutTiles sur 2 colonnes (téléphone)", () => {
-  it("met la première en pleine largeur, puis deux par ligne", () => {
-    expect(layoutTiles(1, 2)).toEqual(["big"]);
-    expect(layoutTiles(3, 2)).toEqual(["big", "tile", "tile"]);
-    expect(layoutTiles(5, 2)).toEqual(["big", "tile", "tile", "tile", "tile"]);
-  });
-
-  it("élargit la dernière quand il en reste une seule sur sa ligne", () => {
-    expect(layoutTiles(2, 2)).toEqual(["big", "wide"]);
-    expect(layoutTiles(4, 2)).toEqual(["big", "tile", "tile", "wide"]);
-  });
-
-  it("ne laisse aucun trou, de 1 à 24 catégories", () => {
-    for (let count = 1; count <= 24; count++) {
-      expect(holesAfterPacking(layoutTiles(count, 2), 2), `${count} catégories`).toBe(0);
-    }
-  });
-});
-
+// L'accueil (refonte du 11/11 au soir) : des cartes identiques dans un carrousel. Le carrousel
+// montre toutes les catégories qui ont des produits : plus de plafond, plus de grille à remplir.
 describe("homeCategories", () => {
   const category = (name: string, productCount: number, featured = false) => ({ name, productCount, featured });
   const names = (list: { name: string }[]) => list.map((item) => item.name);
 
   it("cache les catégories sans produit publié (Accessoires à 0)", () => {
-    const { shown, hidden } = homeCategories([category("Smartphones", 48), category("Accessoires", 0), category("PC", 127, true)]);
-    expect(names(shown)).toEqual(["PC", "Smartphones"]);
-    expect(hidden).toBe(0);
+    expect(names(homeCategories([category("Smartphones", 48), category("Accessoires", 0), category("PC", 127, true)]))).toEqual([
+      "PC",
+      "Smartphones",
+    ]);
   });
 
   it("met la catégorie mise en avant en premier, les autres gardent l'ordre de l'API", () => {
-    const { shown } = homeCategories([category("A", 1), category("B", 1), category("C", 1, true), category("D", 1)]);
-    expect(names(shown)).toEqual(["C", "A", "B", "D"]);
+    expect(names(homeCategories([category("A", 1), category("B", 1), category("C", 1, true), category("D", 1)]))).toEqual([
+      "C",
+      "A",
+      "B",
+      "D",
+    ]);
   });
 
-  it("montre six catégories au plus et compte celles qui restent pour la Boutique", () => {
-    const many = Array.from({ length: 9 }, (_, i) => category(`C${i}`, 5, i === 8));
-    const { shown, hidden } = homeCategories(many);
-    expect(shown).toHaveLength(6);
-    // La mise en avant, même dernière de l'API, reste sur l'accueil.
-    expect(names(shown)[0]).toBe("C8");
-    expect(hidden).toBe(3);
+  it("les garde toutes, même nombreuses", () => {
+    expect(homeCategories(Array.from({ length: 9 }, (_, i) => category(`C${i}`, 5)))).toHaveLength(9);
   });
 
   it("n'a rien à montrer sans catégorie", () => {
-    expect(homeCategories([])).toEqual({ shown: [], hidden: 0 });
+    expect(homeCategories([])).toEqual([]);
   });
 });
 
@@ -147,47 +55,45 @@ describe("defaultCategory", () => {
   });
 });
 
-// La Boutique (11/11) : au plus trois grandes marques, chacune avec au moins 15 % des produits de
-// la catégorie. Les autres passent en tuiles compactes, dans l'ordre du back-office.
-describe("splitBrands", () => {
-  const brand = (name: string, productCount: number) => ({ name, productCount });
-
-  it("sépare les grandes marques des autres, comme sur les Smartphones", () => {
-    const { majors, minors } = splitBrands(
-      [brand("iPhone", 30), brand("Samsung", 14), brand("Honor", 2), brand("Vivo", 1), brand("Huawei", 1)],
-      48,
-    );
-    expect(majors.map((item) => item.name)).toEqual(["iPhone", "Samsung"]);
-    expect(minors.map((item) => item.name)).toEqual(["Honor", "Vivo", "Huawei"]);
+// La Boutique change de catégorie sur place et met l'adresse à jour : la catégorie affichée se
+// relit dans l'adresse, pour que le bouton « précédent » du navigateur fonctionne.
+describe("categorySlugFromPath", () => {
+  it("lit la catégorie dans /boutique/<catégorie>", () => {
+    expect(categorySlugFromPath("/boutique/tablettes")).toBe("tablettes");
+    expect(categorySlugFromPath("/boutique/ordinateurs-portables")).toBe("ordinateurs-portables");
   });
 
-  it("n'en garde que trois, les plus fournies, même si d'autres passent le seuil", () => {
-    const brands = [brand("ASUS", 18), brand("HP", 28), brand("MacBook", 15), brand("Dell", 23), brand("Lenovo", 22)];
-    const { majors, minors } = splitBrands(brands, 100);
-    expect(majors.map((item) => item.name)).toEqual(["HP", "Dell", "Lenovo"]);
-    // Les autres gardent l'ordre d'origine (celui du back-office), pas celui des comptes.
-    expect(minors.map((item) => item.name)).toEqual(["ASUS", "MacBook"]);
+  it("accepte une barre finale", () => {
+    expect(categorySlugFromPath("/boutique/tablettes/")).toBe("tablettes");
   });
 
-  it("applique le seuil de 15 % : 15 passe, 14 ne passe pas", () => {
-    expect(splitBrands([brand("A", 15)], 100).majors).toHaveLength(1);
-    expect(splitBrands([brand("A", 14)], 100).majors).toHaveLength(0);
+  it("ne lit rien hors d'une page de catégorie", () => {
+    expect(categorySlugFromPath("/boutique")).toBeNull();
+    expect(categorySlugFromPath("/produits")).toBeNull();
+    expect(categorySlugFromPath("/")).toBeNull();
+    expect(categorySlugFromPath(null)).toBeNull();
   });
 
-  it("n'a que des tuiles compactes quand aucune marque ne domine", () => {
-    const brands = Array.from({ length: 10 }, (_, i) => brand(`M${i}`, 10));
-    const { majors, minors } = splitBrands(brands, 100);
-    expect(majors).toEqual([]);
-    expect(minors).toHaveLength(10);
+  it("ne confond pas une page de marque avec une catégorie", () => {
+    expect(categorySlugFromPath("/boutique/smartphones/iphone")).toBeNull();
+  });
+});
+
+// Passer d'une catégorie à une autre ne change pas de page : seules les marques changent. La
+// transition de page ne doit donc pas jouer.
+describe("isCategorySwitch", () => {
+  it("reconnaît le passage d'une catégorie à une autre", () => {
+    expect(isCategorySwitch("/boutique/smartphones", "/boutique/tablettes")).toBe(true);
   });
 
-  it("ne plante pas sans produit", () => {
-    expect(splitBrands([], 0)).toEqual({ majors: [], minors: [] });
-    expect(splitBrands([brand("A", 0)], 0).majors).toEqual([]);
+  it("ne dit rien d'une page de catégorie vers une page de marque, un produit ou l'accueil", () => {
+    expect(isCategorySwitch("/boutique/smartphones", "/boutique/smartphones/iphone")).toBe(false);
+    expect(isCategorySwitch("/boutique/smartphones", "/produits/iphone-17")).toBe(false);
+    expect(isCategorySwitch("/boutique/smartphones", "/")).toBe(false);
   });
 
-  it("garde l'ordre d'origine entre deux marques à égalité", () => {
-    const { majors } = splitBrands([brand("B", 20), brand("A", 20)], 40);
-    expect(majors.map((item) => item.name)).toEqual(["B", "A"]);
+  it("ne dit rien quand on arrive sur la catégorie depuis une autre sorte de page", () => {
+    expect(isCategorySwitch("/", "/boutique/smartphones")).toBe(false);
+    expect(isCategorySwitch("/boutique/smartphones/iphone", "/boutique/tablettes")).toBe(false);
   });
 });

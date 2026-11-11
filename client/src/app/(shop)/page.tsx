@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { ArrowRightIcon, InstagramIcon, SearchIcon } from "@/components/ui/icons";
 import ScrollToHash from "@/components/ui/ScrollToHash";
 import { STORE_INFO } from "@/config/storeInfo";
-import CategoryTiles from "@/features/categories/CategoryTiles";
+import HomeCategories from "@/features/categories/HomeCategories";
 import { StageLoading } from "@/features/home/DeviceStage";
 import Guarantees from "@/features/home/Guarantees";
 import {
@@ -160,7 +160,7 @@ export default function HomePage() {
         </div>
         {/* Lues dans l'API : la roue pendant l'attente, comme les autres parties de l'accueil. */}
         <Suspense fallback={<SectionLoading label="Chargement des catégories…" />}>
-          <CategoryTiles />
+          <HomeCategories />
         </Suspense>
       </section>
 
