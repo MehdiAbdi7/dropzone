@@ -1,6 +1,30 @@
 /* ---------- 6. Les utilitaires de la marque ---------- */
 
 @layer utilities {
+  /* L'apparition des sections de l'accueil (composant Reveal). `hidden` : la section attend,
+     sous l'écran, sans transition (elle est déjà cachée avant d'être vue). `shown` : elle monte
+     et se fond, une fois, avec une courbe qui ralentit en arrivant. Le transform revient à
+     « none » après l'animation : une section arrivée n'est plus un bloc transformé, donc rien
+     n'est gêné (éléments collants, fixes). Sans animation si l'utilisateur les réduit. */
+  [data-reveal="hidden"] {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+  [data-reveal="shown"] {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 700ms ease-out,
+      transform 800ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-reveal] {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
   /* Le dégradé du logo, pour le logo et les grands titres de la marque. */
   .text-gradient {
     background: var(--gradient-brand);
