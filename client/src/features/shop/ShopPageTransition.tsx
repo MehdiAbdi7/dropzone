@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
+import { isCategorySwitch } from "@/features/categories/tiles";
 import {
   Suspense,
   useEffect,
@@ -138,7 +139,14 @@ function RouteTransition({
     const snapshot = snapshotRef.current;
     snapshotRef.current = null;
     const pathChanged = previousPathRef.current !== pathname;
+    const previousPath = previousPathRef.current;
     previousPathRef.current = pathname;
+    // D'une catégorie à une autre, la Boutique ne change pas de page : seules les marques
+    // changent sur place. Pas de glissement (le cliché de la page, pris au clic, est jeté).
+    if (isCategorySwitch(previousPath, pathname)) {
+      layer?.replaceChildren();
+      return;
+    }
     if (!snapshot && !pathChanged) {
       return;
     }

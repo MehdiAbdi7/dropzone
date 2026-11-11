@@ -7,10 +7,14 @@ import Image from "next/image";
 export default function BrandLogo({
   url,
   size = 16,
+  width = size,
   className = "",
 }: {
   url: string | null;
   size?: number;
+  // La largeur de la case du logo, quand elle diffère de sa hauteur : un logo large (Lenovo,
+  // Samsung) tient dans une case plus large que haute et reste lisible. Par défaut, carrée.
+  width?: number;
   className?: string;
 }) {
   if (!url) {
@@ -22,7 +26,7 @@ export default function BrandLogo({
         aria-hidden="true"
         className={`inline-block shrink-0 bg-current ${className}`}
         style={{
-          width: size,
+          width,
           height: size,
           mask: `url(${url}) center / contain no-repeat`,
           WebkitMask: `url(${url}) center / contain no-repeat`,
