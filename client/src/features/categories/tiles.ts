@@ -32,6 +32,17 @@ export function layoutTiles(count: number, columns: 2 | 4): TileSize[] {
   return ["big", ...Array.from({ length: others }, (_, i): TileSize => (i >= others - missing ? "wide" : "tile"))];
 }
 
+// L'accueil montre six catégories au plus ; le reste est dans la Boutique.
+export const MAX_ON_HOME = 6;
+
+// Les catégories de l'accueil : celles qui ont des produits publiés, la mise en avant d'abord,
+// puis les autres dans l'ordre de l'API. `hidden` : combien restent pour la Boutique.
+export function homeCategories<T extends { featured: boolean; productCount: number }>(categories: T[]): { shown: T[]; hidden: number } {
+  const withProducts = categories.filter((category) => category.productCount > 0);
+  const ordered = [...withProducts.filter((category) => category.featured), ...withProducts.filter((category) => !category.featured)];
+  return { shown: ordered.slice(0, MAX_ON_HOME), hidden: Math.max(0, ordered.length - MAX_ON_HOME) };
+}
+
 // La Boutique : au plus trois grandes marques, chacune avec au moins 15 % des produits de la
 // catégorie (« Les plus demandées »). Les autres passent en tuiles compactes, dans l'ordre du
 // back-office. Calcul en entiers : 15 produits sur 100, c'est pile 15 %.

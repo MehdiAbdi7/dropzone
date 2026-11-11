@@ -59,8 +59,9 @@ export function stagePhoto(url: string): string {
   return url.startsWith("https://res.cloudinary.com/") ? url.replace("/image/upload/", "/image/upload/e_trim/") : url;
 }
 
-// La place enregistrée si elle est complète, sinon celle de départ.
-function placeOf(photo: StagePhoto, start: Box): Box {
+// La place enregistrée si elle est complète, sinon celle de départ. Les compositions des
+// catégories (features/categories/art.ts) s'en servent aussi : même cadre, mêmes réglages.
+export function placeOf(photo: Pick<StagePhoto, "x" | "y" | "w" | "z">, start: Box): Box {
   const { x, y, w, z } = photo;
   return x !== null && y !== null && w !== null ? { x, y, w, z: z ?? start.z } : start;
 }

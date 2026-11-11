@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { layoutTiles, splitBrands, type TileSize } from "./tiles";
+import { homeCategories, layoutTiles, splitBrands, type TileSize } from "./tiles";
 
 // Les cases que prend chaque taille dans une grille de `columns` colonnes : [colonnes, lignes].
 const SPAN: Record<number, Record<TileSize, [number, number]>> = {
@@ -92,6 +92,35 @@ describe("layoutTiles sur 2 colonnes (téléphone)", () => {
     for (let count = 1; count <= 24; count++) {
       expect(holesAfterPacking(layoutTiles(count, 2), 2), `${count} catégories`).toBe(0);
     }
+  });
+});
+
+describe("homeCategories", () => {
+  const category = (name: string, productCount: number, featured = false) => ({ name, productCount, featured });
+  const names = (list: { name: string }[]) => list.map((item) => item.name);
+
+  it("cache les catégories sans produit publié (Accessoires à 0)", () => {
+    const { shown, hidden } = homeCategories([category("Smartphones", 48), category("Accessoires", 0), category("PC", 127, true)]);
+    expect(names(shown)).toEqual(["PC", "Smartphones"]);
+    expect(hidden).toBe(0);
+  });
+
+  it("met la catégorie mise en avant en premier, les autres gardent l'ordre de l'API", () => {
+    const { shown } = homeCategories([category("A", 1), category("B", 1), category("C", 1, true), category("D", 1)]);
+    expect(names(shown)).toEqual(["C", "A", "B", "D"]);
+  });
+
+  it("montre six catégories au plus et compte celles qui restent pour la Boutique", () => {
+    const many = Array.from({ length: 9 }, (_, i) => category(`C${i}`, 5, i === 8));
+    const { shown, hidden } = homeCategories(many);
+    expect(shown).toHaveLength(6);
+    // La mise en avant, même dernière de l'API, reste sur l'accueil.
+    expect(names(shown)[0]).toBe("C8");
+    expect(hidden).toBe(3);
+  });
+
+  it("n'a rien à montrer sans catégorie", () => {
+    expect(homeCategories([])).toEqual({ shown: [], hidden: 0 });
   });
 });
 

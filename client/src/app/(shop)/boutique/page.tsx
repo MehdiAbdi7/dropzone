@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { KIND_IMAGES } from "@/features/home/CategoryCards";
+import { KIND_ICONS } from "@/features/categories/art";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import ChoiceTile from "@/features/shop/ChoiceTile";
 import { publicFetch } from "@/lib/publicFetch";
@@ -33,7 +33,7 @@ export default async function ShopPage() {
               <ChoiceTile
                 href={`/boutique/${category.slug}`}
                 label={category.name}
-                image={KIND_IMAGES[category.kind]}
+                image={KIND_ICONS[category.kind]}
                 disabled={category.productCount === 0}
               />
             </li>
