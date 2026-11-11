@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useStageQuery } from "@/features/admin/api/stageApi";
 import BrandsSection from "@/features/admin/personalization/BrandsSection";
 import CategoriesSection from "@/features/admin/personalization/CategoriesSection";
+import PersonalizationCard from "@/features/admin/personalization/PersonalizationCard";
+import EditDialog from "@/features/admin/products/EditDialog";
+import DeviceStage from "@/features/home/DeviceStage";
 import SlotRow from "@/features/admin/SlotRow";
 import StageEditor from "@/features/admin/StageEditor";
 import {
@@ -55,6 +58,8 @@ export default function PersonalizationPage() {
 // ou au doigt sur l'aperçu, le même décor que la boutique.
 function HomeSection() {
   const { data: photos, isLoading, error } = useStageQuery();
+  // La fenêtre ouverte : le socle du hero, celui du bandeau, ou aucune.
+  const [open, setOpen] = useState<"hero" | "deal" | null>(null);
 
   if (isLoading) {
     return <p className="text-ink-muted">Chargement…</p>;
@@ -62,42 +67,67 @@ function HomeSection() {
   if (error || !photos) {
     return <p className="field-error">{errorMessage(error)}</p>;
   }
+  const count = (stage: Record<string, StagePhoto | null>) => {
+    const filled = Object.values(stage).filter(Boolean).length;
+    return filled === 0 ? "Les dessins de départ" : `${filled} photo${filled > 1 ? "s" : ""}`;
+  };
 
   return (
-    <section aria-labelledby="home-title" className="space-y-6">
+    <section aria-labelledby="home-title" className="space-y-4">
       <div className="space-y-1">
         <h2 id="home-title" className="text-2xl">
           L&apos;accueil
         </h2>
-        <p className="text-ink-muted">
-          Envoie une photo déjà sans fond (PNG ou WebP transparent) dans chaque emplacement, ajoute-en d&apos;autres si
-          tu veux, puis place-les sur le socle : glisse-les avec la souris ou le doigt, tire le rond bleu du coin (ou le
-          curseur) pour changer leur taille. Le vide autour de l&apos;objet est coupé tout seul. Sans aucune photo, le
-          hero garde ses dessins.
-        </p>
+        <p className="text-ink-muted">Les photos des deux socles de l&apos;accueil, que tu places à la souris ou au doigt.</p>
       </div>
+      <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <li>
+          <PersonalizationCard
+            title="Le socle du hero"
+            meta={count(photos.hero)}
+            preview={<div className="brand-dark absolute inset-0"><DeviceStage id="card-hero" devices={heroDevices(photos)} /></div>}
+            onOpen={() => setOpen("hero")}
+          />
+        </li>
+        <li>
+          <PersonalizationCard
+            title="Le socle du bandeau des affaires"
+            meta={count(photos.deal)}
+            preview={<div className="brand-dark absolute inset-0"><DeviceStage id="card-deal" devices={dealDevices(photos)} /></div>}
+            onOpen={() => setOpen("deal")}
+          />
+        </li>
+      </ul>
 
-      <StageSection
-        stage="hero"
-        title="Le socle du hero"
-        hint="Le haut de l'accueil : un ordinateur, un smartphone, une tablette, 4 accessoires, et ce que tu ajoutes."
-        editor={<HeroEditor photos={photos} />}
-        named={HERO_SLOTS.map(({ slot }) => slot)}
-        photos={photos.hero}
-        labels={photos.labels.hero}
-      />
-      <StageSection
-        stage="deal"
-        title="Le socle du bandeau des affaires"
-        hint="Affiché seulement quand une affaire est en stock. Un emplacement nommé vide garde son dessin (en transparence ici)."
-        editor={<DealEditor photos={photos} />}
-        named={DEAL_SLOTS.map(({ slot }) => slot)}
-        photos={photos.deal}
-        labels={photos.labels.deal}
-      />
+      <EditDialog open={open === "hero"} title="Le socle du hero" onClose={() => setOpen(null)}>
+        <p className="text-sm text-ink-muted">{STAGE_HELP}</p>
+        <StageSection
+          stage="hero"
+          hint="Le haut de l'accueil : un ordinateur, un smartphone, une tablette, 4 accessoires, et ce que tu ajoutes. Sans aucune photo, le hero garde ses dessins."
+          editor={<HeroEditor photos={photos} />}
+          named={HERO_SLOTS.map(({ slot }) => slot)}
+          photos={photos.hero}
+          labels={photos.labels.hero}
+        />
+      </EditDialog>
+      <EditDialog open={open === "deal"} title="Le socle du bandeau des affaires" onClose={() => setOpen(null)}>
+        <p className="text-sm text-ink-muted">{STAGE_HELP}</p>
+        <StageSection
+          stage="deal"
+          hint="Affiché seulement quand une affaire est en stock. Un emplacement nommé vide garde son dessin (en transparence ici)."
+          editor={<DealEditor photos={photos} />}
+          named={DEAL_SLOTS.map(({ slot }) => slot)}
+          photos={photos.deal}
+          labels={photos.labels.deal}
+        />
+      </EditDialog>
     </section>
   );
 }
+
+// Le mode d'emploi commun aux deux socles, affiché en haut de leur fenêtre.
+const STAGE_HELP =
+  "Envoie une photo déjà sans fond (PNG ou WebP transparent) dans chaque emplacement, ajoute-en d'autres si tu veux, puis place-les sur le socle : glisse-les avec la souris ou le doigt, tire le rond bleu du coin (ou le curseur) pour changer leur taille. Le vide autour de l'objet est coupé tout seul.";
 
 // `key` : quand les photos ou leurs places enregistrées changent (envoi, « Tout remettre au
 // départ »), l'éditeur repart de ce que dit l'API.
@@ -111,9 +141,9 @@ function DealEditor({ photos }: { photos: StagePhotos }) {
   return <StageEditor key={JSON.stringify(photos.deal)} stage="deal" devices={devices} fixed={fixed} />;
 }
 
+// Le contenu de la fenêtre d'un socle : l'éditeur à gauche, les emplacements à droite.
 function StageSection({
   stage,
-  title,
   hint,
   editor,
   named,
@@ -121,7 +151,6 @@ function StageSection({
   labels,
 }: {
   stage: keyof StagePhotos;
-  title: string;
   hint: string;
   editor: React.ReactNode;
   named: string[];
@@ -142,14 +171,9 @@ function StageSection({
   const full = extras.length >= MAX_EXTRA_SLOTS;
 
   return (
-    <section aria-labelledby={`${stage}-title`} className="card grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+    <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
       <div className="space-y-3">
-        <div>
-          <h3 id={`${stage}-title`} className="text-xl">
-            {title}
-          </h3>
-          <p className="text-sm text-ink-muted">{hint}</p>
-        </div>
+        <p className="text-sm text-ink-muted">{hint}</p>
         {/* L'éditeur : le même décor que la boutique, sur le fond sombre du hero. */}
         <div className="brand-dark rounded-2xl p-4">{editor}</div>
       </div>
