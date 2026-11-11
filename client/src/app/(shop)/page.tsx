@@ -11,6 +11,7 @@ import HomeCategories from "@/features/categories/HomeCategories";
 import { NeonSides } from "@/features/home/NeonLines";
 import { StageLoading } from "@/features/home/DeviceStage";
 import Guarantees from "@/features/home/Guarantees";
+import Reveal from "@/features/home/Reveal";
 import {
   AffairSheet,
   AffairShowcase,
@@ -142,112 +143,127 @@ export default function HomePage() {
       </section>
 
       {/* 2. Les garanties, collées sous le hero. */}
-      <section
-        aria-label="Nos garanties"
-        className="brand-dark border-t border-line bg-surface"
-      >
-        <div className="container-page py-6">
-          <Guarantees items={TOP_GUARANTEES} />
-        </div>
-      </section>
+      <Reveal>
+        <section
+          aria-label="Nos garanties"
+          className="brand-dark border-t border-line bg-surface"
+        >
+          <div className="container-page py-6">
+            <Guarantees items={TOP_GUARANTEES} />
+          </div>
+        </section>
+      </Reveal>
 
       {/* 3. Les catégories. La section prend toute la largeur pour que les traits de néon
           (rouges à gauche, bleus à droite, comme derrière le socle) touchent les bords de
           l'écran ; le contenu reste centré au-dessus, dans container-page. */}
-      <section
-        id="categories"
-        aria-labelledby="categories-title"
-        className="relative scroll-mt-4 overflow-hidden"
-      >
-        <NeonSides id="categories" />
-        <div className="container-page relative py-14">
-          <ScrollToHash id="categories" />
-          <div className="mb-8 text-center">
-            <div className="flex items-center justify-center gap-4">
-              {/* Les filets seulement à partir de sm : sur mobile, ils feraient passer le titre sur deux lignes. */}
-              <span
-                className="rule-gradient hidden w-16 sm:block"
-                aria-hidden="true"
-              />
-              <h2 id="categories-title" className="text-2xl sm:text-3xl">
-                Acheter par catégorie
-              </h2>
-              <span
-                className="rule-gradient hidden w-16 -scale-x-100 sm:block"
-                aria-hidden="true"
-              />
+      <Reveal>
+        <section
+          id="categories"
+          aria-labelledby="categories-title"
+          className="relative scroll-mt-4 overflow-hidden"
+        >
+          <NeonSides id="categories" />
+          <div className="container-page relative py-14">
+            <ScrollToHash id="categories" />
+            <div className="mb-8 text-center">
+              <div className="flex items-center justify-center gap-4">
+                {/* Les filets seulement à partir de sm : sur mobile, ils feraient passer le titre sur deux lignes. */}
+                <span
+                  className="rule-gradient hidden w-16 sm:block"
+                  aria-hidden="true"
+                />
+                <h2 id="categories-title" className="text-2xl sm:text-3xl">
+                  Acheter par catégorie
+                </h2>
+                <span
+                  className="rule-gradient hidden w-16 -scale-x-100 sm:block"
+                  aria-hidden="true"
+                />
+              </div>
+              <p className="mt-2 text-ink-muted">
+                Trouvez l&apos;appareil qu&apos;il vous faut.
+              </p>
             </div>
-            <p className="mt-2 text-ink-muted">
-              Trouvez l&apos;appareil qu&apos;il vous faut.
-            </p>
+            {/* Lues dans l'API : la roue pendant l'attente, comme les autres parties de l'accueil. */}
+            <Suspense
+              fallback={<SectionLoading label="Chargement des catégories…" />}
+            >
+              <HomeCategories />
+            </Suspense>
           </div>
-          {/* Lues dans l'API : la roue pendant l'attente, comme les autres parties de l'accueil. */}
-          <Suspense
-            fallback={<SectionLoading label="Chargement des catégories…" />}
-          >
-            <HomeCategories />
-          </Suspense>
-        </div>
-      </section>
+        </section>
+      </Reveal>
 
       {/* 4. Le bandeau des affaires : affiché avec sa roue pendant l'attente, retiré s'il n'y
           a finalement aucune affaire en stock. */}
-      <Suspense
-        fallback={
-          <DealsBanner
-            stage={<StageLoading id="deals" className={DEALS_STAGE} />}
-          />
-        }
-      >
-        <Deals />
-      </Suspense>
+      <Reveal>
+        <Suspense
+          fallback={
+            <DealsBanner
+              stage={<StageLoading id="deals" className={DEALS_STAGE} />}
+            />
+          }
+        >
+          <Deals />
+        </Suspense>
+      </Reveal>
 
       {/* 5. Les derniers arrivages, avec les nouvelles cartes produit. */}
-      <section
-        aria-labelledby="latest-title"
-        className="container-page space-y-6 py-14"
-      >
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <h2 id="latest-title" className="text-2xl sm:text-3xl">
-                Notre sélection
-              </h2>
-              <span className="rule-gradient w-10" aria-hidden="true" />
-            </div>
-            <p className="mt-1 text-ink-muted">
-              Les derniers arrivages, neufs scellés et affaires.
-            </p>
-          </div>
-          <Link href="/boutique" className="btn btn-outline btn-small btn-pill">
-            Aller à la Boutique
-            <ArrowRightIcon size={16} />
-          </Link>
-        </div>
-        <Suspense
-          fallback={<SectionLoading label="Chargement de la sélection…" />}
+      <Reveal>
+        <section
+          aria-labelledby="latest-title"
+          className="container-page space-y-6 py-14"
         >
-          <LatestProducts />
-        </Suspense>
-      </section>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 id="latest-title" className="text-2xl sm:text-3xl">
+                  Notre sélection
+                </h2>
+                <span className="rule-gradient w-10" aria-hidden="true" />
+              </div>
+              <p className="mt-1 text-ink-muted">
+                Les derniers arrivages, neufs scellés et affaires.
+              </p>
+            </div>
+            <Link
+              href="/boutique"
+              className="btn btn-outline btn-small btn-pill"
+            >
+              Aller à la Boutique
+              <ArrowRightIcon size={16} />
+            </Link>
+          </div>
+          <Suspense
+            fallback={<SectionLoading label="Chargement de la sélection…" />}
+          >
+            <LatestProducts />
+          </Suspense>
+        </section>
+      </Reveal>
 
       {/* 6. Ce qui distingue DropZone : la fiche d'une affaire, avec un vrai exemple. */}
-      <Suspense
-        fallback={
-          <AffairSheet
-            example={<SectionLoading label="Chargement d'un exemple…" />}
-          />
-        }
-      >
-        <AffairShowcase />
-      </Suspense>
+      <Reveal>
+        <Suspense
+          fallback={
+            <AffairSheet
+              example={<SectionLoading label="Chargement d'un exemple…" />}
+            />
+          }
+        >
+          <AffairShowcase />
+        </Suspense>
+      </Reveal>
 
       {/* 7. Les garanties du bas. */}
-      <section aria-label="DropZone en bref" className="container-page">
-        <div className="brand-dark rounded-[var(--radius-block)] bg-surface px-6 py-7 sm:px-8">
-          <Guarantees items={BOTTOM_GUARANTEES} />
-        </div>
-      </section>
+      <Reveal>
+        <section aria-label="DropZone en bref" className="container-page">
+          <div className="brand-dark rounded-[var(--radius-block)] bg-surface px-6 py-7 sm:px-8">
+            <Guarantees items={BOTTOM_GUARANTEES} />
+          </div>
+        </section>
+      </Reveal>
     </>
   );
 }
