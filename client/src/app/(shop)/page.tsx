@@ -35,18 +35,19 @@ export default function HomePage() {
       >
         {/* Sur mobile (11/11), le hero est resserré pour que « Voir la boutique » reste visible
             sans défiler, même sur un petit écran : espacements, titre et texte plus courts.
-            Il est centré, comme l'image du dessous, avec un bouton pleine largeur et une seule
-            barre de recherche (la loupe dedans). À partir de sm, la mise en page d'origine. */}
-        <div className="container-page grid items-center gap-6 py-6 sm:gap-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:py-16">
-          <div className="space-y-5 text-center sm:space-y-6 sm:text-left">
-            <p className="text-sm font-bold tracking-[0.14em] text-red uppercase">
+            Il est centré, comme l'image du dessous, avec une seule barre de recherche (la loupe
+            dedans). Les écarts suivent les groupes : serrés dans un groupe (surtitre et titre,
+            bouton et recherche), larges entre deux. À partir de sm, la mise en page d'origine. */}
+        <div className="container-page grid items-center gap-10 py-10 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-10 lg:py-16">
+          <div className="space-y-8 text-center sm:space-y-6 sm:text-left">
+            <p className="text-sm font-bold tracking-[0.14em] text-red uppercase max-sm:mb-4">
               Sélectionnés d&apos;Europe
             </p>
             <h1
               id="hero-title"
               // Sur mobile, la taille suit la largeur de l'écran : 32 px sur un petit
               // téléphone, environ 39 px sur un grand, pour tenir face à l'image.
-              className="text-[clamp(2rem,9vw,2.5rem)] leading-[1.1] text-balance font-extrabold sm:text-wrap tracking-tight sm:text-5xl lg:text-[3.5rem]"
+              className="text-[clamp(2rem,9vw,2.5rem)] leading-[1.1] text-balance font-extrabold sm:text-wrap tracking-tight max-sm:mb-5 sm:text-5xl lg:text-[3.5rem]"
             >
               Le bon appareil.
               <span className="text-gradient mx-auto block w-fit pb-1 sm:mx-0">
@@ -64,8 +65,8 @@ export default function HomePage() {
                 batterie, pièces changées et boîte.
               </span>
             </p>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/boutique" className="btn btn-primary w-full sm:w-auto">
+            <div className="flex flex-wrap justify-center gap-3 max-sm:mb-5 sm:justify-start">
+              <Link href="/boutique" className="btn btn-primary max-sm:min-h-12 max-sm:px-8">
                 Voir la boutique
                 <ArrowRightIcon size={18} />
               </Link>
@@ -74,7 +75,7 @@ export default function HomePage() {
             <form
               action="/produits"
               role="search"
-              className="relative mx-auto flex max-w-lg gap-2 sm:mx-0"
+              className="relative mx-auto flex max-w-xs gap-2 sm:mx-0 sm:max-w-lg"
             >
               <label htmlFor="hero-search" className="sr-only">
                 Quel modèle cherchez-vous ?
