@@ -182,6 +182,8 @@ export async function addUnit(id: number, input: UnitBody) {
     const colors = await addMissingModelColors(tx, model.id, [color]);
     await alignVariantColors(tx, productId, colors);
     await refreshMinPrice(tx, [productId]);
+    // Un nouvel exemplaire est un arrivage : le produit remonte sur l'accueil (12/11).
+    await tx.product.update({ where: { id: productId }, data: { stockedAt: new Date() } });
     return { productId, variantId: created.id };
   });
 }

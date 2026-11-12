@@ -282,7 +282,7 @@ export async function createProduct(input: ProductBody) {
 export async function updateProduct(id: number, input: ProductBody) {
   const existing = await prisma.product.findUnique({
     where: { id },
-    select: { variants: { select: { id: true } } },
+    select: { variants: { select: { id: true, stock: true } } },
   });
   if (!existing) {
     throw new AppError(404, "Produit introuvable");
@@ -293,6 +293,10 @@ export async function updateProduct(id: number, input: ProductBody) {
   if (keptIds.some((variantId) => !existingIds.has(variantId))) {
     throw new AppError(400, "Une variante n'appartient pas à ce produit");
   }
+  // Un arrivage (12/11) : une variante nouvelle, ou une variante dont le stock augmente. Le produit
+  // remonte alors en tête des derniers arrivages de l'accueil.
+  const oldStock = new Map(existing.variants.map((variant) => [variant.id, variant.stock]));
+  const arrived = rules.variants.some((variant) => !variant.id || variant.stock > (oldStock.get(variant.id) ?? 0));
 
   return prisma.$transaction(async (tx) => {
     // Les variantes retirées du formulaire sont supprimées. Les commandes passées
@@ -331,6 +335,7 @@ export async function updateProduct(id: number, input: ProductBody) {
         specs: input.specs,
         status: input.status,
         compatibleModels: { set: rules.compatibleModelIds.map((modelId) => ({ id: modelId })) },
+        ...(arrived ? { stockedAt: new Date() } : {}),
       },
     });
     await refreshMinPrice(tx, [id]);

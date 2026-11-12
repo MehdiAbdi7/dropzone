@@ -20,8 +20,13 @@ export const productListQuerySchema = z.object({
   // « complete » : seulement les produits qui ont une affaire en stock dont la fiche dit la
   // note et la batterie (la vitrine de l'accueil ; une annonce importée n'en dit souvent rien).
   fiche: z.enum(["complete"]).optional(),
+  // Les derniers arrivages de l'accueil (12/11) : seulement les appareils (`appareils=1`), et
+  // seulement ce qui est en stock (`enstock=1`).
+  appareils: z.enum(["1"]).optional(),
+  enstock: z.enum(["1"]).optional(),
   // `sortie` : du modèle le plus récent au plus ancien (pages des marques de la Boutique).
-  sort: z.enum(["nouveautes", "prix-croissant", "prix-decroissant", "sortie"]).default("nouveautes"),
+  // `arrivages` : du dernier arrivage au plus ancien (nouvel exemplaire ou stock ajouté, 12/11).
+  sort: z.enum(["nouveautes", "prix-croissant", "prix-decroissant", "sortie", "arrivages"]).default("nouveautes"),
   ...paginationQuery,
 }).refine((query) => query.sort !== "sortie" || query.category, {
   // Ce tri lit tout le filtre en mémoire : limité à une catégorie, jamais au catalogue entier.
