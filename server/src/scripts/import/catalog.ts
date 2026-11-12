@@ -80,7 +80,7 @@ const OPTION_GROUPS: Record<string, ChoiceGroup> = {
 const DESCRIPTION = "Chaque exemplaire est décrit sur sa fiche : état, batterie, origine et garantie.";
 
 // « iPhone 13 », mais « Samsung Galaxy S22+ », « Dell Latitude 5440 », « ASUS Vivobook 14 ».
-function productNameOf(maker: string, name: string): string {
+export function productNameOf(maker: string, name: string): string {
   if (maker === "Apple" || name.toLowerCase().startsWith(maker.toLowerCase())) {
     return name;
   }
