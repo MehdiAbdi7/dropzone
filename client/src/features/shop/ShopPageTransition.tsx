@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { isCategorySwitch } from "@/features/categories/tiles";
+import { isBrowseSwitch } from "@/features/categories/tiles";
 import {
   Suspense,
   useEffect,
@@ -141,9 +141,9 @@ function RouteTransition({
     const pathChanged = previousPathRef.current !== pathname;
     const previousPath = previousPathRef.current;
     previousPathRef.current = pathname;
-    // D'une catégorie à une autre, la Boutique ne change pas de page : seules les marques
+    // D'une marque à une autre (refonte du 12/11), la Boutique ne change pas de page : seules les séries
     // changent sur place. Pas de glissement (le cliché de la page, pris au clic, est jeté).
-    if (isCategorySwitch(previousPath, pathname)) {
+    if (isBrowseSwitch(previousPath, pathname)) {
       layer?.replaceChildren();
       return;
     }

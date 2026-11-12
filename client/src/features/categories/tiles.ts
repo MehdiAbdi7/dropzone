@@ -24,9 +24,32 @@ export function categorySlugFromPath(pathname: string | null): string | null {
   return match ? match[1] : null;
 }
 
-// Passer d'une catégorie à une autre sur la Boutique ne change pas de page : seules les marques
-// changent. La transition de page (glissement) n'a donc pas lieu d'être ; elle se joue pour tout
-// autre changement d'adresse. Vrai quand les deux adresses sont des pages de catégorie.
-export function isCategorySwitch(from: string | null, to: string | null): boolean {
-  return categorySlugFromPath(from) !== null && categorySlugFromPath(to) !== null;
+// La catégorie et la marque d'une adresse de la Boutique : `/boutique/<catégorie>` ou
+// `/boutique/<catégorie>/<marque>`, rien d'autre (une série a trois parties).
+function browsePath(pathname: string | null): { category: string; brand: string | null } | null {
+  const match = pathname?.match(/^\/boutique\/([^/]+)(?:\/([^/]+))?\/?$/);
+  return match ? { category: match[1], brand: match[2] ?? null } : null;
+}
+
+// La marque affichée par la page des séries (refonte du 12/11) : elle se relit dans l'adresse,
+// que le clic sur une puce change sans recharger (`/boutique/smartphones/samsung`). Le bouton
+// « précédent » du navigateur ramène ainsi à la marque d'avant. null : pas de marque dans
+// l'adresse, ou une adresse d'une autre catégorie.
+export function brandSlugFromPath(pathname: string | null, categorySlug: string): string | null {
+  const path = browsePath(pathname);
+  return path && path.category === categorySlug ? path.brand : null;
+}
+
+// Le groupe de séries à montrer : celui de la marque demandée, sinon le premier (une marque
+// épuisée ou inconnue n'a pas de groupe, la page ouvre la première).
+export function pickBrand<T extends { brand: { slug: string } }>(groups: T[], slug: string | null): T | undefined {
+  return groups.find((group) => group.brand.slug === slug) ?? groups[0];
+}
+
+// Passer d'une marque à une autre, ou de la catégorie à une de ses marques, ne change pas de
+// page : seules les séries changent. La transition de page (glissement) n'a donc pas lieu d'être ;
+// elle se joue pour tout autre changement d'adresse (une autre catégorie, une série, un produit).
+export function isBrowseSwitch(from: string | null, to: string | null): boolean {
+  const [a, b] = [browsePath(from), browsePath(to)];
+  return a !== null && b !== null && a.category === b.category && from !== to;
 }
