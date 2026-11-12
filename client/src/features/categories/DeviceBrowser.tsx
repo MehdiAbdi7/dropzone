@@ -10,7 +10,7 @@ import ModelCard from "@/features/shop/ModelCard";
 import SeriesCard from "@/features/shop/SeriesCard";
 import type { BrandSeries, Category, ProductCard } from "@/types/api";
 import ShopSearch from "./ShopSearch";
-import { brandSlugFromPath, pickBrand } from "./tiles";
+import { brandSlugFromPath, pickBrand, tabTitle } from "./tiles";
 
 const OTHERS = "autres";
 
@@ -49,11 +49,8 @@ export default function DeviceBrowser({
   }
 
   // Le titre de l'onglet suit la marque : la page ne se recharge pas, Next ne le recalcule pas.
-  // On garde la fin du titre (« · DropZone (démo) »), qui vient du layout.
   useEffect(() => {
-    const suffix = document.title.split(" · ").slice(1).join(" · ");
-    const title = currentName ? `${currentName} · ${category.name}` : category.name;
-    document.title = suffix ? `${title} · ${suffix}` : title;
+    document.title = tabTitle(document.title, currentName ? [currentName, category.name] : [category.name]);
   }, [currentName, category.name]);
 
   const chip = (slug: string, name: string, logoUrl: string | null) => (

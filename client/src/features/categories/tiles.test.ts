@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brandSlugFromPath, homeCategories, isBrowseSwitch, pickBrand } from "./tiles";
+import { brandSlugFromPath, homeCategories, isBrowseSwitch, pickBrand, tabTitle } from "./tiles";
 
 // L'accueil (refonte du 11/11 au soir) : des cartes identiques dans un carrousel. Le carrousel
 // montre toutes les catégories qui ont des produits : plus de plafond, plus de grille à remplir.
@@ -76,5 +76,19 @@ describe("pickBrand", () => {
     expect(pickBrand(groups, null)).toBe(groups[0]);
     expect(pickBrand(groups, "gigabyte")).toBe(groups[0]);
     expect(pickBrand([], "iphone")).toBeUndefined();
+  });
+});
+
+describe("tabTitle", () => {
+  it("remplace le début du titre et garde le nom du site", () => {
+    expect(tabTitle("Smartphones · DropZone (démo)", ["iPhone", "Smartphones"])).toBe("iPhone · Smartphones · DropZone (démo)");
+  });
+
+  it("ne s'allonge pas d'un clic à l'autre", () => {
+    expect(tabTitle("iPhone · Smartphones · DropZone (démo)", ["Samsung", "Smartphones"])).toBe("Samsung · Smartphones · DropZone (démo)");
+  });
+
+  it("garde le titre seul sans nom de site", () => {
+    expect(tabTitle("Smartphones", ["Smartphones"])).toBe("Smartphones");
   });
 });

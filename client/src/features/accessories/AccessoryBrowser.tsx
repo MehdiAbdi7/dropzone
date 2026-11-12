@@ -52,7 +52,7 @@ export default function AccessoryBrowser({ catalog }: { catalog: AccessoryCatalo
       <div className="sticky top-0 z-20 -mx-4 space-y-2.5 border-b border-line bg-bg/90 px-4 py-3 backdrop-blur md:mx-0 md:px-0">
         <div role="group" aria-label="Type" className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] md:flex-wrap md:overflow-visible">
           <span className={rowLabel}>Type</span>
-          {chip("Tous", !filters.type, () => go({ type: null, maker: null }), <small className="opacity-75">{catalog.products.length}</small>)}
+          {chip("Tous", !filters.type, () => go({ type: null, maker: null }), <small className="order-last opacity-75">{catalog.products.length}</small>)}
           {catalog.types.map((type) =>
             chip(
               type.name,

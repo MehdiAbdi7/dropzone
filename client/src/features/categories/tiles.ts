@@ -38,3 +38,11 @@ export function isBrowseSwitch(from: string | null, to: string | null): boolean 
   const [a, b] = [browsePath(from), browsePath(to)];
   return a !== null && b !== null && a.category === b.category && from !== to;
 }
+
+// Le titre de l'onglet quand la page change sans recharger (puce de marque, 12/11) : Next ne le
+// recalcule pas. On remplace tout sauf le nom du site, la dernière partie (« DropZone (démo) »),
+// pour que le titre ne s'allonge pas d'un clic à l'autre.
+export function tabTitle(current: string, parts: string[]): string {
+  const site = current.includes(" · ") ? current.split(" · ").at(-1) : null;
+  return [...parts, ...(site ? [site] : [])].join(" · ");
+}
