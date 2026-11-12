@@ -121,4 +121,27 @@ describe("replaceAccessories", () => {
     // La marque iPhone des coques sert aux nouvelles coques : elle reste.
     expect(await prisma.accessoryMaker.count({ where: { typeId: caseType.id, slug: "iphone" } })).toBe(1);
   });
+it("signale un téléphone dont la taille n'a pas de verre", async () => {
+    const model = await prisma.deviceModel.findFirstOrThrow({ where: { name: "Galaxy S22" } });
+    await prisma.product.create({
+      data: {
+        name: "Galaxy S22",
+        slug: "galaxy-s22",
+        description: "Test",
+        categoryId: catalog.phones.id,
+        deviceModelId: model.id,
+        status: "published",
+        specs: { Écran: "5,9 pouces Dynamic AMOLED" },
+        variants: { create: [{ sku: "S22-NEW", price: 90000, stock: 1 }] },
+      },
+    });
+    const report = await run();
+    expect(report.phonesWithoutGlass).toEqual(["Galaxy S22 (5,9 pouces)"]);
+  });
+
+  it("ne signale rien quand chaque taille a son verre", async () => {
+    const report = await run();
+    expect(report.phonesWithoutGlass).toEqual([]);
+  });
 });
+

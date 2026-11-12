@@ -27,6 +27,7 @@ function summary(report: ReplaceReport): string {
     `Déjà là, inchangés : ${report.fill.accessories.filter((a) => a.status === "existe déjà").length}`,
     `Valeurs de listes ajoutées : ${report.fill.created.choices}, listes créées : ${report.fill.created.lists}`,
     `Marques retirées (sans produit) : ${report.makersRemoved.length ? report.makersRemoved.join(", ") : "aucune"}`,
+    `Téléphones sans verre à leur taille : ${report.phonesWithoutGlass.length ? report.phonesWithoutGlass.join(", ") : "aucun"}`,
   ].join("\n");
 }
 

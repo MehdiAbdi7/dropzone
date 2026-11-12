@@ -219,7 +219,10 @@ async function checkRules(input: ProductBody, productId?: number) {
 
   return {
     deviceModelId,
-    compatibleModelIds: category.kind === "accessory" ? input.compatibleModelIds : [],
+    // Un verre (ses variantes ont des téléphones) : la fiche va sur l'ensemble des téléphones de
+    // ses tailles, recalculé à chaque enregistrement (« les accessoires d'un modèle » suivent).
+    // Sinon (une coque), ceux choisis pour la fiche dans le formulaire.
+    compatibleModelIds: category.kind !== "accessory" ? [] : modelIds.length > 0 ? modelIds : input.compatibleModelIds,
     variants,
   };
 }

@@ -90,3 +90,34 @@ describe("Un produit à beaucoup de variantes", () => {
     expect(response.status).toBe(201);
   });
 });
+
+// Les compatibles de la fiche servent à « les accessoires d'un modèle » (/produits?model=…) :
+// pour un verre, ils suivent ceux de ses tailles.
+describe("Compatibles de la fiche d'un verre", () => {
+  const ids = (models: { id: number }[]) => models.map((model) => model.id).sort();
+
+  it("sont l'ensemble des téléphones de ses variantes", async () => {
+    const { id } = await createGlass();
+    const detail = await admin.get(`/admin/products/${id}`);
+    expect(ids(detail.body.data.compatibleModels)).toEqual([catalog.iphone.id, catalog.galaxy.id].sort());
+  });
+
+  it("suivent une variante modifiée", async () => {
+    const { id } = await createGlass();
+    const before = (await admin.get(`/admin/products/${id}`)).body.data.variants as { id: number }[];
+    await admin
+      .patch(`/admin/products/${id}`)
+      .send(glass([size("6,7 pouces", "VER-FG-67", [catalog.iphone.id], before[0].id), size("6,8 pouces", "VER-FG-68", [], before[1].id)]))
+      .expect(200);
+    const detail = await admin.get(`/admin/products/${id}`);
+    expect(ids(detail.body.data.compatibleModels)).toEqual([catalog.iphone.id]);
+  });
+
+  it("restent ceux du formulaire quand aucune variante n'a de téléphone (une coque)", async () => {
+    const created = await admin
+      .post("/admin/products")
+      .send({ ...glass([{ sku: "COQ-1", price: 2500, stock: 10, options: { Modèle: "iPhone 15 Pro Max" } }]), compatibleModelIds: [catalog.iphone.id] });
+    const detail = await admin.get(`/admin/products/${created.body.data.id}`);
+    expect(ids(detail.body.data.compatibleModels)).toEqual([catalog.iphone.id]);
+  });
+});

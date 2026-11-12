@@ -110,16 +110,19 @@ export async function deleteModel(id: number) {
 // « Écran » de la fiche du modèle ; un téléphone sans fiche ou sans taille lisible n'y est pas.
 // `db` : une transaction, pour le script qui crée les verres (accessories:refonte).
 export async function listScreenSizes(db: Tx = prisma) {
-  const products = await db.product.findMany({
-    where: { deviceModel: { kind: "phone" } },
-    select: { specs: true, deviceModel: { select: { id: true, brand: true, name: true } } },
-    orderBy: [{ deviceModel: { brand: "asc" } }, { deviceModel: { name: "asc" } }],
+  // Par modèle (une seule entrée chacun), avec la première fiche qui dit sa taille.
+  const models = await db.deviceModel.findMany({
+    where: { kind: "phone", products: { some: {} } },
+    select: { id: true, brand: true, name: true, products: { orderBy: { id: "asc" }, select: { specs: true } } },
+    orderBy: [{ brand: "asc" }, { name: "asc" }],
   });
   const bySize = new Map<string, { id: number; brand: string; name: string }[]>();
-  for (const { specs, deviceModel } of products) {
-    const size = screenSize((specs as Record<string, string> | null)?.["Écran"]);
-    if (size && deviceModel) {
-      bySize.set(size, [...(bySize.get(size) ?? []), deviceModel]);
+  for (const { products, ...model } of models) {
+    const size = products
+      .map((product) => screenSize((product.specs as Record<string, string> | null)?.["Écran"]))
+      .find((found) => found !== null);
+    if (size) {
+      bySize.set(size, [...(bySize.get(size) ?? []), model]);
     }
   }
   return [...bySize]
