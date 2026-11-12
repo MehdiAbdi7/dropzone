@@ -136,7 +136,34 @@ export type ProductDetail = {
   colors: { name: string; photoUrl: string | null }[];
 };
 
-// ---------- Les affiches d'accessoires (12/11) ----------
+// ---------- Le catalogue des accessoires (refonte du 12/11) ----------
+
+// Un accessoire tel que la page Accessoires le montre : sa carte, et de quoi la filtrer.
+export type AccessoryItem = {
+  name: string;
+  slug: string;
+  image: string | null;
+  // Le slug de son type (Chargeurs, Coques…).
+  type: string;
+  // Sa marque dans le type (Anker), null sans marque (les verres incassables).
+  maker: { name: string; slug: string } | null;
+  // Le prix le plus bas en stock, sinon le plus bas tout court.
+  minPrice: number;
+  // Les variantes n'ont pas toutes le même prix : la carte écrit « dès ».
+  hasRange: boolean;
+  inStock: boolean;
+  // Les valeurs de chaque option, dans l'ordre des variantes : la ligne d'aide de la carte.
+  options: Record<string, string[]>;
+};
+
+// `GET /accessories/:category` : les types (avec leurs marques) et tous les accessoires publiés.
+export type AccessoryCatalog = {
+  category: { name: string; slug: string };
+  types: { name: string; slug: string; makers: { name: string; slug: string; logoUrl: string | null }[] }[];
+  products: AccessoryItem[];
+};
+
+// ---------- Les affiches d'accessoires (12/11, retirées par la refonte : code mort, tâche 9) ----------
 
 // Une colonne de l'affiche d'un produit : une de ses variantes neuves.
 export type AccessoryVariant = { sku: string; options: Options; price: number; stock: number };
