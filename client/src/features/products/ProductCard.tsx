@@ -26,33 +26,33 @@ export default function ProductCard({ product, sizes, href }: { product: Product
   return (
     <Link
       href={href ?? `/produits/${product.slug}`}
-      className="card group flex w-full flex-col gap-3 p-2.5 transition-[border-color,box-shadow] hover:border-blue-ink hover:shadow-[var(--shadow)] sm:p-3"
+      className="card group flex w-full flex-col gap-2 p-2 transition-[border-color,box-shadow] sm:gap-3 sm:p-3 sm:hover:border-blue-ink sm:hover:shadow-[var(--shadow)]"
     >
-      <div className="relative aspect-square overflow-hidden rounded-[10px] bg-surface-2">
+      <div className="relative aspect-[1/0.9] overflow-hidden rounded-[10px] bg-surface-2 sm:aspect-square">
         <ProductImage src={product.image} alt="" sizes={sizes} />
         <div className="absolute left-2 top-2 flex flex-wrap gap-1.5">
           {product.hasRefurbished ? <span className="badge badge-refurb">{CONDITION_LABELS.refurbished}</span> : null}
           {!product.inStock ? <span className="badge badge-out">Rupture</span> : null}
         </div>
       </div>
-      <div className="flex flex-1 flex-col gap-1 px-1 pb-0.5">
-        <p className="text-xs font-semibold text-ink-muted">{product.brand ?? product.category.name}</p>
-        <h3 className="line-clamp-2 text-sm leading-snug group-hover:text-blue-ink sm:text-[0.95rem]">{product.name}</h3>
-        {state ? <p className="text-xs text-ink-muted">{state}</p> : null}
-        <div className="mt-auto flex items-end justify-between gap-2 pt-2">
+      <div className="flex flex-1 flex-col gap-1 px-0 pb-0.5 sm:px-1">
+        <p className="text-[0.7rem] font-semibold text-ink-muted sm:text-xs">{product.brand ?? product.category.name}</p>
+        <h3 className="line-clamp-2 text-[0.8rem] leading-snug sm:text-[0.95rem] sm:group-hover:text-blue-ink">{product.name}</h3>
+        {state ? <p className="text-[0.7rem] text-ink-muted sm:text-xs">{state}</p> : null}
+        <div className="mt-auto flex items-end justify-between gap-0 pt-1.5 sm:gap-2 sm:pt-2">
           {product.inStock ? (
             <p className="leading-tight">
               <span className="block text-xs text-ink-muted">À partir de</span>
-              <span className="font-display text-base font-bold whitespace-nowrap">{formatPrice(product.minPrice)}</span>
+              <span className="font-display text-xs font-bold whitespace-nowrap sm:text-base">{formatPrice(product.minPrice)}</span>
             </p>
           ) : (
             <p className="text-sm text-ink-muted">Bientôt de retour</p>
           )}
           <span
             aria-hidden="true"
-            className="grid size-9 shrink-0 place-items-center rounded-full bg-blue text-on-brand transition-colors group-hover:bg-[var(--blue-hover)]"
+            className="grid size-7 shrink-0 place-items-center rounded-full bg-blue text-on-brand transition-colors group-hover:bg-[var(--blue-hover)] sm:size-9"
           >
-            <CartIcon size={17} />
+            <CartIcon size={17} className="size-[15px] sm:size-[17px]" />
           </span>
         </div>
       </div>

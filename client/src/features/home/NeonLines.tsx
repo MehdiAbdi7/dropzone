@@ -84,35 +84,45 @@ export default function NeonLines({ id }: { id: string }) {
 // sans passer dessous. Chaque côté ne montre que sa moitié du repère (`viewBox`), à la hauteur de
 // la section. Le parent doit être `relative overflow-hidden`, et son contenu passer au-dessus.
 // Absents sur téléphone (choix de Mehdi) : faute de place sur les côtés, ils passeraient sous les cartes.
-export function NeonSides({ id }: { id: string }) {
+export function NeonSides({
+  id,
+  side = "both",
+}: {
+  id: string;
+  side?: "both" | "left" | "right";
+}) {
   const glow = `neon-glow-${id}`;
-  const side =
+  const sideClass =
     "pointer-events-none absolute inset-y-0 aspect-[300/520] h-full";
   return (
     <div aria-hidden="true" className="hidden sm:block">
-      <svg
-        viewBox="-60 -20 300 520"
-        className={`${side} left-0`}
-        preserveAspectRatio="xMinYMid meet"
-        {...STROKE}
-      >
-        <Glow id={glow} />
-        <Strokes paths={RED_PATHS} color="#ff2e4d" opacity={0.75} glow={glow} />
-      </svg>
-      <svg
-        viewBox="360 -20 300 520"
-        className={`${side} right-0`}
-        preserveAspectRatio="xMaxYMid meet"
-        {...STROKE}
-      >
-        <Glow id={`${glow}-droite`} />
-        <Strokes
-          paths={BLUE_PATHS}
-          color="#3d4bff"
-          opacity={0.85}
-          glow={`${glow}-droite`}
-        />
-      </svg>
+      {side !== "right" ? (
+        <svg
+          viewBox="-60 -20 300 520"
+          className={`${sideClass} left-0`}
+          preserveAspectRatio="xMinYMid meet"
+          {...STROKE}
+        >
+          <Glow id={glow} />
+          <Strokes paths={RED_PATHS} color="#ff2e4d" opacity={0.75} glow={glow} />
+        </svg>
+      ) : null}
+      {side !== "left" ? (
+        <svg
+          viewBox="360 -20 300 520"
+          className={`${sideClass} right-0`}
+          preserveAspectRatio="xMaxYMid meet"
+          {...STROKE}
+        >
+          <Glow id={`${glow}-droite`} />
+          <Strokes
+            paths={BLUE_PATHS}
+            color="#3d4bff"
+            opacity={0.85}
+            glow={`${glow}-droite`}
+          />
+        </svg>
+      ) : null}
     </div>
   );
 }

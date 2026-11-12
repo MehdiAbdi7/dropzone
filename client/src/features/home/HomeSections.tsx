@@ -56,7 +56,7 @@ export function DealsBanner({ stage }: { stage: ReactNode }) {
     <section aria-labelledby="deals-title" className="scroll-mt-4 px-8 py-14">
       {/* La bordure ne se voit qu'en thème sombre, où le bandeau touche un fond aussi noir que lui. */}
       <div className="brand-dark hero-glow relative grid items-center gap-6 overflow-hidden rounded-[var(--radius-block)] border border-line px-6 py-8 sm:px-10 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] md:py-6">
-        <div className="relative z-10 space-y-4">
+        <div className="relative z-10 space-y-4 text-center md:text-left">
           <p className="text-sm font-bold tracking-[0.14em] text-red uppercase">
             Les affaires du moment
           </p>
@@ -67,7 +67,7 @@ export function DealsBanner({ stage }: { stage: ReactNode }) {
             Testées et{" "}
             <span className="text-gradient">décrites pièce par pièce</span>
           </h2>
-          <p className="max-w-md text-ink-muted">
+          <p className="mx-auto max-w-md text-ink-muted md:mx-0">
             Note, batterie, pièces d&apos;origine ou compatibles, avec ou sans
             boîte : chaque affaire a sa radiographie, et certaines ont des
             accessoires offerts.
@@ -161,35 +161,37 @@ export async function AffairShowcase() {
 export function AffairSheet({ example }: { example: ReactNode | null }) {
   return (
     <section aria-labelledby="families-title" className="container-page pb-14">
+      <div className="mb-8 text-center">
+        <div className="flex items-center justify-center gap-3">
+          <span className="rule-gradient w-6 sm:w-16" aria-hidden="true" />
+          <h2 id="families-title" className="text-2xl sm:text-3xl">
+            Ce que dit la fiche d&apos;une affaire
+          </h2>
+          <span className="rule-gradient w-6 -scale-x-100 sm:w-16" aria-hidden="true" />
+        </div>
+        <p className="mx-auto mt-2 max-w-xl text-ink-muted">
+          Avant de commander, vous voyez la note, la batterie et tout ce qui a
+          été changé. Trois familles, toujours dans le même ordre.
+        </p>
+      </div>
       <div
         className={`grid gap-8 ${example ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start" : ""}`}
       >
-        <div className="space-y-5">
-          <div>
-            <h2 id="families-title" className="text-2xl sm:text-3xl">
-              Ce que dit la fiche d&apos;une affaire
-            </h2>
-            <p className="mt-2 max-w-xl text-ink-muted">
-              Avant de commander, vous voyez la note, la batterie et tout ce qui
-              a été changé. Trois familles, toujours dans le même ordre.
-            </p>
-          </div>
-          <ul className={`grid gap-3 ${example ? "" : "md:grid-cols-3"}`}>
-            {FAMILIES.map((family) => (
-              <li key={family.title} className="card flex gap-4 p-4">
-                <span
-                  className={`grid size-11 shrink-0 place-items-center rounded-full ${family.tone}`}
-                >
-                  {family.icon}
-                </span>
-                <div>
-                  <h3 className="text-base">{family.title}</h3>
-                  <p className="mt-1 text-sm text-ink-muted">{family.text}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ul className={`grid gap-3 ${example ? "" : "md:grid-cols-3"}`}>
+          {FAMILIES.map((family) => (
+            <li key={family.title} className="card flex gap-4 p-4">
+              <span
+                className={`grid size-11 shrink-0 place-items-center rounded-full ${family.tone}`}
+              >
+                {family.icon}
+              </span>
+              <div>
+                <h3 className="text-base">{family.title}</h3>
+                <p className="mt-1 text-sm text-ink-muted">{family.text}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
         {example}
       </div>
     </section>

@@ -20,7 +20,10 @@ const RESUME_DELAY_MS = 2500;
 //  - pas de `scroll-behavior: smooth` en CSS : écrire `scrollLeft` le respecte, donc chaque image
 //    lancerait une animation fluide qui annulerait la précédente. Safari l'applique strictement :
 //    le carrousel resterait figé sur iPhone alors qu'il avance sur Chrome.
-export function useInfiniteCarousel(itemCount: number) {
+export function useInfiniteCarousel(
+  itemCount: number,
+  autoplaySpeed = AUTOPLAY_SPEED_PX_S,
+) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -28,7 +31,7 @@ export function useInfiniteCarousel(itemCount: number) {
   // Des refs et non du state : ces valeurs changent à chaque image ou à chaque geste, le state
   // provoquerait un rendu par mouvement de souris.
   const isPaused = useRef(false);
-  const isVisible = useRef(true);
+  const isVisible = useRef(false);
 
   // Le reste fractionnaire de la dérive. `scrollLeft` arrondit sur certains navigateurs : sans
   // accumulateur, une avance de 0,4 px par image serait arrondie à 0 et rien ne bougerait.
@@ -144,7 +147,7 @@ export function useInfiniteCarousel(itemCount: number) {
       if (isPaused.current || !isVisible.current) return;
       if (el.scrollWidth <= el.clientWidth) return;
 
-      const advance = AUTOPLAY_SPEED_PX_S * deltaSeconds + remainder.current;
+      const advance = autoplaySpeed * deltaSeconds + remainder.current;
       const whole = Math.floor(advance);
       remainder.current = advance - whole;
 
@@ -162,7 +165,7 @@ export function useInfiniteCarousel(itemCount: number) {
       cancelAnimationFrame(frameId);
       observer.disconnect();
     };
-  }, [itemCount, normalize, setScrollLeft]);
+  }, [autoplaySpeed, itemCount, normalize, setScrollLeft]);
 
   useEffect(() => {
     return () => {
@@ -178,6 +181,30 @@ export function useInfiniteCarousel(itemCount: number) {
     if (settleTimer.current) clearTimeout(settleTimer.current);
     settleTimer.current = setTimeout(normalize, SETTLE_DELAY_MS);
   }, [normalize]);
+
+  const scrollManually = useCallback(
+    (direction: -1 | 1) => {
+      const el = scrollerRef.current;
+      if (!el) return;
+
+      pauseTemporarily();
+      const firstItem = el.firstElementChild;
+      const itemWidth =
+        firstItem instanceof HTMLElement
+          ? firstItem.getBoundingClientRect().width
+          : el.clientWidth * 0.75;
+      const gap = Number.parseFloat(getComputedStyle(el).columnGap) || 0;
+      const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth";
+
+      el.scrollTo({
+        left: el.scrollLeft + direction * (itemWidth + gap),
+        behavior,
+      });
+    },
+    [pauseTemporarily],
+  );
 
   // Filtré sur le type de pointeur : sur téléphone, un toucher émet un `pointerenter` SANS
   // `pointerleave` (le pointeur tactile cesse d'exister au lieu de sortir). Le tactile passe donc
@@ -196,5 +223,5 @@ export function useInfiniteCarousel(itemCount: number) {
     onWheel: pauseTemporarily,
   };
 
-  return { scrollerRef, handleScroll, scrollerHandlers };
+  return { scrollerRef, handleScroll, scrollerHandlers, scrollManually };
 }

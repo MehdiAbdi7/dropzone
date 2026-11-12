@@ -28,6 +28,9 @@ import {
   TOP_GUARANTEES,
 } from "@/features/home/homeContent";
 
+const LATEST_SIDE_DECORATION_WIDTH =
+  "max(60px, calc((100vw - 1200px) / 2 + 60px))";
+
 // L'accueil s'affiche tout de suite (06/11). Avant, la page attendait toutes les réponses de
 // l'API pour s'afficher d'un bloc : quand Render réveille le serveur endormi (jusqu'à une
 // minute), on ne voyait que les cartes grises de loading.tsx. Maintenant, seules les parties
@@ -168,16 +171,16 @@ export default function HomePage() {
             <ScrollToHash id="categories" />
             <div className="mb-8 text-center">
               <div className="flex items-center justify-center gap-4">
-                {/* Les filets seulement à partir de sm : sur mobile, ils feraient passer le titre sur deux lignes. */}
+                {/* Courts sur mobile pour encadrer le titre sans le faire passer sur deux lignes. */}
                 <span
-                  className="rule-gradient hidden w-16 sm:block"
+                  className="rule-gradient w-6 sm:w-16"
                   aria-hidden="true"
                 />
                 <h2 id="categories-title" className="text-2xl sm:text-3xl">
                   Acheter par catégorie
                 </h2>
                 <span
-                  className="rule-gradient hidden w-16 -scale-x-100 sm:block"
+                  className="rule-gradient w-6 -scale-x-100 sm:w-16"
                   aria-hidden="true"
                 />
               </div>
@@ -199,33 +202,50 @@ export default function HomePage() {
       <Reveal>
         <section
           aria-labelledby="latest-title"
-          className="container-page space-y-6 py-14"
+          className="relative py-14"
         >
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 id="latest-title" className="text-2xl sm:text-3xl">
-                  Notre sélection
-                </h2>
-                <span className="rule-gradient w-10" aria-hidden="true" />
-              </div>
-              <p className="mt-1 text-ink-muted">
-                Les derniers arrivages, neufs scellés et affaires.
-              </p>
-            </div>
-            <Link
-              href="/boutique"
-              className="btn btn-outline btn-small btn-pill"
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div
+              className="absolute inset-y-0 left-0 overflow-hidden"
+              style={{ width: LATEST_SIDE_DECORATION_WIDTH }}
             >
-              Aller à la Boutique
-              <ArrowRightIcon size={16} />
-            </Link>
+              <NeonSides id="latest-left" side="left" />
+            </div>
+            <div
+              className="absolute inset-y-0 right-0 overflow-hidden"
+              style={{ width: LATEST_SIDE_DECORATION_WIDTH }}
+            >
+              <NeonSides id="latest-right" side="right" />
+            </div>
           </div>
-          <Suspense
-            fallback={<SectionLoading label="Chargement de la sélection…" />}
-          >
-            <LatestProducts />
-          </Suspense>
+          <div className="container-page relative z-10 space-y-6">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="w-full">
+                <div className="flex items-center justify-center gap-3">
+                  <span className="rule-gradient w-6 sm:w-10" aria-hidden="true" />
+                  <h2 id="latest-title" className="text-2xl sm:text-3xl">
+                    Notre sélection
+                  </h2>
+                  <span className="rule-gradient w-6 -scale-x-100 sm:w-10" aria-hidden="true" />
+                </div>
+                <p className="mt-1 text-ink-muted">
+                  Les derniers arrivages, neufs scellés et affaires.
+                </p>
+              </div>
+              <Link
+                href="/boutique"
+                className="btn btn-outline btn-small btn-pill"
+              >
+                Aller à la Boutique
+                <ArrowRightIcon size={16} />
+              </Link>
+            </div>
+            <Suspense
+              fallback={<SectionLoading label="Chargement de la sélection…" />}
+            >
+              <LatestProducts />
+            </Suspense>
+          </div>
         </section>
       </Reveal>
 

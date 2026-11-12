@@ -41,18 +41,18 @@ export default function CategoryCarousel({ categories }: { categories: Category[
               href={`/boutique/${category.slug}`}
               aria-hidden={copy !== 1}
               tabIndex={copy !== 1 ? -1 : undefined}
-              className="card group block shrink-0 basis-[42%] transition-[border-color,transform] hover:-translate-y-0.5 sm:basis-[250px]"
+              className="card group block shrink-0 basis-[32%] transition-[border-color,transform] sm:basis-[250px] sm:hover:-translate-y-0.5"
             >
               {/* overflow-hidden : le cadre de CategoryArt dépasse un peu sous la vignette, ce qui
                   ferait défiler le carrousel à la verticale (voir plus haut, overflow-x). */}
-              <span className="relative block h-28 overflow-hidden sm:h-48">
+              <span className="relative block h-20 overflow-hidden sm:h-48">
                 <CategoryArt
                   category={{ kind: category.kind, photos: category.photos, fallbackImage: category.fallbackImage }}
                   className="absolute inset-x-2 top-3 bottom-0 sm:inset-x-3 sm:top-4"
                   sizes="250px"
                 />
               </span>
-              <span className="block px-2 pt-1 pb-3 text-center font-display text-base font-bold sm:px-3 sm:pb-4 sm:text-lg">{category.name}</span>
+              <span className="block px-1 pt-1 pb-2 text-center font-display text-[0.7rem] font-bold sm:px-3 sm:pb-4 sm:text-lg">{category.name}</span>
             </Link>
           )),
         )}

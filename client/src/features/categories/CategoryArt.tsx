@@ -54,7 +54,7 @@ export default function CategoryArt({
               fill
               sizes={sizes}
               unoptimized={device.src.endsWith(".svg")}
-              className="object-contain object-bottom drop-shadow-[0_14px_18px_rgb(0_0_0/0.45)]"
+              className="object-contain object-bottom drop-shadow-[0_3px_4px_rgb(0_0_0/0.15)] sm:drop-shadow-[0_14px_18px_rgb(0_0_0/0.45)]"
               onLoad={(event) => {
                 const { naturalWidth, naturalHeight } = event.currentTarget;
                 if (naturalWidth > 0 && naturalHeight > 0) {
