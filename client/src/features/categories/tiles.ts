@@ -9,15 +9,6 @@ export function homeCategories<T extends { featured: boolean; productCount: numb
   return [...withProducts.filter((category) => category.featured), ...withProducts.filter((category) => !category.featured)];
 }
 
-// La Boutique change de catégorie sans recharger la page, puis met l'adresse à jour
-// (`/boutique/tablettes`). Pour que le bouton « précédent » du navigateur marche, la catégorie
-// affichée se relit dans l'adresse : `/boutique/<catégorie>` et rien d'autre. Une page de marque
-// (`/boutique/smartphones/iphone`) ou toute autre page ne donne aucune catégorie.
-export function categorySlugFromPath(pathname: string | null): string | null {
-  const match = pathname?.match(/^\/boutique\/([^/]+)\/?$/);
-  return match ? match[1] : null;
-}
-
 // La catégorie et la marque d'une adresse de la Boutique : `/boutique/<catégorie>` ou
 // `/boutique/<catégorie>/<marque>`, rien d'autre (une série a trois parties).
 function browsePath(pathname: string | null): { category: string; brand: string | null } | null {

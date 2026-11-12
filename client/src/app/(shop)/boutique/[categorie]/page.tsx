@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import DevicePage from "@/features/categories/DevicePage";
-import ShopBrowser from "@/features/categories/ShopBrowser";
+import { Suspense } from "react";
 import { DEVICE_KINDS } from "@/config/catalog";
+import AccessoryBrowser from "@/features/accessories/AccessoryBrowser";
+import DevicePage from "@/features/categories/DevicePage";
 import { publicFetch } from "@/lib/publicFetch";
-import type { Category } from "@/types/api";
+import type { AccessoryCatalog, Category } from "@/types/api";
 
 // Le même appel sert à generateMetadata et à la page : Next le déduplique.
 async function getCategory(slug: string) {
@@ -22,31 +23,39 @@ export async function generateMetadata({
   return { title: category?.name ?? "Boutique" };
 }
 
-// Étapes 1 et 2 du parcours, sur une seule page : la barre des catégories, puis les marques de la
-// catégorie (plus « Autres » pour les produits sans marque). Cette page lit l'API une fois ; tout
-// ce qui change quand on clique sur une catégorie est dans ShopBrowser, qui n'a pas besoin de
-// recharger la page.
+const UNAVAILABLE = (
+  <div className="container-page py-8">
+    <p role="alert" className="card p-6">
+      La boutique ne répond pas pour le moment. Rechargez la page dans quelques secondes.
+    </p>
+  </div>
+);
+
+// La page d'une catégorie (refonte du 12/11) : elle se choisit par la sorte de la catégorie, jamais
+// par son adresse. Une catégorie d'appareils : ses séries et les puces de marques. Une catégorie
+// d'accessoires : une page, deux filtres (type, marque) et une fenêtre d'achat.
 export default async function ShopCategoryPage({
   params,
 }: PageProps<"/boutique/[categorie]">) {
   const { categories, category } = await getCategory((await params).categorie);
   if (!categories) {
-    return (
-      <div className="container-page py-8">
-        <p role="alert" className="card p-6">
-          La boutique ne répond pas pour le moment. Rechargez la page dans
-          quelques secondes.
-        </p>
-      </div>
-    );
+    return UNAVAILABLE;
   }
   if (!category) {
     notFound();
   }
 
-  // Une catégorie d'appareils : ses séries et les puces de marques (refonte du 12/11).
   if (DEVICE_KINDS.includes(category.kind)) {
     return <DevicePage category={category} />;
   }
-  return <ShopBrowser categories={categories} initialSlug={category.slug} />;
+  const catalog = await publicFetch<AccessoryCatalog>(`/accessories/${category.slug}`);
+  if (!catalog) {
+    return UNAVAILABLE;
+  }
+  // Suspense : les filtres se lisent dans l'adresse (useSearchParams), côté navigateur.
+  return (
+    <Suspense>
+      <AccessoryBrowser catalog={catalog} />
+    </Suspense>
+  );
 }

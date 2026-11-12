@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brandSlugFromPath, categorySlugFromPath, homeCategories, isBrowseSwitch, pickBrand } from "./tiles";
+import { brandSlugFromPath, homeCategories, isBrowseSwitch, pickBrand } from "./tiles";
 
 // L'accueil (refonte du 11/11 au soir) : des cartes identiques dans un carrousel. Le carrousel
 // montre toutes les catégories qui ont des produits : plus de plafond, plus de grille à remplir.
@@ -29,29 +29,6 @@ describe("homeCategories", () => {
 
   it("n'a rien à montrer sans catégorie", () => {
     expect(homeCategories([])).toEqual([]);
-  });
-});
-
-// `/boutique` ouvre directement une catégorie : celle qui a le plus de produits publiés.
-describe("categorySlugFromPath", () => {
-  it("lit la catégorie dans /boutique/<catégorie>", () => {
-    expect(categorySlugFromPath("/boutique/tablettes")).toBe("tablettes");
-    expect(categorySlugFromPath("/boutique/ordinateurs-portables")).toBe("ordinateurs-portables");
-  });
-
-  it("accepte une barre finale", () => {
-    expect(categorySlugFromPath("/boutique/tablettes/")).toBe("tablettes");
-  });
-
-  it("ne lit rien hors d'une page de catégorie", () => {
-    expect(categorySlugFromPath("/boutique")).toBeNull();
-    expect(categorySlugFromPath("/produits")).toBeNull();
-    expect(categorySlugFromPath("/")).toBeNull();
-    expect(categorySlugFromPath(null)).toBeNull();
-  });
-
-  it("ne confond pas une page de marque avec une catégorie", () => {
-    expect(categorySlugFromPath("/boutique/smartphones/iphone")).toBeNull();
   });
 });
 
