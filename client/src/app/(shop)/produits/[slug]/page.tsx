@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { DEVICE_KINDS } from "@/config/catalog";
 import ProductGrid from "@/features/products/ProductGrid";
 import Breadcrumb from "@/features/shop/Breadcrumb";
@@ -11,6 +11,7 @@ import NewPicker from "@/features/shop/NewPicker";
 import ProductFacts from "@/features/shop/ProductFacts";
 import ProductHeader, { productCrumbs } from "@/features/shop/ProductHeader";
 import { formatPrice } from "@/lib/format";
+import { retiredProductRedirect } from "@/lib/legacyRedirect";
 import { getPalette } from "@/lib/palette";
 import { getProduct } from "@/lib/products";
 import { publicFetchPage } from "@/lib/publicFetch";
@@ -46,8 +47,14 @@ export async function generateMetadata({ params }: PageProps<"/produits/[slug]">
 // série, avec les caractéristiques dessous. Accessoire (vendu neuf) : le choix des options et
 // l'achat, directement.
 export default async function ProductPage({ params, searchParams }: PageProps<"/produits/[slug]">) {
-  const product = await getProduct((await params).slug);
+  const { slug } = await params;
+  const product = await getProduct(slug);
   if (!product) {
+    // Un ancien verre ou une ancienne coque, remplacés le 12/11 : la page de son type.
+    const retired = retiredProductRedirect(slug);
+    if (retired) {
+      redirect(retired);
+    }
     notFound();
   }
   const isDevice = DEVICE_KINDS.includes(product.category.kind);

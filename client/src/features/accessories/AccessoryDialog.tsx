@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import ProductImage from "@/components/ui/ProductImage";
+import { OPTION_ORDER_BY_KIND } from "@/config/catalog";
 import AddToCartButton from "@/features/cart/AddToCartButton";
 import { matchChoices } from "@/features/admin/products/choiceSearch";
 import { formatPrice } from "@/lib/format";
@@ -62,8 +63,15 @@ export default function AccessoryDialog({ slug, onClose }: { slug: string | null
   );
 }
 
-// Les options d'un accessoire, dans l'ordre où ses variantes les donnent, avec leurs valeurs.
+// Les options d'un accessoire avec leurs valeurs, dans l'ordre de la Boutique (Modèle, Taille de
+// l'écran, Puissance…) : PostgreSQL range les clés d'un JSONB par longueur, pas dans l'ordre saisi.
 function optionsOf(variants: Variant[]): [string, string[]][] {
+  const order = OPTION_ORDER_BY_KIND.accessory;
+  const rank = (key: string) => (order.includes(key) ? order.indexOf(key) : order.length);
+  return [...valuesOf(variants)].sort(([a], [b]) => rank(a) - rank(b));
+}
+
+function valuesOf(variants: Variant[]): Map<string, string[]> {
   const options = new Map<string, string[]>();
   for (const variant of variants) {
     for (const [key, value] of Object.entries(variant.options)) {
@@ -72,7 +80,7 @@ function optionsOf(variants: Variant[]): [string, string[]][] {
       options.set(key, values);
     }
   }
-  return [...options];
+  return options;
 }
 
 function AccessoryChoices({ product }: { product: ProductDetail }) {

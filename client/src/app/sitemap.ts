@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
+import { DEVICE_KINDS } from "@/config/catalog";
 import { SITE_URL } from "@/config/site";
 import { publicFetch, publicFetchPage } from "@/lib/publicFetch";
 import type { Category, ProductCard } from "@/types/api";
 
-// sitemap.xml : les pages fixes, les catégories et leurs marques, et chaque produit publié.
+// sitemap.xml : les pages fixes, les catégories (avec les marques des appareils), et chaque produit publié.
 // Lu à chaque demande (les lectures de l'API sont en `no-store`) : un produit publié dans
 // le back-office y entre tout de suite. Si l'API ne répond pas, seules les pages fixes restent.
 const STATIC_PAGES = [
@@ -52,7 +53,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((category) => category.productCount > 0)
       .flatMap((category) => [
         entry(`/boutique/${category.slug}`, 0.7),
-        ...category.brands.map((brand) => entry(`/boutique/${category.slug}/${brand.slug}`, 0.6)),
+        // Les marques des appareils ont leur adresse ; les types d'accessoires ne sont plus que des
+        // filtres de la page Accessoires (refonte du 12/11).
+        ...(DEVICE_KINDS.includes(category.kind)
+          ? category.brands.map((brand) => entry(`/boutique/${category.slug}/${brand.slug}`, 0.6))
+          : []),
       ]),
     ...products.map((product) => entry(`/produits/${product.slug}`, 0.8)),
   ];

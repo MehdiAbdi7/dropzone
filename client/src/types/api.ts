@@ -163,29 +163,6 @@ export type AccessoryCatalog = {
   products: AccessoryItem[];
 };
 
-// ---------- Les affiches d'accessoires (12/11, retirées par la refonte : code mort, tâche 9) ----------
-
-// Une colonne de l'affiche d'un produit : une de ses variantes neuves.
-export type AccessoryVariant = { sku: string; options: Options; price: number; stock: number };
-
-export type AccessoryPosterProduct = {
-  name: string;
-  slug: string;
-  description: string;
-  image: string | null;
-  // Les caractéristiques du produit, dans l'ordre de la fiche.
-  specs: [string, string][];
-  variants: AccessoryVariant[];
-};
-
-// La page d'une marque d'accessoires : une affiche par produit publié de la marque dans le type.
-export type AccessoryPoster = {
-  category: { name: string; slug: string };
-  type: { name: string; slug: string; logoUrl: string | null };
-  maker: { name: string; slug: string; logoUrl: string | null };
-  products: AccessoryPosterProduct[];
-};
-
 // ---------- Les affiches de séries ----------
 
 // Une affiche de la page « choisis ta série ».

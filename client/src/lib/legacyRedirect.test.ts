@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { catalogRedirect, legacyCatalogRedirect } from "./legacyRedirect";
+import { accessoryRedirect, catalogRedirect, legacyCatalogRedirect, retiredProductRedirect } from "./legacyRedirect";
 
 const from = (query: string) => legacyCatalogRedirect(new URLSearchParams(query));
 const page = (query: string) => catalogRedirect(new URLSearchParams(query));
@@ -45,5 +45,30 @@ describe("legacyCatalogRedirect", () => {
     expect(from("condition=neuf")).toBeNull();
     expect(from("condition=affaire&page=2")).toBeNull();
     expect(from("")).toBeNull();
+  });
+});
+
+// Refonte du 12/11 : plus d'étape marque ni d'affiches pour les accessoires, une page à filtres.
+describe("accessoryRedirect", () => {
+  it("envoie un ancien type vers la page des accessoires filtrée", () => {
+    expect(accessoryRedirect("accessoires", "chargeurs")).toBe("/boutique/accessoires?type=chargeurs");
+  });
+
+  it("garde la marque d'une ancienne page d'affiches", () => {
+    expect(accessoryRedirect("accessoires", "coques", "iphone")).toBe("/boutique/accessoires?type=coques&marque=iphone");
+  });
+});
+
+describe("retiredProductRedirect", () => {
+  it("envoie un ancien verre vers les verres incassables", () => {
+    expect(retiredProductRedirect("verre-trempe-incassable-iphone-15")).toBe("/boutique/accessoires?type=incassable-ecran");
+  });
+
+  it("envoie une ancienne coque vers les coques", () => {
+    expect(retiredProductRedirect("coque-antichoc-transparente-iphone-15")).toBe("/boutique/accessoires?type=coques");
+  });
+
+  it("ne dit rien d'un autre produit", () => {
+    expect(retiredProductRedirect("iphone-17-pro-max")).toBeNull();
   });
 });
