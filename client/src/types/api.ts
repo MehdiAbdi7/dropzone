@@ -175,6 +175,13 @@ export type SeriesSummary = {
   fallback: { image: string | null; color: string | null };
 };
 
+// Les séries d'une marque, dans `GET /series?category=` sans marque (12/11) : la Boutique en
+// reçoit toutes les marques d'un coup et passe de l'une à l'autre sans nouvel appel.
+export type BrandSeries = {
+  brand: { name: string; slug: string; logoUrl: string | null };
+  series: SeriesSummary[];
+};
+
 // Une colonne de l'affiche d'une série. Un modèle sans fiche publiée y est aussi, grisé :
 // `onSale` faux, pas de `productSlug` (donc pas de lien), ni photo, ni prix.
 export type PosterModel = {

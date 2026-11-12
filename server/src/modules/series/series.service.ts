@@ -186,6 +186,19 @@ export async function listSeries(category: string, brand: string) {
     .map(({ summary }) => summary);
 }
 
+// Les séries de toutes les marques d'une catégorie (12/11) : la Boutique change de marque sur
+// place, sans nouvel appel. Marques dans l'ordre du back-office ; une marque sans série en vente
+// n'apparaît pas (sa puce n'aurait rien à montrer).
+export async function listSeriesByBrand(category: string) {
+  const brands = await prisma.brand.findMany({
+    where: { category: { slug: category } },
+    orderBy: [{ position: "asc" }, { id: "asc" }],
+    select: { name: true, slug: true, logoUrl: true },
+  });
+  const groups = await Promise.all(brands.map(async (brand) => ({ brand, series: await listSeries(category, brand.slug) })));
+  return groups.filter((group) => group.series.length > 0);
+}
+
 // L'affiche d'une série. Une série inconnue, ou dont aucun modèle n'est en vente (elle
 // n'apparaît pas non plus dans la liste), n'a pas d'affiche.
 export async function getSeries(category: string, brand: string, serie: string) {
