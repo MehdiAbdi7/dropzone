@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import DevicePage from "@/features/categories/DevicePage";
 import ShopBrowser from "@/features/categories/ShopBrowser";
+import { DEVICE_KINDS } from "@/config/catalog";
 import { publicFetch } from "@/lib/publicFetch";
 import type { Category } from "@/types/api";
 
@@ -42,5 +44,9 @@ export default async function ShopCategoryPage({
     notFound();
   }
 
+  // Une catégorie d'appareils : ses séries et les puces de marques (refonte du 12/11).
+  if (DEVICE_KINDS.includes(category.kind)) {
+    return <DevicePage category={category} />;
+  }
   return <ShopBrowser categories={categories} initialSlug={category.slug} />;
 }

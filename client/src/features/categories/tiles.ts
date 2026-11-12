@@ -9,12 +9,6 @@ export function homeCategories<T extends { featured: boolean; productCount: numb
   return [...withProducts.filter((category) => category.featured), ...withProducts.filter((category) => !category.featured)];
 }
 
-// La catégorie que `/boutique` ouvre : la plus fournie, sans compter les vides. `sort` est stable,
-// donc à égalité c'est la première de l'API.
-export function defaultCategory<T extends { productCount: number }>(categories: T[]): T | undefined {
-  return categories.filter((category) => category.productCount > 0).sort((a, b) => b.productCount - a.productCount)[0];
-}
-
 // La Boutique change de catégorie sans recharger la page, puis met l'adresse à jour
 // (`/boutique/tablettes`). Pour que le bouton « précédent » du navigateur marche, la catégorie
 // affichée se relit dans l'adresse : `/boutique/<catégorie>` et rien d'autre. Une page de marque

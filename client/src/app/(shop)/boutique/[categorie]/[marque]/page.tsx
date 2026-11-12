@@ -5,10 +5,9 @@ import MakerGrid from "@/features/categories/MakerGrid";
 import ProductGrid from "@/features/products/ProductGrid";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import ModelCard from "@/features/shop/ModelCard";
-import SeriesCard from "@/features/shop/SeriesCard";
-import { getPalette } from "@/lib/palette";
+import DevicePage from "@/features/categories/DevicePage";
 import { publicFetch, publicFetchPage } from "@/lib/publicFetch";
-import type { Category, ProductCard, SeriesSummary } from "@/types/api";
+import type { Category, ProductCard } from "@/types/api";
 
 // La catégorie et la marque de l'adresse, si elles existent. « autres » = sans marque.
 async function getBrand(categorySlug: string, brandSlug: string) {
@@ -54,53 +53,10 @@ export default async function ShopBrandPage({
   }
 
   const isDevice = category ? DEVICE_KINDS.includes(category.kind) : false;
-  if (category && brand && isDevice && brand.slug !== "autres") {
-    // Les séries et la palette (lueur des affiches sans couverture) en même temps.
-    const [series, palette] = await Promise.all([
-      publicFetch<SeriesSummary[]>(
-        `/series?category=${category.slug}&brand=${brand.slug}`,
-      ),
-      getPalette(),
-    ]);
-    if (!series) {
-      return UNAVAILABLE;
-    }
-    return (
-      <div className="container-page space-y-6 py-8">
-        <Breadcrumb
-          items={[
-            { label: "Boutique", href: "/boutique" },
-            { label: category.name, href: `/boutique/${category.slug}` },
-            { label: brand.name },
-          ]}
-        />
-        <header className="space-y-1">
-          <h1 className="text-3xl">{brand.name}</h1>
-          <p className="text-ink-muted">
-            Choisis ta série, de la plus récente à la plus ancienne.
-          </p>
-        </header>
-        {series.length === 0 ? (
-          <p className="card p-6">
-            Aucun appareil de cette marque pour le moment.
-          </p>
-        ) : (
-          // Deux affiches par ligne sur téléphone, trois sur grand écran.
-          <ul className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
-            {series.map((one, index) => (
-              <li key={one.slug}>
-                <SeriesCard
-                  series={one}
-                  href={`/boutique/${category.slug}/${brand.slug}/${one.slug}`}
-                  palette={palette}
-                  priority={index === 0}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    );
+  // Une catégorie d'appareils (refonte du 12/11) : la même page que /boutique/<catégorie>, avec
+  // la marque de l'adresse choisie (ou « Autres »). Les puces passent d'une marque à l'autre.
+  if (category && isDevice) {
+    return <DevicePage category={category} />;
   }
 
   // Un type d'accessoires qui a des marques (12/11) : l'étape marque, puis les affiches de la marque.

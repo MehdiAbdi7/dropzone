@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brandSlugFromPath, categorySlugFromPath, defaultCategory, homeCategories, isBrowseSwitch, pickBrand } from "./tiles";
+import { brandSlugFromPath, categorySlugFromPath, homeCategories, isBrowseSwitch, pickBrand } from "./tiles";
 
 // L'accueil (refonte du 11/11 au soir) : des cartes identiques dans un carrousel. Le carrousel
 // montre toutes les catégories qui ont des produits : plus de plafond, plus de grille à remplir.
@@ -33,30 +33,6 @@ describe("homeCategories", () => {
 });
 
 // `/boutique` ouvre directement une catégorie : celle qui a le plus de produits publiés.
-describe("defaultCategory", () => {
-  const category = (name: string, productCount: number) => ({ name, productCount });
-
-  it("choisit la catégorie la plus fournie, comme les PC portables", () => {
-    const picked = defaultCategory([category("Smartphones", 48), category("PC", 127), category("Tablettes", 7)]);
-    expect(picked?.name).toBe("PC");
-  });
-
-  it("ignore les catégories vides, même seules en tête de liste", () => {
-    expect(defaultCategory([category("Accessoires", 0), category("Tablettes", 7)])?.name).toBe("Tablettes");
-  });
-
-  it("garde la première de l'API à égalité", () => {
-    expect(defaultCategory([category("A", 5), category("B", 5)])?.name).toBe("A");
-  });
-
-  it("n'en choisit aucune quand toutes sont vides", () => {
-    expect(defaultCategory([category("A", 0)])).toBeUndefined();
-    expect(defaultCategory([])).toBeUndefined();
-  });
-});
-
-// La Boutique change de catégorie sur place et met l'adresse à jour : la catégorie affichée se
-// relit dans l'adresse, pour que le bouton « précédent » du navigateur fonctionne.
 describe("categorySlugFromPath", () => {
   it("lit la catégorie dans /boutique/<catégorie>", () => {
     expect(categorySlugFromPath("/boutique/tablettes")).toBe("tablettes");
