@@ -88,6 +88,7 @@ export function buildConditionReport(variant: ConditionFields): string | null {
 // `sortie` n'est pas ici : il se trie en JavaScript (voir byRelease).
 const SORTS: Record<Exclude<ProductListQuery["sort"], "sortie">, Prisma.ProductOrderByWithRelationInput[]> = {
   nouveautes: [{ createdAt: "desc" }, { id: "desc" }],
+  arrivages: [{ stockedAt: "desc" }, { id: "desc" }],
   "prix-croissant": [{ minPrice: "asc" }, { id: "asc" }],
   "prix-decroissant": [{ minPrice: "desc" }, { id: "desc" }],
 };
@@ -140,6 +141,12 @@ export async function listProducts(query: ProductListQuery) {
     // « affaire » est le mot du magasin ; « reconditionne », l'ancien, reste accepté.
     const condition: Condition = query.condition === "neuf" ? "new" : "refurbished";
     filters.push({ variants: { some: { condition, stock: { gt: 0 } } } });
+  }
+  if (query.appareils) {
+    filters.push({ category: { kind: { in: DEVICE_KINDS } } });
+  }
+  if (query.enstock) {
+    filters.push({ variants: { some: { stock: { gt: 0 } } } });
   }
   if (query.fiche === "complete") {
     filters.push({

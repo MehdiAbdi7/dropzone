@@ -249,11 +249,15 @@ model Product {
   minPrice         Int              @default(0) @map("min_price")
   newPrice         Int?             @map("new_price")
   createdAt        DateTime         @default(now()) @map("created_at")
+  // Le dernier arrivage (12/11) : la création, puis chaque nouvel exemplaire, nouvelle variante ou
+  // hausse de stock faits dans le back-office. Les « derniers arrivages » de l'accueil le suivent.
+  stockedAt        DateTime         @default(now()) @map("stocked_at")
   variants         ProductVariant[]
   images           ProductImage[]
   orderItems       OrderItem[]
 
   @@index([status, categoryId, createdAt(sort: Desc)])
+  @@index([status, stockedAt(sort: Desc)])
   @@index([status, minPrice])
   @@index([newPrice])
   @@index([categoryId])
