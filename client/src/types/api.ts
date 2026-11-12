@@ -106,6 +106,8 @@ export type Variant = {
   origin?: string | null;
   reference?: string | null;
   gifts: Gift[];
+  // Les téléphones de cette variante d'accessoire (une taille de verre, 12/11) ; vide sinon.
+  compatibleModels?: ModelRef[];
 };
 
 type ModelRef = { brand: string; name: string; slug: string };

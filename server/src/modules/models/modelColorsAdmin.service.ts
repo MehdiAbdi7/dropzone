@@ -137,9 +137,10 @@ export async function removeColorPhoto(id: number, color: string) {
 // a pas (décision de Mehdi du 05/11 : le gérant ajoute du stock pour le vendre).
 export async function addUnit(id: number, input: UnitBody) {
   const model = await findModel(id);
+  // Un appareil n'a pas de téléphones compatibles (c'est une règle des accessoires).
   const { color, id: _id, gifts: _gifts, ...unit } = input;
   const variant = withoutDealSheet({ ...unit, gifts: [] });
-  const { gifts: _none, ...data } = variant;
+  const { gifts: _none, compatibleModelIds: _models, ...data } = variant;
 
   // Chaque appareil annonce sa garantie, comme dans le formulaire produit.
   if (data.warrantyMonths === null) {

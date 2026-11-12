@@ -266,6 +266,12 @@ export async function getProductBySlug(slug: string) {
           warrantyMonths: true,
           origin: true,
           reference: true,
+          // Les téléphones de cette variante d'accessoire (une taille de verre) : la fenêtre de la
+          // Boutique y cherche le téléphone du client (12/11).
+          compatibleModels: {
+            select: { brand: true, name: true, slug: true },
+            orderBy: [{ brand: "asc" }, { name: "asc" }],
+          },
           gifts: {
             select: {
               quantity: true,

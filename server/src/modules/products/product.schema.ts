@@ -110,6 +110,8 @@ export const variantSchema = z
       )
       .max(5)
       .default([]),
+    // Les téléphones sur lesquels va la variante d'un accessoire (une taille de verre, 12/11).
+    compatibleModelIds: z.array(z.number().int().positive()).max(60).default([]),
   })
   .superRefine((variant, ctx) => {
     // Un neuf scellé n'a rien à décrire ; ses articles offerts restent permis.
