@@ -195,21 +195,7 @@ export default function HomePage() {
         </section>
       </Reveal>
 
-      {/* 4. Le bandeau des affaires : affiché avec sa roue pendant l'attente, retiré s'il n'y
-          a finalement aucune affaire en stock. */}
-      <Reveal>
-        <Suspense
-          fallback={
-            <DealsBanner
-              stage={<StageLoading id="deals" className={DEALS_STAGE} />}
-            />
-          }
-        >
-          <Deals />
-        </Suspense>
-      </Reveal>
-
-      {/* 5. Les derniers arrivages, avec les nouvelles cartes produit. */}
+      {/* 4. Les derniers arrivages, avec les nouvelles cartes produit. */}
       <Reveal>
         <section
           aria-labelledby="latest-title"
@@ -241,6 +227,20 @@ export default function HomePage() {
             <LatestProducts />
           </Suspense>
         </section>
+      </Reveal>
+
+      {/* 5. Le bandeau des affaires : affiché avec sa roue pendant l'attente, retiré s'il n'y
+          a finalement aucune affaire en stock. */}
+      <Reveal>
+        <Suspense
+          fallback={
+            <DealsBanner
+              stage={<StageLoading id="deals" className={DEALS_STAGE} />}
+            />
+          }
+        >
+          <Deals />
+        </Suspense>
       </Reveal>
 
       {/* 6. Ce qui distingue DropZone : la fiche d'une affaire, avec un vrai exemple. */}
