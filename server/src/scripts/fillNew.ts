@@ -2,6 +2,8 @@
 //   npm run fill:new                       → essai à blanc : tout est fait puis annulé, le rapport s'affiche
 //   npm run fill:new -- --report=rapport.md → écrit en plus le détail ligne à ligne dans un fichier
 //   npm run fill:new -- --apply            → écrit pour de bon, en une seule transaction
+//   npm run fill:new -- --accessoires      → seulement les accessoires et leurs marques (rejouable sans
+//                                            toucher aux appareils ni à leurs prix), avec ou sans --apply
 // La base visée est celle de server/.env (depuis le 06/11, la base Neon de la boutique en ligne).
 import { writeFileSync } from "node:fs";
 import { prisma } from "../config/db.js";
@@ -9,6 +11,7 @@ import { env } from "../config/env.js";
 import { type FillNewReport, fillNew } from "./lib/fillNew.js";
 
 const apply = process.argv.includes("--apply");
+const accessoriesOnly = process.argv.includes("--accessoires");
 const reportPath = process.argv.find((arg) => arg.startsWith("--report="))?.slice("--report=".length);
 
 class Simulation extends Error {
@@ -59,7 +62,7 @@ console.log(`Base visée : ${host}`);
 try {
   const report = await prisma.$transaction(
     async (tx) => {
-      const result = await fillNew(tx);
+      const result = await fillNew(tx, { accessoriesOnly });
       if (!apply) {
         throw new Simulation(result);
       }

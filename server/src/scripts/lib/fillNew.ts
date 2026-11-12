@@ -108,7 +108,9 @@ function describe(row: DeviceRow, kind: string, specs: Record<string, string>): 
   return [row.blurb, ...parts].join(" ");
 }
 
-export async function fillNew(db: Tx): Promise<FillNewReport> {
+// `accessoriesOnly` : seulement les accessoires et leurs marques, sans toucher aux appareils (ni à
+// leurs prix, que le gérant a pu corriger depuis le premier passage).
+export async function fillNew(db: Tx, { accessoriesOnly = false }: { accessoriesOnly?: boolean } = {}): Promise<FillNewReport> {
   const report: FillNewReport = {
     devices: [],
     review: [],
@@ -146,7 +148,7 @@ export async function fillNew(db: Tx): Promise<FillNewReport> {
   const covered = new Set<number>();
 
   // ---------- Appareils ----------
-  for (const { kind, rows } of DEVICE_GROUPS) {
+  for (const { kind, rows } of accessoriesOnly ? [] : DEVICE_GROUPS) {
     const category = categories.find((c) => c.kind === (kind as ProductKind));
     if (!category) throw new Error(`Aucune catégorie pour les ${kind}`);
     for (const row of rows) {
@@ -301,7 +303,7 @@ export async function fillNew(db: Tx): Promise<FillNewReport> {
   }
 
   // Les modèles de la base que la liste ne couvre pas : signalés, jamais touchés.
-  for (const model of models) {
+  for (const model of accessoriesOnly ? [] : models) {
     if (model.seriesId !== null && !covered.has(model.id)) {
       report.notCovered.push(`${model.kind} : ${model.name}`);
     }
