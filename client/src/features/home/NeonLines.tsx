@@ -20,6 +20,8 @@ const BLUE_PATHS = [
   "M650 330a150 150 0 0 0-150 150",
   "M590 500 450 360h-70",
 ];
+const MOBILE_LOWER_RED_PATHS = ["M-55 345 15 415", "M-45 445 25 515"];
+const MOBILE_LOWER_BLUE_PATHS = ["M655 345 585 415", "M645 445 575 515"];
 
 function Glow({ id }: { id: string }) {
   return (
@@ -82,20 +84,30 @@ export default function NeonLines({ id }: { id: string }) {
 // Sur les bords d'une section (les catégories de l'accueil, 11/11) : les mêmes traits, mais
 // séparés, les rouges collés au bord gauche, les bleus au bord droit, pour encadrer le contenu
 // sans passer dessous. Chaque côté ne montre que sa moitié du repère (`viewBox`), à la hauteur de
-// la section. Le parent doit être `relative overflow-hidden`, et son contenu passer au-dessus.
-// Absents sur téléphone (choix de Mehdi) : faute de place sur les côtés, ils passeraient sous les cartes.
+// la section. Sur téléphone, certaines sections les affichent plus discrètement en arrière-plan.
 export function NeonSides({
   id,
   side = "both",
+  mobile = false,
+  extendMobile = false,
 }: {
   id: string;
   side?: "both" | "left" | "right";
+  mobile?: boolean;
+  extendMobile?: boolean;
 }) {
   const glow = `neon-glow-${id}`;
   const sideClass =
     "pointer-events-none absolute inset-y-0 aspect-[300/520] h-full";
   return (
-    <div aria-hidden="true" className="hidden sm:block">
+    <div
+      aria-hidden="true"
+      className={
+        mobile
+          ? "pointer-events-none absolute inset-0 z-0 opacity-30 sm:opacity-100"
+          : "hidden sm:block"
+      }
+    >
       {side !== "right" ? (
         <svg
           viewBox="-60 -20 300 520"
@@ -105,6 +117,16 @@ export function NeonSides({
         >
           <Glow id={glow} />
           <Strokes paths={RED_PATHS} color="#ff2e4d" opacity={0.75} glow={glow} />
+          {extendMobile ? (
+            <g className="sm:hidden">
+              <Strokes
+                paths={MOBILE_LOWER_RED_PATHS}
+                color="#ff2e4d"
+                opacity={0.75}
+                glow={glow}
+              />
+            </g>
+          ) : null}
         </svg>
       ) : null}
       {side !== "left" ? (
@@ -121,6 +143,16 @@ export function NeonSides({
             opacity={0.85}
             glow={`${glow}-droite`}
           />
+          {extendMobile ? (
+            <g className="sm:hidden">
+              <Strokes
+                paths={MOBILE_LOWER_BLUE_PATHS}
+                color="#3d4bff"
+                opacity={0.85}
+                glow={`${glow}-droite`}
+              />
+            </g>
+          ) : null}
         </svg>
       ) : null}
     </div>

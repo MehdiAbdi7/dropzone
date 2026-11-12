@@ -14,7 +14,7 @@ export default function ArrivalsCarousel({ products }: { products: ProductCardDa
 
   return (
     // dir="ltr" même en arabe : la boucle calcule ses positions avec scrollLeft (voir CategoryCarousel).
-    <div dir="ltr" className="relative px-11">
+    <div dir="ltr" className="relative max-sm:-mx-4 px-9 sm:px-11">
       <div
         className="pointer-events-none absolute inset-0 z-10 flex items-center justify-between"
         role="group"
@@ -24,7 +24,7 @@ export default function ArrivalsCarousel({ products }: { products: ProductCardDa
           type="button"
           aria-label="Produits précédents"
           aria-controls="latest-arrivals-carousel"
-          className="icon-btn pointer-events-auto border border-line bg-surface/95 shadow-sm backdrop-blur transition-[transform,border-color,background-color,color] hover:scale-105 hover:border-blue-ink hover:bg-surface-2 hover:text-blue-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-ink sm:shadow-lg"
+          className="icon-btn pointer-events-auto max-sm:size-9 border border-line bg-surface/95 shadow-sm backdrop-blur transition-[transform,border-color,background-color,color] hover:scale-105 hover:border-blue-ink hover:bg-surface-2 hover:text-blue-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-ink sm:shadow-lg"
           onClick={() => scrollManually(-1)}
         >
           <ArrowRightIcon size={18} className="rotate-180" />
@@ -33,7 +33,7 @@ export default function ArrivalsCarousel({ products }: { products: ProductCardDa
           type="button"
           aria-label="Produits suivants"
           aria-controls="latest-arrivals-carousel"
-          className="icon-btn pointer-events-auto border border-line bg-surface/95 shadow-sm backdrop-blur transition-[transform,border-color,background-color,color] hover:scale-105 hover:border-blue-ink hover:bg-surface-2 hover:text-blue-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-ink sm:shadow-lg"
+          className="icon-btn pointer-events-auto max-sm:size-9 border border-line bg-surface/95 shadow-sm backdrop-blur transition-[transform,border-color,background-color,color] hover:scale-105 hover:border-blue-ink hover:bg-surface-2 hover:text-blue-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-ink sm:shadow-lg"
           onClick={() => scrollManually(1)}
         >
           <ArrowRightIcon size={18} />
@@ -49,7 +49,7 @@ export default function ArrivalsCarousel({ products }: { products: ProductCardDa
         // Ni scroll-snap ni scroll-smooth : voir l'avertissement en tête de useInfiniteCarousel.
         // `py-4 -my-4` : overflow-x force overflow-y à « auto », ce qui rognerait l'ombre des
         // cartes au survol ; on rend l'espace sans décaler la page.
-        className="scrollbar-hide -mx-4 -my-4 flex gap-3 overflow-x-auto overscroll-x-contain px-4 py-4 [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)] sm:mx-0 sm:gap-4 sm:px-1"
+        className="scrollbar-hide -mx-4 -my-4 flex gap-3 overflow-x-auto overscroll-x-contain px-4 py-4 [mask-image:linear-gradient(to_right,transparent,black_1%,black_99%,transparent)] sm:mx-0 sm:gap-4 sm:px-1 sm:[mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]"
       >
         {/* Trois copies : c'est ce qui donne la boucle. Les deux latérales sont cachées aux
             lecteurs d'écran et hors parcours clavier : la liste ne doit être lue qu'une fois. */}

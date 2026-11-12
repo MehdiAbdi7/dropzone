@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, type CSSProperties } from "react";
 import {
   ArrowRightIcon,
   InstagramIcon,
@@ -166,8 +166,8 @@ export default function HomePage() {
           aria-labelledby="categories-title"
           className="relative scroll-mt-4 overflow-hidden"
         >
-          <NeonSides id="categories" />
-          <div className="container-page relative py-14">
+          <NeonSides id="categories" mobile />
+          <div className="container-page relative z-10 pt-14 pb-6 sm:py-14">
             <ScrollToHash id="categories" />
             <div className="mb-8 text-center">
               <div className="flex items-center justify-center gap-4">
@@ -202,9 +202,17 @@ export default function HomePage() {
       <Reveal>
         <section
           aria-labelledby="latest-title"
-          className="relative py-14"
+          className="relative pt-6 pb-14 sm:py-14"
+          style={
+            {
+              "--latest-side-decoration-width": LATEST_SIDE_DECORATION_WIDTH,
+            } as CSSProperties
+          }
         >
-          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden sm:hidden">
+            <NeonSides id="latest-mobile" mobile extendMobile />
+          </div>
+          <div className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden sm:block">
             <div
               className="absolute inset-y-0 left-0 overflow-hidden"
               style={{ width: LATEST_SIDE_DECORATION_WIDTH }}
