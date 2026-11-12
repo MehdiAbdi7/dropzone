@@ -4,6 +4,7 @@ import { ArrowRightIcon } from "@/components/ui/icons";
 import Spinner from "@/components/ui/Spinner";
 import ConditionReport from "@/features/products/ConditionReport";
 import ProductGrid from "@/features/products/ProductGrid";
+import ArrivalsCarousel from "./ArrivalsCarousel";
 import { publicFetch, publicFetchPage } from "@/lib/publicFetch";
 import type { ProductCard, ProductDetail } from "@/types/api";
 import DeviceStage from "./DeviceStage";
@@ -82,8 +83,10 @@ export function DealsBanner({ stage }: { stage: ReactNode }) {
   );
 }
 
+// Les 12 derniers arrivages (12/11) : les appareils en stock, du dernier ajouté au stock (nouvel
+// exemplaire ou stock augmenté dans le back-office) au plus ancien. Les accessoires n'y sont pas.
 export async function LatestProducts() {
-  const latest = await publicFetchPage<ProductCard>("/products?limit=5");
+  const latest = await publicFetchPage<ProductCard>("/products?sort=arrivages&appareils=1&enstock=1&limit=12");
   if (!latest) {
     return (
       <p role="alert" className="card p-6">
@@ -92,7 +95,8 @@ export async function LatestProducts() {
       </p>
     );
   }
-  return <ProductGrid products={latest.data} wide />;
+  // Avec trop peu d'appareils, la boucle montrerait le même plusieurs fois côte à côte : la grille.
+  return latest.data.length >= 5 ? <ArrivalsCarousel products={latest.data} /> : <ProductGrid products={latest.data} wide />;
 }
 
 // Une vraie affaire du stock, montrée avec sa fiche d'état.
