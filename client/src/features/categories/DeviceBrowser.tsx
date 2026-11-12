@@ -14,6 +14,11 @@ import { brandSlugFromPath, pickBrand, tabTitle } from "./tiles";
 
 const OTHERS = "autres";
 
+// Hors du composant : le titre de l'onglet est un effet sur le document, pas un état de React.
+function setTabTitle(parts: string[]) {
+  document.title = tabTitle(document.title, parts);
+}
+
 // La page d'une catégorie d'appareils (refonte du 12/11, décision de Mehdi) : directement les
 // affiches des séries, avec des puces de marques au-dessus. Un clic sur une puce change les séries
 // sur place, sans recharger : toutes les marques et leurs séries sont déjà là (`GET /series` sans
@@ -50,7 +55,7 @@ export default function DeviceBrowser({
 
   // Le titre de l'onglet suit la marque : la page ne se recharge pas, Next ne le recalcule pas.
   useEffect(() => {
-    document.title = tabTitle(document.title, currentName ? [currentName, category.name] : [category.name]);
+    setTabTitle(currentName ? [currentName, category.name] : [category.name]);
   }, [currentName, category.name]);
 
   const chip = (slug: string, name: string, logoUrl: string | null) => (
