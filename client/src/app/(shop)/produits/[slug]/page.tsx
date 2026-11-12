@@ -14,7 +14,7 @@ import { formatPrice } from "@/lib/format";
 import { retiredProductRedirect } from "@/lib/legacyRedirect";
 import { getPalette } from "@/lib/palette";
 import { getProduct } from "@/lib/products";
-import { publicFetchPage } from "@/lib/publicFetch";
+import { publicFetch, publicFetchPage } from "@/lib/publicFetch";
 import type { ProductCard } from "@/types/api";
 
 export async function generateMetadata({ params }: PageProps<"/produits/[slug]">): Promise<Metadata> {
@@ -50,10 +50,21 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   const { slug } = await params;
   const product = await getProduct(slug);
   if (!product) {
-    // Un ancien verre ou une ancienne coque, remplacés le 12/11 : la page de son type.
-    const retired = retiredProductRedirect(slug);
+    // Un ancien verre ou une ancienne coque, remplacés le 12/11 : la page de son type. On vérifie
+    // d'abord que l'API répond (une fiche introuvable n'est pas une API arrêtée).
+    const apiAnswers = (await publicFetch<unknown[]>("/categories")) !== null;
+    const retired = retiredProductRedirect(slug, apiAnswers);
     if (retired) {
       redirect(retired);
+    }
+    if (!apiAnswers) {
+      return (
+        <div className="container-page py-8">
+          <p role="alert" className="card p-6">
+            La boutique ne répond pas pour le moment. Rechargez la page dans quelques secondes.
+          </p>
+        </div>
+      );
     }
     notFound();
   }

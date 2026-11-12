@@ -9,7 +9,8 @@ import { matchChoices } from "@/features/admin/products/choiceSearch";
 import { formatPrice } from "@/lib/format";
 import type { Options, ProductDetail, Variant } from "@/types/api";
 import { useAccessoryDetailQuery } from "./accessoriesApi";
-import { findVariant, isPossible } from "./options";
+import OptionPill from "./OptionPill";
+import { findVariant, isPossible, pillState } from "./options";
 import SizePicker from "./SizePicker";
 
 const SIZE = "Taille de l'écran";
@@ -141,40 +142,28 @@ function AccessoryChoices({ product }: { product: ProductDetail }) {
                     8,
                   ).map((value) => (
                     <li key={value}>
-                      <button
-                        type="button"
-                        aria-pressed={chosen[key] === value}
+                      <OptionPill
+                        small
+                        label={value}
+                        chosen={chosen[key] === value}
+                        {...pillState(variants, key, value, chosen)}
                         onClick={() => choose(key, value)}
-                        className={`rounded-full border px-3 py-1 text-xs ${
-                          chosen[key] === value ? "border-blue bg-blue-soft" : "border-line bg-surface-2 hover:border-blue-ink"
-                        }`}
-                      >
-                        {value}
-                      </button>
+                      />
                     </li>
                   ))}
                 </ul>
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {values.map((value) => {
-                  const possible = isPossible(variants, key, value, chosen);
-                  const soldOut = findVariant(variants, { ...chosen, [key]: value })?.stock === 0;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={chosen[key] === value}
-                      disabled={!possible}
-                      onClick={() => choose(key, value)}
-                      className={`rounded-[var(--radius-field)] border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                        chosen[key] === value ? "border-blue bg-blue-soft" : "border-line hover:border-blue-ink"
-                      } ${!possible || soldOut ? "line-through" : ""}`}
-                    >
-                      {value}
-                    </button>
-                  );
-                })}
+                {values.map((value) => (
+                  <OptionPill
+                    key={value}
+                    label={value}
+                    chosen={chosen[key] === value}
+                    {...pillState(variants, key, value, chosen)}
+                    onClick={() => choose(key, value)}
+                  />
+                ))}
               </div>
             )}
           </fieldset>

@@ -38,7 +38,10 @@ export function accessoryRedirect(category: string, type: string, maker?: string
 
 // Les 30 anciens verres (un par série) et 37 anciennes coques ont été remplacés (12/11) : une
 // ancienne fiche partagée mène à la nouvelle page de son type plutôt qu'à une page introuvable.
-export function retiredProductRedirect(slug: string): string | null {
+// `apiAnswers` : si l'API ne répond pas, la fiche existe peut-être encore (une coque actuelle
+// commence aussi par « coque- ») : pas de redirection, la page dit que la boutique ne répond pas.
+export function retiredProductRedirect(slug: string, apiAnswers: boolean): string | null {
+  if (!apiAnswers) return null;
   if (slug.startsWith("verre-trempe-")) return "/boutique/accessoires?type=incassable-ecran";
   if (slug.startsWith("coque-")) return "/boutique/accessoires?type=coques";
   return null;

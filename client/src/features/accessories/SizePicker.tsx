@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { matchChoices } from "@/features/admin/products/choiceSearch";
 import type { Variant } from "@/types/api";
-import { isPossible, phonesOf } from "./options";
+import OptionPill from "./OptionPill";
+import { phonesOf, pillState } from "./options";
 
 const SIZE = "Taille de l'écran";
 
@@ -31,27 +32,18 @@ export default function SizePicker({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
-        {values.map((value) => {
-          const variant = variants.find((one) => one.options[SIZE] === value);
-          const off = !isPossible(variants, SIZE, value, chosen) || (variant?.stock ?? 0) === 0;
-          return (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={size === value}
-              disabled={!isPossible(variants, SIZE, value, chosen)}
-              onClick={() => {
-                onChoose(value);
-                setFound(null);
-              }}
-              className={`rounded-[var(--radius-field)] border px-3 py-2 text-sm font-semibold tabular-nums transition-colors ${
-                size === value ? "border-blue bg-blue-soft" : "border-line hover:border-blue-ink"
-              } ${off ? "text-ink-muted line-through" : ""}`}
-            >
-              {value.replace(" pouces", "″")}
-            </button>
-          );
-        })}
+        {values.map((value) => (
+          <OptionPill
+            key={value}
+            label={value.replace(" pouces", "″")}
+            chosen={size === value}
+            {...pillState(variants, SIZE, value, chosen)}
+            onClick={() => {
+              onChoose(value);
+              setFound(null);
+            }}
+          />
+        ))}
       </div>
       {size && compatible.length > 0 ? (
         <p className="text-xs text-ink-muted">

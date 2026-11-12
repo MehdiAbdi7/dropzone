@@ -14,11 +14,7 @@ export function findVariant(variants: Variant[], chosen: Options): Variant | und
 // Une valeur est possible si une variante l'a, avec les autres choix déjà faits (le pack Anker
 // n'existe pas en Lightning 65 W : la pastille est barrée). Le stock n'y est pour rien.
 export function isPossible(variants: Variant[], key: string, value: string, chosen: Options): boolean {
-  return variants.some(
-    (variant) =>
-      variant.options[key] === value &&
-      Object.entries(chosen).every(([other, picked]) => other === key || variant.options[other] === undefined || variant.options[other] === picked),
-  );
+  return pillState(variants, key, value, chosen).possible;
 }
 
 // Les téléphones d'un verre, chacun une fois avec sa taille (la première variante qui le
@@ -38,4 +34,16 @@ export function phonesOf(variants: Variant[]): { name: string; slug: string; siz
 
 export function sizeForPhone(variants: Variant[], slug: string): string | null {
   return phonesOf(variants).find((phone) => phone.slug === slug)?.size ?? null;
+}
+
+// L'état d'une pastille de la fenêtre : impossible avec les choix déjà faits (grisée, barrée, pas
+// cliquable), ou possible mais épuisée (barrée, cliquable : la fenêtre dit « Rupture de stock »).
+// Épuisée = toutes les variantes qui l'ont, avec les autres choix faits, sont à stock 0.
+export function pillState(variants: Variant[], key: string, value: string, chosen: Options): { possible: boolean; soldOut: boolean } {
+  const matching = variants.filter(
+    (variant) =>
+      variant.options[key] === value &&
+      Object.entries(chosen).every(([other, picked]) => other === key || variant.options[other] === undefined || variant.options[other] === picked),
+  );
+  return { possible: matching.length > 0, soldOut: matching.length > 0 && matching.every((variant) => variant.stock <= 0) };
 }

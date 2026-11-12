@@ -61,14 +61,18 @@ describe("accessoryRedirect", () => {
 
 describe("retiredProductRedirect", () => {
   it("envoie un ancien verre vers les verres incassables", () => {
-    expect(retiredProductRedirect("verre-trempe-incassable-iphone-15")).toBe("/boutique/accessoires?type=incassable-ecran");
+    expect(retiredProductRedirect("verre-trempe-incassable-iphone-15", true)).toBe("/boutique/accessoires?type=incassable-ecran");
   });
 
   it("envoie une ancienne coque vers les coques", () => {
-    expect(retiredProductRedirect("coque-antichoc-transparente-iphone-15")).toBe("/boutique/accessoires?type=coques");
+    expect(retiredProductRedirect("coque-antichoc-transparente-iphone-15", true)).toBe("/boutique/accessoires?type=coques");
+  });
+
+  it("ne dit rien quand l'API ne répond pas : la fiche existe peut-être encore", () => {
+    expect(retiredProductRedirect("coque-antichoc-transparente-iphone", false)).toBeNull();
   });
 
   it("ne dit rien d'un autre produit", () => {
-    expect(retiredProductRedirect("iphone-17-pro-max")).toBeNull();
+    expect(retiredProductRedirect("iphone-17-pro-max", true)).toBeNull();
   });
 });

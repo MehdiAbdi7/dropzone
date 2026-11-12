@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Variant } from "@/types/api";
-import { findVariant, isPossible, phonesOf, sizeForPhone } from "./options";
+import { findVariant, isPossible, phonesOf, pillState, sizeForPhone } from "./options";
 
 const phone = (name: string) => ({ brand: name.startsWith("iPhone") ? "Apple" : "Samsung", name, slug: name.toLowerCase().replace(/ /g, "-") });
 
@@ -86,5 +86,23 @@ describe("sizeForPhone", () => {
 
   it("rend null pour un téléphone sans verre", () => {
     expect(sizeForPhone(glass, "galaxy-s24-ultra")).toBeNull();
+  });
+});
+
+describe("pillState", () => {
+  it("dit qu'une valeur est possible et en stock", () => {
+    expect(pillState(pack, "Puissance", "20 W", { Câble: "USB-C" })).toEqual({ possible: true, soldOut: false });
+  });
+
+  it("dit qu'une valeur possible est épuisée avec les autres choix faits", () => {
+    expect(pillState(pack, "Puissance", "65 W", { Câble: "USB-C" })).toEqual({ possible: true, soldOut: true });
+  });
+
+  it("dit qu'une valeur est épuisée quand toutes ses variantes possibles le sont, même sans autre choix", () => {
+    expect(pillState(pack, "Puissance", "65 W", {})).toEqual({ possible: true, soldOut: true });
+  });
+
+  it("dit qu'une valeur est impossible", () => {
+    expect(pillState(pack, "Puissance", "65 W", { Câble: "Lightning" })).toEqual({ possible: false, soldOut: false });
   });
 });
