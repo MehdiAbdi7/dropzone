@@ -18,7 +18,8 @@
     "fill:new": "tsx src/scripts/fillNew.ts",
     "colors:official": "tsx src/scripts/officialColors.ts",
     "colors:variants": "tsx src/scripts/variantColors.ts",
-    "accessories:clear": "tsx src/scripts/accessoriesClear.ts"
+    "accessories:clear": "tsx src/scripts/accessoriesClear.ts",
+    "accessories:refonte": "tsx src/scripts/accessoriesRefonte.ts"
   },
   "type": "module",
   "engines": {

@@ -82,3 +82,11 @@ describe("Téléphones compatibles d'une variante", () => {
     expect(response.body.error.message).toBe("Un modèle compatible n'existe pas");
   });
 });
+
+describe("Un produit à beaucoup de variantes", () => {
+  it("accepte 81 variantes (la coque MagSafe iPhone : 27 modèles × 3 couleurs)", async () => {
+    const variants = Array.from({ length: 81 }, (_, index) => ({ sku: `COQM-${index}`, price: 4500, stock: 10, options: { Modèle: `M${index}` } }));
+    const response = await admin.post("/admin/products").send(glass(variants));
+    expect(response.status).toBe(201);
+  });
+});

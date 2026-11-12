@@ -1,4 +1,4 @@
-import { prisma } from "../../config/db.js";
+import { prisma, type Tx } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
 import { escapeLike } from "../../utils/escapeLike.js";
 import { screenSize } from "../../utils/screenSize.js";
@@ -108,8 +108,9 @@ export async function deleteModel(id: number) {
 // Les téléphones groupés par taille d'écran (back-office, 12/11) : le bouton « Ajouter les
 // téléphones de 6,7 pouces » d'une variante de verre. La taille vient de la caractéristique
 // « Écran » de la fiche du modèle ; un téléphone sans fiche ou sans taille lisible n'y est pas.
-export async function listScreenSizes() {
-  const products = await prisma.product.findMany({
+// `db` : une transaction, pour le script qui crée les verres (accessories:refonte).
+export async function listScreenSizes(db: Tx = prisma) {
+  const products = await db.product.findMany({
     where: { deviceModel: { kind: "phone" } },
     select: { specs: true, deviceModel: { select: { id: true, brand: true, name: true } } },
     orderBy: [{ deviceModel: { brand: "asc" } }, { deviceModel: { name: "asc" } }],

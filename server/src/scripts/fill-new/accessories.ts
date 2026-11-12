@@ -1,5 +1,6 @@
-// Les accessoires à créer : coques et verres par série d'iPhone et de Samsung, blocs chargeurs,
-// câbles et packs (bloc + câble). Prix relevés sur Ouedkniss le 12/11/2026 (voir le rapport).
+// Les accessoires à créer : coques par famille (iPhone, Samsung), verres par qualité et par
+// taille d'écran (refonte du 12/11), blocs chargeurs, câbles et packs (bloc + câble). Prix relevés
+// sur Ouedkniss le 12/11/2026 (voir le rapport).
 // Les descriptions sont génériques : à adapter aux articles que DropZone achète vraiment.
 import { slugify } from "../../utils/slugify.js";
 
@@ -9,13 +10,16 @@ export type AccessoryProduct = {
   name: string;
   // Le type d'accessoire du back-office (la « marque » de la catégorie Accessoires).
   type: "Coques" | "Chargeurs" | "Câbles" | "Incassable Écran";
-  // La marque dans le type : Apple, Samsung, Anker (chargeurs, câbles) ; iPhone, Samsung (coques, verres).
-  maker: string;
+  // La marque dans le type : Apple, Samsung, Anker (chargeurs, câbles) ; iPhone, Samsung (coques).
+  // null : sans marque (les verres incassables, 12/11).
+  maker: string | null;
   description: string;
   specs: Record<string, string>;
   variants: AccessoryVariant[];
   // Les modèles d'appareils pour lesquels l'accessoire est fait (device_models.name).
   compatible: string[];
+  // Les variantes ont une « Taille de l'écran » : chacune reçoit les téléphones de cette taille.
+  compatibleBySize?: true;
   image: "case" | "screen-protector" | "charger" | "cable";
 };
 
@@ -48,84 +52,121 @@ const sku = (prefix: string, ...parts: string[]) =>
 const list = (models: string[]) =>
   models.length === 1 ? models[0] : `${models.slice(0, -1).join(", ")} et ${models[models.length - 1]}`;
 
-type Family = { brand: "iPhone" | "Samsung"; magsafe: boolean; series: Record<string, string[]> };
+type Family = { brand: "iPhone" | "Samsung"; models: string[]; magsafe: string[] };
 const FAMILIES: Family[] = [
-  { brand: "iPhone", magsafe: true, series: IPHONE_SERIES },
-  { brand: "Samsung", magsafe: false, series: SAMSUNG_SERIES },
+  {
+    brand: "iPhone",
+    models: Object.values(IPHONE_SERIES).flat(),
+    // iPhone 11 : pas de MagSafe.
+    magsafe: Object.entries(IPHONE_SERIES).flatMap(([name, models]) => (name === "iPhone 11" ? [] : models)),
+  },
+  { brand: "Samsung", models: Object.values(SAMSUNG_SERIES).flat(), magsafe: [] },
 ];
 
-function casesAndGlass(): AccessoryProduct[] {
+// Les coques, une par sorte et par famille de téléphones (refonte du 12/11 : 5 produits au lieu
+// de 37) ; le modèle se choisit dans la fenêtre de la Boutique. Mêmes prix, stocks et SKU
+// qu'avant, une variante par modèle (et par couleur pour la MagSafe).
+function cases(): AccessoryProduct[] {
   const out: AccessoryProduct[] = [];
-  for (const { brand, magsafe, series } of FAMILIES) {
-    for (const [seriesName, models] of Object.entries(series)) {
-      const title = brand === "Samsung" ? `Samsung ${seriesName}` : seriesName;
-      const names = list(models);
-      const byModel = (prefix: string, price: number, extra: Record<string, string>[] = [{}]) =>
-        models.flatMap((model) =>
-          extra.map((more) => ({
-            sku: sku(prefix, model, ...Object.values(more)),
-            options: { Modèle: model, ...more },
-            price,
-            stock: STOCK,
-          })),
-        );
-
+  for (const { brand, models, magsafe } of FAMILIES) {
+    const family = brand === "iPhone" ? "iPhone 11 à 18" : "Galaxy S21 à S25, A3x et A5x";
+    const byModel = (prefix: string, price: number, list: string[], extra: Record<string, string>[] = [{}]) =>
+      list.flatMap((model) =>
+        extra.map((more) => ({ sku: sku(prefix, model, ...Object.values(more)), options: { Modèle: model, ...more }, price, stock: STOCK })),
+      );
+    out.push({
+      name: `Coque antichoc transparente ${brand}`,
+      type: "Coques",
+      maker: brand,
+      description: `Coque antichoc transparente pour ${family}. Elle laisse voir la couleur de l'appareil, protège les coins contre les chutes et garde un accès complet aux ports et aux boutons. Choisis ton modèle.`,
+      specs: { Matière: "Plastique souple (TPU) transparent", Protection: "Coins renforcés contre les chocs", Compatibilité: family },
+      variants: byModel("COQT", 2_500, models),
+      compatible: models,
+      image: "case",
+    });
+    if (magsafe.length > 0) {
       out.push({
-        name: `Coque antichoc transparente ${title}`,
+        name: `Coque silicone MagSafe ${brand}`,
         type: "Coques",
         maker: brand,
-        description: `Coque antichoc transparente pour ${names}. Elle laisse voir la couleur de l'appareil, protège les coins contre les chutes et garde un accès complet aux ports et aux boutons.`,
-        specs: { Matière: "Plastique souple (TPU) transparent", Protection: "Coins renforcés contre les chocs", Compatibilité: names },
-        variants: byModel("COQT", 2_500),
-        compatible: models,
+        description: "Coque en silicone avec aimants MagSafe pour iPhone 12 à 18. Compatible avec les chargeurs, supports et portefeuilles MagSafe, douce au toucher. Choisis ton modèle et ta couleur.",
+        specs: { Matière: "Silicone", MagSafe: "Oui, aimants intégrés", Compatibilité: "iPhone 12 à 18" },
+        variants: byModel("COQM", 4_500, magsafe, [{ Couleur: "Noir" }, { Couleur: "Bleu" }, { Couleur: "Rouge" }]),
+        compatible: magsafe,
         image: "case",
-      });
-      // iPhone 11 : pas de MagSafe.
-      if (magsafe && seriesName !== "iPhone 11") {
-        out.push({
-          name: `Coque silicone MagSafe ${title}`,
-          type: "Coques",
-          maker: brand,
-          description: `Coque en silicone avec aimants MagSafe pour ${names}. Compatible avec les chargeurs, supports et portefeuilles MagSafe, douce au toucher.`,
-          specs: { Matière: "Silicone", MagSafe: "Oui, aimants intégrés", Compatibilité: names },
-          variants: byModel("COQM", 4_500, [{ Couleur: "Noir" }, { Couleur: "Bleu" }, { Couleur: "Rouge" }]),
-          compatible: models,
-          image: "case",
-        });
-      }
-      out.push({
-        name: `Coque antichoc renforcée ${title}`,
-        type: "Coques",
-        maker: brand,
-        description: `Coque antichoc renforcée (double couche) pour ${names}. Rebords surélevés autour de l'écran et de l'appareil photo, pour une protection maximale au quotidien.`,
-        specs: { Matière: "TPU et polycarbonate", Protection: "Double couche, rebords surélevés", Compatibilité: names },
-        variants: byModel("COQR", 7_500),
-        compatible: models,
-        image: "case",
-      });
-      out.push({
-        name: `Verre trempé incassable ${title}`,
-        type: "Incassable Écran",
-        maker: brand,
-        description: `Protection d'écran en verre trempé pour ${names}. Elle absorbe les chocs et les rayures à la place de l'écran, sans gêner le toucher.`,
-        specs: { Matière: "Verre trempé", Dureté: "9H", Compatibilité: names },
-        variants: byModel("VERT", 1_500),
-        compatible: models,
-        image: "screen-protector",
-      });
-      out.push({
-        name: `Verre trempé premium ${title}`,
-        type: "Incassable Écran",
-        maker: brand,
-        description: `Verre trempé de qualité supérieure pour ${names}, plus épais, livré avec son cadre de pose pour un collage sans bulles.`,
-        specs: { Matière: "Verre trempé épais", Dureté: "9H", Pose: "Cadre de pose fourni", Compatibilité: names },
-        variants: byModel("VERP", 6_500),
-        compatible: models,
-        image: "screen-protector",
       });
     }
+    out.push({
+      name: `Coque antichoc renforcée ${brand}`,
+      type: "Coques",
+      maker: brand,
+      description: `Coque antichoc renforcée (double couche) pour ${family}. Rebords surélevés autour de l'écran et de l'appareil photo, pour une protection maximale au quotidien. Choisis ton modèle.`,
+      specs: { Matière: "TPU et polycarbonate", Protection: "Double couche, rebords surélevés", Compatibilité: family },
+      variants: byModel("COQR", 7_500, models),
+      compatible: models,
+      image: "case",
+    });
   }
   return out;
+}
+
+// Les tailles d'écran des verres : celles des téléphones du catalogue (12/11).
+export const SCREEN_SIZES = ["4,7", "5,4", "5,5", "5,8", "6,1", "6,2", "6,3", "6,4", "6,5", "6,6", "6,7", "6,8", "6,9"].map(
+  (size) => `${size} pouces`,
+);
+
+// Les verres incassables (refonte du 12/11, décision de Mehdi) : sans marque, un produit par
+// qualité, une variante par taille d'écran. Chaque taille reçoit les téléphones du catalogue qui
+// ont cette taille (compatibleBySize) ; le gérant corrige la liste dans le back-office.
+// Qualités et prix relevés sur Ouedkniss et Dzairgo le 12/11 (cahier, section 5.1).
+const GLASSES: { quality: string; code: string; price: number; description: string; specs: Record<string, string> }[] = [
+  {
+    quality: "Standard 9H",
+    code: "STD",
+    price: 1_000,
+    description: "Verre trempé 9H transparent. La protection de base contre les rayures et les chocs.",
+    specs: { Matière: "Verre trempé", Dureté: "9H", Bords: "Transparents" },
+  },
+  {
+    quality: "Céramique 9D",
+    code: "CER",
+    price: 1_200,
+    description: "Film en céramique souple : il plie au lieu de se fendre, bords noirs, toucher doux.",
+    specs: { Matière: "Céramique souple", Bords: "Noirs" },
+  },
+  {
+    quality: "Full glue 9H",
+    code: "FG",
+    price: 1_500,
+    description: "Verre trempé collé sur tout l'écran, bords noirs : pas de bulles, pas de poussière sous le verre.",
+    specs: { Matière: "Verre trempé", Dureté: "9H", Collage: "Sur tout l'écran", Bords: "Noirs" },
+  },
+  {
+    quality: "Privacy",
+    code: "PRV",
+    price: 2_000,
+    description: "Verre trempé fumé anti-espion : l'écran n'est lisible que de face.",
+    specs: { Matière: "Verre trempé fumé", Dureté: "9H", Confidentialité: "Lisible de face seulement" },
+  },
+];
+
+function glasses(): AccessoryProduct[] {
+  return GLASSES.map(({ quality, code, price, description, specs }) => ({
+    name: `Verre incassable ${quality}`,
+    type: "Incassable Écran",
+    maker: null,
+    description: `${description} Choisis la taille de ton écran, ou tape le nom de ton téléphone.`,
+    specs,
+    variants: SCREEN_SIZES.map((size) => ({
+      sku: `VER-${code}-${size.split(" ")[0].replace(",", "")}`,
+      options: { "Taille de l'écran": size },
+      price,
+      stock: STOCK,
+    })),
+    compatible: [],
+    compatibleBySize: true,
+    image: "screen-protector",
+  }));
 }
 
 // Les blocs, les câbles et les packs. Le bloc se vend seul, le câble seul, et le pack réunit
@@ -293,5 +334,5 @@ function chargers(): AccessoryProduct[] {
 }
 
 export function buildAccessories(): AccessoryProduct[] {
-  return [...chargers(), ...casesAndGlass()];
+  return [...chargers(), ...cases(), ...glasses()];
 }
