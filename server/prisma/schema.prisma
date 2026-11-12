@@ -106,9 +106,32 @@ model Brand {
   products   Product[]
   // Supprimer une marque qui a des séries est refusé (RESTRICT) : le gérant les supprime d'abord.
   series     Series[]
+  // Dans une catégorie d'accessoires, la ligne est un type (Chargeurs, Coques…) et ses marques
+  // (Apple, Samsung, Anker) sont ses `makers` : l'étape marque de la Boutique (12/11).
+  makers     AccessoryMaker[]
 
   @@unique([categoryId, slug])
   @@map("brands")
+}
+
+// La marque d'un accessoire, dans un type d'accessoires : « Anker » dans Chargeurs, « iPhone »
+// dans Coques. Comme les marques d'appareils, une même entreprise a une ligne par type. Un type
+// supprimé emporte ses marques ; une marque utilisée par un produit ne se supprime pas (RESTRICT
+// sur products.maker_id).
+model AccessoryMaker {
+  id        Int       @id @default(autoincrement())
+  typeId    Int       @map("type_id")
+  type      Brand     @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  // « /brands/anker.svg » (bibliothèque) ou une URL Cloudinary.
+  logoUrl   String?   @map("logo_url")
+  position  Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+  products  Product[]
+
+  @@unique([typeId, slug])
+  @@map("accessory_makers")
 }
 
 // Une série d'une marque (« iPhone 18 » chez iPhone, « MacBook Air » chez MacBook) :
@@ -214,6 +237,10 @@ model Product {
   // Facultative : un câble générique n'a pas de marque. Une marque utilisée ne se supprime pas.
   brandId          Int?             @map("brand_id")
   brand            Brand?           @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  // Un accessoire : sa marque dans son type (Anker dans Chargeurs). Règle de l'API : la marque
+  // appartient au type du produit (`brandId`).
+  makerId          Int?             @map("maker_id")
+  maker            AccessoryMaker?  @relation(fields: [makerId], references: [id], onDelete: Restrict)
   compatibleModels DeviceModel[]    @relation("ProductCompatibleModels")
   specs            Json             @default("{}")
   status           ProductStatus    @default(draft)
@@ -230,6 +257,7 @@ model Product {
   @@index([categoryId])
   @@index([deviceModelId])
   @@index([brandId])
+  @@index([makerId])
   @@map("products")
 }
 

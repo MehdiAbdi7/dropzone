@@ -7,7 +7,15 @@ import GiftList from "@/features/products/GiftList";
 import { formatPrice } from "@/lib/format";
 import type { ProductKind, Variant } from "@/types/api";
 import { dealFacts } from "./dealLabels";
-import { initialSelection, ORIGIN_KEY, optionChoices, optionKeys, selectOption, withOriginOption } from "./stock";
+import {
+  initialSelection,
+  ORIGIN_KEY,
+  optionChoices,
+  optionKeys,
+  requestedSelection,
+  selectOption,
+  withOriginOption,
+} from "./stock";
 
 // Ce qui reste, écrit sur chaque puce. La première option compte tout le stock
 // (« 3 en stock ») ; les suivantes comptent dans les choix d'avant (« 2 restants »).
@@ -30,11 +38,14 @@ export default function NewPicker({
   kind,
   palette,
   colorChosen = false,
+  requested,
 }: {
   variants: Variant[];
   kind: ProductKind;
   palette: Palette;
   colorChosen?: boolean;
+  // Les options demandées par l'adresse (la colonne d'une affiche d'accessoire, 12/11).
+  requested?: Record<string, string | undefined>;
 }) {
   // Deux neufs identiques mais d'origines différentes : l'origine se choisit, en dernier.
   const pickable = withOriginOption(variants);
@@ -42,7 +53,9 @@ export default function NewPicker({
     ...optionKeys(variants, kind, colorChosen ? "Couleur" : undefined),
     ...(pickable === variants ? [] : [ORIGIN_KEY]),
   ];
-  const [selected, setSelected] = useState(() => initialSelection(pickable, keys));
+  const [selected, setSelected] = useState(
+    () => (requested ? requestedSelection(pickable, keys, requested) : null) ?? initialSelection(pickable, keys),
+  );
   const choices = optionChoices(pickable, keys, selected);
   // La variante d'origine (sans l'option ajoutée) part au panier.
   const index = pickable.findIndex((variant) => keys.every((key) => variant.options[key] === selected[key]));

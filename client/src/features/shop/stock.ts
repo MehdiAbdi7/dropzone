@@ -89,6 +89,22 @@ export function initialSelection(
     : {};
 }
 
+// Le choix demandé par l'adresse (« ?Puissance=45%20W&Câble=USB-C », la colonne d'une affiche
+// d'accessoire) : la variante qui a toutes ces options, sinon null (le choix de départ reste).
+// Une clé ou une valeur inconnue est ignorée ; sans aucune option reconnue, rien n'est choisi.
+export function requestedSelection(
+  variants: Variant[],
+  keys: string[],
+  wanted: Record<string, string | undefined>,
+): Selection | null {
+  const asked = keys.filter((key) => wanted[key] !== undefined);
+  if (asked.length === 0) {
+    return null;
+  }
+  const match = variants.find((variant) => asked.every((key) => variant.options[key] === wanted[key]));
+  return match ? Object.fromEntries(keys.map((key) => [key, match.options[key]])) : null;
+}
+
 // Le client choisit une valeur : les clés suivantes gardent leur valeur si elle est encore
 // en stock avec ce choix, sinon passent à la première valeur en stock (sinon la première).
 export function selectOption(

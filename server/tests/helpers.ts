@@ -9,7 +9,7 @@ export const PASSWORD = "motdepasse123";
 // séquences à leur départ : la première commande de chaque test porte le numéro 1001.
 export async function resetDb() {
   await prisma.$executeRaw`TRUNCATE order_items, orders, users, variant_gifts, product_images,
-    product_variants, "_ProductCompatibleModels", products, series, brands, choices, device_models, categories, import_records
+    product_variants, "_ProductCompatibleModels", products, accessory_makers, series, brands, choices, device_models, categories, import_records
     RESTART IDENTITY CASCADE`;
   // Les listes fixes (Stockage, Couleurs…) viennent de la migration et restent ; les listes
   // personnalisées d'un test ne doivent pas fuiter dans le suivant.

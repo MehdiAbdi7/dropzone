@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { CONDITION_LABELS, KIND_LABELS, SPEC_SUGGESTIONS } from "@/config/catalog";
-import { useBrandsQuery, useCategoriesQuery, useModelsQuery, type DeviceModel } from "@/features/admin/api/catalogApi";
+import { useBrandsQuery, useCategoriesQuery, useMakersQuery, useModelsQuery, type DeviceModel } from "@/features/admin/api/catalogApi";
 import { useCreateProductMutation, useGiftOptionsQuery, useUploadImageMutation, useUpdateProductMutation } from "@/features/admin/api/productsApi";
 import EditDialog from "./EditDialog";
 import { SectionHeading, SummaryCard, SummaryLine } from "./FormParts";
@@ -53,6 +53,7 @@ export default function ProductForm({
   const [coverPhoto, setCoverPhoto] = useState<File | null>(null);
   const { data: categories = [] } = useCategoriesQuery();
   const { data: allBrands = [] } = useBrandsQuery();
+  const { data: allMakers = [] } = useMakersQuery();
   const { data: giftOptionsAll = [] } = useGiftOptionsQuery();
   const { data: models = [] } = useModelsQuery();
   // La fenêtre ouverte : une partie de la fiche, ou une variante ("variant:<clé>").
@@ -67,6 +68,8 @@ export default function ProductForm({
   const kind = category?.kind;
   const isDevice = isDeviceKind(kind);
   const brands = allBrands.filter((brand) => brand.categoryId === draft.categoryId);
+  // Les marques du type choisi (accessoires) : Anker dans Chargeurs.
+  const makers = allMakers.filter((maker) => maker.typeId === draft.brandId);
   // Un produit ne s'offre pas lui-même.
   const giftOptions = giftOptionsAll.filter((option) => !ownSkus.includes(option.sku));
 
@@ -91,6 +94,7 @@ export default function ProductForm({
       deviceModelId: device ? draft.deviceModelId : null,
       // Les marques sont rangées par catégorie : en changer vide la marque.
       brandId: id === draft.categoryId ? draft.brandId : null,
+      makerId: id === draft.categoryId ? draft.makerId : null,
       compatibleModelIds: next?.kind === "accessory" ? draft.compatibleModelIds : [],
       // Les caractéristiques habituelles de cette sorte, à compléter.
       specs:
@@ -147,6 +151,7 @@ export default function ProductForm({
   // Les noms lisibles du résumé : la catégorie, le modèle et la marque choisis.
   const modelName = models.find((model) => model.id === draft.deviceModelId)?.name ?? null;
   const brandName = brands.find((brand) => brand.id === draft.brandId)?.name ?? null;
+  const makerName = makers.find((maker) => maker.id === draft.makerId)?.name ?? null;
   const filledSpecs = draft.specs.filter((row) => row.key.trim() && row.value.trim());
   const openVariant = typeof open === "string" && open.startsWith("variant:") ? open.slice("variant:".length) : null;
   const editedVariant = draft.variants.find((variant) => variant.key === openVariant);
@@ -199,7 +204,10 @@ export default function ProductForm({
                 <SummaryLine label="Compatible avec" value={`${draft.compatibleModelIds.length} modèle(s)`} />
               ) : null}
               {kind === "accessory" ? (
-                <SummaryLine label="Type" value={brandName ?? "Sans type"} />
+                <>
+                  <SummaryLine label="Type" value={brandName ?? "Sans type"} />
+                  <SummaryLine label="Marque" value={makerName ?? "Sans marque"} />
+                </>
               ) : (
                 <SummaryLine label="Marque" value={brandName ?? "Sans marque"} />
               )}
@@ -262,6 +270,7 @@ export default function ProductForm({
           draft={draft}
           categories={categories}
           brands={brands}
+          makers={makers}
           kind={kind}
           isDevice={isDevice}
           onChooseCategory={chooseCategory}

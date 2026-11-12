@@ -69,7 +69,9 @@ export const OPTION_ORDER_BY_KIND: Record<ProductKind, string[]> = {
   tablet: ["Couleur", "Stockage", "Connectivité", "SIM"],
   watch: ["Couleur", "Taille", "Connectivité"],
   laptop: ["Processeur", "RAM", "Stockage", "Carte graphique", "Clavier", "Couleur"],
-  accessory: ["Couleur"],
+  // Un accessoire : pour quel modèle, puis la puissance, la longueur, le courant, le câble du
+  // pack, et la couleur (12/11). Pareil que accessoryColumns.ts, qui écrit le nom des colonnes.
+  accessory: ["Modèle", "Puissance", "Longueur", "Courant", "Câble", "Couleur"],
   audiovisual: ["Couleur"],
 };
 // La même liste que l'API (series.service.ts), pour les 4 lignes de l'affiche d'une série.

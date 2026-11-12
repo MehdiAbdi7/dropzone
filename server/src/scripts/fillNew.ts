@@ -31,7 +31,7 @@ function summary(report: FillNewReport): string {
     `  Descriptions écrites : ${count((d) => d.description === "écrite")}, gardées (écrites à la main) : ${count((d) => d.description === "gardée")}`,
     `  Autres configurations de neufs à revoir (non touchées) : ${report.review.length}`,
     `Accessoires : ${report.accessories.filter((a) => a.status === "créé").length} produits à créer, ${report.accessories.filter((a) => a.status === "existe déjà").length} existent déjà`,
-    `Créé en tout : ${report.created.products} produits, ${report.created.variants} variantes, ${report.created.choices} valeurs de listes, ${report.created.lists} listes, ${report.created.brands} types d'accessoires`,
+    `Créé en tout : ${report.created.products} produits, ${report.created.variants} variantes, ${report.created.choices} valeurs de listes, ${report.created.lists} listes, ${report.created.brands} types d'accessoires, ${report.created.makers} marques d'accessoires`,
     `Modèles de la liste absents de la base : ${report.missingModels.length ? report.missingModels.join(", ") : "aucun"}`,
     `Modèles en série que la liste ne couvre pas : ${report.notCovered.length ? report.notCovered.join(", ") : "aucun"}`,
   ].join("\n");

@@ -16,6 +16,18 @@ export type AdminBrand = {
   productCount: number;
 };
 
+// Une marque d'accessoires (Anker dans Chargeurs) vue du back-office : toutes, même sans produit,
+// rangées par type (`typeId` : la ligne de `brands` du type).
+export type AdminMaker = {
+  id: number;
+  typeId: number;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  position: number;
+  productCount: number;
+};
+
 export type DeviceModel = {
   id: number;
   brand: string;
@@ -153,6 +165,31 @@ const catalogApi = api.injectEndpoints({
       invalidatesTags: ["Brands", "Categories"],
     }),
 
+    // Marques d'accessoires : l'étape marque de la Boutique (Accessoires › Chargeurs › Anker)
+    makers: build.query<AdminMaker[], void>({
+      query: () => "/admin/accessory-makers",
+      transformResponse: data<AdminMaker[]>,
+      // « Products » aussi : le nombre de produits de chaque marque suit les ajouts.
+      providesTags: ["Makers", "Products"],
+    }),
+    createMaker: build.mutation<AdminMaker, { typeId: number; name: string }>({
+      query: ({ typeId, ...body }) => ({ url: `/admin/brands/${typeId}/makers`, method: "POST", body }),
+      transformResponse: data<AdminMaker>,
+      invalidatesTags: ["Makers", "Categories"],
+    }),
+    updateMaker: build.mutation<AdminMaker, { id: number; name?: string; position?: number; logoUrl?: string | null }>({
+      query: ({ id, ...body }) => ({ url: `/admin/accessory-makers/${id}`, method: "PATCH", body }),
+      invalidatesTags: ["Makers", "Categories"],
+    }),
+    uploadMakerLogo: build.mutation<unknown, { id: number; file: File }>({
+      query: ({ id, file }) => ({ url: `/admin/accessory-makers/${id}/logo`, method: "POST", body: imageForm(file) }),
+      invalidatesTags: ["Makers", "Categories"],
+    }),
+    deleteMaker: build.mutation<void, number>({
+      query: (id) => ({ url: `/admin/accessory-makers/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Makers", "Categories"],
+    }),
+
     // Modèles d'appareils
     models: build.query<DeviceModel[], void>({
       query: () => "/admin/models",
@@ -239,6 +276,11 @@ export const {
   useUpdateBrandMutation,
   useUploadBrandLogoMutation,
   useDeleteBrandMutation,
+  useMakersQuery,
+  useCreateMakerMutation,
+  useUpdateMakerMutation,
+  useUploadMakerLogoMutation,
+  useDeleteMakerMutation,
   useModelsQuery,
   useCreateModelMutation,
   useUpdateModelMutation,

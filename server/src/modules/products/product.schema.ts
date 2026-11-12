@@ -140,6 +140,8 @@ export const productBodySchema = z
     categoryId: z.number().int().positive(),
     deviceModelId: z.number().int().positive().nullable().default(null),
     brandId: z.number().int().positive().nullable().default(null),
+    // Un accessoire : sa marque dans son type (la marque du produit, `brandId`, est le type).
+    makerId: z.number().int().positive().nullable().default(null),
     compatibleModelIds: z.array(z.number().int().positive()).max(60).default([]),
     specs: labelRecord(120).default({}),
     status: z.enum(["draft", "published"]).default("draft"),

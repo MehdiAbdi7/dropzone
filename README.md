@@ -83,7 +83,7 @@ A file exists only when the module needs it (`stats` has no schema, `choices` ha
 
 | Folder | What it holds |
 |---|---|
-| `modules/` | `auth`, `brands`, `categories`, `choices` (the lists of the product form), `models` (device models and their colours), `orders`, `products`, `series`, `stage` (the home page photos), `stats`, `users` |
+| `modules/` | `accessories` (the brands of an accessory type, and the poster page of a brand), `auth`, `brands`, `categories`, `choices` (the lists of the product form), `models` (device models and their colours), `orders`, `products`, `series`, `stage` (the home page photos), `stats`, `users` |
 | `middlewares/` | `requireAuth`, `requireRole`, `validate` (Zod), rate limiters, image upload, error handler |
 | `utils/` | Small shared helpers (`idParams`, `pagination`, `slugify`, `escapeLike`, `AppError`) |
 | `config/` | Environment, database client, shipping fees, wilayas |

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DEVICE_KINDS } from "@/config/catalog";
+import MakerGrid from "@/features/categories/MakerGrid";
 import ProductGrid from "@/features/products/ProductGrid";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import ModelCard from "@/features/shop/ModelCard";
@@ -98,6 +99,33 @@ export default async function ShopBrandPage({
             ))}
           </ul>
         )}
+      </div>
+    );
+  }
+
+  // Un type d'accessoires qui a des marques (12/11) : l'étape marque, puis les affiches de la marque.
+  // Un type sans marque garde la grille de ses produits, plus bas.
+  const type = category?.brands.find((item) => item.slug === marque);
+  if (category && type && !isDevice && (type.makers?.length ?? 0) > 0) {
+    return (
+      <div className="container-page space-y-6 py-8">
+        <Breadcrumb
+          items={[
+            { label: "Boutique", href: "/boutique" },
+            { label: category.name, href: `/boutique/${category.slug}` },
+            { label: type.name },
+          ]}
+        />
+        <header className="space-y-1">
+          <h1 className="text-3xl">{type.name}</h1>
+          <p className="text-ink-muted">Choisis une marque.</p>
+        </header>
+        <MakerGrid
+          categorySlug={category.slug}
+          typeSlug={type.slug}
+          makers={type.makers ?? []}
+          withoutMaker={type.withoutMaker ?? 0}
+        />
       </div>
     );
   }
