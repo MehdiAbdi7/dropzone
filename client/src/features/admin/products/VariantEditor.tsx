@@ -10,6 +10,7 @@ import ColorPhotoField from "./ColorPhotoField";
 import ConditionSheet from "./ConditionSheet";
 import { SectionHeading } from "./FormParts";
 import GiftEditor from "./GiftEditor";
+import VariantPhones from "./VariantPhones";
 import { type VariantDraft, withCondition } from "./productDraft";
 
 type Props = {
@@ -168,6 +169,7 @@ export default function VariantEditor({
             )}
             {customLists.map((list) => renderPicker({ key: list.name, listId: list.id, multiple: list.multiple }))}
           </div>
+          {kind === "accessory" ? <VariantPhones variant={variant} id={id("phones")} onChange={(ids) => set({ compatibleModelIds: ids })} /> : null}
         </section>
 
         <section className="space-y-4 bg-surface-2/40 p-4 sm:p-5">

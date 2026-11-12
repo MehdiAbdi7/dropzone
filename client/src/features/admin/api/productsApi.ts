@@ -40,6 +40,8 @@ export type AdminVariant = {
   origin: string | null;
   reference: string | null;
   gifts: { giftVariantId: number; quantity: number }[];
+  // Les téléphones de la variante d'un accessoire (une taille de verre, refonte du 12/11).
+  compatibleModelIds: number[];
 };
 
 export type AdminProduct = {

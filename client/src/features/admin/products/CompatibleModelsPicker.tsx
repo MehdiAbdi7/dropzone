@@ -7,12 +7,15 @@ import { useModelsQuery } from "@/features/admin/api/catalogApi";
 
 // Pour un accessoire (coque, verre trempé) : les modèles avec lesquels il est
 // compatible, à cocher. Une coque peut aller sur plusieurs modèles de même taille.
+// Sert aussi pour chaque variante d'un verre (12/11) : `id` distingue les champs de recherche.
 export default function CompatibleModelsPicker({
   value,
   onChange,
+  id = "compatible-search",
 }: {
   value: number[];
   onChange: (ids: number[]) => void;
+  id?: string;
 }) {
   const { data: models = [] } = useModelsQuery();
   const [search, setSearch] = useState("");
@@ -35,9 +38,9 @@ export default function CompatibleModelsPicker({
           </button>
         ))}
       </div>
-      <Field id="compatible-search" label="Ajouter un modèle compatible" hint="Tapez quelques lettres : 15 pro, s24…">
+      <Field id={id} label="Ajouter un modèle compatible" hint="Tapez quelques lettres : 15 pro, s24…">
         <input
-          id="compatible-search"
+          id={id}
           className="input"
           type="search"
           value={search}

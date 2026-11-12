@@ -34,6 +34,8 @@ export type VariantDraft = {
   reference: string;
   // Les articles offerts, sur un neuf scellé comme sur une affaire.
   gifts: { giftVariantId: number; quantity: number }[];
+  // Les téléphones sur lesquels va la variante d'un accessoire (une taille de verre, 12/11).
+  compatibleModelIds: number[];
 };
 
 export type PartOrigin = "origine" | "compatible";
@@ -82,6 +84,7 @@ export function emptyVariant(condition: Condition = "new", kind?: ProductKind): 
     origin: "",
     reference: "",
     gifts: [],
+    compatibleModelIds: [],
   };
 }
 
@@ -206,6 +209,7 @@ export function draftFromProduct(product: AdminProduct): ProductDraft {
       origin: variant.origin ?? "",
       reference: variant.reference ?? "",
       gifts: variant.gifts,
+      compatibleModelIds: variant.compatibleModelIds ?? [],
     })),
   };
 }
@@ -258,6 +262,7 @@ export function variantBody(variant: VariantDraft): ProductBody["variants"][numb
     origin: variant.origin,
     reference: variant.reference,
     gifts: variant.gifts,
+    compatibleModelIds: variant.compatibleModelIds,
   };
 }
 
