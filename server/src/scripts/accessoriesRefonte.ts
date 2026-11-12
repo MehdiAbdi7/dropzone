@@ -18,7 +18,10 @@ class Simulation extends Error {
 function summary(report: ReplaceReport): string {
   const created = report.fill.accessories.filter((a) => a.status === "créé");
   return [
+    // Chaque nom, pour relire l'essai à blanc avant d'écrire sur Neon : un produit ajouté à la main
+    // dans « Coques » ou « Incassable Écran » serait supprimé aussi.
     `Anciens produits supprimés : ${report.deleted.length}`,
+    ...[...report.deleted].sort((a, b) => a.localeCompare(b, "fr")).map((name) => `  - ${name}`),
     `Produits créés : ${created.length} (${report.fill.created.variants} variantes)`,
     ...created.map((a) => `  ${a.name} : ${a.variants} variantes`),
     `Déjà là, inchangés : ${report.fill.accessories.filter((a) => a.status === "existe déjà").length}`,

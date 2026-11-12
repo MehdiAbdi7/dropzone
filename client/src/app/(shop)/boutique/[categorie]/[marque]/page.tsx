@@ -47,11 +47,16 @@ export default async function ShopBrandPage({
       </div>
     );
   }
-  if (!category || !brand) {
+  if (!category) {
     notFound();
   }
-  if (!DEVICE_KINDS.includes(category.kind)) {
-    redirect(accessoryRedirect(category.slug, brand.slug));
+  // Une marque d'appareils inconnue ou sans produit en vente (un lien partagé avant qu'elle ne
+  // s'épuise) ouvre la première marque de la catégorie, plutôt qu'une page introuvable.
+  if (DEVICE_KINDS.includes(category.kind)) {
+    return <DevicePage category={category} />;
   }
-  return <DevicePage category={category} />;
+  if (!brand) {
+    notFound();
+  }
+  redirect(accessoryRedirect(category.slug, brand.slug));
 }
