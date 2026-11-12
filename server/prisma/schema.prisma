@@ -275,6 +275,7 @@ model ProductVariant {
   options          Json          @default("{}")
   price            Int
   stock            Int
+  stockedAt        DateTime      @default(now()) @map("stocked_at")
   condition        Condition     @default(new)
   // La fiche d'état d'une affaire (`refurbished`), vide pour un neuf scellé (`new`).
   grade            Int?
@@ -305,6 +306,7 @@ model ProductVariant {
   giftedIn         VariantGift[] @relation("GiftVariant")
 
   @@index([productId])
+  @@index([stockedAt(sort: Desc)])
   @@map("product_variants")
 }
 

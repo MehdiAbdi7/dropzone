@@ -175,15 +175,16 @@ export async function addUnit(id: number, input: UnitBody) {
       });
       productId = product.id;
     }
+    const stockedAt = new Date();
     const created = await tx.productVariant.create({
-      data: { ...data, options: { ...data.options, Couleur: color }, productId },
+      data: { ...data, options: { ...data.options, Couleur: color }, productId, stockedAt },
       select: { id: true },
     });
     const colors = await addMissingModelColors(tx, model.id, [color]);
     await alignVariantColors(tx, productId, colors);
     await refreshMinPrice(tx, [productId]);
     // Un nouvel exemplaire est un arrivage : le produit remonte sur l'accueil (12/11).
-    await tx.product.update({ where: { id: productId }, data: { stockedAt: new Date() } });
+    await tx.product.update({ where: { id: productId }, data: { stockedAt } });
     return { productId, variantId: created.id };
   });
 }

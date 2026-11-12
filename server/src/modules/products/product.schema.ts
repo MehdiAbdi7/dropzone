@@ -21,7 +21,7 @@ export const productListQuerySchema = z.object({
   // note et la batterie (la vitrine de l'accueil ; une annonce importée n'en dit souvent rien).
   fiche: z.enum(["complete"]).optional(),
   // Les derniers arrivages de l'accueil (12/11) : seulement les appareils (`appareils=1`), et
-  // seulement ce qui est en stock (`enstock=1`).
+  // seulement les articles (variantes) en stock (`enstock=1`).
   appareils: z.enum(["1"]).optional(),
   enstock: z.enum(["1"]).optional(),
   // `sortie` : du modèle le plus récent au plus ancien (pages des marques de la Boutique).

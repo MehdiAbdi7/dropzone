@@ -57,6 +57,9 @@ export type Category = {
 
 export type ProductCard = {
   id: number;
+  // Présents pour les cartes des derniers arrivages, qui représentent une variante précise.
+  arrivalVariantId?: number;
+  arrivalColor?: string | null;
   name: string;
   slug: string;
   minPrice: number;

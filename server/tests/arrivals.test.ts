@@ -4,16 +4,24 @@ import app from "../src/app.js";
 import { prisma } from "../src/config/db.js";
 import { createCatalog, loginAs, resetDb } from "./helpers.js";
 
-// Les derniers arrivages de l'accueil (12/11, demande de Mehdi) : un appareil remonte quand le
-// magasin ajoute du stock (un nouvel exemplaire, une nouvelle variante, un stock qui augmente),
-// pas seulement quand sa fiche est créée.
+// Les derniers arrivages de l'accueil (12/11, demande de Mehdi) : les variantes remontent quand
+// le magasin ajoute du stock, pas seulement quand la fiche du modèle est créée.
 let catalog: Awaited<ReturnType<typeof createCatalog>>;
 let admin: Awaited<ReturnType<typeof loginAs>>["agent"];
 let galaxy: { id: number; variants: { id: number }[] };
 
 const longAgo = new Date("2026-01-01T00:00:00Z");
-const arrivals = async () =>
-  (await request(app).get("/products?sort=arrivages&appareils=1&enstock=1")).body.data.map((p: { name: string }) => p.name);
+const arrivals = async () => {
+  const names = (await request(app).get("/products?sort=arrivages&appareils=1&enstock=1")).body.data.map(
+    (product: { name: string }) => product.name,
+  );
+  return [...new Set(names)];
+};
+
+const setArrival = async (productId: number, stockedAt: Date) => {
+  await prisma.product.update({ where: { id: productId }, data: { stockedAt } });
+  await prisma.productVariant.updateMany({ where: { productId }, data: { stockedAt } });
+};
 
 beforeEach(async () => {
   await resetDb();
@@ -33,8 +41,8 @@ beforeEach(async () => {
     select: { id: true, variants: { select: { id: true } } },
   });
   // L'iPhone du catalogue est arrivé il y a longtemps, le Galaxy un peu après.
-  await prisma.product.update({ where: { id: catalog.phone.id }, data: { stockedAt: longAgo } });
-  await prisma.product.update({ where: { id: galaxy.id }, data: { stockedAt: new Date("2026-02-01T00:00:00Z") } });
+  await setArrival(catalog.phone.id, longAgo);
+  await setArrival(galaxy.id, new Date("2026-02-01T00:00:00Z"));
 });
 
 const galaxyBody = (variant: { stock: number; price?: number }) => ({
@@ -66,20 +74,52 @@ describe("Derniers arrivages", () => {
     expect(await arrivals()).toEqual(["iPhone 15 Pro Max", "Galaxy S24 Ultra"]);
   });
 
+  it("renvoie l'article arrivé avec sa photo et sa couleur", async () => {
+    const colorPhoto = "https://example.com/galaxy-noir.webp";
+    await prisma.modelColorPhoto.create({
+      data: { deviceModelId: catalog.galaxy.id, color: "Noir", url: colorPhoto },
+    });
+    await admin
+      .post(`/admin/models/${catalog.galaxy.id}/variants`)
+      .send({
+        sku: "S24U-BLACK",
+        price: 180000,
+        stock: 1,
+        condition: "new",
+        warrantyMonths: 12,
+        options: { Stockage: "256 Go" },
+        color: "Noir",
+      })
+      .expect(201);
+
+    const response = await request(app).get("/products?sort=arrivages&appareils=1&enstock=1&limit=12");
+    expect(response.status).toBe(200);
+    expect(response.body.data[0]).toMatchObject({
+      id: galaxy.id,
+      arrivalColor: "Noir",
+      image: colorPhoto,
+      minPrice: 180000,
+      hasNew: true,
+      newStock: 1,
+    });
+    expect(response.body.data[0].arrivalVariantId).toEqual(expect.any(Number));
+    expect(response.body.data.filter((product: { id: number }) => product.id === galaxy.id)).toHaveLength(2);
+  });
+
   it("un stock qui augmente fait remonter le produit", async () => {
-    await prisma.product.update({ where: { id: catalog.phone.id }, data: { stockedAt: new Date("2026-03-01T00:00:00Z") } });
+    await setArrival(catalog.phone.id, new Date("2026-03-01T00:00:00Z"));
     await admin.patch(`/admin/products/${galaxy.id}`).send(galaxyBody({ stock: 5 })).expect(200);
     expect(await arrivals()).toEqual(["Galaxy S24 Ultra", "iPhone 15 Pro Max"]);
   });
 
   it("un stock qui baisse ou un prix changé ne le fait pas remonter", async () => {
-    await prisma.product.update({ where: { id: catalog.phone.id }, data: { stockedAt: new Date("2026-03-01T00:00:00Z") } });
+    await setArrival(catalog.phone.id, new Date("2026-03-01T00:00:00Z"));
     await admin.patch(`/admin/products/${galaxy.id}`).send(galaxyBody({ stock: 1, price: 160000 })).expect(200);
     expect(await arrivals()).toEqual(["iPhone 15 Pro Max", "Galaxy S24 Ultra"]);
   });
 
   it("une nouvelle variante dans le formulaire fait remonter le produit", async () => {
-    await prisma.product.update({ where: { id: catalog.phone.id }, data: { stockedAt: new Date("2026-03-01T00:00:00Z") } });
+    await setArrival(catalog.phone.id, new Date("2026-03-01T00:00:00Z"));
     const body = galaxyBody({ stock: 2 });
     body.variants.push({ sku: "S24U-NEW-1TO", price: 210000, stock: 1, condition: "new", warrantyMonths: 12 } as never);
     await admin.patch(`/admin/products/${galaxy.id}`).send(body).expect(200);

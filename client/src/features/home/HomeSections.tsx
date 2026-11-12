@@ -83,8 +83,8 @@ export function DealsBanner({ stage }: { stage: ReactNode }) {
   );
 }
 
-// Les 12 derniers arrivages (12/11) : les appareils en stock, du dernier ajouté au stock (nouvel
-// exemplaire ou stock augmenté dans le back-office) au plus ancien. Les accessoires n'y sont pas.
+// Les 12 derniers arrivages (12/11) : les variantes d'appareils en stock, de l'article ajouté ou
+// réapprovisionné le plus récemment au plus ancien. Les accessoires n'y sont pas.
 export async function LatestProducts() {
   const latest = await publicFetchPage<ProductCard>("/products?sort=arrivages&appareils=1&enstock=1&limit=12");
   if (!latest) {

@@ -37,12 +37,17 @@ export default function ProductCard({ product, sizes, href }: { product: Product
       </div>
       <div className="flex flex-1 flex-col gap-1 px-0 pb-0.5 sm:px-1">
         <p className="text-[0.7rem] font-semibold text-ink-muted sm:text-xs">{product.brand ?? product.category.name}</p>
-        <h3 className="line-clamp-2 text-[0.8rem] leading-snug sm:text-[0.95rem] sm:group-hover:text-blue-ink">{product.name}</h3>
+        <h3 className="line-clamp-2 text-[0.8rem] leading-snug sm:text-[0.95rem] sm:group-hover:text-blue-ink">
+          {product.name}
+          {product.arrivalColor ? ` · ${product.arrivalColor}` : ""}
+        </h3>
         {state ? <p className="text-[0.7rem] text-ink-muted sm:text-xs">{state}</p> : null}
         <div className="mt-auto flex items-end justify-between gap-0 pt-1.5 sm:gap-2 sm:pt-2">
           {product.inStock ? (
             <p className="leading-tight">
-              <span className="block text-xs text-ink-muted">À partir de</span>
+              <span className="block text-xs text-ink-muted">
+                {product.arrivalVariantId ? "Prix" : "À partir de"}
+              </span>
               <span className="font-display text-xs font-bold whitespace-nowrap sm:text-base">{formatPrice(product.minPrice)}</span>
             </p>
           ) : (

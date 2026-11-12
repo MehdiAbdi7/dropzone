@@ -18,7 +18,7 @@ export default function ProductGrid({
       className={`grid grid-cols-2 gap-3 sm:gap-1 md:grid-cols-3 ${wide ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}
     >
       {products.map((product) => (
-        <li key={product.id} className="flex">
+        <li key={product.arrivalVariantId ?? product.id} className="flex">
           <ProductCard
             product={product}
             href={

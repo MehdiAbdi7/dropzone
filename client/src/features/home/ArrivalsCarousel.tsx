@@ -5,9 +5,9 @@ import ProductCard from "@/features/products/ProductCard";
 import type { ProductCard as ProductCardData } from "@/types/api";
 import { ArrowRightIcon } from "@/components/ui/icons";
 
-// Les derniers arrivages de l'accueil (12/11, demande de Mehdi) : les appareils que le magasin
-// vient d'ajouter à son stock (nouvel exemplaire ou stock augmenté), dans un carrousel qui défile
-// seul en boucle, comme celui des catégories. Il se saisit au doigt ou à la molette.
+// Les derniers arrivages de l'accueil (12/11, demande de Mehdi) : les variantes d'appareils que
+// le magasin vient d'ajouter à son stock, dans un carrousel qui défile seul en boucle, comme celui
+// des catégories. Il se saisit au doigt ou à la molette.
 export default function ArrivalsCarousel({ products }: { products: ProductCardData[] }) {
   const { scrollerRef, handleScroll, scrollerHandlers, scrollManually } =
     useInfiniteCarousel(products.length, 34);
@@ -56,7 +56,7 @@ export default function ArrivalsCarousel({ products }: { products: ProductCardDa
         {[0, 1, 2].map((copy) =>
           products.map((product) => (
             <div
-              key={`${copy}-${product.id}`}
+              key={`${copy}-${product.id}-${product.arrivalVariantId ?? "product"}`}
               aria-hidden={copy !== 1}
               // inert : les liens des copies ne se prennent pas au clavier.
               inert={copy !== 1}

@@ -297,6 +297,7 @@ export async function updateProduct(id: number, input: ProductBody) {
   // remonte alors en tête des derniers arrivages de l'accueil.
   const oldStock = new Map(existing.variants.map((variant) => [variant.id, variant.stock]));
   const arrived = rules.variants.some((variant) => !variant.id || variant.stock > (oldStock.get(variant.id) ?? 0));
+  const stockedAt = arrived ? new Date() : undefined;
 
   return prisma.$transaction(async (tx) => {
     // Les variantes retirées du formulaire sont supprimées. Les commandes passées
@@ -304,10 +305,12 @@ export async function updateProduct(id: number, input: ProductBody) {
     await tx.productVariant.deleteMany({ where: { productId: id, id: { notIn: keptIds } } });
     for (const variant of rules.variants) {
       if (variant.id) {
+        const stockIncreased = variant.stock > (oldStock.get(variant.id) ?? 0);
         await tx.productVariant.update({
           where: { id: variant.id },
           data: {
             ...variantData(variant),
+            ...(stockIncreased && stockedAt ? { stockedAt } : {}),
             gifts: { deleteMany: {}, create: variant.gifts },
             compatibleModels: { set: variant.compatibleModelIds.map((modelId) => ({ id: modelId })) },
           },
@@ -317,6 +320,7 @@ export async function updateProduct(id: number, input: ProductBody) {
           data: {
             ...variantData(variant),
             productId: id,
+            stockedAt: stockedAt ?? new Date(),
             gifts: { create: variant.gifts },
             compatibleModels: { connect: variant.compatibleModelIds.map((modelId) => ({ id: modelId })) },
           },
@@ -335,7 +339,7 @@ export async function updateProduct(id: number, input: ProductBody) {
         specs: input.specs,
         status: input.status,
         compatibleModels: { set: rules.compatibleModelIds.map((modelId) => ({ id: modelId })) },
-        ...(arrived ? { stockedAt: new Date() } : {}),
+        ...(stockedAt ? { stockedAt } : {}),
       },
     });
     await refreshMinPrice(tx, [id]);

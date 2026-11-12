@@ -85,10 +85,12 @@ export function buildConditionReport(variant: ConditionFields): string | null {
   ].join(" · ");
 }
 
-// `sortie` n'est pas ici : il se trie en JavaScript (voir byRelease).
-const SORTS: Record<Exclude<ProductListQuery["sort"], "sortie">, Prisma.ProductOrderByWithRelationInput[]> = {
+// `sortie` se trie en JavaScript ; `arrivages` renvoie les variantes (articles), pas les fiches modèles.
+const SORTS: Record<
+  Exclude<ProductListQuery["sort"], "sortie" | "arrivages">,
+  Prisma.ProductOrderByWithRelationInput[]
+> = {
   nouveautes: [{ createdAt: "desc" }, { id: "desc" }],
-  arrivages: [{ stockedAt: "desc" }, { id: "desc" }],
   "prix-croissant": [{ minPrice: "asc" }, { id: "asc" }],
   "prix-decroissant": [{ minPrice: "desc" }, { id: "desc" }],
 };
@@ -112,6 +114,95 @@ function byRelease(a: ReleaseSortable, b: ReleaseSortable): number {
   const yearB = b.deviceModel?.releaseYear ?? -Infinity;
   const highest = (product: ReleaseSortable) => Math.max(0, ...product.variants.map((variant) => variant.price));
   return yearB - yearA || highest(b) - highest(a) || b.id - a.id;
+}
+
+function getOptionString(options: Prisma.JsonValue, key: string): string | null {
+  if (typeof options !== "object" || options === null || Array.isArray(options)) {
+    return null;
+  }
+  const value = options[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+async function listArrivalVariants(productWhere: Prisma.ProductWhereInput, query: ProductListQuery) {
+  const variantConditions: Prisma.ProductVariantWhereInput[] = [];
+  if (query.enstock || query.condition || query.fiche === "complete") {
+    variantConditions.push({ stock: { gt: 0 } });
+  }
+  if (query.condition) {
+    variantConditions.push({ condition: query.condition === "neuf" ? "new" : "refurbished" });
+  }
+  if (query.fiche === "complete") {
+    variantConditions.push({
+      condition: "refurbished",
+      grade: { not: null },
+      batteryHealth: { not: null },
+    });
+  }
+  const where: Prisma.ProductVariantWhereInput = {
+    product: { is: productWhere },
+    AND: variantConditions,
+  };
+  const select = {
+    id: true,
+    options: true,
+    price: true,
+    stock: true,
+    condition: true,
+    product: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        category: { select: { name: true, slug: true } },
+        deviceModel: {
+          select: {
+            brand: true,
+            colorPhotos: { select: { color: true, url: true } },
+          },
+        },
+        brand: { select: { name: true } },
+        images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
+      },
+    },
+  } satisfies Prisma.ProductVariantSelect;
+
+  const [total, variants] = await prisma.$transaction([
+    prisma.productVariant.count({ where }),
+    prisma.productVariant.findMany({
+      where,
+      orderBy: [{ stockedAt: "desc" }, { id: "desc" }],
+      ...paginate(query.page, query.limit),
+      select,
+    }),
+  ]);
+  const data = variants.map(({ id, options, price, stock, condition, product }) => {
+    const arrivalColor = getOptionString(options, "Couleur");
+    const colorPhoto = arrivalColor
+      ? product.deviceModel?.colorPhotos.find(
+          (photo) => photo.color.trim().toLowerCase() === arrivalColor.toLowerCase(),
+        )?.url
+      : null;
+    return {
+      id: product.id,
+      arrivalVariantId: id,
+      arrivalColor,
+      name: product.name,
+      slug: product.slug,
+      minPrice: price,
+      brand: product.deviceModel?.brand ?? product.brand?.name ?? null,
+      image: colorPhoto ?? product.images[0]?.url ?? null,
+      category: product.category,
+      inStock: stock > 0,
+      hasNew: stock > 0 && condition === "new",
+      hasRefurbished: stock > 0 && condition === "refurbished",
+      newFrom: stock > 0 && condition === "new" ? price : null,
+      refurbishedFrom: stock > 0 && condition === "refurbished" ? price : null,
+      newStock: condition === "new" ? stock : 0,
+      refurbishedCount: condition === "refurbished" ? stock : 0,
+    };
+  });
+  return { data, pagination: paginationMeta(query.page, query.limit, total) };
 }
 
 export async function listProducts(query: ProductListQuery) {
@@ -165,6 +256,10 @@ export async function listProducts(query: ProductListQuery) {
     });
   }
   const where: Prisma.ProductWhereInput = { status: "published", AND: filters };
+  if (query.sort === "arrivages") {
+    return listArrivalVariants(where, query);
+  }
+
   const select = {
     id: true,
     name: true,
