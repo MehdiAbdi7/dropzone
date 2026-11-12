@@ -26,3 +26,23 @@ export function catalogRedirect(params: URLSearchParams): string | null {
   const brand = params.get("brand");
   return `/boutique/${encodeURIComponent(category)}${brand ? `/${encodeURIComponent(brand)}` : ""}`;
 }
+
+// Refonte du 12/11 : les accessoires n'ont plus d'étape marque ni d'affiches, mais une page à
+// filtres. Les anciennes adresses (`/boutique/accessoires/chargeurs`, ou `/coques/iphone` pour
+// les affiches d'une marque) mènent au même choix sur la nouvelle page.
+export function accessoryRedirect(category: string, type: string, maker?: string): string {
+  const params = new URLSearchParams({ type });
+  if (maker) params.set("marque", maker);
+  return `/boutique/${category}?${params.toString()}`;
+}
+
+// Les 30 anciens verres (un par série) et 37 anciennes coques ont été remplacés (12/11) : une
+// ancienne fiche partagée mène à la nouvelle page de son type plutôt qu'à une page introuvable.
+// `apiAnswers` : si l'API ne répond pas, la fiche existe peut-être encore (une coque actuelle
+// commence aussi par « coque- ») : pas de redirection, la page dit que la boutique ne répond pas.
+export function retiredProductRedirect(slug: string, apiAnswers: boolean): string | null {
+  if (!apiAnswers) return null;
+  if (slug.startsWith("verre-trempe-")) return "/boutique/accessoires?type=incassable-ecran";
+  if (slug.startsWith("coque-")) return "/boutique/accessoires?type=coques";
+  return null;
+}

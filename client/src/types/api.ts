@@ -106,6 +106,8 @@ export type Variant = {
   origin?: string | null;
   reference?: string | null;
   gifts: Gift[];
+  // Les téléphones de cette variante d'accessoire (une taille de verre, 12/11) ; vide sinon.
+  compatibleModels?: ModelRef[];
 };
 
 type ModelRef = { brand: string; name: string; slug: string };
@@ -134,27 +136,31 @@ export type ProductDetail = {
   colors: { name: string; photoUrl: string | null }[];
 };
 
-// ---------- Les affiches d'accessoires (12/11) ----------
+// ---------- Le catalogue des accessoires (refonte du 12/11) ----------
 
-// Une colonne de l'affiche d'un produit : une de ses variantes neuves.
-export type AccessoryVariant = { sku: string; options: Options; price: number; stock: number };
-
-export type AccessoryPosterProduct = {
+// Un accessoire tel que la page Accessoires le montre : sa carte, et de quoi la filtrer.
+export type AccessoryItem = {
   name: string;
   slug: string;
-  description: string;
   image: string | null;
-  // Les caractéristiques du produit, dans l'ordre de la fiche.
-  specs: [string, string][];
-  variants: AccessoryVariant[];
+  // Le slug de son type (Chargeurs, Coques…).
+  type: string;
+  // Sa marque dans le type (Anker), null sans marque (les verres incassables).
+  maker: { name: string; slug: string } | null;
+  // Le prix le plus bas en stock, sinon le plus bas tout court.
+  minPrice: number;
+  // Les variantes n'ont pas toutes le même prix : la carte écrit « dès ».
+  hasRange: boolean;
+  inStock: boolean;
+  // Les valeurs de chaque option, dans l'ordre des variantes : la ligne d'aide de la carte.
+  options: Record<string, string[]>;
 };
 
-// La page d'une marque d'accessoires : une affiche par produit publié de la marque dans le type.
-export type AccessoryPoster = {
+// `GET /accessories/:category` : les types (avec leurs marques) et tous les accessoires publiés.
+export type AccessoryCatalog = {
   category: { name: string; slug: string };
-  type: { name: string; slug: string; logoUrl: string | null };
-  maker: { name: string; slug: string; logoUrl: string | null };
-  products: AccessoryPosterProduct[];
+  types: { name: string; slug: string; makers: { name: string; slug: string; logoUrl: string | null }[] }[];
+  products: AccessoryItem[];
 };
 
 // ---------- Les affiches de séries ----------
@@ -171,6 +177,13 @@ export type SeriesSummary = {
   soldOut: boolean;
   // De quoi faire l'affiche de secours sans couverture : photo et couleur du premier modèle.
   fallback: { image: string | null; color: string | null };
+};
+
+// Les séries d'une marque, dans `GET /series?category=` sans marque (12/11) : la Boutique en
+// reçoit toutes les marques d'un coup et passe de l'une à l'autre sans nouvel appel.
+export type BrandSeries = {
+  brand: { name: string; slug: string; logoUrl: string | null };
+  series: SeriesSummary[];
 };
 
 // Une colonne de l'affiche d'une série. Un modèle sans fiche publiée y est aussi, grisé :

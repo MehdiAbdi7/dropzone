@@ -267,3 +267,47 @@ describe("variantBody", () => {
     });
   });
 });
+
+// Les téléphones compatibles de chaque taille de verre (refonte du 12/11).
+describe("Téléphones compatibles d'une variante", () => {
+  it("les garde dans le brouillon et les renvoie à l'API", () => {
+    const product = {
+      name: "Verre incassable Full glue 9H",
+      description: "Test",
+      categoryId: 4,
+      deviceModelId: null,
+      brandId: 9,
+      makerId: null,
+      compatibleModels: [],
+      specs: {},
+      status: "published",
+      variants: [
+        {
+          id: 11,
+          sku: "VER-FG-67",
+          options: { "Taille de l'écran": "6,7 pouces" },
+          price: 1500,
+          stock: 10,
+          condition: "new",
+          grade: null,
+          batteryHealth: null,
+          replacedParts: [],
+          compatibleParts: [],
+          defects: [],
+          limitations: [],
+          withBox: null,
+          details: null,
+          gifts: [],
+          compatibleModelIds: [3, 4],
+        },
+      ],
+    } as unknown as AdminProduct;
+    const draft = draftFromProduct(product);
+    expect(draft.variants[0].compatibleModelIds).toEqual([3, 4]);
+    expect(bodyFromDraft(draft).variants[0].compatibleModelIds).toEqual([3, 4]);
+  });
+
+  it("part d'une liste vide pour une nouvelle variante", () => {
+    expect(emptyVariant("new", "accessory").compatibleModelIds).toEqual([]);
+  });
+});

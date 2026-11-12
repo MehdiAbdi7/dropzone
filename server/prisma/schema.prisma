@@ -84,31 +84,31 @@ model Category {
 // Une marque dans une catégorie : « iPhone » dans Smartphones, « MacBook » dans PC
 // portables. Une même entreprise a donc une ligne par catégorie, avec son nom affiché.
 model Brand {
-  id         Int       @id @default(autoincrement())
-  categoryId Int       @map("category_id")
+  id            Int              @id @default(autoincrement())
+  categoryId    Int              @map("category_id")
   // Supprimer une catégorie supprime ses marques : elle n'est supprimable que sans
   // produits (RESTRICT sur products.category_id), donc ses marques n'en ont pas.
-  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  name       String
-  slug       String
+  category      Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name          String
+  slug          String
   // Le fabricant des modèles d'appareils (champ `brand` de DeviceModel), pour
   // remplir la marque d'un produit depuis son modèle : « Apple » pour « iPhone ».
-  makerName  String?   @map("maker_name")
+  makerName     String?          @map("maker_name")
   // « /brands/apple.svg » (bibliothèque Simple Icons) ou une URL Cloudinary.
-  logoUrl    String?   @map("logo_url")
+  logoUrl       String?          @map("logo_url")
   // Plus utilisées depuis le 11/11 (choix de Mehdi : la tuile d'une marque montre son logo, pas
   // de photo). À supprimer par une migration séparée, une fois ce code en ligne : dans la même
   // livraison, l'ancienne API encore en route les lirait après la migration, le temps du déploiement.
-  photoUrl      String? @map("photo_url")
-  photoPublicId String? @map("photo_public_id")
-  position   Int       @default(0)
-  createdAt  DateTime  @default(now()) @map("created_at")
-  products   Product[]
+  photoUrl      String?          @map("photo_url")
+  photoPublicId String?          @map("photo_public_id")
+  position      Int              @default(0)
+  createdAt     DateTime         @default(now()) @map("created_at")
+  products      Product[]
   // Supprimer une marque qui a des séries est refusé (RESTRICT) : le gérant les supprime d'abord.
-  series     Series[]
+  series        Series[]
   // Dans une catégorie d'accessoires, la ligne est un type (Chargeurs, Coques…) et ses marques
   // (Apple, Samsung, Anker) sont ses `makers` : l'étape marque de la Boutique (12/11).
-  makers     AccessoryMaker[]
+  makers        AccessoryMaker[]
 
   @@unique([categoryId, slug])
   @@map("brands")
@@ -176,6 +176,8 @@ model DeviceModel {
   // 20261105150000_color_photos : Prisma ne sait pas le déclarer). Tableau gardé pour Prisma.
   products           Product[]         @relation("ProductDeviceModel")
   compatibleProducts Product[]         @relation("ProductCompatibleModels")
+  // Les variantes d'accessoires qui vont sur ce modèle (une taille de verre, 12/11).
+  compatibleVariants ProductVariant[]  @relation("VariantCompatibleModels")
   createdAt          DateTime          @default(now()) @map("created_at")
 
   @@unique([brand, name])
@@ -262,38 +264,41 @@ model Product {
 }
 
 model ProductVariant {
-  id              Int           @id @default(autoincrement())
-  productId       Int           @map("product_id")
-  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
-  sku             String        @unique
-  options         Json          @default("{}")
-  price           Int
-  stock           Int
-  condition       Condition     @default(new)
+  id               Int           @id @default(autoincrement())
+  productId        Int           @map("product_id")
+  product          Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku              String        @unique
+  options          Json          @default("{}")
+  price            Int
+  stock            Int
+  condition        Condition     @default(new)
   // La fiche d'état d'une affaire (`refurbished`), vide pour un neuf scellé (`new`).
-  grade           Int?
-  batteryHealth   Int?          @map("battery_health")
-  replacedParts   String[]      @default([]) @map("replaced_parts")
+  grade            Int?
+  batteryHealth    Int?          @map("battery_health")
+  replacedParts    String[]      @default([]) @map("replaced_parts")
   // Les pièces changées qui ne sont pas d'origine (CHECK : une partie de replacedParts).
-  compatibleParts String[]      @default([]) @map("compatible_parts")
-  defects         String[]      @default([])
-  limitations     String[]      @default([])
+  compatibleParts  String[]      @default([]) @map("compatible_parts")
+  defects          String[]      @default([])
+  limitations      String[]      @default([])
   // Avec (true) ou sans (false) sa boîte d'origine. Une affaire importée d'une annonce
   // qui n'en parle pas reste à null (« Boîte non précisée ») ; un neuf scellé est
   // toujours à null, il l'a par définition (CHECK dans la migration).
-  withBox         Boolean?      @map("with_box")
+  withBox          Boolean?      @map("with_box")
   // Les détails du gérant pour le client (« Comme neuf, vendu avec sa boîte d'origine »).
-  details         String?
+  details          String?
   // La garantie en mois (CHECK : 1 à 36), obligatoire pour un appareil (règle de l'API).
-  warrantyMonths  Int?          @map("warranty_months")
+  warrantyMonths   Int?          @map("warranty_months")
   // Le pays d'origine, une valeur de la liste « Pays d'origine » (« Europe »).
-  origin          String?
+  origin           String?
   // La référence interne du magasin (« 51057 »), unique quand elle existe.
-  reference       String?       @unique
+  reference        String?       @unique
+  // Les téléphones sur lesquels va cette variante d'accessoire (une taille de verre : 6,7 pouces),
+  // réglés dans le back-office et montrés par la fenêtre de la Boutique (12/11).
+  compatibleModels DeviceModel[] @relation("VariantCompatibleModels")
   // Les articles offerts avec cette variante (neuf scellé ou affaire).
-  gifts           VariantGift[] @relation("DealVariant")
+  gifts            VariantGift[] @relation("DealVariant")
   // Les affaires dans lesquelles cette variante est offerte.
-  giftedIn        VariantGift[] @relation("GiftVariant")
+  giftedIn         VariantGift[] @relation("GiftVariant")
 
   @@index([productId])
   @@map("product_variants")

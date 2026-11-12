@@ -65,7 +65,14 @@ export function CategoryFields({
       {kind === "accessory" ? (
         <section className="space-y-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
           <SectionHeading number="02" title="Compatibilité" description="Laisse vide pour un accessoire universel." />
-          <CompatibleModelsPicker value={draft.compatibleModelIds} onChange={(ids) => set({ compatibleModelIds: ids })} />
+          {/* Un verre : la fiche suit les téléphones de ses tailles (recalculés à l'enregistrement). */}
+          {draft.variants.some((variant) => variant.compatibleModelIds.length > 0) ? (
+            <p className="text-sm text-ink-muted">
+              Ce produit suit les téléphones de ses tailles d&apos;écran : règle-les dans chaque variante.
+            </p>
+          ) : (
+            <CompatibleModelsPicker value={draft.compatibleModelIds} onChange={(ids) => set({ compatibleModelIds: ids })} />
+          )}
         </section>
       ) : null}
       {kind ? (

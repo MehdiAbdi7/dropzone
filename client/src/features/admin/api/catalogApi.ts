@@ -190,6 +190,14 @@ const catalogApi = api.injectEndpoints({
       invalidatesTags: ["Makers", "Categories"],
     }),
 
+    // Les téléphones groupés par taille d'écran (12/11) : le bouton « Ajouter les téléphones de
+    // 6,7 pouces » d'une variante de verre.
+    screenSizes: build.query<{ size: string; models: { id: number; brand: string; name: string }[] }[], void>({
+      query: () => "/admin/models/screen-sizes",
+      transformResponse: data<{ size: string; models: { id: number; brand: string; name: string }[] }[]>,
+      providesTags: ["Models", "Products"],
+    }),
+
     // Modèles d'appareils
     models: build.query<DeviceModel[], void>({
       query: () => "/admin/models",
@@ -282,6 +290,7 @@ export const {
   useUploadMakerLogoMutation,
   useDeleteMakerMutation,
   useModelsQuery,
+  useScreenSizesQuery,
   useCreateModelMutation,
   useUpdateModelMutation,
   useDeleteModelMutation,

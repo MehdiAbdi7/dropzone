@@ -1,6 +1,7 @@
-import { prisma } from "../../config/db.js";
+import { prisma, type Tx } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
 import { escapeLike } from "../../utils/escapeLike.js";
+import { screenSize } from "../../utils/screenSize.js";
 import { sameColor } from "./modelColors.js";
 import type { ModelBody, ModelListQuery, ModelPatch } from "./model.schema.js";
 import { modelSlug } from "./modelSlug.js";
@@ -102,4 +103,29 @@ export async function updateModel(id: number, body: ModelPatch) {
 // ON DELETE RESTRICT depuis products : un modèle encore vendu est refusé (P2003 → 409).
 export async function deleteModel(id: number) {
   await prisma.deviceModel.delete({ where: { id } });
+}
+
+// Les téléphones groupés par taille d'écran (back-office, 12/11) : le bouton « Ajouter les
+// téléphones de 6,7 pouces » d'une variante de verre. La taille vient de la caractéristique
+// « Écran » de la fiche du modèle ; un téléphone sans fiche ou sans taille lisible n'y est pas.
+// `db` : une transaction, pour le script qui crée les verres (accessories:refonte).
+export async function listScreenSizes(db: Tx = prisma) {
+  // Par modèle (une seule entrée chacun), avec la première fiche qui dit sa taille.
+  const models = await db.deviceModel.findMany({
+    where: { kind: "phone", products: { some: {} } },
+    select: { id: true, brand: true, name: true, products: { orderBy: { id: "asc" }, select: { specs: true } } },
+    orderBy: [{ brand: "asc" }, { name: "asc" }],
+  });
+  const bySize = new Map<string, { id: number; brand: string; name: string }[]>();
+  for (const { products, ...model } of models) {
+    const size = products
+      .map((product) => screenSize((product.specs as Record<string, string> | null)?.["Écran"]))
+      .find((found) => found !== null);
+    if (size) {
+      bySize.set(size, [...(bySize.get(size) ?? []), model]);
+    }
+  }
+  return [...bySize]
+    .sort(([a], [b]) => Number(a.split(" ")[0].replace(",", ".")) - Number(b.split(" ")[0].replace(",", ".")))
+    .map(([size, models]) => ({ size, models }));
 }

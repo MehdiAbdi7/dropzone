@@ -17,9 +17,7 @@ export const accessoryMakerPatchSchema = z.object({
 });
 export type AccessoryMakerPatch = z.infer<typeof accessoryMakerPatchSchema>;
 
-// /accessories/:category/:type/:maker — trois slugs de l'adresse de la Boutique.
-export const accessoryPosterParamsSchema = z.object({
+// /accessories/:category : le slug de la catégorie d'accessoires, dans l'adresse de la Boutique.
+export const accessoryCatalogParamsSchema = z.object({
   category: z.string().trim().min(1).max(120),
-  type: z.string().trim().min(1).max(120),
-  maker: z.string().trim().min(1).max(120),
 });

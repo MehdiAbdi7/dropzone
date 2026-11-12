@@ -110,6 +110,8 @@ export const variantSchema = z
       )
       .max(5)
       .default([]),
+    // Les téléphones sur lesquels va la variante d'un accessoire (une taille de verre, 12/11).
+    compatibleModelIds: z.array(z.number().int().positive()).max(60).default([]),
   })
   .superRefine((variant, ctx) => {
     // Un neuf scellé n'a rien à décrire ; ses articles offerts restent permis.
@@ -142,10 +144,12 @@ export const productBodySchema = z
     brandId: z.number().int().positive().nullable().default(null),
     // Un accessoire : sa marque dans son type (la marque du produit, `brandId`, est le type).
     makerId: z.number().int().positive().nullable().default(null),
-    compatibleModelIds: z.array(z.number().int().positive()).max(60).default([]),
+    // Un verre incassable va sur tous les téléphones du catalogue (une taille chacun) : 150 au plus.
+    compatibleModelIds: z.array(z.number().int().positive()).max(150).default([]),
     specs: labelRecord(120).default({}),
     status: z.enum(["draft", "published"]).default("draft"),
-    variants: z.array(variantSchema).min(1, { error: "Au moins une variante" }).max(60),
+    // La coque MagSafe iPhone a 81 variantes (27 modèles × 3 couleurs, refonte du 12/11).
+    variants: z.array(variantSchema).min(1, { error: "Au moins une variante" }).max(120),
   })
   .superRefine((product, ctx) => {
     const skus = product.variants.map((variant) => variant.sku);

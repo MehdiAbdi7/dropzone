@@ -76,14 +76,24 @@ export async function getAdminProduct(id: number) {
       images: { orderBy: { position: "asc" } },
       variants: {
         orderBy: [{ condition: "asc" }, { id: "asc" }],
-        include: { gifts: { select: { giftVariantId: true, quantity: true } } },
+        include: {
+          gifts: { select: { giftVariantId: true, quantity: true } },
+          compatibleModels: { select: { id: true }, orderBy: { id: "asc" } },
+        },
       },
     },
   });
   if (!product) {
     throw new AppError(404, "Produit introuvable");
   }
-  return product;
+  // Le formulaire reçoit les ids des téléphones compatibles de chaque variante.
+  return {
+    ...product,
+    variants: product.variants.map(({ compatibleModels, ...variant }) => ({
+      ...variant,
+      compatibleModelIds: compatibleModels.map((model) => model.id),
+    })),
+  };
 }
 
 // Un neuf scellé n'a pas de fiche d'état : on vide ce que le formulaire aurait pu envoyer.
@@ -198,11 +208,21 @@ async function checkRules(input: ProductBody, productId?: number) {
     }
   }
 
-  const variants = input.variants.map(withoutDealSheet);
+  // Les téléphones compatibles d'une variante n'ont de sens que pour un accessoire.
+  const variants = input.variants
+    .map(withoutDealSheet)
+    .map((variant) => (category.kind === "accessory" ? variant : { ...variant, compatibleModelIds: [] }));
+  const modelIds = [...new Set(variants.flatMap((variant) => variant.compatibleModelIds))];
+  if (modelIds.length > 0 && (await prisma.deviceModel.count({ where: { id: { in: modelIds } } })) !== modelIds.length) {
+    throw new AppError(400, "Un modèle compatible n'existe pas");
+  }
 
   return {
     deviceModelId,
-    compatibleModelIds: category.kind === "accessory" ? input.compatibleModelIds : [],
+    // Un verre (ses variantes ont des téléphones) : la fiche va sur l'ensemble des téléphones de
+    // ses tailles, recalculé à chaque enregistrement (« les accessoires d'un modèle » suivent).
+    // Sinon (une coque), ceux choisis pour la fiche dans le formulaire.
+    compatibleModelIds: category.kind !== "accessory" ? [] : modelIds.length > 0 ? modelIds : input.compatibleModelIds,
     variants,
   };
 }
@@ -217,7 +237,7 @@ export async function uniqueSlug(name: string): Promise<string> {
 }
 
 function variantData(variant: Awaited<ReturnType<typeof checkRules>>["variants"][number]) {
-  const { id: _id, gifts: _gifts, ...data } = variant;
+  const { id: _id, gifts: _gifts, compatibleModelIds: _models, ...data } = variant;
   return data;
 }
 
@@ -243,6 +263,7 @@ export async function createProduct(input: ProductBody) {
           create: rules.variants.map((variant) => ({
             ...variantData(variant),
             gifts: { create: variant.gifts },
+            compatibleModels: { connect: variant.compatibleModelIds.map((id) => ({ id })) },
           })),
         },
       },
@@ -281,11 +302,20 @@ export async function updateProduct(id: number, input: ProductBody) {
       if (variant.id) {
         await tx.productVariant.update({
           where: { id: variant.id },
-          data: { ...variantData(variant), gifts: { deleteMany: {}, create: variant.gifts } },
+          data: {
+            ...variantData(variant),
+            gifts: { deleteMany: {}, create: variant.gifts },
+            compatibleModels: { set: variant.compatibleModelIds.map((modelId) => ({ id: modelId })) },
+          },
         });
       } else {
         await tx.productVariant.create({
-          data: { ...variantData(variant), productId: id, gifts: { create: variant.gifts } },
+          data: {
+            ...variantData(variant),
+            productId: id,
+            gifts: { create: variant.gifts },
+            compatibleModels: { connect: variant.compatibleModelIds.map((modelId) => ({ id: modelId })) },
+          },
         });
       }
     }

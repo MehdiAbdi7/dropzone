@@ -11,6 +11,7 @@ import { findLibraryLogo } from "../../config/brandLogos.js";
 import type { Tx } from "../../config/db.js";
 import type { ChoiceGroup, Prisma, ProductKind } from "../../generated/prisma/client.js";
 import { sameColor } from "../../modules/models/modelColors.js";
+import { listScreenSizes } from "../../modules/models/model.service.js";
 import { computeMinNewPrice, computeMinPrice } from "../../modules/products/product.service.js";
 import { slugify } from "../../utils/slugify.js";
 import { COLOR_HEX } from "../device-models.js";
@@ -403,7 +404,8 @@ async function fillAccessories(
   const makerIds = new Map<string, number>();
   for (const item of items) {
     const key = `${item.type}|${item.maker}`;
-    if (makerIds.has(key)) continue;
+    // Un accessoire sans marque (les verres incassables, 12/11) n'en crée pas.
+    if (item.maker === null || makerIds.has(key)) continue;
     const typeId = typeIds.get(item.type)!;
     let maker = await db.accessoryMaker.findUnique({ where: { typeId_slug: { typeId, slug: slugify(item.maker) } } });
     if (!maker) {
@@ -417,12 +419,16 @@ async function fillAccessories(
   }
 
   const phoneIds = new Map(models.filter((m) => m.kind === "phone").map((m) => [m.name, m.id]));
+  // Les téléphones de chaque taille d'écran : les compatibles de chaque taille d'un verre (12/11).
+  const phonesBySize = new Map(
+    (await listScreenSizes(db)).map(({ size, models: phones }) => [size, phones.map((phone) => ({ id: phone.id }))]),
+  );
   for (const item of items) {
-    const makerId = makerIds.get(`${item.type}|${item.maker}`)!;
+    const makerId = item.maker === null ? null : makerIds.get(`${item.type}|${item.maker}`)!;
     const exists = await db.product.findFirst({ where: { name: item.name }, select: { id: true, makerId: true } });
     if (exists) {
       // Un accessoire créé avant l'étape marque (12/11) reçoit sa marque ; une marque choisie par le gérant reste.
-      if (exists.makerId === null) {
+      if (exists.makerId === null && makerId !== null) {
         await db.product.update({ where: { id: exists.id }, data: { makerId } });
         report.updated.products += 1;
       }
@@ -434,7 +440,16 @@ async function fillAccessories(
       if (!id) throw new Error(`Modèle compatible inconnu : « ${name} » (${item.name})`);
       return { id };
     });
-    const variants = item.variants.map((v) => ({ ...v, sku: sku(takenSkus, v.sku) }));
+    // Un verre : chaque taille reçoit les téléphones de cette taille, et le produit leur ensemble.
+    const variants = item.variants.map((v) => ({
+      ...v,
+      sku: sku(takenSkus, v.sku),
+      compatibleModels: { connect: item.compatibleBySize ? (phonesBySize.get(v.options["Taille de l'écran"]) ?? []) : [] },
+    }));
+    if (item.compatibleBySize) {
+      const ids = new Set(variants.flatMap((v) => v.compatibleModels.connect.map((model) => model.id)));
+      compatible.push(...[...ids].map((id) => ({ id })));
+    }
     await db.product.create({
       data: {
         name: item.name,

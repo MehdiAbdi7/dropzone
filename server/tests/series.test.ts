@@ -234,9 +234,32 @@ describe("GET /series : les séries d'une marque", () => {
     });
   });
 
-  it("refuse une demande sans marque", async () => {
+});
+
+// Sans marque (12/11) : toutes les marques de la catégorie en un appel, pour que la Boutique
+// change de marque sur place, sans nouvel appel.
+describe("GET /series sans marque : les séries groupées par marque", () => {
+  it("rend les séries groupées par marque, dans l'ordre du back-office", async () => {
+    await fillSeries(prisma);
+    await prisma.product.updateMany({ where: { status: "draft" }, data: { status: "published" } });
+    const grouped = await request(app).get("/series?category=smartphones");
+    expect(grouped.status).toBe(200);
+    expect(grouped.body.data.map((group: { brand: { slug: string } }) => group.brand.slug)).toEqual(["iphone", "samsung"]);
+    expect(grouped.body.data[0].brand).toEqual({ name: "iPhone", slug: "iphone", logoUrl: "/brands/apple.svg" });
+    const single = await request(app).get("/series?category=smartphones&brand=iphone");
+    expect(grouped.body.data[0].series).toEqual(single.body.data);
+  });
+
+  it("une marque sans série en vente n'apparaît pas", async () => {
+    await fillSeries(prisma);
     const response = await request(app).get("/series?category=smartphones");
-    expect(response.status).toBe(400);
+    expect(response.body.data.map((group: { brand: { slug: string } }) => group.brand.slug)).toEqual(["iphone"]);
+  });
+
+  it("avec brand, la réponse ne change pas", async () => {
+    await fillSeries(prisma);
+    const response = await request(app).get("/series?category=smartphones&brand=iphone");
+    expect(response.body.data[0]).toMatchObject({ slug: "iphone-15", models: ["iPhone 15 Pro Max"] });
   });
 });
 

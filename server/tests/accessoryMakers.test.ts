@@ -149,7 +149,7 @@ describe("Marque d'un accessoire", () => {
   });
 });
 
-describe("Boutique : marques d'accessoires et affiches", () => {
+describe("Boutique : marques d'accessoires", () => {
   async function setup() {
     const anker = await prisma.accessoryMaker.create({ data: { typeId: chargers.id, name: "Anker", slug: "anker", position: 1 } });
     const apple = await prisma.accessoryMaker.create({ data: { typeId: chargers.id, name: "Apple", slug: "apple", position: 0 } });
@@ -195,44 +195,6 @@ describe("Boutique : marques d'accessoires et affiches", () => {
     // Une marque d'appareils n'a pas de marques d'accessoires.
     const phones = response.body.data.find((c: { slug: string }) => c.slug === "smartphones");
     expect(phones.brands[0].makers).toEqual([]);
-  });
-
-  it("renvoie l'affiche d'une marque : ses produits publiés, leurs variantes dans l'ordre de création", async () => {
-    await setup();
-    const response = await request(app).get("/accessories/accessoires/chargeurs/anker");
-    expect(response.status).toBe(200);
-    const { category, type, maker, products } = response.body.data;
-    expect(category).toMatchObject({ name: "Accessoires", slug: "accessoires" });
-    expect(type).toMatchObject({ name: "Chargeurs", slug: "chargeurs" });
-    expect(maker).toMatchObject({ name: "Anker", slug: "anker" });
-    expect(products).toHaveLength(1);
-    expect(products[0]).toMatchObject({ name: "Bloc Anker", slug: "bloc-anker", image: "/products/charger.svg" });
-    expect(products[0].specs).toEqual([["Port", "USB-C"]]);
-    expect(products[0].variants.map((v: { sku: string; stock: number; price: number }) => [v.sku, v.price, v.stock])).toEqual([
-      ["A-65", 6000, 0],
-      ["A-20", 3500, 10],
-    ]);
-  });
-
-  it("« autres » montre les produits du type sans marque", async () => {
-    await setup();
-    const response = await request(app).get("/accessories/accessoires/chargeurs/autres");
-    expect(response.status).toBe(200);
-    expect(response.body.data.maker).toMatchObject({ name: "Autres", slug: "autres" });
-    expect(response.body.data.products.map((p: { name: string }) => p.name)).toEqual(["Chargeur sans marque"]);
-  });
-
-  it("répond 404 pour une catégorie, un type ou une marque inconnus, ou une marque sans produit publié", async () => {
-    await setup();
-    for (const path of [
-      "/accessories/nope/chargeurs/anker",
-      "/accessories/accessoires/nope/anker",
-      "/accessories/accessoires/chargeurs/nope",
-      "/accessories/accessoires/chargeurs/vide",
-      "/accessories/smartphones/iphone/apple",
-    ]) {
-      expect((await request(app).get(path)).status, path).toBe(404);
-    }
   });
 
   it("donne la marque dans la fiche publique du produit", async () => {

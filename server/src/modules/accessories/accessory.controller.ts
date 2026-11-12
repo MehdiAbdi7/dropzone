@@ -1,10 +1,9 @@
 import type { Request, Response } from "express";
 import { createMaker, deleteMaker, listAdminMakers, setMakerLogo, updateMaker } from "./accessoryMaker.service.js";
-import { getAccessoryPoster } from "./accessoryPoster.service.js";
+import { getAccessoryCatalog } from "./accessoryCatalog.service.js";
 
-export async function getPoster(req: Request, res: Response) {
-  const { category, type, maker } = req.params;
-  res.json({ data: await getAccessoryPoster(String(category), String(type), String(maker)) });
+export async function getCatalog(req: Request, res: Response) {
+  res.json({ data: await getAccessoryCatalog(String(req.params.category)) });
 }
 
 export async function getMakers(_req: Request, res: Response) {
