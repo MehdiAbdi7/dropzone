@@ -51,7 +51,12 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
     notFound();
   }
   const isDevice = DEVICE_KINDS.includes(product.category.kind);
-  const step = productStep(product, (await searchParams).couleur);
+  const search = await searchParams;
+  const step = productStep(product, search.couleur);
+  // Les options d'une colonne d'affiche d'accessoire (« ?Puissance=45%20W »), choisies d'avance.
+  const requested = Object.fromEntries(
+    Object.entries(search).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+  );
 
   // Sous un appareil : les accessoires compatibles avec son modèle. La palette : les lueurs
   // de l'affiche et les pastilles des couleurs d'un accessoire (NewPicker).
@@ -78,7 +83,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
     return (
       <div className="container-page py-8">
         <ProductHeader product={product}>
-          <NewPicker variants={product.variants} kind={product.category.kind} palette={palette} />
+          <NewPicker variants={product.variants} kind={product.category.kind} palette={palette} requested={requested} />
           <ProductFacts product={product} />
         </ProductHeader>
         {accessoriesSection}

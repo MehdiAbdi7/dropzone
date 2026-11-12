@@ -7,6 +7,7 @@
 //     du relevé ; les autres configurations sont listées, jamais modifiées ;
 //   - ni le stock, ni les affaires, ni les photos ne sont touchés.
 // Rejouable : un deuxième passage ne crée rien de plus.
+import { findLibraryLogo } from "../../config/brandLogos.js";
 import type { Tx } from "../../config/db.js";
 import type { ChoiceGroup, Prisma, ProductKind } from "../../generated/prisma/client.js";
 import { sameColor } from "../../modules/models/modelColors.js";
@@ -58,7 +59,7 @@ export type FillNewReport = {
   accessories: { name: string; type: string; variants: number; status: "créé" | "existe déjà" }[];
   missingModels: string[];
   notCovered: string[];
-  created: { products: number; variants: number; choices: number; lists: number; brands: number };
+  created: { products: number; variants: number; choices: number; lists: number; brands: number; makers: number };
   updated: { products: number; prices: number };
 };
 
@@ -107,14 +108,16 @@ function describe(row: DeviceRow, kind: string, specs: Record<string, string>): 
   return [row.blurb, ...parts].join(" ");
 }
 
-export async function fillNew(db: Tx): Promise<FillNewReport> {
+// `accessoriesOnly` : seulement les accessoires et leurs marques, sans toucher aux appareils (ni à
+// leurs prix, que le gérant a pu corriger depuis le premier passage).
+export async function fillNew(db: Tx, { accessoriesOnly = false }: { accessoriesOnly?: boolean } = {}): Promise<FillNewReport> {
   const report: FillNewReport = {
     devices: [],
     review: [],
     accessories: [],
     missingModels: [],
     notCovered: [],
-    created: { products: 0, variants: 0, choices: 0, lists: 0, brands: 0 },
+    created: { products: 0, variants: 0, choices: 0, lists: 0, brands: 0, makers: 0 },
     updated: { products: 0, prices: 0 },
   };
 
@@ -145,7 +148,7 @@ export async function fillNew(db: Tx): Promise<FillNewReport> {
   const covered = new Set<number>();
 
   // ---------- Appareils ----------
-  for (const { kind, rows } of DEVICE_GROUPS) {
+  for (const { kind, rows } of accessoriesOnly ? [] : DEVICE_GROUPS) {
     const category = categories.find((c) => c.kind === (kind as ProductKind));
     if (!category) throw new Error(`Aucune catégorie pour les ${kind}`);
     for (const row of rows) {
@@ -260,8 +263,23 @@ export async function fillNew(db: Tx): Promise<FillNewReport> {
         });
         report.updated.products += 1;
       } else {
-        const brand = brands.find((b) => b.categoryId === category.id && b.makerName === model.brand);
-        if (!brand) throw new Error(`Pas de marque « ${model.brand} » dans la catégorie ${category.name}`);
+        let brand = brands.find((b) => b.categoryId === category.id && b.makerName === model.brand);
+        if (!brand) {
+          // Un fabricant sans marque dans la catégorie (une base neuve, comme celle des tests) : la
+          // marque est créée au nom du fabricant. Jamais le cas sur la base de la boutique.
+          brand = await db.brand.create({
+            data: {
+              categoryId: category.id,
+              name: model.brand,
+              slug: slugify(model.brand),
+              makerName: model.brand,
+              logoUrl: findLibraryLogo(model.brand),
+              position: brands.filter((b) => b.categoryId === category.id).length,
+            },
+          });
+          brands.push(brand);
+          report.created.brands += 1;
+        }
         const name = productNameOf(model.brand, model.name);
         await db.product.create({
           data: {
@@ -285,7 +303,7 @@ export async function fillNew(db: Tx): Promise<FillNewReport> {
   }
 
   // Les modèles de la base que la liste ne couvre pas : signalés, jamais touchés.
-  for (const model of models) {
+  for (const model of accessoriesOnly ? [] : models) {
     if (model.seriesId !== null && !covered.has(model.id)) {
       report.notCovered.push(`${model.kind} : ${model.name}`);
     }
@@ -380,10 +398,34 @@ async function fillAccessories(
     report.created.choices += missingColors.length;
   }
 
+  // Les marques de chaque type (Anker dans Chargeurs, iPhone dans Coques) : l'étape marque de la
+  // Boutique. Créées une fois, avec le logo de la bibliothèque, dans l'ordre où elles apparaissent.
+  const makerIds = new Map<string, number>();
+  for (const item of items) {
+    const key = `${item.type}|${item.maker}`;
+    if (makerIds.has(key)) continue;
+    const typeId = typeIds.get(item.type)!;
+    let maker = await db.accessoryMaker.findUnique({ where: { typeId_slug: { typeId, slug: slugify(item.maker) } } });
+    if (!maker) {
+      const last = await db.accessoryMaker.findFirst({ where: { typeId }, orderBy: { position: "desc" } });
+      maker = await db.accessoryMaker.create({
+        data: { typeId, name: item.maker, slug: slugify(item.maker), logoUrl: findLibraryLogo(item.maker), position: (last?.position ?? -1) + 1 },
+      });
+      report.created.makers += 1;
+    }
+    makerIds.set(key, maker.id);
+  }
+
   const phoneIds = new Map(models.filter((m) => m.kind === "phone").map((m) => [m.name, m.id]));
   for (const item of items) {
-    const exists = await db.product.findFirst({ where: { name: item.name }, select: { id: true } });
+    const makerId = makerIds.get(`${item.type}|${item.maker}`)!;
+    const exists = await db.product.findFirst({ where: { name: item.name }, select: { id: true, makerId: true } });
     if (exists) {
+      // Un accessoire créé avant l'étape marque (12/11) reçoit sa marque ; une marque choisie par le gérant reste.
+      if (exists.makerId === null) {
+        await db.product.update({ where: { id: exists.id }, data: { makerId } });
+        report.updated.products += 1;
+      }
       report.accessories.push({ name: item.name, type: item.type, variants: item.variants.length, status: "existe déjà" });
       continue;
     }
@@ -400,6 +442,7 @@ async function fillAccessories(
         description: item.description,
         categoryId: category.id,
         brandId: typeIds.get(item.type)!,
+        makerId,
         specs: item.specs,
         status: "published",
         minPrice: computeMinPrice(variants),

@@ -9,6 +9,8 @@ export type AccessoryProduct = {
   name: string;
   // Le type d'accessoire du back-office (la « marque » de la catégorie Accessoires).
   type: "Coques" | "Chargeurs" | "Câbles" | "Incassable Écran";
+  // La marque dans le type : Apple, Samsung, Anker (chargeurs, câbles) ; iPhone, Samsung (coques, verres).
+  maker: string;
   description: string;
   specs: Record<string, string>;
   variants: AccessoryVariant[];
@@ -71,6 +73,7 @@ function casesAndGlass(): AccessoryProduct[] {
       out.push({
         name: `Coque antichoc transparente ${title}`,
         type: "Coques",
+        maker: brand,
         description: `Coque antichoc transparente pour ${names}. Elle laisse voir la couleur de l'appareil, protège les coins contre les chutes et garde un accès complet aux ports et aux boutons.`,
         specs: { Matière: "Plastique souple (TPU) transparent", Protection: "Coins renforcés contre les chocs", Compatibilité: names },
         variants: byModel("COQT", 2_500),
@@ -82,6 +85,7 @@ function casesAndGlass(): AccessoryProduct[] {
         out.push({
           name: `Coque silicone MagSafe ${title}`,
           type: "Coques",
+          maker: brand,
           description: `Coque en silicone avec aimants MagSafe pour ${names}. Compatible avec les chargeurs, supports et portefeuilles MagSafe, douce au toucher.`,
           specs: { Matière: "Silicone", MagSafe: "Oui, aimants intégrés", Compatibilité: names },
           variants: byModel("COQM", 4_500, [{ Couleur: "Noir" }, { Couleur: "Bleu" }, { Couleur: "Rouge" }]),
@@ -92,6 +96,7 @@ function casesAndGlass(): AccessoryProduct[] {
       out.push({
         name: `Coque antichoc renforcée ${title}`,
         type: "Coques",
+        maker: brand,
         description: `Coque antichoc renforcée (double couche) pour ${names}. Rebords surélevés autour de l'écran et de l'appareil photo, pour une protection maximale au quotidien.`,
         specs: { Matière: "TPU et polycarbonate", Protection: "Double couche, rebords surélevés", Compatibilité: names },
         variants: byModel("COQR", 7_500),
@@ -101,6 +106,7 @@ function casesAndGlass(): AccessoryProduct[] {
       out.push({
         name: `Verre trempé incassable ${title}`,
         type: "Incassable Écran",
+        maker: brand,
         description: `Protection d'écran en verre trempé pour ${names}. Elle absorbe les chocs et les rayures à la place de l'écran, sans gêner le toucher.`,
         specs: { Matière: "Verre trempé", Dureté: "9H", Compatibilité: names },
         variants: byModel("VERT", 1_500),
@@ -110,6 +116,7 @@ function casesAndGlass(): AccessoryProduct[] {
       out.push({
         name: `Verre trempé premium ${title}`,
         type: "Incassable Écran",
+        maker: brand,
         description: `Verre trempé de qualité supérieure pour ${names}, plus épais, livré avec son cadre de pose pour un collage sans bulles.`,
         specs: { Matière: "Verre trempé épais", Dureté: "9H", Pose: "Cadre de pose fourni", Compatibilité: names },
         variants: byModel("VERP", 6_500),
@@ -157,6 +164,7 @@ function chargers(): AccessoryProduct[] {
     {
       name: "Bloc chargeur Apple USB-C 20 W",
       type: "Chargeurs",
+      maker: "Apple",
       description: "Bloc d'alimentation Apple USB-C de 20 W, pour recharger rapidement un iPhone ou un iPad. Câble non inclus : voir les câbles USB-C ou le pack.",
       specs: { Port: "USB-C", Puissance: "20 W", "Câble inclus": "Non" },
       variants: [v("BLOC-APPLE-20W", { Puissance: apple20.label }, apple20.price)],
@@ -166,6 +174,7 @@ function chargers(): AccessoryProduct[] {
     {
       name: "Bloc chargeur Samsung USB-C",
       type: "Chargeurs",
+      maker: "Samsung",
       description: "Bloc d'alimentation Samsung USB-C à charge rapide, en 25 W ou 45 W. Câble non inclus : voir les câbles USB-C ou le pack.",
       specs: { Port: "USB-C", "Charge rapide": "Super Fast Charging", "Câble inclus": "Non" },
       variants: samsung.map((b) => v(`BLOC-SAMSUNG-${b.label.replace(" ", "")}`, { Puissance: b.label }, b.price)),
@@ -175,6 +184,7 @@ function chargers(): AccessoryProduct[] {
     {
       name: "Bloc chargeur Anker Nano USB-C",
       type: "Chargeurs",
+      maker: "Anker",
       description: "Bloc d'alimentation Anker Nano USB-C, compact, en 20, 30, 45, 65 ou 100 W : un seul chargeur pour le téléphone, la tablette ou l'ordinateur portable. Câble non inclus.",
       specs: { Port: "USB-C", Technologie: "GaN compact", "Câble inclus": "Non" },
       variants: anker.map((b) => v(`BLOC-ANKER-${b.label.replace(" ", "")}`, { Puissance: b.label }, b.price)),
@@ -185,6 +195,7 @@ function chargers(): AccessoryProduct[] {
     {
       name: "Câble Apple USB-C vers Lightning",
       type: "Câbles",
+      maker: "Apple",
       description: "Câble Apple USB-C vers Lightning de 1 m, pour charger et synchroniser un iPhone ou un iPad à connecteur Lightning.",
       specs: { Connecteurs: "USB-C vers Lightning", Longueur: "1 m" },
       variants: [v("CABLE-APPLE-USBC-LIGHTNING", { Longueur: "1 m" }, appleLightning.price)],
@@ -194,6 +205,7 @@ function chargers(): AccessoryProduct[] {
     {
       name: "Câble Apple USB-C vers USB-C",
       type: "Câbles",
+      maker: "Apple",
       description: "Câble Apple USB-C vers USB-C de 1 m, pour charger et synchroniser un iPhone 15 ou plus récent, un iPad ou un MacBook.",
       specs: { Connecteurs: "USB-C vers USB-C", Longueur: "1 m" },
       variants: [v("CABLE-APPLE-USBC-USBC", { Longueur: "1 m" }, appleUsbC.price)],
@@ -203,6 +215,7 @@ function chargers(): AccessoryProduct[] {
     {
       name: "Câble Samsung USB-C vers USB-C",
       type: "Câbles",
+      maker: "Samsung",
       description: "Câble Samsung USB-C vers USB-C, en 3 A pour la charge courante ou 5 A pour la charge super rapide 45 W.",
       specs: { Connecteurs: "USB-C vers USB-C", Longueur: "1,8 m" },
       variants: [
@@ -215,6 +228,7 @@ function chargers(): AccessoryProduct[] {
     {
       name: "Câble Anker USB-C vers Lightning (MFi)",
       type: "Câbles",
+      maker: "Anker",
       description: "Câble Anker USB-C vers Lightning certifié MFi (Made for iPhone), en 0,9 m ou 1,8 m, pour charger un iPhone à connecteur Lightning.",
       specs: { Connecteurs: "USB-C vers Lightning", Certification: "MFi (Made for iPhone)" },
       variants: [
@@ -227,6 +241,7 @@ function chargers(): AccessoryProduct[] {
     {
       name: "Câble Anker USB-C vers USB-C 240 W",
       type: "Câbles",
+      maker: "Anker",
       description: "Câble Anker USB-C vers USB-C de 1,5 m, jusqu'à 240 W : il convient à la charge d'un téléphone, d'une tablette ou d'un ordinateur portable.",
       specs: { Connecteurs: "USB-C vers USB-C", Puissance: "Jusqu'à 240 W", Longueur: "1,5 m" },
       variants: [v("CABLE-ANKER-USBC-240W", { Longueur: "1,5 m" }, ankerUsbC.price)],
@@ -237,6 +252,7 @@ function chargers(): AccessoryProduct[] {
     {
       name: "Pack chargeur iPhone 20 W (bloc + câble)",
       type: "Chargeurs",
+      maker: "Apple",
       description: "Le chargeur iPhone complet : le bloc Apple USB-C 20 W et son câble, au choix Lightning (iPhone 14 et avant) ou USB-C (iPhone 15 et après), moins cher qu'à l'unité.",
       specs: { Contenu: "Bloc Apple 20 W + câble 1 m", Puissance: "20 W" },
       variants: [
@@ -249,6 +265,7 @@ function chargers(): AccessoryProduct[] {
     {
       name: "Pack chargeur Samsung (bloc + câble USB-C)",
       type: "Chargeurs",
+      maker: "Samsung",
       description: "Le chargeur Samsung complet : le bloc USB-C en 25 W ou 45 W et son câble USB-C, moins cher qu'à l'unité.",
       specs: { Contenu: "Bloc Samsung + câble USB-C" },
       variants: [
@@ -261,6 +278,7 @@ function chargers(): AccessoryProduct[] {
     {
       name: "Pack chargeur Anker Nano (bloc + câble)",
       type: "Chargeurs",
+      maker: "Anker",
       description: "Le chargeur Anker complet : le bloc Nano de 20 à 100 W et son câble, au choix Lightning (en 20 et 30 W, pour iPhone) ou USB-C, moins cher qu'à l'unité.",
       specs: { Contenu: "Bloc Anker Nano + câble 1 m environ" },
       variants: anker.flatMap((b) => {

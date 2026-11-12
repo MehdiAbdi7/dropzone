@@ -13,6 +13,8 @@ type AdminProductRow = {
   newPrice: number | null;
   image: string | null;
   category: { name: string; slug: string };
+  // La marque d'un accessoire (Anker dans Chargeurs), null sans marque.
+  maker: { id: number; name: string } | null;
   variantCount: number;
   newStock: number;
   refurbishedAvailable: number;
@@ -53,6 +55,8 @@ export type AdminProduct = {
   deviceModelId: number | null;
   deviceModel: { id: number; brand: string; name: string } | null;
   brandId: number | null;
+  // La marque d'un accessoire dans son type (Anker dans Chargeurs), null sans marque.
+  makerId?: number | null;
   compatibleModels: { id: number; brand: string; name: string }[];
   images: { id: number; url: string; publicId: string | null; position: number }[];
   variants: AdminVariant[];
@@ -64,6 +68,7 @@ export type ProductBody = {
   categoryId: number;
   deviceModelId: number | null;
   brandId: number | null;
+  makerId: number | null;
   compatibleModelIds: number[];
   specs: Options;
   status: ProductStatus;

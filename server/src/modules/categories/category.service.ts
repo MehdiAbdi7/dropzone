@@ -15,7 +15,7 @@ const latestImageByCategory = () => prisma.$queryRaw<LatestImage[]>`
 
 export async function listCategories() {
   const published = { status: "published" } as const;
-  const [categories, unbranded, categoryPrices, categoryImages, compositions] = await Promise.all([
+  const [categories, unbranded, categoryPrices, categoryImages, compositions, unmakered] = await Promise.all([
     prisma.category.findMany({
       orderBy: { id: "asc" },
       select: {
@@ -28,10 +28,16 @@ export async function listCategories() {
         brands: {
           orderBy: [{ position: "asc" }, { name: "asc" }],
           select: {
+            id: true,
             name: true,
             slug: true,
             logoUrl: true,
             _count: { select: { products: { where: published } } },
+            // Les marques d'un type d'accessoires (Anker dans Chargeurs) : l'étape marque de la Boutique.
+            makers: {
+              orderBy: [{ position: "asc" }, { name: "asc" }],
+              select: { name: true, slug: true, logoUrl: true, _count: { select: { products: { where: published } } } },
+            },
           },
         },
       },
@@ -42,7 +48,14 @@ export async function listCategories() {
     prisma.product.groupBy({ by: ["categoryId"], where: published, _min: { minPrice: true } }),
     latestImageByCategory(),
     categoryCompositions(),
+    // Les produits publiés d'un type d'accessoires qui n'ont pas de marque : la carte « Autres » du type.
+    prisma.product.groupBy({
+      by: ["brandId"],
+      where: { ...published, makerId: null, brandId: { not: null }, brand: { category: { kind: "accessory" } } },
+      _count: { _all: true },
+    }),
   ]);
+  const withoutMaker = new Map(unmakered.map((group) => [group.brandId, group._count._all]));
   const withUnbranded = new Set(unbranded.map((group) => group.categoryId));
   const priceOfCategory = new Map(categoryPrices.map((group) => [group.categoryId, group._min.minPrice]));
   const imageOfCategory = new Map(categoryImages.map((row) => [row.id, row.url]));
@@ -65,7 +78,15 @@ export async function listCategories() {
     // Une marque sans produit publié n'aurait qu'une liste vide derrière sa puce.
     brands: brands
       .filter((brand) => brand._count.products > 0)
-      .map(({ _count: brandCount, ...brand }) => ({ ...brand, productCount: brandCount.products })),
+      .map(({ _count: brandCount, id, makers, ...brand }) => ({
+        ...brand,
+        productCount: brandCount.products,
+        // Une marque d'accessoires sans produit publié n'aurait qu'une page vide derrière sa tuile.
+        makers: makers
+          .filter((maker) => maker._count.products > 0)
+          .map(({ _count: makerCount, ...maker }) => ({ ...maker, productCount: makerCount.products })),
+        withoutMaker: withoutMaker.get(id) ?? 0,
+      })),
   }));
 }
 

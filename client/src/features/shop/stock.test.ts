@@ -5,6 +5,7 @@ import {
   initialSelection,
   optionChoices,
   optionKeys,
+  requestedSelection,
   selectOption,
   withOriginOption,
 } from "./stock";
@@ -204,5 +205,30 @@ describe("withOriginOption", () => {
     const same = [europe, { ...europe, options: { Stockage: "512 Go", Couleur: "Noir" } }];
     expect(withOriginOption(same)).toBe(same);
     expect(withOriginOption(iphone18ProMax)).toBe(iphone18ProMax);
+  });
+});
+
+// Une colonne d'une affiche d'accessoire mène à la fiche avec ses options (12/11).
+describe("requestedSelection", () => {
+  const pack = [
+    variant({ Puissance: "20 W", Câble: "Lightning" }, 5, 6000),
+    variant({ Puissance: "20 W", Câble: "USB-C" }, 5, 5900),
+    variant({ Puissance: "45 W", Câble: "USB-C" }, 0, 7000),
+  ];
+  const packKeys = ["Puissance", "Câble"];
+
+  it("choisit la variante demandée, même épuisée", () => {
+    expect(requestedSelection(pack, packKeys, { Puissance: "45 W", Câble: "USB-C" })).toEqual({ Puissance: "45 W", Câble: "USB-C" });
+  });
+
+  it("complète avec la première variante qui a les options demandées", () => {
+    expect(requestedSelection(pack, packKeys, { Câble: "Lightning" })).toEqual({ Puissance: "20 W", Câble: "Lightning" });
+  });
+
+  it("ignore une option inconnue ; sans option reconnue ou sans variante, null", () => {
+    expect(requestedSelection(pack, packKeys, { Inconnue: "x", Puissance: "20 W" })).toEqual({ Puissance: "20 W", Câble: "Lightning" });
+    expect(requestedSelection(pack, packKeys, { Inconnue: "x" })).toBeNull();
+    expect(requestedSelection(pack, packKeys, { Puissance: "65 W" })).toBeNull();
+    expect(requestedSelection(pack, packKeys, {})).toBeNull();
   });
 });

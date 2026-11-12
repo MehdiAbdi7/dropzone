@@ -6,6 +6,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { env } from "./config/env.js";
 import { requireAuth, requireRole } from "./middlewares/auth.js";
+import { accessoryAdminRouter, accessoryRouter } from "./modules/accessories/accessory.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { brandAdminRouter } from "./modules/brands/brand.routes.js";
 import { categoryAdminRouter, categoryRouter } from "./modules/categories/category.routes.js";
@@ -36,6 +37,7 @@ app.get("/health", (_req, res) => {
 app.use("/categories", categoryRouter);
 app.use("/products", productRouter);
 app.use("/series", seriesRouter);
+app.use("/accessories", accessoryRouter);
 app.use("/colors", colorRouter);
 app.use("/orders", orderRouter);
 app.use("/auth", authRouter);
@@ -49,6 +51,7 @@ adminRouter.use(
   productAdminRouter,
   categoryAdminRouter,
   brandAdminRouter,
+  accessoryAdminRouter,
   modelAdminRouter,
   modelColorsAdminRouter,
   seriesAdminRouter,

@@ -224,6 +224,8 @@ export async function getProductBySlug(slug: string) {
       category: { select: { name: true, slug: true, kind: true } },
       // La marque de la Boutique (« iPhone »), pour le fil d'Ariane ; null = carte « Autres ».
       brand: { select: { name: true, slug: true } },
+      // La marque d'un accessoire (« Anker »), pour le fil d'Ariane ; null = pas de marque.
+      maker: { select: { name: true, slug: true } },
       // La série du modèle, pour le fil d'Ariane (Boutique › … › iPhone 18 › iPhone 18 Pro Max).
       // Ses couleurs et leurs photos : l'étape Couleur de la Boutique (05/11).
       deviceModel: {

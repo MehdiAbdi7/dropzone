@@ -16,7 +16,15 @@ export type Brand = {
   slug: string;
   logoUrl: string | null;
   productCount: number;
+  // Un type d'accessoires (Chargeurs) : ses marques (Apple, Samsung, Anker) qui ont des produits
+  // publiés, et le nombre de produits publiés sans marque (la carte « Autres »). Absents d'une
+  // réponse mise en cache avant l'étape marque (12/11), vides pour une marque d'appareils.
+  makers?: Maker[];
+  withoutMaker?: number;
 };
+
+// Une marque d'accessoires telle que la Boutique la voit : seulement celles qui ont des produits publiés.
+export type Maker = { name: string; slug: string; logoUrl: string | null; productCount: number };
 
 // Une photo de la composition d'une catégorie : sa place en % du cadre 5:4, comme sur le socle
 // de l'accueil (null : la place de départ, choisie par le front).
@@ -112,6 +120,8 @@ export type ProductDetail = {
   category: { name: string; slug: string; kind: ProductKind };
   // La marque de la Boutique, pour le fil d'Ariane ; null = rangé dans « Autres ».
   brand: { name: string; slug: string } | null;
+  // La marque d'un accessoire (Anker), pour le fil d'Ariane ; absente ou null sans marque.
+  maker?: { name: string; slug: string } | null;
   deviceModel: ModelRef | null;
   // La série du modèle, pour le fil d'Ariane ; null = pas de série (accessoire, modèle non rangé).
   series: { name: string; slug: string } | null;
@@ -122,6 +132,29 @@ export type ProductDetail = {
   posterColor: string | null;
   // Les couleurs du modèle, dans leur ordre, avec leur photo (étape Couleur) ; [] sans modèle.
   colors: { name: string; photoUrl: string | null }[];
+};
+
+// ---------- Les affiches d'accessoires (12/11) ----------
+
+// Une colonne de l'affiche d'un produit : une de ses variantes neuves.
+export type AccessoryVariant = { sku: string; options: Options; price: number; stock: number };
+
+export type AccessoryPosterProduct = {
+  name: string;
+  slug: string;
+  description: string;
+  image: string | null;
+  // Les caractéristiques du produit, dans l'ordre de la fiche.
+  specs: [string, string][];
+  variants: AccessoryVariant[];
+};
+
+// La page d'une marque d'accessoires : une affiche par produit publié de la marque dans le type.
+export type AccessoryPoster = {
+  category: { name: string; slug: string };
+  type: { name: string; slug: string; logoUrl: string | null };
+  maker: { name: string; slug: string; logoUrl: string | null };
+  products: AccessoryPosterProduct[];
 };
 
 // ---------- Les affiches de séries ----------

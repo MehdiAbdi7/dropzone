@@ -2,7 +2,7 @@ import Link from "next/link";
 import BrandLogo from "@/components/ui/BrandLogo";
 import Field from "@/components/ui/Field";
 import { KIND_LABELS } from "@/config/catalog";
-import type { AdminBrand, DeviceModel } from "@/features/admin/api/catalogApi";
+import type { AdminBrand, AdminMaker, DeviceModel } from "@/features/admin/api/catalogApi";
 import type { Category, ProductKind } from "@/types/api";
 import CompatibleModelsPicker from "./CompatibleModelsPicker";
 import ModelPicker from "./ModelPicker";
@@ -18,6 +18,7 @@ export function CategoryFields({
   draft,
   categories,
   brands,
+  makers,
   kind,
   isDevice,
   onChooseCategory,
@@ -28,6 +29,8 @@ export function CategoryFields({
   categories: Category[];
   // Les marques de la catégorie choisie.
   brands: AdminBrand[];
+  // Les marques d'accessoires du type choisi (Anker dans Chargeurs).
+  makers: AdminMaker[];
   kind: ProductKind | undefined;
   isDevice: boolean;
   onChooseCategory: (id: number) => void;
@@ -76,7 +79,12 @@ export function CategoryFields({
           />
           {brands.length > 0 ? (
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="chip" aria-pressed={draft.brandId === null} onClick={() => set({ brandId: null })}>
+              <button
+                type="button"
+                className="chip"
+                aria-pressed={draft.brandId === null}
+                onClick={() => set({ brandId: null, makerId: null })}
+              >
                 {kind === "accessory" ? "Sans type" : "Sans marque"}
               </button>
               {brands.map((brand) => (
@@ -85,7 +93,8 @@ export function CategoryFields({
                   type="button"
                   className="chip"
                   aria-pressed={draft.brandId === brand.id}
-                  onClick={() => set({ brandId: brand.id })}
+                  // Les marques d'accessoires sont rangées par type : changer de type vide la marque.
+                  onClick={() => set({ brandId: brand.id, makerId: brand.id === draft.brandId ? draft.makerId : null })}
                 >
                   <BrandLogo url={brand.logoUrl} />
                   {brand.name}
@@ -103,6 +112,42 @@ export function CategoryFields({
               </Link>
             </p>
           )}
+        </fieldset>
+      ) : null}
+      {/* La marque de l'accessoire dans son type : l'étape marque de la Boutique (12/11). */}
+      {kind === "accessory" && draft.brandId ? (
+        <fieldset className="space-y-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
+          <legend className="sr-only">Marque de l&apos;accessoire</legend>
+          <SectionHeading
+            number="04"
+            title="Marque de l'accessoire"
+            description="Apple, Samsung, Anker… : la Boutique classe les accessoires d'un type par marque."
+          />
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="chip" aria-pressed={draft.makerId === null} onClick={() => set({ makerId: null })}>
+              Sans marque
+            </button>
+            {makers.map((maker) => (
+              <button
+                key={maker.id}
+                type="button"
+                className="chip"
+                aria-pressed={draft.makerId === maker.id}
+                onClick={() => set({ makerId: maker.id })}
+              >
+                <BrandLogo url={maker.logoUrl} />
+                {maker.name}
+              </button>
+            ))}
+          </div>
+          {makers.length === 0 ? (
+            <p className="text-sm text-ink-muted">
+              Aucune marque dans ce type.{" "}
+              <Link href={`/admin/catalogue/types/${draft.brandId}#marques`} className="font-semibold text-blue-ink underline">
+                En ajouter dans le Catalogue
+              </Link>
+            </p>
+          ) : null}
         </fieldset>
       ) : null}
     </>

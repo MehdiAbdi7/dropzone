@@ -24,8 +24,14 @@ describe("GET /categories", () => {
     const response = await request(app).get("/categories");
     const [phones, accessories] = response.body.data;
     // Samsung n'a qu'un brouillon : pas de puce.
-    expect(phones.brands).toEqual([{ name: "iPhone", slug: "iphone", logoUrl: "/brands/apple.svg", productCount: 1 }]);
-    expect(accessories.brands).toEqual([{ name: "Anker", slug: "anker", logoUrl: null, productCount: 1 }]);
+    // Depuis le 12/11, chaque marque porte aussi ses marques d'accessoires (vides pour un appareil)
+    // et le nombre de produits sans marque d'accessoire (le chargeur du catalogue n'en a pas).
+    expect(phones.brands).toEqual([
+      { name: "iPhone", slug: "iphone", logoUrl: "/brands/apple.svg", productCount: 1, makers: [], withoutMaker: 0 },
+    ]);
+    expect(accessories.brands).toEqual([
+      { name: "Anker", slug: "anker", logoUrl: null, productCount: 1, makers: [], withoutMaker: 1 },
+    ]);
   });
 });
 

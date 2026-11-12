@@ -14,7 +14,9 @@ function NewProductForm() {
   const deviceModelId = Number(params.get("modele")) || null;
   const categoryId = Number(params.get("categorie"));
   const brandId = Number(params.get("marque"));
-  const prefill = categoryId && brandId ? { deviceModelId, categoryId, brandId, name: params.get("nom") ?? "" } : undefined;
+  // « Nouvel accessoire » depuis la page d'une marque d'accessoires : la marque est déjà choisie.
+  const makerId = Number(params.get("fabricant")) || null;
+  const prefill = categoryId && brandId ? { deviceModelId, categoryId, brandId, makerId, name: params.get("nom") ?? "" } : undefined;
   return <ProductForm initial={emptyDraft(prefill)} />;
 }
 

@@ -44,6 +44,8 @@ export type ProductDraft = {
   categoryId: number | null;
   deviceModelId: number | null;
   brandId: number | null;
+  // Un accessoire : sa marque dans son type (Anker dans Chargeurs), choisie après le type.
+  makerId: number | null;
   compatibleModelIds: number[];
   specs: { key: string; value: string }[];
   status: ProductStatus;
@@ -148,6 +150,8 @@ export function emptyDraft(prefill?: {
   categoryId: number;
   brandId: number;
   deviceModelId?: number | null;
+  // « Nouvel accessoire » depuis la page d'une marque : le type et la marque sont déjà choisis.
+  makerId?: number | null;
   name?: string;
 }): ProductDraft {
   return {
@@ -156,6 +160,7 @@ export function emptyDraft(prefill?: {
     categoryId: prefill?.categoryId ?? null,
     deviceModelId: prefill?.deviceModelId ?? null,
     brandId: prefill?.brandId ?? null,
+    makerId: prefill?.makerId ?? null,
     compatibleModelIds: [],
     specs: [],
     status: "draft",
@@ -171,6 +176,7 @@ export function draftFromProduct(product: AdminProduct): ProductDraft {
     categoryId: product.categoryId,
     deviceModelId: product.deviceModelId,
     brandId: product.brandId,
+    makerId: product.makerId ?? null,
     compatibleModelIds: product.compatibleModels.map((model) => model.id),
     specs: Object.entries(product.specs).map(([key, value]) => ({ key, value })),
     status: product.status,
@@ -215,6 +221,7 @@ export function bodyFromDraft(draft: ProductDraft): ProductBody {
     categoryId: draft.categoryId ?? 0,
     deviceModelId: draft.deviceModelId,
     brandId: draft.brandId,
+    makerId: draft.makerId,
     compatibleModelIds: draft.compatibleModelIds,
     specs: Object.fromEntries(
       draft.specs.filter((row) => row.key.trim() && row.value.trim()).map((row) => [row.key.trim(), row.value.trim()]),

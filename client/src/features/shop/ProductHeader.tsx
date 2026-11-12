@@ -32,6 +32,10 @@ export function productCrumbs(
           },
         ]
       : []),
+    // La marque d'un accessoire, entre son type et lui : Boutique › Accessoires › Chargeurs › Anker › …
+    ...(product.brand && product.maker
+      ? [{ label: product.maker.name, href: `${category}/${product.brand.slug}/${product.maker.slug}` }]
+      : []),
     color || step
       ? { label: product.name, href: `/produits/${product.slug}` }
       : { label: product.name },

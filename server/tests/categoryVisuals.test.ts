@@ -138,7 +138,8 @@ describe("La catégorie mise en avant", () => {
 describe("Les marques", () => {
   it("n'ont ni photo ni prix dans GET /categories", async () => {
     const iphone = (await bySlug("smartphones")).brands.find((brand: any) => brand.slug === "iphone");
-    expect(Object.keys(iphone).sort()).toEqual(["logoUrl", "name", "productCount", "slug"]);
+    // 12/11 : plus les marques d'accessoires du type (`makers`, vide pour un appareil) et leur « Autres ».
+    expect(Object.keys(iphone).sort()).toEqual(["logoUrl", "makers", "name", "productCount", "slug", "withoutMaker"]);
   });
 
   it("n'ont plus de route pour envoyer une photo", async () => {

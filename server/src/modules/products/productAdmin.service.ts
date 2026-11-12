@@ -46,6 +46,7 @@ export async function listAdminProducts(query: AdminProductListQuery) {
         minPrice: true,
         newPrice: true,
         category: { select: { name: true, slug: true } },
+        maker: { select: { id: true, name: true } },
         images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
         variants: { select: { condition: true, stock: true } },
       },
@@ -70,6 +71,7 @@ export async function getAdminProduct(id: number) {
       category: { select: { id: true, name: true, kind: true } },
       deviceModel: { select: { id: true, brand: true, name: true } },
       brand: { select: { id: true, name: true, slug: true, logoUrl: true } },
+      maker: { select: { id: true, name: true, slug: true, logoUrl: true } },
       compatibleModels: { select: { id: true, brand: true, name: true } },
       images: { orderBy: { position: "asc" } },
       variants: {
@@ -163,6 +165,21 @@ async function checkRules(input: ProductBody, productId?: number) {
     }
   }
 
+  // La marque d'un accessoire (Anker dans Chargeurs) : seulement pour un accessoire, et dans le
+  // type du produit, qui est sa « marque » (brandId).
+  if (input.makerId) {
+    if (category.kind !== "accessory") {
+      throw new AppError(400, "Seul un accessoire a une marque d'accessoire");
+    }
+    if (!input.brandId) {
+      throw new AppError(400, "Choisissez le type de l'accessoire avant sa marque");
+    }
+    const maker = await prisma.accessoryMaker.findUnique({ where: { id: input.makerId }, select: { typeId: true } });
+    if (!maker || maker.typeId !== input.brandId) {
+      throw new AppError(400, "Cette marque n'appartient pas au type du produit");
+    }
+  }
+
   // Les articles offerts : des variantes d'accessoires neuves, jamais la variante elle-même.
   const giftIds = [...new Set(input.variants.flatMap((v) => v.gifts.map((g) => g.giftVariantId)))];
   if (giftIds.length > 0) {
@@ -216,6 +233,7 @@ export async function createProduct(input: ProductBody) {
         categoryId: input.categoryId,
         deviceModelId: rules.deviceModelId,
         brandId: input.brandId,
+        makerId: input.makerId,
         specs: input.specs,
         status: input.status,
         minPrice: computeMinPrice(rules.variants),
@@ -279,6 +297,7 @@ export async function updateProduct(id: number, input: ProductBody) {
         categoryId: input.categoryId,
         deviceModelId: rules.deviceModelId,
         brandId: input.brandId,
+        makerId: input.makerId,
         specs: input.specs,
         status: input.status,
         compatibleModels: { set: rules.compatibleModelIds.map((modelId) => ({ id: modelId })) },
