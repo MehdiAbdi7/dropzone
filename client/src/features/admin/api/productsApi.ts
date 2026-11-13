@@ -25,6 +25,8 @@ export type AdminVariant = {
   sku: string;
   options: Options;
   price: number;
+  // Le prix d'achat (14/11), admin seulement ; null = inconnu.
+  purchasePrice: number | null;
   stock: number;
   condition: Condition;
   grade: number | null;

@@ -191,6 +191,19 @@ export default function VariantEditor({
                 onChange={(event) => set({ price: event.target.value.replace(/\D/g, "") })}
               />
             </Field>
+            <Field
+              id={id("purchase")}
+              label="Prix d'achat (DA)"
+              hint="Facultatif. Visible par l'admin seulement : sert au calcul du bénéfice."
+            >
+              <input
+                id={id("purchase")}
+                className="input"
+                inputMode="numeric"
+                value={variant.purchasePrice}
+                onChange={(event) => set({ purchasePrice: event.target.value.replace(/\D/g, "") })}
+              />
+            </Field>
             <Field id={id("stock")} label={refurbished ? "Stock de cette affaire" : "Stock"}>
               <input
                 id={id("stock")}

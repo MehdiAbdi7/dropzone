@@ -82,6 +82,8 @@ export const variantSchema = z
       .regex(/^[A-Z0-9-]{3,40}$/, { error: "Majuscules, chiffres et tirets (3 à 40)" }),
     options: labelRecord(60).default({}),
     price: z.number().int().min(0).max(10_000_000),
+    // Le prix d'achat du magasin (14/11), facultatif, jamais montré sur le site.
+    purchasePrice: z.number().int().min(0).max(10_000_000).nullable().default(null),
     stock: z.number().int().min(0).max(10_000),
     condition: z.enum(["new", "refurbished"]).default("new"),
     grade: z.number().int().min(1).max(10).nullable().default(null),
