@@ -279,11 +279,17 @@ export type OrderDetail = {
   number: number;
   status: OrderStatus;
   createdAt: string;
+  // Le type, le numéro du jour et le créneau d'un retrait (14/11).
+  type: OrderType;
+  dailyNumber: number;
+  pickupDate: string | null;
+  pickupTime: string | null;
   subtotal: number;
   shippingFee: number;
   total: number;
-  wilaya: string;
-  commune: string;
+  // null pour un retrait ou une vente au magasin.
+  wilaya: string | null;
+  commune: string | null;
   fullName?: string;
   phone?: string;
   address?: string;

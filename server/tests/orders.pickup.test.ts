@@ -94,3 +94,18 @@ describe("POST /orders/preview", () => {
 it("le client de test reste une livraison par défaut", () => {
   expect(customer).not.toHaveProperty("fulfillment");
 });
+
+describe("POST /orders/track d'un retrait", () => {
+  it("renvoie le type, le numéro du jour, le jour et l'heure du retrait", async () => {
+    const placed = await previewThenOrder([{ sku: "IP-NEW-256", quantity: 1 }], pickup("tomorrow", "15:30"));
+    const response = await request(app).post("/orders/track").send({ number: placed.body.data.number, phone: "0555123456" });
+    expect(response.status).toBe(200);
+    expect(response.body.data).toMatchObject({
+      type: "pickup",
+      status: "reserved",
+      dailyNumber: 1,
+      pickupDate: "2026-11-15",
+      pickupTime: "15:30",
+    });
+  });
+});

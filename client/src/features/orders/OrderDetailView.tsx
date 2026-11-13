@@ -1,11 +1,16 @@
-import { CONDITION_LABELS, STATUS_LABELS, STATUS_STEPS } from "@/config/catalog";
+import { CONDITION_LABELS, PICKUP_STEPS, STATUS_LABELS, STATUS_STEPS } from "@/config/catalog";
 import { warrantyLabel } from "@/config/warranty";
 import { formatDate, formatOptions, formatPrice } from "@/lib/format";
+import { pickupLabel } from "@/lib/pickupLabel";
 import type { OrderDetail } from "@/types/api";
 
 // Le détail d'une commande, partagé par le suivi invité et l'espace client.
+// Depuis le 14/11, une commande peut être un retrait au magasin : ses propres étapes
+// (réservée, récupérée), son créneau, et un message clair si la réservation a expiré.
 export default function OrderDetailView({ order }: { order: OrderDetail }) {
-  const reached = STATUS_STEPS.findIndex((step) => step.status === order.status);
+  const pickup = order.type === "pickup";
+  const steps = pickup ? PICKUP_STEPS : STATUS_STEPS;
+  const reached = steps.findIndex((step) => step.status === order.status);
 
   return (
     <div className="space-y-6">
@@ -14,12 +19,22 @@ export default function OrderDetailView({ order }: { order: OrderDetail }) {
         <p className="text-sm text-ink-muted">Passée le {formatDate(order.createdAt)}</p>
       </header>
 
+      {pickup && order.pickupDate && order.pickupTime ? (
+        <p className="rounded-lg border border-line bg-surface-2 p-4">
+          Retrait au magasin <strong>{pickupLabel(order.pickupDate, order.pickupTime)}</strong>.
+        </p>
+      ) : null}
+
       {order.status === "cancelled" ? (
         <p className="rounded-lg border border-red bg-red-soft p-4 font-semibold text-red">Cette commande a été annulée.</p>
+      ) : order.status === "expired" ? (
+        <p className="rounded-lg border border-red bg-red-soft p-4 font-semibold text-red">
+          Réservation expirée : l&apos;appareil a été remis en vente.
+        </p>
       ) : (
         // Une vraie suite d'étapes : la numérotation a un sens ici.
-        <ol className="grid gap-3 sm:grid-cols-4">
-          {STATUS_STEPS.map((step, index) => {
+        <ol className={`grid gap-3 ${pickup ? "sm:grid-cols-2" : "sm:grid-cols-4"}`}>
+          {steps.map((step, index) => {
             const done = index <= reached;
             return (
               <li
@@ -57,12 +72,16 @@ export default function OrderDetailView({ order }: { order: OrderDetail }) {
           </div>
         ))}
         <dl className="space-y-1 p-4 text-sm">
-          <div className="flex justify-between">
-            <dt className="text-ink-muted">Livraison ({order.wilaya})</dt>
-            <dd>{order.shippingFee === 0 ? "Offerte" : formatPrice(order.shippingFee)}</dd>
-          </div>
+          {pickup ? null : (
+            <div className="flex justify-between">
+              <dt className="text-ink-muted">Livraison ({order.wilaya})</dt>
+              <dd>{order.shippingFee === 0 ? "Offerte" : formatPrice(order.shippingFee)}</dd>
+            </div>
+          )}
           <div className="flex justify-between text-base">
-            <dt className="font-semibold">Total payé à la livraison</dt>
+            <dt className="font-semibold">
+              {pickup ? (order.status === "picked_up" ? "Total payé au magasin" : "Total à payer au magasin") : "Total payé à la livraison"}
+            </dt>
             <dd className="font-display font-bold">{formatPrice(order.total)}</dd>
           </div>
         </dl>

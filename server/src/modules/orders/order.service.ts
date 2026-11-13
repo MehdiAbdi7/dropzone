@@ -305,9 +305,14 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
 
     // Un reconditionné vendu : le « à partir de » de son produit change.
     await refreshMinPrice(tx, cart.lines.map((line) => line.productId));
-    // Le jour du retrait en texte (« 2026-11-15 ») : une date sans heure, lue telle quelle.
-    return { ...order, pickupDate: order.pickupDate ? order.pickupDate.toISOString().slice(0, 10) : null };
+    return withPickupDay(order);
   });
+}
+
+// Le jour du retrait en texte (« 2026-11-15 ») : une date sans heure, lue telle quelle par le
+// front, sans décalage de fuseau.
+function withPickupDay<T extends { pickupDate: Date | null }>(order: T) {
+  return { ...order, pickupDate: order.pickupDate ? order.pickupDate.toISOString().slice(0, 10) : null };
 }
 
 // Ce que voit le client (suivi, espace compte) : pas l'id interne, pas l'adresse.
@@ -315,6 +320,10 @@ const orderDetailSelect = {
   number: true,
   status: true,
   createdAt: true,
+  type: true,
+  dailyNumber: true,
+  pickupDate: true,
+  pickupTime: true,
   subtotal: true,
   shippingFee: true,
   total: true,
@@ -346,7 +355,7 @@ export async function trackOrder(number: number, phone: string) {
   if (!order) {
     throw new AppError(404, "Aucune commande ne correspond à ce numéro et ce téléphone");
   }
-  return order;
+  return withPickupDay(order);
 }
 
 export async function listMyOrders(userId: number) {
@@ -366,7 +375,7 @@ export async function getMyOrder(userId: number, number: number) {
   if (!order) {
     throw new AppError(404, "Commande introuvable");
   }
-  return order;
+  return withPickupDay(order);
 }
 
 // ---------- Admin ----------

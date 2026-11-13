@@ -174,3 +174,9 @@ export const STATUS_STEPS: { status: OrderStatus; text: string }[] = [
   { status: "shipped", text: "Colis remis au livreur." },
   { status: "delivered", text: "Colis livré et payé à la livraison." },
 ];
+
+// Les étapes d'un retrait au magasin (14/11).
+export const PICKUP_STEPS: { status: OrderStatus; text: string }[] = [
+  { status: "reserved", text: "Appareil réservé à votre nom jusqu'à minuit le jour choisi." },
+  { status: "picked_up", text: "Récupéré et payé au magasin." },
+];
