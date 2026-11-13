@@ -12,7 +12,7 @@ import {
 } from "./order.service.js";
 
 export async function postPreview(req: Request, res: Response) {
-  res.json({ data: await previewCart(req.body.items) });
+  res.json({ data: await previewCart(req.body.items, req.body.fulfillment) });
 }
 
 export async function postOrder(req: Request, res: Response) {

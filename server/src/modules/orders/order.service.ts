@@ -6,8 +6,10 @@ import { AppError } from "../../utils/AppError.js";
 import { paginate, paginationMeta } from "../../utils/pagination.js";
 import { buildConditionReport, refreshMinPrice } from "../products/product.service.js";
 import { sameColor } from "../models/modelColors.js";
+import { addDays, algiersDate, algiersMidnightAfter, pickupSlots } from "../../utils/algiersTime.js";
+import { getStoreHours } from "../store/store.service.js";
 import { issueDailyNumber } from "./dailyNumber.js";
-import type { AdminOrderListQuery, CartItemInput, CreateOrderInput } from "./order.schema.js";
+import type { AdminOrderListQuery, CartItemInput, CreateOrderInput, Fulfillment } from "./order.schema.js";
 
 const MAX_QUANTITY = 10;
 
@@ -46,7 +48,8 @@ export type CartLine = {
 // Le calcul du panier, partagé par l'aperçu (POST /orders/preview) et la commande :
 // les deux voient exactement les mêmes prix, cadeaux et problèmes.
 // `db` est le client normal ou celui d'une transaction.
-export async function priceCart(db: Tx, items: CartItemInput[]) {
+// `fulfillment` : un retrait au magasin n'a pas de frais de livraison (14/11).
+export async function priceCart(db: Tx, items: CartItemInput[], fulfillment: Fulfillment = "delivery") {
   // Le même SKU deux fois (deux onglets) : on additionne.
   const quantities = new Map<string, number>();
   for (const item of items) {
@@ -155,7 +158,7 @@ export async function priceCart(db: Tx, items: CartItemInput[]) {
   }
 
   const subtotal = lines.reduce((sum, line) => sum + line.lineTotal, 0);
-  const shippingFee = computeShippingFee(subtotal);
+  const shippingFee = fulfillment === "pickup" ? 0 : computeShippingFee(subtotal);
   const canOrder = lines.length > 0 && unavailable.length === 0 && lines.every((line) => !line.problem);
 
   return {
@@ -184,13 +187,31 @@ function hashLines(lines: CartLine[]): string {
 }
 
 // L'aperçu du panier (POST /orders/preview) : ce que le client voit avant de commander.
-export async function previewCart(items: CartItemInput[]) {
-  return priceCart(prisma, items);
+export async function previewCart(items: CartItemInput[], fulfillment: Fulfillment = "delivery") {
+  return priceCart(prisma, items, fulfillment);
+}
+
+// Le jour et la fin de réservation d'un retrait, après vérification du créneau : le serveur fait
+// foi (un créneau passé entre l'affichage du formulaire et l'envoi est refusé).
+async function pickupSlot(tx: Tx, input: Extract<CreateOrderInput, { fulfillment: "pickup" }>, now: Date) {
+  const today = algiersDate(now);
+  const pickupDay = input.pickupDay === "today" ? today : addDays(today, 1);
+  const slots = pickupSlots(await getStoreHours(tx), pickupDay, now);
+  if (!slots.includes(input.pickupTime)) {
+    throw new AppError(400, "Ce créneau n'est pas disponible");
+  }
+  return {
+    pickupDate: new Date(`${pickupDay}T00:00:00Z`),
+    pickupTime: input.pickupTime,
+    reservedUntil: algiersMidnightAfter(pickupDay),
+  };
 }
 
 export async function createOrder(input: CreateOrderInput, userId: number | undefined) {
   return prisma.$transaction(async (tx) => {
-    const cart = await priceCart(tx, input.items);
+    const now = new Date();
+    const pickup = input.fulfillment === "pickup" ? await pickupSlot(tx, input, now) : null;
+    const cart = await priceCart(tx, input.items, input.fulfillment);
     if (!cart.canOrder) {
       throw new AppError(409, "Votre panier a changé, vérifiez-le avant de commander", {
         unavailable: cart.unavailable,
@@ -226,7 +247,17 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
     }
 
     // Le numéro du jour, dans la même transaction : une commande refusée plus haut n'en prend pas.
-    const { dailyNumber, businessDate } = await issueDailyNumber(tx, new Date());
+    const { dailyNumber, businessDate } = await issueDailyNumber(tx, now);
+    // Le prix d'achat du moment, figé sur chaque ligne (14/11) : lu ici et jamais par priceCart,
+    // qui sert aussi l'aperçu public.
+    const costs = new Map(
+      (
+        await tx.productVariant.findMany({
+          where: { sku: { in: cart.lines.map((line) => line.sku) } },
+          select: { sku: true, purchasePrice: true },
+        })
+      ).map((variant) => [variant.sku, variant.purchasePrice]),
+    );
     const order = await tx.order.create({
       data: {
         userId,
@@ -234,9 +265,9 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
         businessDate,
         fullName: input.fullName,
         phone: input.phone,
-        wilaya: input.wilaya,
-        commune: input.commune,
-        address: input.address,
+        ...(input.fulfillment === "delivery"
+          ? { type: "delivery" as const, wilaya: input.wilaya, commune: input.commune, address: input.address }
+          : { type: "pickup" as const, status: "reserved" as const, ...pickup }),
         note: input.note,
         subtotal: cart.subtotal,
         shippingFee: cart.shippingFee,
@@ -255,15 +286,25 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
             unitPrice: line.unitPrice,
             quantity: line.quantity,
             isGift: line.isGift,
+            unitCost: costs.get(line.sku) ?? null,
           })),
         },
       },
-      select: { number: true, total: true, phone: true },
+      select: {
+        number: true,
+        dailyNumber: true,
+        total: true,
+        phone: true,
+        type: true,
+        pickupDate: true,
+        pickupTime: true,
+      },
     });
 
     // Un reconditionné vendu : le « à partir de » de son produit change.
     await refreshMinPrice(tx, cart.lines.map((line) => line.productId));
-    return order;
+    // Le jour du retrait en texte (« 2026-11-15 ») : une date sans heure, lue telle quelle.
+    return { ...order, pickupDate: order.pickupDate ? order.pickupDate.toISOString().slice(0, 10) : null };
   });
 }
 
