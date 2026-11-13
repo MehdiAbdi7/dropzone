@@ -191,8 +191,12 @@
     line-height: 1.5;
   }
   .badge-refurb {
-    background: var(--blue-soft);
-    color: var(--blue-ink);
+    background: var(--red);
+    color: var(--on-red);
+  }
+  .badge-new {
+    background: var(--blue);
+    color: var(--on-brand);
   }
   .badge-out {
     background: var(--surface-2);
