@@ -55,7 +55,7 @@ export function orderProfit(lines: { unitPrice: number; unitCost: number | null;
 type EditLine = { sku: string; name: string; quantity: number; unitPrice: number };
 
 // Les milliers séparés par une espace : 299000 → « 299 000 ».
-const grouped = (value: number) => String(value).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+export const groupThousands = (value: number) => String(value).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
 // Les changements d'une modification, en phrases, pour la trace de la commande.
 export function describeEdit(before: EditLine[], after: EditLine[]): string[] {
@@ -72,7 +72,7 @@ export function describeEdit(before: EditLine[], after: EditLine[]): string[] {
       phrases.push(`Quantité de ${line.name} : ${line.quantity} → ${updated.quantity}`);
     }
     if (updated.unitPrice !== line.unitPrice) {
-      phrases.push(`Prix de ${line.name} : ${grouped(line.unitPrice)} → ${grouped(updated.unitPrice)} DA`);
+      phrases.push(`Prix de ${line.name} : ${groupThousands(line.unitPrice)} → ${groupThousands(updated.unitPrice)} DA`);
     }
   }
   for (const line of after) {

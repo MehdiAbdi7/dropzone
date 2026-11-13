@@ -14,6 +14,7 @@ import {
   postPickup,
   postPreview,
   postTrack,
+  removeOrder,
 } from "./order.controller.js";
 import {
   adminOrderListQuerySchema,
@@ -44,6 +45,7 @@ orderAdminRouter.patch(
   validate({ params: idParamsSchema, body: editOrderBodySchema }),
   patchOrder,
 );
+orderAdminRouter.delete("/orders/:id", validate({ params: idParamsSchema }), removeOrder);
 orderAdminRouter.patch(
   "/orders/:id/status",
   validate({ params: idParamsSchema, body: statusBodySchema }),

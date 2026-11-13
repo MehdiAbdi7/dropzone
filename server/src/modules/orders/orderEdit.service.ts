@@ -5,7 +5,8 @@ import { algiersDate } from "../../utils/algiersTime.js";
 import { requireOpenCashDay } from "../cash/cash.service.js";
 import { buildConditionReport, refreshMinPrice } from "../products/product.service.js";
 import type { EditOrderInput } from "./order.schema.js";
-import { correctionMovements, describeEdit, stockDeltas } from "./orderMath.js";
+import { correctionMovements, describeEdit, groupThousands, stockDeltas } from "./orderMath.js";
+import { restockItems } from "./reservations.js";
 
 // Modifier et supprimer une commande après coup (15/11, lot 2). Deux règles tiennent tout :
 //  - le stock et l'argent suivent : la différence de stock est appliquée, et l'argent déjà
@@ -228,5 +229,52 @@ export async function editOrder(id: number, input: EditOrderInput, userId: numbe
     });
     await refreshMinPrice(tx, [...order.items.map((item) => item.productId), ...variants.map((variant) => variant.product.id)]);
     return { id, total, status: order.status };
+  });
+}
+
+
+// Supprimer une commande : le verrou de la ligne décide qui gagne si deux clics arrivent
+// ensemble (le second ne trouve plus rien : 404). Le stock se rend sauf si la commande avait
+// déjà été annulée ou avait expiré (elle l'a déjà rendu). L'argent déjà encaissé est rendu par
+// un mouvement négatif du jour, par moyen de paiement ; la trace garde de quoi retrouver la
+// commande (numéro, client, total) puisque la commande elle-même disparaît.
+export async function deleteOrder(id: number, userId: number, now: Date = new Date()) {
+  return prisma.$transaction(async (tx) => {
+    await lockOrder(tx, id);
+    const order = await tx.order.findUniqueOrThrow({ where: { id }, include: { items: true } });
+    const money = await paidByMethod(tx, id);
+    const refunds = (Object.entries(money.paid) as [PaymentMethod, number][]).filter(([, amount]) => amount !== 0);
+    if (refunds.length > 0) {
+      await requireOpenCashDay(tx, now);
+    }
+
+    if (order.status !== "cancelled" && order.status !== "expired") {
+      await restockItems(tx, order.items);
+    }
+    for (const [method, amount] of refunds) {
+      await tx.moneyMovement.create({
+        data: {
+          businessDate: asDay(now),
+          amount: -amount,
+          method,
+          kind: "correction",
+          orderId: id,
+          userId,
+          note: `Suppression de la commande n° ${order.number}`,
+        },
+      });
+    }
+    await tx.order.delete({ where: { id } });
+    await tx.orderEvent.create({
+      data: {
+        kind: "deleted",
+        orderId: id,
+        orderNumber: order.number,
+        userId,
+        summary: `Commande supprimée : ${order.fullName}, ${groupThousands(order.total)} DA, ${order.items.length} ligne(s)`,
+        amountDelta: -money.total,
+      },
+    });
+    return { id, refunded: money.total };
   });
 }
