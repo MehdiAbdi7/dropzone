@@ -32,8 +32,9 @@ export default function SettingsPage() {
       <h1 className="text-3xl">Réglages</h1>
       {isError ? <p role="alert">Les réglages ne répondent pas.</p> : null}
       {!data && !isError ? <p className="text-ink-muted">Chargement…</p> : null}
-      {/* `key` : le formulaire repart des valeurs enregistrées quand elles changent. */}
-      {data ? <HoursForm key={JSON.stringify(data)} initial={data} /> : null}
+      {/* Monté une fois les horaires lus : il part des valeurs enregistrées, puis garde les
+          siennes (après un enregistrement, ce sont les mêmes que celles de l'API). */}
+      {data ? <HoursForm initial={data} /> : null}
     </div>
   );
 }
