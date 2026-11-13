@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ComponentType } from "react";
 import {
+  CashIcon,
+  ClipboardCheckIcon,
   CloseIcon,
   DotsIcon,
   GridIcon,
@@ -33,11 +35,15 @@ const LINKS: NavLink[] = [
   { href: "/admin/commandes", label: "Commandes", icon: PackageIcon, primary: true },
   // Le catalogue suit les étapes de la Boutique : catégorie, marque, série, modèle.
   { href: "/admin/catalogue", label: "Catalogue", icon: GridIcon, primary: true },
-  { href: "/admin/produits", label: "Produits", icon: PhoneIcon, primary: true },
+  // La caisse du jour (14/11), utilisée au comptoir : dans la barre du bas, à la place de Produits.
+  { href: "/admin/caisse", label: "Caisse", icon: CashIcon, primary: true },
+  { href: "/admin/produits", label: "Produits", icon: PhoneIcon },
   { href: "/admin/listes", label: "Listes", icon: ListIcon },
   // La personnalisation de la boutique : pour l'instant, les photos du socle de l'accueil (06/11).
   { href: "/admin/accueil", label: "Personnalisation", icon: StoreIcon },
   { href: "/admin/clients", label: "Clients", icon: UsersIcon },
+  // Les réglages du magasin (14/11) : les horaires des retraits.
+  { href: "/admin/reglages", label: "Réglages", icon: ClipboardCheckIcon },
   { href: "/", label: "Voir la boutique", short: "Boutique", icon: StoreIcon },
 ];
 

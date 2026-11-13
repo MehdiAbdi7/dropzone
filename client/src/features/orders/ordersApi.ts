@@ -52,6 +52,7 @@ const ordersApi = api.injectEndpoints({
     storeHours: build.query<StoreHours, void>({
       query: () => "/store/hours",
       transformResponse: (body: { data: StoreHours }) => body.data,
+      providesTags: ["StoreHours"],
     }),
   }),
 });

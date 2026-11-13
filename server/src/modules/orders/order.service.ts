@@ -409,6 +409,9 @@ export async function listAdminOrders(query: AdminOrderListQuery) {
   if (query.status) {
     filters.push({ status: query.status });
   }
+  if (query.type) {
+    filters.push({ type: query.type });
+  }
   if (query.q) {
     const number = Number(query.q);
     filters.push({
@@ -429,6 +432,11 @@ export async function listAdminOrders(query: AdminOrderListQuery) {
       select: {
         id: true,
         number: true,
+        type: true,
+        dailyNumber: true,
+        businessDate: true,
+        pickupDate: true,
+        pickupTime: true,
         fullName: true,
         phone: true,
         wilaya: true,

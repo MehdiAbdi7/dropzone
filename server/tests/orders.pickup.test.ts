@@ -2,7 +2,7 @@ import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app.js";
 import { prisma } from "../src/config/db.js";
-import { createCatalog, customer, previewThenOrder, resetDb } from "./helpers.js";
+import { createCatalog, customer, loginAs, previewThenOrder, resetDb } from "./helpers.js";
 
 // Le retrait au magasin (14/11) : le client choisit aujourd'hui ou demain et une heure ; le
 // téléphone est réservé (stock retiré) jusqu'à minuit le jour choisi ; il paie au magasin.
@@ -107,5 +107,19 @@ describe("POST /orders/track d'un retrait", () => {
       pickupDate: "2026-11-15",
       pickupTime: "15:30",
     });
+  });
+});
+
+describe("GET /admin/orders par type", () => {
+  it("ne renvoie que les retraits, avec leur numéro du jour et leur créneau", async () => {
+    await previewThenOrder([{ sku: "IP-NEW-256", quantity: 1 }]);
+    await previewThenOrder([{ sku: "IP-NEW-256", quantity: 1 }], pickup("tomorrow", "15:30"));
+    const { agent } = await loginAs("admin");
+    const response = await agent.get("/admin/orders?type=pickup");
+    expect(response.status).toBe(200);
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data[0]).toMatchObject({ type: "pickup", dailyNumber: 2, pickupTime: "15:30" });
+    expect(response.body.data[0].pickupDate.slice(0, 10)).toBe("2026-11-15");
+    expect((await agent.get("/admin/orders?type=delivery")).body.data).toHaveLength(1);
   });
 });

@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import { CONDITION_LABELS, STATUS_LABELS } from "@/config/catalog";
+import { CONDITION_LABELS, ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS, STATUS_LABELS } from "@/config/catalog";
 import { warrantyLabel } from "@/config/warranty";
-import { useAdminOrderQuery, useChangeStatusMutation } from "@/features/admin/api/ordersApi";
+import { useAdminOrderQuery, useChangeStatusMutation, useValidatePickupMutation } from "@/features/admin/api/ordersApi";
+import { dailyLabel, receptionLabel } from "@/features/admin/orders/orderLabels";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatOptions, formatPrice } from "@/lib/format";
+import type { PaymentMethod } from "@/types/api";
 
 // Les boutons ne proposent que les transitions autorisées, renvoyées par l'API.
 const ACTION_LABELS = {
@@ -15,6 +18,8 @@ const ACTION_LABELS = {
   shipped: "Marquer expédiée",
   delivered: "Marquer livrée",
 } as const;
+
+const METHODS = Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[];
 
 export default function AdminOrderPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +35,7 @@ export default function AdminOrderPage() {
 
   const forward = order.allowedTransitions.filter((status) => status !== "cancelled");
   const canCancel = order.allowedTransitions.includes("cancelled");
+  const pickup = order.type === "pickup";
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -37,13 +43,15 @@ export default function AdminOrderPage() {
         Commandes
       </Link>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="text-3xl">Commande n° {order.number}</h1>
-        <p className="text-ink-muted">{formatDate(order.createdAt)}</p>
+        <h1 className="text-3xl">Commande {dailyLabel(order.dailyNumber, order.businessDate)}</h1>
+        <p className="text-ink-muted">
+          N° de suivi {order.number} · {formatDate(order.createdAt)}
+        </p>
       </header>
 
       <section className="card flex flex-wrap items-center gap-3 p-5" aria-label="Statut">
         <p className="mr-auto">
-          Statut : <strong>{STATUS_LABELS[order.status]}</strong>
+          {ORDER_TYPE_LABELS[order.type]} · Statut : <strong>{STATUS_LABELS[order.status]}</strong>
         </p>
         {forward.map((status) => (
           <button
@@ -58,7 +66,7 @@ export default function AdminOrderPage() {
         ))}
         {canCancel ? (
           <ConfirmDialog
-            trigger="Annuler la commande"
+            trigger={pickup ? "Annuler la réservation" : "Annuler la commande"}
             title={`Annuler la commande n° ${order.number} ?`}
             confirmLabel="Annuler la commande"
             onConfirm={() => changeStatus({ id: order.id, status: "cancelled" })}
@@ -68,6 +76,8 @@ export default function AdminOrderPage() {
         ) : null}
         {error ? <p className="field-error w-full">{errorMessage(error)}</p> : null}
       </section>
+
+      {pickup && order.status === "reserved" ? <ValidatePickup orderId={order.id} total={order.total} /> : null}
 
       <div className="grid gap-6 md:grid-cols-2">
         <section className="card space-y-1 p-5 text-sm" aria-labelledby="client">
@@ -80,9 +90,7 @@ export default function AdminOrderPage() {
               {order.phone}
             </a>
           </p>
-          <p>
-            {order.address}, {order.commune}, {order.wilaya}
-          </p>
+          <p>{pickup ? receptionLabel(order) : `${order.address}, ${order.commune}, ${order.wilaya}`}</p>
           {order.user ? <p className="text-ink-muted">Compte : {order.user.email}</p> : <p className="text-ink-muted">Commande sans compte</p>}
           {order.note ? <p className="mt-2 rounded-md bg-surface-2 p-2">Remarque : {order.note}</p> : null}
         </section>
@@ -91,8 +99,10 @@ export default function AdminOrderPage() {
             Montants
           </h2>
           <p>Articles : {formatPrice(order.subtotal)}</p>
-          <p>Livraison : {order.shippingFee === 0 ? "offerte" : formatPrice(order.shippingFee)}</p>
-          <p className="font-display text-xl font-bold">À encaisser : {formatPrice(order.total)}</p>
+          {pickup ? null : <p>Livraison : {order.shippingFee === 0 ? "offerte" : formatPrice(order.shippingFee)}</p>}
+          <p className="font-display text-xl font-bold">
+            {order.status === "picked_up" ? "Encaissé" : "À encaisser"} : {formatPrice(order.total)}
+          </p>
           {order.limitationsAccepted ? (
             <p className="mt-2 font-semibold text-red">Le client a accepté les limitations des affaires.</p>
           ) : null}
@@ -120,5 +130,47 @@ export default function AdminOrderPage() {
         ))}
       </section>
     </div>
+  );
+}
+
+// Le client est venu : il paie, et le paiement entre dans la caisse du jour (14/11).
+// Espèces par défaut : c'est le cas le plus courant au comptoir.
+function ValidatePickup({ orderId, total }: { orderId: number; total: number }) {
+  const [method, setMethod] = useState<PaymentMethod>("cash");
+  const [validate, { isLoading, error }] = useValidatePickupMutation();
+  return (
+    <section className="card space-y-3 border-blue-ink p-5" aria-labelledby="pickup-title">
+      <h2 id="pickup-title" className="text-lg">
+        Le client est venu ?
+      </h2>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="space-y-1 text-sm font-semibold">
+          <span className="block">Moyen de paiement</span>
+          <select className="input" value={method} onChange={(event) => setMethod(event.target.value as PaymentMethod)}>
+            {METHODS.map((value) => (
+              <option key={value} value={value}>
+                {PAYMENT_METHOD_LABELS[value]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="button" className="btn btn-primary" disabled={isLoading} onClick={() => validate({ id: orderId, method })}>
+          Valider le retrait · {formatPrice(total)}
+        </button>
+      </div>
+      {error ? (
+        <p role="alert" className="field-error">
+          {errorMessage(error)}
+          {errorMessage(error).includes("journée de caisse") ? (
+            <>
+              {" "}
+              <Link href="/admin/caisse" className="underline">
+                Ouvrir la caisse
+              </Link>
+            </>
+          ) : null}
+        </p>
+      ) : null}
+    </section>
   );
 }

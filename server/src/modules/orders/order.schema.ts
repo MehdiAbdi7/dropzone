@@ -89,6 +89,8 @@ const orderStatusSchema = z.enum([
 
 export const adminOrderListQuerySchema = z.object({
   status: orderStatusSchema.optional(),
+  // Les onglets de la page Commandes (14/11) : livraisons, retraits, ventes au magasin.
+  type: z.enum(["delivery", "pickup", "in_store"]).optional(),
   q: z.string().trim().min(1).max(80).optional(),
   ...paginationQuery,
   limit: z.coerce.number().int().min(1).max(50).default(20),
