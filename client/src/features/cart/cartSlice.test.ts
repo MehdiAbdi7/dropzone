@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import reducer, { closeCart, linesConfirmed, openCart, removeItem, setQuantity } from "./cartSlice";
+import reducer, { closeCart, linesConfirmed, openCart, removeItem, setFulfillment, setQuantity } from "./cartSlice";
 
 // La quantité d'une ligne suit le maximum que donne l'aperçu du panier (le stock réel).
 describe("setQuantity", () => {
-  const state = { items: [{ sku: "IP17PM-OR-256", quantity: 2 }], hydrated: true, open: false };
+  const state = { items: [{ sku: "IP17PM-OR-256", quantity: 2 }], hydrated: true, open: false, fulfillment: "delivery" as const };
 
   it("borne la quantité au maximum de la ligne", () => {
     expect(reducer(state, setQuantity({ sku: "IP17PM-OR-256", quantity: 5, max: 4 })).items[0].quantity).toBe(4);
@@ -36,7 +36,7 @@ describe("linesConfirmed", () => {
     giftFor: null,
     problem: null,
   };
-  const state = { items: [{ sku: "IP17PM-OR-256", quantity: 2 }], hydrated: true, open: false };
+  const state = { items: [{ sku: "IP17PM-OR-256", quantity: 2 }], hydrated: true, open: false, fulfillment: "delivery" as const };
 
   it("garde la description de la ligne, sans le prix", () => {
     const next = reducer(state, linesConfirmed([confirmed]));
@@ -65,7 +65,7 @@ describe("linesConfirmed", () => {
 // La fenêtre du panier (06/11), comme le ticket de Niwa : son état est dans le store, pour
 // que l'en-tête, la barre et le bouton « Voir le panier » ouvrent la même fenêtre.
 describe("openCart / closeCart", () => {
-  const state = { items: [{ sku: "IP17PM-OR-256", quantity: 1 }], hydrated: true, open: false };
+  const state = { items: [{ sku: "IP17PM-OR-256", quantity: 1 }], hydrated: true, open: false, fulfillment: "delivery" as const };
 
   it("ouvre puis ferme la fenêtre", () => {
     const opened = reducer(state, openCart());
@@ -75,5 +75,20 @@ describe("openCart / closeCart", () => {
 
   it("laisse la fenêtre ouverte quand on retire le dernier article (elle dit « panier vide »)", () => {
     expect(reducer({ ...state, open: true }, removeItem("IP17PM-OR-256"))).toMatchObject({ items: [], open: true });
+  });
+});
+
+// Le mode de réception choisi sur la page de commande (15/11) : la fenêtre du panier, ouverte
+// depuis cette page, calcule ses frais dans le même mode (un retrait n'a pas de livraison).
+describe("setFulfillment", () => {
+  const state = { items: [], hydrated: true, open: false, fulfillment: "delivery" as const };
+
+  it("retient le mode choisi", () => {
+    expect(reducer(state, setFulfillment("pickup")).fulfillment).toBe("pickup");
+    expect(reducer(reducer(state, setFulfillment("pickup")), setFulfillment("delivery")).fulfillment).toBe("delivery");
+  });
+
+  it("commence en livraison", () => {
+    expect(reducer(undefined, { type: "@@init" }).fulfillment).toBe("delivery");
   });
 });

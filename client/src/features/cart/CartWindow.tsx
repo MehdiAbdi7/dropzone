@@ -26,11 +26,12 @@ export default function CartWindow() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
-  const { items, hydrated: loaded, open } = useAppSelector((state) => state.cart);
+  const { items, hydrated: loaded, open, fulfillment } = useAppSelector((state) => state.cart);
   const hydrated = useHydrated() && loaded;
   const dialog = useRef<HTMLDialogElement>(null);
-  // Les prix viennent toujours du serveur : le panier n'envoie que SKU et quantités.
-  const { data: preview, isError, isFetching, refetch } = useCartPreview({ skip: !open || !hydrated });
+  // Les prix viennent toujours du serveur : le panier n'envoie que SKU et quantités. Le mode de
+  // réception est celui de la page de commande (« delivery » ailleurs) : un retrait n'a pas de frais.
+  const { data: preview, isError, isFetching, refetch } = useCartPreview({ skip: !open || !hydrated, fulfillment });
 
   useEffect(() => {
     const element = dialog.current;
