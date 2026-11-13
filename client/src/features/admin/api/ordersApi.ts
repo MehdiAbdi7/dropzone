@@ -27,7 +27,7 @@ type AdminOrderRow = OrderReception & {
   _count: { items: number };
 };
 
-type AdminOrder = OrderReception & {
+export type AdminOrder = OrderReception & {
   id: number;
   number: number;
   status: OrderStatus;
