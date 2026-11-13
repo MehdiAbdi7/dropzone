@@ -105,3 +105,21 @@ export const paymentMethodSchema = z.enum(["cash", "baridimob", "ccp", "card", "
   error: "Moyen de paiement inconnu",
 });
 export const pickupBodySchema = z.object({ method: paymentMethodSchema });
+
+// Modifier une commande (15/11, lot 2). Une ligne existante se désigne par son `id`, un nouvel
+// article par son `sku` ; une ligne payante qui n'est pas listée est retirée. Les cadeaux ne sont
+// jamais envoyés : ils restent tels quels (voir editOrder).
+const editedQuantity = z.number().int().min(1).max(10);
+const editedPrice = z.number().int().min(0).max(100_000_000);
+const editLineSchema = z.union([
+  z.object({ id: z.number().int().positive(), quantity: editedQuantity, unitPrice: editedPrice }),
+  z.object({ sku: z.string().trim().toUpperCase().min(3).max(40), quantity: editedQuantity, unitPrice: editedPrice }),
+]);
+export const editOrderBodySchema = z.object({
+  lines: z.array(editLineSchema).min(1, { error: "Une commande garde au moins un article" }).max(30),
+  method: paymentMethodSchema.optional(),
+  fullName: z.string().trim().min(3).max(80).optional(),
+  phone: phoneSchema.optional(),
+  note: z.string().trim().max(500).nullable().optional(),
+});
+export type EditOrderInput = z.infer<typeof editOrderBodySchema>;
