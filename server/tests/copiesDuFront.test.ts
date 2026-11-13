@@ -8,6 +8,12 @@ import {
 } from "../../client/src/config/brandLogos.js";
 import { defaultWarrantyMonths as frontDefaultWarrantyMonths } from "../../client/src/config/warranty.js";
 import { WILAYAS as FRONT_WILAYAS } from "../../client/src/config/wilayas.js";
+import {
+  addDays as frontAddDays,
+  algiersDate as frontAlgiersDate,
+  pickupSlots as frontPickupSlots,
+} from "../../client/src/lib/algiersTime.js";
+import { addDays, algiersDate, pickupSlots } from "../src/utils/algiersTime.js";
 
 // Trois règles existent en deux exemplaires, un dans client/ et un dans server/ : les deux
 // dossiers se déploient chacun de leur côté (Vercel et Render), donc un paquet partagé
@@ -39,6 +45,26 @@ describe("Les règles écrites des deux côtés (client/ et server/) restent ide
     }
     for (const url of ["/brands/apple.svg", "/brands/dji.svg", "/brands/realme.svg", "https://x/y.svg", "/brands/../x.svg"]) {
       expect(frontIsLibraryLogo(url), `isLibraryLogo(${url})`).toBe(isLibraryLogo(url));
+    }
+  });
+
+  // Les créneaux de retrait (14/11) : le formulaire ne doit proposer que ce que l'API accepte.
+  it("les créneaux de retrait et l'heure d'Alger", () => {
+    const hourSets = [
+      { openingTime: "09:00", closingTime: "20:00", closedDays: [] },
+      { openingTime: "10:30", closingTime: "18:00", closedDays: [5] },
+    ];
+    const moments = ["2026-11-14T08:00", "2026-11-14T18:40", "2026-11-14T23:59", "2026-11-19T10:00"].map(
+      (algiers) => new Date(`${algiers}+01:00`),
+    );
+    for (const hours of hourSets) {
+      for (const now of moments) {
+        expect(frontAlgiersDate(now)).toBe(algiersDate(now));
+        for (const day of [algiersDate(now), addDays(algiersDate(now), 1)]) {
+          expect(frontAddDays(day, 1)).toBe(addDays(day, 1));
+          expect(frontPickupSlots(hours, day, now), `${day} ${now.toISOString()}`).toEqual(pickupSlots(hours, day, now));
+        }
+      }
     }
   });
 });

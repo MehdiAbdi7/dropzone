@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useCartPreviewQuery } from "@/features/orders/ordersApi";
+import { useCartPreviewQuery, type Fulfillment } from "@/features/orders/ordersApi";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { linesConfirmed, selectCartRequest } from "./cartSlice";
 
@@ -10,10 +10,11 @@ import { linesConfirmed, selectCartRequest } from "./cartSlice";
 //
 // À chaque réponse, les descriptions des lignes sont recopiées dans le panier du navigateur
 // (sans les prix), pour que la prochaine visite affiche le panier sans attendre le serveur.
-export function useCartPreview({ skip }: { skip: boolean }) {
+// `fulfillment` : un retrait au magasin n'a pas de frais de livraison (14/11).
+export function useCartPreview({ skip, fulfillment = "delivery" }: { skip: boolean; fulfillment?: Fulfillment }) {
   const dispatch = useAppDispatch();
   const request = useAppSelector(selectCartRequest);
-  const result = useCartPreviewQuery(request, { skip: skip || request.length === 0 });
+  const result = useCartPreviewQuery({ items: request, fulfillment }, { skip: skip || request.length === 0 });
   const lines = result.data?.lines;
 
   useEffect(() => {
