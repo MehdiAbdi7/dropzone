@@ -117,12 +117,12 @@ const ordersApi = api.injectEndpoints({
     }),
     changeStatus: build.mutation<unknown, { id: number; status: OrderStatus }>({
       query: ({ id, status }) => ({ url: `/admin/orders/${id}/status`, method: "PATCH", body: { status } }),
-      invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Products"],
+      invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Products", "History"],
     }),
     // Valider un retrait au comptoir (14/11) : le paiement entre dans la caisse du jour.
     validatePickup: build.mutation<unknown, { id: number; method: PaymentMethod }>({
       query: ({ id, method }) => ({ url: `/admin/orders/${id}/pickup`, method: "POST", body: { method } }),
-      invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Cash"],
+      invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Cash", "History"],
     }),
     // Modifier une commande après coup (lot 2) : stock, argent et trace suivent côté serveur.
     editOrder: build.mutation<unknown, { id: number } & EditOrderBody>({

@@ -27,13 +27,15 @@ export default function EditOrderDialog({ order, open, onClose }: { order: Admin
 function EditForm({ order, onDone }: { order: AdminOrder; onDone: () => void }) {
   const [editOrder, { isLoading, error }] = useEditOrderMutation();
   const gifts = order.items.filter((item) => item.isGift);
-  const paid = order.paid !== 0;
+  // « Payée » = un paiement a été encaissé un jour, même si une correction a ramené le net à 0 DA.
+  const paid = order.payments.some((payment) => payment.kind !== "correction");
   const [lines, setLines] = useState<DraftLine[]>(() => draftFromItems(order.items));
   const [method, setMethod] = useState<PaymentMethod>(() => currentMethod(order.payments));
   const [fullName, setFullName] = useState(order.fullName);
   const [phone, setPhone] = useState(order.phone);
   const [note, setNote] = useState(order.note ?? "");
   const [sku, setSku] = useState("");
+  const [skuMessage, setSkuMessage] = useState<string | null>(null);
   const problem = draftProblem(lines);
   const total = draftTotal(lines, order.shippingFee);
   const difference = total - order.total;
@@ -45,9 +47,14 @@ function EditForm({ order, onDone }: { order: AdminOrder; onDone: () => void }) 
 
   function addArticle() {
     const value = sku.trim().toUpperCase();
-    if (!value || lines.some((line) => line.sku === value || (line.id !== undefined && order.items.find((i) => i.id === line.id)?.sku === value))) {
+    if (!value) return;
+    // Un article déjà dans la commande (même retiré du brouillon) ne se rajoute pas par son SKU :
+    // sa ligne garde son prix d'achat copié à la vente. On change sa quantité ou son prix.
+    if (lines.some((line) => line.sku === value) || order.items.some((item) => item.sku === value)) {
+      setSkuMessage("Cet article est déjà dans la commande : gardez sa ligne et changez sa quantité ou son prix.");
       return;
     }
+    setSkuMessage(null);
     setLines((current) => [...current, { key: `new-${value}`, sku: value, name: value, quantity: 1, unitPrice: Number.NaN }]);
     setSku("");
   }
@@ -115,6 +122,11 @@ function EditForm({ order, onDone }: { order: AdminOrder; onDone: () => void }) 
             <button type="button" className="btn btn-secondary" onClick={addArticle} disabled={!sku.trim()}>
               Ajouter
             </button>
+            {skuMessage ? (
+              <p role="alert" className="field-error w-full">
+                {skuMessage}
+              </p>
+            ) : null}
           </div>
         )}
       </fieldset>

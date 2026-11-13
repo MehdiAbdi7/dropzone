@@ -11,10 +11,13 @@ const KINDS: PeriodKind[] = ["day", "month", "year"];
 const TYPES: OrderType[] = ["delivery", "pickup", "in_store"];
 
 // Un vrai jour « AAAA-MM-JJ » : « 2026-02-30 » a le bon format mais n'existe pas.
-const isRealDay = (value: string | null): value is string =>
-  value !== null &&
-  /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-  new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
+// « 2026-13-01 » a le bon format mais donne une date invalide, dont `toISOString()` lève une
+// erreur : on teste d'abord que la date existe.
+function isRealDay(value: string | null): value is string {
+  if (value === null || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
 
 // Une adresse truquée ou périmée ne casse pas la page : on retombe sur le mois en cours.
 export function parseHistoryView(params: { get(name: string): string | null }, today: string): HistoryView {

@@ -19,6 +19,12 @@ describe("parseHistoryView", () => {
     expect(parse("p=semaine&d=pas-une-date&type=autre")).toEqual({ kind: "month", anchor: today, type: undefined });
     expect(parse("d=2026-02-30").anchor).toBe(today);
   });
+
+  it("ne plante pas sur une date qui a le bon format mais n'existe pas (mois 13, jour 32)", () => {
+    expect(parse("d=2026-13-01").anchor).toBe(today);
+    expect(parse("d=2026-02-32").anchor).toBe(today);
+    expect(parse("d=0000-00-00").anchor).toBe(today);
+  });
 });
 
 describe("historyHref", () => {

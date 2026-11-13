@@ -35,17 +35,24 @@ export default function AdminOrderPage() {
   const [changeStatus, { isLoading, error }] = useChangeStatusMutation();
   const [deleteOrder, deleteState] = useDeleteOrderMutation();
   const [editing, setEditing] = useState(false);
+  // Après la suppression, la lecture de la commande se relance et répond 404 : sans ce drapeau,
+  // « Cette commande est introuvable » s'afficherait un instant avant la redirection.
+  const [removed, setRemoved] = useState(false);
   const router = useRouter();
 
   async function remove(orderId: number) {
     try {
       await deleteOrder(orderId).unwrap();
+      setRemoved(true);
       router.push("/admin/commandes");
     } catch {
       // L'erreur RTK Query est affichée sous les boutons de la commande.
     }
   }
 
+  if (removed) {
+    return <p role="status">Commande supprimée, retour à la liste…</p>;
+  }
   if (isError) {
     return <p role="alert">Cette commande est introuvable.</p>;
   }

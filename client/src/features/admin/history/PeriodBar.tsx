@@ -20,13 +20,13 @@ type Props = {
 export default function PeriodBar({ kind, anchor, today, onChange }: Props) {
   return (
     <div className="card flex flex-wrap items-center gap-3 p-3">
-      <div role="tablist" aria-label="Durée de la période" className="flex gap-2">
+      {/* Des boutons à bascule (aria-pressed), pas des onglets : il n'y a pas de panneau par onglet. */}
+      <div role="group" aria-label="Durée de la période" className="flex gap-2">
         {KIND_TABS.map((tab) => (
           <button
             key={tab.kind}
             type="button"
-            role="tab"
-            aria-selected={kind === tab.kind}
+            aria-pressed={kind === tab.kind}
             className={`rounded-full px-4 py-2 text-sm font-semibold ${
               kind === tab.kind ? "bg-blue text-on-brand" : "bg-surface-2 text-ink hover:text-blue-ink"
             }`}

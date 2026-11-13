@@ -13,6 +13,7 @@ import { historyHref, parseHistoryView } from "@/features/admin/history/historyV
 import { algiersDate } from "@/lib/algiersTime";
 import { errorMessage } from "@/lib/errors";
 import { periodRange } from "@/lib/period";
+import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import type { OrderType } from "@/types/api";
 
 const TYPES = Object.keys(ORDER_TYPE_LABELS) as OrderType[];
@@ -35,7 +36,9 @@ function History() {
   const view = parseHistoryView(params, today);
   const [q, setQ] = useState("");
   const { from, to } = periodRange(view.kind, view.anchor);
-  const { data, error, isFetching } = useHistoryQuery({ from, to, type: view.type, q: q.trim() || undefined });
+  // La recherche attend une pause dans la saisie : chaque touche relancerait tout l'historique.
+  const search = useDebouncedValue(q.trim());
+  const { data, error, isFetching } = useHistoryQuery({ from, to, type: view.type, q: search || undefined });
 
   const go = (next: Partial<typeof view>) => router.replace(historyHref({ ...view, ...next }));
 
