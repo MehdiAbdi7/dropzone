@@ -45,12 +45,17 @@ export async function closeCashDay(countedCash: number, userId: number, now: Dat
 }
 
 // Pour les ventes, retraits et échanges : la caisse du jour doit être ouverte et pas fermée.
+// `FOR SHARE` : la ligne de la caisse est verrouillée en lecture jusqu'à la fin de la transaction.
+// Une fermeture de caisse (un UPDATE de cette ligne) qui arrive entre ce contrôle et l'écriture de
+// l'argent attend le commit : l'argent n'est jamais daté d'une caisse déjà fermée, dont le
+// comptage et l'écart ne doivent plus bouger.
 export async function requireOpenCashDay(tx: Tx, now: Date) {
-  const day = await tx.cashDay.findUnique({ where: { date: asDate(algiersDate(now)) } });
+  const [day] = await tx.$queryRaw<{ id: number; closed_at: Date | null }[]>`
+    SELECT id, closed_at FROM cash_days WHERE date = ${algiersDate(now)}::date FOR SHARE`;
   if (!day) {
     throw new AppError(409, "Ouvrez la journée de caisse d'abord");
   }
-  if (day.closedAt) {
+  if (day.closed_at) {
     throw new AppError(409, "La journée de caisse est fermée");
   }
   return day;

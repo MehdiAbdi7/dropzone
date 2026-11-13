@@ -5,6 +5,7 @@ import { algiersDate } from "../../utils/algiersTime.js";
 import { requireOpenCashDay } from "../cash/cash.service.js";
 import { buildConditionReport, refreshMinPrice } from "../products/product.service.js";
 import type { EditOrderInput } from "./order.schema.js";
+import { lockOrder } from "./orderLock.js";
 import { correctionMovements, describeEdit, groupThousands, stockDeltas } from "./orderMath.js";
 import { restockItems } from "./reservations.js";
 
@@ -23,26 +24,27 @@ const METHOD_LABELS: Record<PaymentMethod, string> = {
   transfer: "Virement",
 };
 
+// Sous la limite d'un entier de 32 bits (2 147 483 647), avec de la marge pour les sommes.
+const MAX_TOTAL = 2_000_000_000;
+
 const asDay = (now: Date) => new Date(`${algiersDate(now)}T00:00:00Z`);
 
-// Verrouille la commande pour la durée de la transaction : une deuxième modification (ou
-// suppression) simultanée attend ici, puis relit l'état déjà modifié. Sans ce verrou, deux
-// clics ajusteraient le stock deux fois à partir du même état de départ.
-async function lockOrder(tx: Tx, id: number) {
-  const rows = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM orders WHERE id = ${id} FOR UPDATE`;
-  if (rows.length === 0) {
-    throw new AppError(404, "Commande introuvable");
-  }
-}
-
 // Ce que le journal a déjà reçu pour la commande, par moyen de paiement (corrections comprises).
+// `hasPayment` : la commande a été payée un jour (un mouvement qui n'est pas une correction),
+// même si une correction a ramené son net à 0 DA. C'est lui qui dit « payée », pas le net : sinon
+// une commande ramenée à 0 puis remise à son prix passerait pour « pas encore payée » et son
+// argent ne serait jamais réécrit.
 async function paidByMethod(tx: Tx, orderId: number) {
-  const movements = await tx.moneyMovement.findMany({ where: { orderId }, select: { method: true, amount: true } });
+  const movements = await tx.moneyMovement.findMany({ where: { orderId }, select: { method: true, amount: true, kind: true } });
   const paid: Partial<Record<PaymentMethod, number>> = {};
   for (const movement of movements) {
     paid[movement.method] = (paid[movement.method] ?? 0) + movement.amount;
   }
-  return { paid, total: movements.reduce((sum, movement) => sum + movement.amount, 0) };
+  return {
+    paid,
+    total: movements.reduce((sum, movement) => sum + movement.amount, 0),
+    hasPayment: movements.some((movement) => movement.kind !== "correction"),
+  };
 }
 
 // Le moyen qui porte le plus d'argent : celui qu'on garde si l'admin n'en choisit pas un autre.
@@ -78,6 +80,15 @@ export async function editOrder(id: number, input: EditOrderInput, userId: numbe
     const skus = [...paying.filter((item) => keptIds.has(item.id)).map((item) => item.sku), ...newLines.map((line) => line.sku)];
     if (new Set(skus).size !== skus.length) {
       throw new AppError(400, "Un article ne peut figurer qu'une fois dans la commande");
+    }
+    // Retirer un article puis le rajouter par son SKU effacerait sa ligne et son prix d'achat copié
+    // à la vente (le bénéfice passé changerait) : on garde sa ligne et on en change la quantité ou le prix.
+    const alreadyThere = paying.find((item) => newLines.some((line) => line.sku === item.sku));
+    if (alreadyThere) {
+      throw new AppError(
+        400,
+        `« ${alreadyThere.name} » est déjà dans la commande : gardez sa ligne et changez sa quantité ou son prix`,
+      );
     }
 
     // 2. Une commande avec des cadeaux ne change ni d'articles ni de quantités (décision du lot 2).
@@ -137,13 +148,17 @@ export async function editOrder(id: number, input: EditOrderInput, userId: numbe
 
     // 6. L'argent : seulement ce qui a déjà été encaissé.
     const money = await paidByMethod(tx, id);
-    if (input.method && money.total === 0) {
+    if (input.method && !money.hasPayment) {
       throw new AppError(400, "Cette commande n'a pas encore été payée : il n'y a pas de moyen de paiement à changer");
     }
     const subtotal = after.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
     const total = subtotal + order.shippingFee;
+    // Les montants sont des entiers de 32 bits dans la base : au-delà, PostgreSQL répondrait 500.
+    if (total > MAX_TOTAL) {
+      throw new AppError(400, "Le total de la commande est trop élevé");
+    }
     let corrections: { method: PaymentMethod; amount: number }[] = [];
-    if (money.total !== 0) {
+    if (money.hasPayment) {
       const method = input.method ?? mainMethod(money.paid);
       corrections = correctionMovements(money.paid, total, method);
       if (input.method && input.method !== mainMethod(money.paid)) {

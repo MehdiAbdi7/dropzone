@@ -231,3 +231,29 @@ describe("GET /admin/history", () => {
     expect((await history(agent, "2026-11-10", "2026-11-10")).status).toBe(403);
   });
 });
+
+describe("après la relecture", () => {
+  it("répond 400, jamais 500, à une date mal formée ou impossible", async () => {
+    const { agent } = await loginAs("admin");
+    for (const from of ["abc", "2026-13-01", "2026-02-32", "20261101"]) {
+      expect((await history(agent, from, "2026-11-10")).status, `from=${from}`).toBe(400);
+    }
+    expect((await history(agent, "2026-11-01", "pas-une-date")).status).toBe(400);
+  });
+
+  it("accepte 366 jours et refuse 367", async () => {
+    const { agent } = await loginAs("admin");
+    expect((await history(agent, "2025-11-14", "2026-11-14")).status).toBe(200);
+    expect((await history(agent, "2025-11-13", "2026-11-14")).status).toBe(400);
+  });
+
+  it("range une modification à minuit heure d'Alger dans le bon jour", async () => {
+    const { agent } = await loginAs("admin");
+    await prisma.orderEvent.create({ data: { kind: "edited", orderNumber: 1001, summary: "avant minuit", createdAt: at("2026-11-14T23:30") } });
+    await prisma.orderEvent.create({ data: { kind: "edited", orderNumber: 1002, summary: "après minuit", createdAt: at("2026-11-15T00:30") } });
+    const summaries = async (day: string) =>
+      (await history(agent, day, day)).body.data.changes.map((change: { summary: string }) => change.summary);
+    expect(await summaries("2026-11-14")).toEqual(["avant minuit"]);
+    expect(await summaries("2026-11-15")).toEqual(["après minuit"]);
+  });
+});

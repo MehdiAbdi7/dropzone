@@ -230,3 +230,94 @@ describe("GET /admin/orders/:id", () => {
     expect((await agent.get(`/admin/orders/${order.id}`)).body.data.profit).toBeNull();
   });
 });
+
+// Les défauts trouvés à la relecture du lot 2 (15/11).
+describe("après la relecture", () => {
+  it("une annulation qui croise une modification ne fausse pas le stock", async () => {
+    const order = await delivery();
+    const { agent } = await loginAs("admin");
+    const start = (await stockOf("IP-NEW-256")) + 1;
+    // Deux admins en même temps : l'un annule, l'autre passe la quantité de 1 à 3.
+    await Promise.all([
+      agent.patch(`/admin/orders/${order.id}/status`).send({ status: "cancelled" }),
+      agent.patch(`/admin/orders/${order.id}`).send({ lines: [lineOf(order, { quantity: 3 })] }),
+    ]);
+    const final = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+    expect(final.status).toBe("cancelled");
+    // Annulée : tout est rendu, quelle que soit la quantité que la modification ait eu le temps de poser.
+    expect(await stockOf("IP-NEW-256")).toBe(start);
+  });
+
+  it("refuse de changer une commande expirée", async () => {
+    const order = await delivery();
+    await prisma.order.update({ where: { id: order.id }, data: { status: "expired" } });
+    const { agent } = await loginAs("admin");
+    const response = await agent.patch(`/admin/orders/${order.id}`).send({ lines: [lineOf(order, { unitPrice: 1 })] });
+    expect(response.status).toBe(409);
+  });
+
+  it("une commande payée ramenée à 0 DA reste payée : la remettre au prix écrit la correction", async () => {
+    const { order, admin } = await paidPickup();
+    await admin.agent.patch(`/admin/orders/${order.id}`).send({ lines: [lineOf(order, { unitPrice: 0 })] }).expect(200);
+    expect((await admin.agent.get(`/admin/orders/${order.id}`)).body.data.paid).toBe(0);
+
+    await admin.agent.patch(`/admin/orders/${order.id}`).send({ lines: [lineOf(order, { unitPrice: 245_000 })] }).expect(200);
+    const after = (await admin.agent.get(`/admin/orders/${order.id}`)).body.data;
+    expect(after.paid).toBe(245_000);
+    expect(after.total).toBe(245_000);
+    expect((await admin.agent.get("/admin/cash/today")).body.data.summary.cashIn).toBe(245_000);
+  });
+
+  it("refuse de retirer un article puis de le rajouter par son SKU : son prix d'achat ne se réécrit pas", async () => {
+    const order = await delivery();
+    const { agent } = await loginAs("admin");
+    const response = await agent
+      .patch(`/admin/orders/${order.id}`)
+      .send({ lines: [{ sku: "IP-NEW-256", quantity: 1, unitPrice: 100_000 }] });
+    expect(response.status).toBe(400);
+    expect(response.body.error.message).toMatch(/déjà dans la commande/);
+    expect((await prisma.orderItem.findFirstOrThrow({ where: { orderId: order.id } })).unitCost).toBe(200_000);
+  });
+
+  it("refuse un total qui dépasse la limite d'un entier de la base, par une erreur claire", async () => {
+    const order = await delivery();
+    const { agent } = await loginAs("admin");
+    const big = { quantity: 10, unitPrice: 50_000_000 };
+    const response = await agent.patch(`/admin/orders/${order.id}`).send({
+      lines: [
+        { id: order.items[0].id, ...big },
+        { sku: "CHG-20W", ...big },
+        { sku: "COQ-IP15PM", ...big },
+        { sku: "IP-R-WIFI", ...big },
+        { sku: "IP-R-SOLD", ...big },
+      ],
+    });
+    expect(response.status).toBe(400);
+    expect(response.body.error.message).toMatch(/trop élevé/);
+  });
+
+  it("refuse une quantité changée sur une commande avec cadeau, même sans nouvel article", async () => {
+    const order = await delivery([{ sku: "IP-R-DEAL", quantity: 1 }]);
+    const { agent } = await loginAs("admin");
+    const paying = order.items.find((item) => !item.isGift)!;
+    const response = await agent
+      .patch(`/admin/orders/${order.id}`)
+      .send({ lines: [{ id: paying.id, quantity: 2, unitPrice: paying.unitPrice }] });
+    expect(response.status).toBe(409);
+    expect(response.body.error.message).toMatch(/cadeaux/);
+  });
+
+  it("ne montre rien de secret dans l'espace du client connecté non plus", async () => {
+    const buyer = await loginAs("customer");
+    const placed = await previewThenOrder([{ sku: "IP-NEW-256", quantity: 1 }], {}, buyer.agent);
+    expect(placed.status).toBe(201);
+    const admin = await loginAs("admin", "autre-admin@test.dz");
+    const order = await prisma.order.findUniqueOrThrow({ where: { number: placed.body.data.number }, include: { items: true } });
+    await admin.agent.patch(`/admin/orders/${order.id}`).send({ lines: [lineOf(order, { unitPrice: 240_000 })] }).expect(200);
+    const mine = await buyer.agent.get(`/orders/mine/${order.number}`);
+    expect(mine.status).toBe(200);
+    for (const secret of ["unitCost", "payments", "events", "profit", "purchasePrice"]) {
+      expect(JSON.stringify(mine.body)).not.toContain(secret);
+    }
+  });
+});

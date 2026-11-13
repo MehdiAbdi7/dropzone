@@ -61,3 +61,33 @@ describe("journée de caisse", () => {
     expect((await agent.get("/admin/cash/today")).status).toBe(403);
   });
 });
+
+// Relecture du lot 2 (15/11) : une correction d'argent ne doit pas tomber sur une caisse qui se ferme.
+describe("requireOpenCashDay et la fermeture", () => {
+  it("la fermeture attend la fin de la transaction qui a vérifié que la caisse est ouverte", async () => {
+    const { closeCashDay, openCashDay, requireOpenCashDay } = await import("../src/modules/cash/cash.service.js");
+    const { prisma } = await import("../src/config/db.js");
+    const now = new Date();
+    await openCashDay(1000, 1, now);
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const writer = prisma.$transaction(async (tx) => {
+      await requireOpenCashDay(tx, now);
+      await gate; // le temps d'écrire le stock, les lignes et la correction
+    });
+    await sleep(150);
+    let closed = false;
+    const closing = closeCashDay(1000, 1, now).then(() => {
+      closed = true;
+    });
+    await sleep(400);
+    expect(closed).toBe(false);
+    release();
+    await writer;
+    await closing;
+    expect(closed).toBe(true);
+  });
+});

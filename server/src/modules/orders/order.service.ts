@@ -10,6 +10,7 @@ import { algiersDate, algiersMidnightAfter, pickupDays, pickupSlots } from "../.
 import { requireOpenCashDay } from "../cash/cash.service.js";
 import { getStoreHours } from "../store/store.service.js";
 import { issueDailyNumber } from "./dailyNumber.js";
+import { lockOrder } from "./orderLock.js";
 import { orderProfit } from "./orderMath.js";
 import { restockItems } from "./reservations.js";
 import type { AdminOrderListQuery, CartItemInput, CreateOrderInput, Fulfillment } from "./order.schema.js";
@@ -478,6 +479,9 @@ export async function getAdminOrder(id: number) {
 
 export async function changeOrderStatus(id: number, next: OrderStatus) {
   return prisma.$transaction(async (tx) => {
+    // Le verrou d'abord : une modification qui passe en même temps (lot 2) change les lignes, et
+    // l'annulation doit rendre au stock les lignes d'APRÈS, pas celles qu'elle aurait lues avant.
+    await lockOrder(tx, id);
     const order = await tx.order.findUnique({ where: { id }, include: { items: true } });
     if (!order) {
       throw new AppError(404, "Commande introuvable");
