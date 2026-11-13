@@ -1,5 +1,6 @@
 "use client";
 
+import { COPIES, copyAccess } from "@/features/carousel/copies";
 import { useInfiniteCarousel } from "@/features/carousel/useInfiniteCarousel";
 import ProductCard from "@/features/products/ProductCard";
 import type { ProductCard as ProductCardData } from "@/types/api";
@@ -52,20 +53,19 @@ export default function ArrivalsCarousel({ products }: { products: ProductCardDa
         className="scrollbar-hide -mx-4 -my-4 flex gap-3 overflow-x-auto overscroll-x-contain px-4 py-4 [mask-image:linear-gradient(to_right,transparent,black_1%,black_99%,transparent)] sm:mx-0 sm:gap-4 sm:px-1 sm:[mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]"
       >
         {/* Trois copies : c'est ce qui donne la boucle. Les deux latérales sont cachées aux
-            lecteurs d'écran et hors parcours clavier : la liste ne doit être lue qu'une fois. */}
-        {[0, 1, 2].map((copy) =>
-          products.map((product) => (
+            lecteurs d'écran et hors parcours clavier, mais restent cliquables (voir copies.ts). */}
+        {COPIES.map((copy) => {
+          const { hidden, tabIndex } = copyAccess(copy);
+          return products.map((product) => (
             <div
               key={`${copy}-${product.id}-${product.arrivalVariantId ?? "product"}`}
-              aria-hidden={copy !== 1}
-              // inert : les liens des copies ne se prennent pas au clavier.
-              inert={copy !== 1}
+              aria-hidden={hidden}
               className="flex min-w-[128px] shrink-0 basis-[35vw] sm:min-w-0 sm:basis-[230px]"
             >
-              <ProductCard product={product} sizes="(min-width: 640px) 230px, 35vw" />
+              <ProductCard product={product} sizes="(min-width: 640px) 230px, 35vw" tabIndex={tabIndex} />
             </div>
-          )),
-        )}
+          ));
+        })}
       </div>
     </div>
   );
