@@ -3,6 +3,7 @@ import ProductImage from "@/components/ui/ProductImage";
 import { CartIcon } from "@/components/ui/icons";
 import { CONDITION_LABELS } from "@/config/catalog";
 import { formatPrice } from "@/lib/format";
+import { colorHref } from "@/features/shop/colors";
 import type { ProductCard as ProductCardData } from "@/types/api";
 
 // Toute la carte est un seul lien vers la fiche : il faut choisir une variante (ou
@@ -10,9 +11,18 @@ import type { ProductCard as ProductCardData } from "@/types/api";
 // bas à droite n'est donc qu'un repère visuel, pas un deuxième lien vers la même page.
 // `href` : une autre page que la fiche (la liste des reconditionnés mène à leur radiographie).
 export default function ProductCard({ product, sizes, href }: { product: ProductCardData; sizes: string; href?: string }) {
+  const arrivalStep = product.hasRefurbished ? "affaire" : product.hasNew ? "neuf" : null;
+  const productHref =
+    href ??
+    (product.arrivalVariantId && arrivalStep
+      ? product.arrivalColor
+        ? colorHref(product.slug, product.arrivalColor, arrivalStep)
+        : `/produits/${product.slug}/${arrivalStep}`
+      : `/produits/${product.slug}`);
+
   return (
     <Link
-      href={href ?? `/produits/${product.slug}`}
+      href={productHref}
       className="card group flex w-full flex-col gap-2 p-2 transition-[border-color,box-shadow] sm:gap-3 sm:p-3 sm:hover:border-blue-ink sm:hover:shadow-[var(--shadow)]"
     >
       <div className="relative aspect-[1/0.9] overflow-hidden rounded-[10px] bg-surface-2 sm:aspect-square">
