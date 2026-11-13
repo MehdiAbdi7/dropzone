@@ -15,7 +15,8 @@ import { formatOptions, formatPrice } from "@/lib/format";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useHydrated } from "@/lib/useHydrated";
 import type { User } from "@/types/api";
-import { useCartPreviewQuery, useCreateOrderMutation } from "./ordersApi";
+import { useCartPreview } from "@/features/cart/useCartPreview";
+import { useCreateOrderMutation } from "./ordersApi";
 
 // Les mêmes règles que le serveur (createOrderSchema), pour prévenir avant l'envoi.
 // Le serveur revérifie tout : le front ne fait que rendre l'erreur plus rapide.
@@ -39,7 +40,8 @@ export default function CheckoutForm({ user }: { user: User | null }) {
   const dispatch = useAppDispatch();
   const { items, hydrated: loaded } = useAppSelector((state) => state.cart);
   const hydrated = useHydrated() && loaded;
-  const { data: preview, refetch } = useCartPreviewQuery(items, { skip: !hydrated || items.length === 0 });
+  // `request` : SKU et quantités seulement (les descriptions gardées ne partent pas au serveur).
+  const { data: preview, refetch, request } = useCartPreview({ skip: !hydrated });
   const [createOrder, { isLoading, error }] = useCreateOrderMutation();
 
   // Loi 18-05, art. 12 : aucune case cochée d'avance, aucune wilaya choisie d'avance.
@@ -99,7 +101,7 @@ export default function CheckoutForm({ user }: { user: User | null }) {
     }
     const parsed = schema.parse(values);
     try {
-      const order = await createOrder({ ...parsed, items, cartHash: preview!.cartHash }).unwrap();
+      const order = await createOrder({ ...parsed, items: request, cartHash: preview!.cartHash }).unwrap();
       try {
         sessionStorage.setItem("dropzone-last-order", JSON.stringify(order));
       } catch {

@@ -1,31 +1,34 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCartPreviewQuery } from "@/features/orders/ordersApi";
+import Spinner from "@/components/ui/Spinner";
 import { formatPrice } from "@/lib/format";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useHydrated } from "@/lib/useHydrated";
-import { cartBarSummary, showCartBar } from "./cartQuantity";
+import { showCartBar } from "./cartQuantity";
 import { openCart } from "./cartSlice";
+import { cartBarSummary } from "./cartSnapshot";
+import { useCartPreview } from "./useCartPreview";
 
 // La barre du panier (05/11), comme celle de Niwa Food : toujours visible en bas de la
-// boutique dès qu'il y a un article, avec le total ; les vignettes empilées disent d'un coup
-// d'œil CE QUI est dans le panier. Un clic ouvre la fenêtre du panier (CartWindow, montée
-// avec l'en-tête). Les prix viennent de l'aperçu du panier de l'API, jamais du navigateur.
+// boutique dès qu'il y a un article ; les vignettes empilées disent d'un coup d'œil CE QUI est
+// dans le panier. Un clic ouvre la fenêtre du panier (CartWindow, montée avec l'en-tête).
+//
+// Depuis le 13/11, elle s'affiche tout de suite, avec le panier gardé dans le navigateur
+// (nombre d'articles et vignettes) : elle n'attend plus le réveil du serveur. Seul le total
+// vient du serveur, jamais du navigateur : une roue le remplace tant qu'il n'est pas arrivé.
 export default function CartBar() {
   const dispatch = useAppDispatch();
   const pathname = usePathname();
   const { items, hydrated: loaded } = useAppSelector((state) => state.cart);
   const hydrated = useHydrated() && loaded;
   const visible = hydrated && items.length > 0 && showCartBar(pathname);
-  const { data: preview } = useCartPreviewQuery(items, { skip: !visible });
-  const summary = visible && preview ? cartBarSummary(preview) : null;
-  const count = summary?.count ?? 0;
+  const { data: preview } = useCartPreview({ skip: !visible });
 
-  if (!summary || !preview || count === 0) {
+  if (!visible) {
     return null;
   }
-  const { total, thumbs, hidden } = summary;
+  const { count, total, thumbs, hidden } = cartBarSummary(items, preview);
   const itemsLabel = `${count} article${count > 1 ? "s" : ""}`;
 
   return (
@@ -37,7 +40,7 @@ export default function CartBar() {
           type="button"
           aria-haspopup="dialog"
           onClick={() => dispatch(openCart())}
-          aria-label={`Voir mon panier, ${itemsLabel}, ${formatPrice(total)}`}
+          aria-label={`Voir mon panier, ${itemsLabel}${total !== null ? `, ${formatPrice(total)}` : ""}`}
           className="mx-auto flex h-16 w-full max-w-md items-center gap-3 rounded-full bg-blue ps-2.5 pe-4 text-on-brand shadow-[0_14px_38px_-10px_rgba(0,0,0,0.65)] transition-transform hover:scale-[1.02] active:scale-[0.99]"
         >
           <span aria-hidden="true" className="flex shrink-0 items-center">
@@ -61,7 +64,9 @@ export default function CartBar() {
             <span className="font-display text-base leading-tight font-bold truncate">Voir mon panier</span>
             <span className="text-xs font-semibold tabular-nums opacity-80">{itemsLabel}</span>
           </span>
-          <span className="shrink-0 font-display text-base font-bold tabular-nums">{formatPrice(total)}</span>
+          <span className="shrink-0 font-display text-base font-bold tabular-nums">
+            {total !== null ? formatPrice(total) : <Spinner className="size-5" />}
+          </span>
           <span aria-hidden="true" className="shrink-0 text-lg">
             ⌃
           </span>
