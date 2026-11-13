@@ -12,7 +12,7 @@ const values = {
   note: "",
   acceptTerms: true,
   acceptLimitations: false,
-  pickupDay: "tomorrow" as const,
+  pickupDate: "2026-11-15",
   pickupTime: "15:30",
 };
 const cart = { items: [{ sku: "IP-NEW-256", quantity: 1 }], cartHash: "a".repeat(64) };
@@ -26,7 +26,7 @@ describe("checkoutBody", () => {
 
   it("un retrait envoie le jour et l'heure, sans adresse", () => {
     const body = checkoutBody("pickup", values, cart);
-    expect(body).toMatchObject({ fulfillment: "pickup", pickupDay: "tomorrow", pickupTime: "15:30" });
+    expect(body).toMatchObject({ fulfillment: "pickup", pickupDate: "2026-11-15", pickupTime: "15:30" });
     expect(body).not.toHaveProperty("wilaya");
     expect(body).not.toHaveProperty("address");
   });

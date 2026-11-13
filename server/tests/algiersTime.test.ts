@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, algiersDate, algiersMidnightAfter, pickupSlots } from "../src/utils/algiersTime.js";
+import { addDays, algiersDate, algiersMidnightAfter, pickupDays, pickupSlots } from "../src/utils/algiersTime.js";
 
 // L'heure d'Alger (UTC+1 toute l'année) et les créneaux de retrait (14/11).
 const hours = { openingTime: "09:00", closingTime: "20:00", closedDays: [] as number[] };
@@ -50,5 +50,35 @@ describe("pickupSlots", () => {
 
   it("ne propose rien pour un jour passé", () => {
     expect(pickupSlots(hours, "2026-11-13", at("2026-11-14T10:00"))).toEqual([]);
+  });
+});
+
+// Toujours deux jours de retrait à proposer (13/11) : les stories d'affaires sortent le soir,
+// un client doit pouvoir réserver la nuit.
+describe("pickupDays", () => {
+  it("propose aujourd'hui et demain tant qu'il reste un créneau aujourd'hui", () => {
+    expect(pickupDays(hours, at("2026-11-14T10:00"))).toEqual(["2026-11-14", "2026-11-15"]);
+    expect(pickupDays(hours, at("2026-11-14T18:40"))).toEqual(["2026-11-14", "2026-11-15"]);
+  });
+
+  it("propose demain et après-demain quand le magasin n'a plus de créneau aujourd'hui", () => {
+    expect(pickupDays(hours, at("2026-11-14T19:45"))).toEqual(["2026-11-15", "2026-11-16"]);
+    expect(pickupDays(hours, at("2026-11-14T21:00"))).toEqual(["2026-11-15", "2026-11-16"]);
+    expect(pickupDays(hours, at("2026-11-14T23:59"))).toEqual(["2026-11-15", "2026-11-16"]);
+  });
+
+  it("repart à zéro à minuit à Alger", () => {
+    expect(pickupDays(hours, at("2026-11-15T00:05"))).toEqual(["2026-11-15", "2026-11-16"]);
+  });
+
+  it("saute les jours de fermeture pour toujours donner deux jours", () => {
+    // Le 20/11/2026 est un vendredi (5) : jeudi à 10h, on propose jeudi et samedi.
+    const closedFriday = { ...hours, closedDays: [5] };
+    expect(pickupDays(closedFriday, at("2026-11-19T10:00"))).toEqual(["2026-11-19", "2026-11-21"]);
+    expect(pickupDays(closedFriday, at("2026-11-19T21:00"))).toEqual(["2026-11-21", "2026-11-22"]);
+  });
+
+  it("ne propose rien si le magasin est toujours fermé", () => {
+    expect(pickupDays({ ...hours, closedDays: [0, 1, 2, 3, 4, 5, 6] }, at("2026-11-14T10:00"))).toEqual([]);
   });
 });

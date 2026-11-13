@@ -49,12 +49,13 @@ const deliveryOrderSchema = z.object({
   address: z.string().trim().min(5).max(200),
 });
 
-// Le retrait au magasin (14/11) : aujourd'hui ou demain, à une heure proposée par le formulaire.
-// L'heure est revérifiée par le serveur avec les horaires du magasin (createOrder).
+// Le retrait au magasin (14/11) : l'un des deux jours proposés (13/11 : le jour exact, pas
+// « demain »), à une heure proposée par le formulaire. Le jour et l'heure sont revérifiés par le
+// serveur avec les horaires du magasin (createOrder).
 const pickupOrderSchema = z.object({
   ...orderBase,
   fulfillment: z.literal("pickup"),
-  pickupDay: z.enum(["today", "tomorrow"], { error: "Choisissez aujourd'hui ou demain" }),
+  pickupDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Choisissez le jour où vous passerez" }),
   pickupTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, { error: "Choisissez une heure" }),
 });
 

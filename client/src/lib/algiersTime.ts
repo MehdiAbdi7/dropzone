@@ -47,3 +47,38 @@ export function pickupSlots(hours: StoreHours, date: string, now: Date): string[
   }
   return slots;
 }
+
+// Le formulaire propose toujours deux jours de retrait (13/11). Les stories d'affaires sortent
+// le soir : un client doit pouvoir réserver la nuit. On prend donc les deux prochains jours qui
+// ont encore un créneau : aujourd'hui et demain en journée, demain et après-demain une fois le
+// magasin fermé, et un jour de fermeture est sauté plutôt que proposé grisé. Chercher sur
+// 7 jours suffit : il y a au plus 6 jours de fermeture par semaine.
+const PICKUP_DAY_COUNT = 2;
+const SEARCH_DAYS = 7;
+
+export function pickupDays(hours: StoreHours, now: Date): string[] {
+  const today = algiersDate(now);
+  const days: string[] = [];
+  for (let offset = 0; offset < SEARCH_DAYS && days.length < PICKUP_DAY_COUNT; offset += 1) {
+    const day = addDays(today, offset);
+    if (pickupSlots(hours, day, now).length > 0) days.push(day);
+  }
+  return days;
+}
+
+// Comment écrire un jour de retrait : le nom du jour d'abord (« Samedi »), la date dessous, et
+// « Aujourd'hui » ou « Demain » seulement quand c'est vrai. Pas de copie côté serveur : ce texte
+// ne sert qu'à l'affichage. `timeZone: "UTC"` : `date` est un jour, pas un instant, il ne doit pas
+// glisser d'un jour selon le fuseau du téléphone.
+const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+export function describePickupDay(date: string, today: string) {
+  const noon = new Date(`${date}T12:00:00Z`);
+  const format = (options: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat("fr-FR", { ...options, timeZone: "UTC" }).format(noon);
+  return {
+    weekday: upperFirst(format({ weekday: "long" })),
+    date: format({ day: "numeric", month: "long" }),
+    relative: date === today ? "Aujourd'hui" : date === addDays(today, 1) ? "Demain" : null,
+  };
+}
