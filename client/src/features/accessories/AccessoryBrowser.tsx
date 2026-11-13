@@ -23,8 +23,9 @@ export default function AccessoryBrowser({ catalog }: { catalog: AccessoryCatalo
   const types = catalog.types.filter((type) => !filters.type || type.slug === filters.type);
   const go = (next: AccessoryFilters) => window.history.pushState(null, "", filtersHref(catalog.category.slug, next));
 
-  const chip = (label: string, on: boolean, onClick: () => void, extra?: React.ReactNode) => (
+  const chip = (key: string, label: string, on: boolean, onClick: () => void, extra?: React.ReactNode) => (
     <button
+      key={key}
       type="button"
       aria-pressed={on}
       onClick={onClick}
@@ -52,9 +53,10 @@ export default function AccessoryBrowser({ catalog }: { catalog: AccessoryCatalo
       <div className="sticky top-0 z-20 -mx-4 space-y-2.5 border-b border-line bg-bg/90 px-4 py-3 backdrop-blur md:mx-0 md:px-0">
         <div role="group" aria-label="Type" className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] md:flex-wrap md:overflow-visible">
           <span className={rowLabel}>Type</span>
-          {chip("Tous", !filters.type, () => go({ type: null, maker: null }), <small className="order-last opacity-75">{catalog.products.length}</small>)}
+          {chip("type-all", "Tous", !filters.type, () => go({ type: null, maker: null }), <small className="order-last opacity-75">{catalog.products.length}</small>)}
           {catalog.types.map((type) =>
             chip(
+              `type-${type.slug}`,
               type.name,
               filters.type === type.slug,
               () => go({ type: type.slug, maker: null }),
@@ -65,9 +67,10 @@ export default function AccessoryBrowser({ catalog }: { catalog: AccessoryCatalo
         {makers.length > 0 ? (
           <div role="group" aria-label="Marque" className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] md:flex-wrap md:overflow-visible">
             <span className={rowLabel}>Marque</span>
-            {chip("Toutes", !filters.maker, () => go({ type: filters.type, maker: null }))}
+            {chip("maker-all", "Toutes", !filters.maker, () => go({ type: filters.type, maker: null }))}
             {makers.map((maker) =>
               chip(
+                `maker-${maker.slug}`,
                 maker.name,
                 filters.maker === maker.slug,
                 () => go({ type: filters.type, maker: maker.slug }),

@@ -58,7 +58,7 @@
 
   .shop-loading {
     display: grid;
-    min-height: min(52vh, 30rem);
+    min-height: 100svh;
     place-items: center;
     padding: 2rem 1rem;
   }
