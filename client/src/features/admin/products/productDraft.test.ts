@@ -311,3 +311,16 @@ describe("Téléphones compatibles d'une variante", () => {
     expect(emptyVariant("new", "accessory").compatibleModelIds).toEqual([]);
   });
 });
+
+// Le prix d'achat (14/11) : facultatif, vide = inconnu (null), jamais 0 par erreur.
+describe("Prix d'achat d'une variante", () => {
+  it("part en nombre quand il est rempli, en null quand il est vide", () => {
+    const draft = { ...unitDraft("phone", "new", "Glacier"), sku: "IP18P-256", price: "280000", stock: "2" };
+    expect(variantBody({ ...draft, purchasePrice: "250000" }).purchasePrice).toBe(250000);
+    expect(variantBody({ ...draft, purchasePrice: "" }).purchasePrice).toBeNull();
+  });
+
+  it("une nouvelle variante n'a pas de prix d'achat", () => {
+    expect(emptyVariant().purchasePrice).toBe("");
+  });
+});

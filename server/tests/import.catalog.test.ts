@@ -96,6 +96,8 @@ beforeEach(async () => {
       wilaya: "Alger",
       commune: "Kouba",
       address: "Rue",
+      dailyNumber: 1,
+      businessDate: new Date("2026-11-14"),
       subtotal: 60000,
       shippingFee: 0,
       total: 60000,

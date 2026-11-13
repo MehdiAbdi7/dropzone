@@ -19,7 +19,10 @@ import { productRouter } from "./modules/products/product.routes.js";
 import { seriesRouter } from "./modules/series/series.routes.js";
 import { seriesAdminRouter } from "./modules/series/seriesAdmin.routes.js";
 import { stageAdminRouter, stageRouter } from "./modules/stage/stage.routes.js";
+import { releaseReservationsMiddleware } from "./middlewares/releaseReservations.js";
+import { cashAdminRouter } from "./modules/cash/cash.routes.js";
 import { statsAdminRouter } from "./modules/stats/stats.routes.js";
+import { storeAdminRouter, storeRouter } from "./modules/store/store.routes.js";
 import { userAdminRouter } from "./modules/users/user.routes.js";
 
 const app = express();
@@ -34,6 +37,10 @@ app.get("/health", (_req, res) => {
   res.json({ data: { status: "ok" } });
 });
 
+// Les retraits expirés repartent en stock avant toute lecture du stock ou des commandes (14/11).
+const releaseReservations = releaseReservationsMiddleware();
+app.use(["/categories", "/products", "/series", "/accessories", "/orders", "/admin"], releaseReservations);
+
 app.use("/categories", categoryRouter);
 app.use("/products", productRouter);
 app.use("/series", seriesRouter);
@@ -42,6 +49,7 @@ app.use("/colors", colorRouter);
 app.use("/orders", orderRouter);
 app.use("/auth", authRouter);
 app.use("/stage", stageRouter);
+app.use("/store", storeRouter);
 
 // Tout le back-office est protégé en une ligne : impossible d'oublier la
 // protection sur une nouvelle route admin.
@@ -59,6 +67,8 @@ adminRouter.use(
   orderAdminRouter,
   userAdminRouter,
   stageAdminRouter,
+  storeAdminRouter,
+  cashAdminRouter,
 );
 app.use("/admin", requireAuth, requireRole("admin"), adminRouter);
 

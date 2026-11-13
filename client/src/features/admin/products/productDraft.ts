@@ -12,6 +12,8 @@ export type VariantDraft = {
   condition: Condition;
   options: Options;
   price: string;
+  // Le prix d'achat (14/11) : vide = inconnu.
+  purchasePrice: string;
   stock: string;
   grade: string;
   batteryHealth: string;
@@ -71,6 +73,7 @@ export function emptyVariant(condition: Condition = "new", kind?: ProductKind): 
     condition,
     options: {},
     price: "",
+    purchasePrice: "",
     stock: condition === "refurbished" ? "1" : "",
     grade: "",
     batteryHealth: "",
@@ -190,6 +193,7 @@ export function draftFromProduct(product: AdminProduct): ProductDraft {
       condition: variant.condition,
       options: variant.options,
       price: String(variant.price),
+      purchasePrice: variant.purchasePrice === null ? "" : String(variant.purchasePrice),
       stock: String(variant.stock),
       grade: variant.grade === null ? "" : String(variant.grade),
       batteryHealth: variant.batteryHealth === null ? "" : String(variant.batteryHealth),
@@ -246,6 +250,7 @@ export function variantBody(variant: VariantDraft): ProductBody["variants"][numb
     // Une option non choisie n'est pas envoyée.
     options: Object.fromEntries(Object.entries(variant.options).filter(([, value]) => value)),
     price: toNumber(variant.price),
+    purchasePrice: toNullable(variant.purchasePrice),
     stock: toNumber(variant.stock),
     grade: toNullable(variant.grade),
     batteryHealth: toNullable(variant.batteryHealth),

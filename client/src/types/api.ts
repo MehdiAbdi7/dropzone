@@ -3,7 +3,18 @@
 export type ProductKind = "phone" | "tablet" | "laptop" | "watch" | "accessory" | "audiovisual";
 export type Condition = "new" | "refurbished";
 export type ProductStatus = "draft" | "published";
-export type OrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+// reserved, picked_up, expired : les états d'un retrait au magasin (14/11).
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "reserved"
+  | "picked_up"
+  | "expired";
+export type OrderType = "delivery" | "pickup" | "in_store";
+export type PaymentMethod = "cash" | "baridimob" | "ccp" | "card" | "transfer";
 export type Role = "customer" | "admin";
 export type Options = Record<string, string>;
 
@@ -268,11 +279,17 @@ export type OrderDetail = {
   number: number;
   status: OrderStatus;
   createdAt: string;
+  // Le type, le numéro du jour et le créneau d'un retrait (14/11).
+  type: OrderType;
+  dailyNumber: number;
+  pickupDate: string | null;
+  pickupTime: string | null;
   subtotal: number;
   shippingFee: number;
   total: number;
-  wilaya: string;
-  commune: string;
+  // null pour un retrait ou une vente au magasin.
+  wilaya: string | null;
+  commune: string | null;
   fullName?: string;
   phone?: string;
   address?: string;

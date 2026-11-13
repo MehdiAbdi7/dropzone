@@ -1,31 +1,41 @@
 import { api } from "@/lib/api";
-import type { Condition, Options, OrderStatus, Page } from "@/types/api";
+import type { Condition, Options, OrderStatus, OrderType, Page, PaymentMethod } from "@/types/api";
 import { data } from "./shared";
 
 // Le tableau de bord, les commandes et les clients du back-office.
 
-type AdminOrderRow = {
+// Ce que toute commande du back-office sait depuis le 14/11 : son type, son numéro du jour et,
+// pour un retrait, son créneau. Les dates arrivent en ISO (colonnes DATE).
+type OrderReception = {
+  type: OrderType;
+  dailyNumber: number;
+  businessDate: string;
+  pickupDate: string | null;
+  pickupTime: string | null;
+  // null pour un retrait ou une vente au magasin.
+  wilaya: string | null;
+};
+
+type AdminOrderRow = OrderReception & {
   id: number;
   number: number;
   fullName: string;
   phone: string;
-  wilaya: string;
   total: number;
   status: OrderStatus;
   createdAt: string;
   _count: { items: number };
 };
 
-type AdminOrder = {
+type AdminOrder = OrderReception & {
   id: number;
   number: number;
   status: OrderStatus;
   createdAt: string;
   fullName: string;
   phone: string;
-  wilaya: string;
-  commune: string;
-  address: string;
+  commune: string | null;
+  address: string | null;
   note: string | null;
   subtotal: number;
   shippingFee: number;
@@ -53,7 +63,10 @@ export type Stats = {
   revenueMonth: number;
   ordersToday: number;
   ordersByStatus: Partial<Record<OrderStatus, number>>;
-  lowStock: { id: number; name: string; sku: string; stock: number }[];
+  // Les retraits attendus aujourd'hui, par heure (14/11).
+  pickupsToday: { id: number; dailyNumber: number; fullName: string; phone: string; pickupTime: string; total: number }[];
+  // La journée de caisse ; cashedToday : tout ce qui est encaissé aujourd'hui, tous moyens.
+  cash: { open: boolean; closed: boolean; expectedCash: number | null; cashedToday: number };
   refurbishedAvailable: number;
   refurbishedSold: number;
 };
@@ -76,7 +89,7 @@ const ordersApi = api.injectEndpoints({
       transformResponse: data<Stats>,
       providesTags: ["Stats"],
     }),
-    adminOrders: build.query<Page<AdminOrderRow>, { status?: OrderStatus; q?: string; page: number }>({
+    adminOrders: build.query<Page<AdminOrderRow>, { status?: OrderStatus; type?: OrderType; q?: string; page: number }>({
       query: (params) => ({ url: "/admin/orders", params }),
       providesTags: ["Orders"],
     }),
@@ -88,6 +101,11 @@ const ordersApi = api.injectEndpoints({
     changeStatus: build.mutation<unknown, { id: number; status: OrderStatus }>({
       query: ({ id, status }) => ({ url: `/admin/orders/${id}/status`, method: "PATCH", body: { status } }),
       invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Products"],
+    }),
+    // Valider un retrait au comptoir (14/11) : le paiement entre dans la caisse du jour.
+    validatePickup: build.mutation<unknown, { id: number; method: PaymentMethod }>({
+      query: ({ id, method }) => ({ url: `/admin/orders/${id}/pickup`, method: "POST", body: { method } }),
+      invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Cash"],
     }),
     customers: build.query<Page<Customer>, { q?: string; page: number }>({
       query: (params) => ({ url: "/admin/customers", params }),
@@ -101,5 +119,6 @@ export const {
   useAdminOrdersQuery,
   useAdminOrderQuery,
   useChangeStatusMutation,
+  useValidatePickupMutation,
   useCustomersQuery,
 } = ordersApi;
