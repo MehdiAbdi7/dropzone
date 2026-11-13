@@ -53,7 +53,10 @@ export type Stats = {
   revenueMonth: number;
   ordersToday: number;
   ordersByStatus: Partial<Record<OrderStatus, number>>;
-  lowStock: { id: number; name: string; sku: string; stock: number }[];
+  // Les retraits attendus aujourd'hui, par heure (14/11).
+  pickupsToday: { id: number; dailyNumber: number; fullName: string; phone: string; pickupTime: string; total: number }[];
+  // La journée de caisse ; cashedToday : tout ce qui est encaissé aujourd'hui, tous moyens.
+  cash: { open: boolean; closed: boolean; expectedCash: number | null; cashedToday: number };
   refurbishedAvailable: number;
   refurbishedSold: number;
 };

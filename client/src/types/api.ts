@@ -3,7 +3,18 @@
 export type ProductKind = "phone" | "tablet" | "laptop" | "watch" | "accessory" | "audiovisual";
 export type Condition = "new" | "refurbished";
 export type ProductStatus = "draft" | "published";
-export type OrderStatus = "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
+// reserved, picked_up, expired : les états d'un retrait au magasin (14/11).
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "reserved"
+  | "picked_up"
+  | "expired";
+export type OrderType = "delivery" | "pickup" | "in_store";
+export type PaymentMethod = "cash" | "baridimob" | "ccp" | "card" | "transfer";
 export type Role = "customer" | "admin";
 export type Options = Record<string, string>;
 

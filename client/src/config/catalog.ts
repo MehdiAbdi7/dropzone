@@ -1,4 +1,4 @@
-import type { Condition, OrderStatus, ProductKind } from "@/types/api";
+import type { Condition, OrderStatus, OrderType, PaymentMethod, ProductKind } from "@/types/api";
 
 // Les listes à cocher du back-office (table `choices` de l'API).
 export type ChoiceGroup =
@@ -147,6 +147,24 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   shipped: "Expédiée",
   delivered: "Livrée",
   cancelled: "Annulée",
+  reserved: "Réservée",
+  picked_up: "Récupérée",
+  expired: "Expirée",
+};
+
+export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
+  delivery: "Livraison",
+  pickup: "Retrait au magasin",
+  in_store: "Vente au magasin",
+};
+
+// Dans l'ordre de la liste déroulante : Espèces d'abord, choisi par défaut (14/11).
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: "Espèces",
+  baridimob: "BaridiMob",
+  ccp: "CCP",
+  card: "Carte",
+  transfer: "Virement",
 };
 
 // Ce que chaque statut veut dire pour le client (CGV et page de suivi).

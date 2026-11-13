@@ -1,4 +1,6 @@
 import { prisma } from "../../config/db.js";
+import { algiersDate } from "../../utils/algiersTime.js";
+import { getTodayCash } from "../cash/cash.service.js";
 
 // Le tableau de bord, écrit en SQL : GROUP BY et SUM sont plus lisibles ici qu'en
 // Prisma, et c'est ce SQL qu'on demande en entretien. Les valeurs passent toujours
@@ -7,9 +9,9 @@ import { prisma } from "../../config/db.js";
 // dates en UTC dans des colonnes sans fuseau : le CTE `bounds` calcule minuit à Alger,
 // puis le convertit en heure UTC pour le comparer à created_at.
 
-const LOW_STOCK = 2;
-
-export async function getStats() {
+// Depuis le 14/11, plus de « stock faible » : avec les affaires, beaucoup d'articles sont
+// toujours à 0, la liste ne disait rien. L'accueil montre la journée du magasin.
+export async function getStats(now: Date = new Date()) {
   const [revenue] = await prisma.$queryRaw<{ today: bigint; month: bigint; orders_today: bigint }[]>`
     WITH bounds AS (
       SELECT
@@ -22,7 +24,8 @@ export async function getStats() {
       COUNT(*) FILTER (WHERE o.created_at >= b.day_start) AS orders_today
     FROM orders o
     CROSS JOIN bounds b
-    WHERE o.status <> 'cancelled'
+    -- Une réservation n'est pas une vente tant que le client n'est pas venu payer (14/11).
+    WHERE o.status NOT IN ('cancelled', 'reserved', 'expired')
   `;
 
   const byStatus = await prisma.$queryRaw<{ status: string; count: bigint }[]>`
@@ -31,14 +34,16 @@ export async function getStats() {
     GROUP BY status
   `;
 
-  const lowStock = await prisma.$queryRaw<{ id: number; name: string; sku: string; stock: number }[]>`
-    SELECT p.id, p.name, v.sku, v.stock
-    FROM product_variants v
-    JOIN products p ON p.id = v.product_id
-    WHERE v.condition = 'new' AND p.status = 'published' AND v.stock <= ${LOW_STOCK}
-    ORDER BY v.stock ASC, p.name ASC
-    LIMIT 10
-  `;
+  // Les retraits attendus aujourd'hui (heure d'Alger), dans l'ordre de leur heure.
+  const today = new Date(`${algiersDate(now)}T00:00:00Z`);
+  const pickupsToday = await prisma.order.findMany({
+    where: { type: "pickup", status: "reserved", pickupDate: today },
+    orderBy: [{ pickupTime: "asc" }, { id: "asc" }],
+    select: { id: true, dailyNumber: true, fullName: true, phone: true, pickupTime: true, total: true },
+  });
+
+  // La journée de caisse : ouverte, fermée, et ce qui est encaissé aujourd'hui (tous moyens).
+  const { day, summary } = await getTodayCash(now);
 
   const [refurbished] = await prisma.$queryRaw<{ available: bigint; sold: bigint }[]>`
     SELECT
@@ -58,7 +63,13 @@ export async function getStats() {
     revenueMonth: Number(revenue?.month ?? 0),
     ordersToday: Number(revenue?.orders_today ?? 0),
     ordersByStatus: Object.fromEntries(byStatus.map((row) => [row.status, Number(row.count)])),
-    lowStock,
+    pickupsToday,
+    cash: {
+      open: day !== null,
+      closed: day?.closedAt != null,
+      expectedCash: summary?.expectedCash ?? null,
+      cashedToday: summary?.total ?? 0,
+    },
     refurbishedAvailable: Number(refurbished?.available ?? 0),
     refurbishedSold: Number(refurbished?.sold ?? 0),
   };
