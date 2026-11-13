@@ -1,14 +1,14 @@
 import Link from "next/link";
 import ProductImage from "@/components/ui/ProductImage";
-import { CartIcon } from "@/components/ui/icons";
 import { CONDITION_LABELS } from "@/config/catalog";
 import { formatPrice } from "@/lib/format";
 import { colorHref } from "@/features/shop/colors";
 import type { ProductCard as ProductCardData } from "@/types/api";
 
 // Toute la carte est un seul lien vers la fiche : il faut choisir une variante (ou
-// un appareil reconditionné) avant d'ajouter au panier. La pastille du panier en
-// bas à droite n'est donc qu'un repère visuel, pas un deuxième lien vers la même page.
+// un appareil reconditionné) avant d'ajouter au panier. Pas de pastille du panier sur la
+// carte (retirée le 13/11, décision de Mehdi) : elle ressemblait à un bouton d'ajout
+// alors qu'elle ne faisait qu'ouvrir la fiche.
 // `href` : une autre page que la fiche (la liste des reconditionnés mène à leur radiographie).
 // `tabIndex` : -1 pour une copie de carrousel en boucle (voir features/carousel/copies.ts).
 export default function ProductCard({
@@ -66,12 +66,6 @@ export default function ProductCard({
           ) : (
             <p className="text-sm text-ink-muted">Bientôt de retour</p>
           )}
-          <span
-            aria-hidden="true"
-            className="grid size-7 shrink-0 place-items-center rounded-full bg-blue text-on-brand transition-colors group-hover:bg-[var(--blue-hover)] sm:size-9"
-          >
-            <CartIcon size={17} className="size-[15px] sm:size-[17px]" />
-          </span>
         </div>
       </div>
     </Link>
