@@ -19,6 +19,7 @@ import { productRouter } from "./modules/products/product.routes.js";
 import { seriesRouter } from "./modules/series/series.routes.js";
 import { seriesAdminRouter } from "./modules/series/seriesAdmin.routes.js";
 import { stageAdminRouter, stageRouter } from "./modules/stage/stage.routes.js";
+import { releaseReservationsMiddleware } from "./middlewares/releaseReservations.js";
 import { statsAdminRouter } from "./modules/stats/stats.routes.js";
 import { storeAdminRouter, storeRouter } from "./modules/store/store.routes.js";
 import { userAdminRouter } from "./modules/users/user.routes.js";
@@ -34,6 +35,10 @@ app.use(cookieParser());
 app.get("/health", (_req, res) => {
   res.json({ data: { status: "ok" } });
 });
+
+// Les retraits expirés repartent en stock avant toute lecture du stock ou des commandes (14/11).
+const releaseReservations = releaseReservationsMiddleware();
+app.use(["/categories", "/products", "/series", "/accessories", "/orders", "/admin"], releaseReservations);
 
 app.use("/categories", categoryRouter);
 app.use("/products", productRouter);

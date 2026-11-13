@@ -9,6 +9,7 @@ import { sameColor } from "../models/modelColors.js";
 import { addDays, algiersDate, algiersMidnightAfter, pickupSlots } from "../../utils/algiersTime.js";
 import { getStoreHours } from "../store/store.service.js";
 import { issueDailyNumber } from "./dailyNumber.js";
+import { restockItems } from "./reservations.js";
 import type { AdminOrderListQuery, CartItemInput, CreateOrderInput, Fulfillment } from "./order.schema.js";
 
 const MAX_QUANTITY = 10;
@@ -466,13 +467,7 @@ export async function changeOrderStatus(id: number, next: OrderStatus) {
       throw new AppError(409, "La commande vient d'être modifiée, rechargez la page");
     }
     if (next === "cancelled") {
-      for (const item of order.items) {
-        await tx.productVariant.updateMany({
-          where: { sku: item.sku },
-          data: { stock: { increment: item.quantity } },
-        });
-      }
-      await refreshMinPrice(tx, order.items.map((item) => item.productId));
+      await restockItems(tx, order.items);
     }
     return { id, status: next, allowedTransitions: TRANSITIONS[next] };
   });
