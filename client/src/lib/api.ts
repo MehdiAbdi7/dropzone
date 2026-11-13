@@ -8,6 +8,6 @@ export const api = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: "/api", credentials: "include" }),
   // Les étiquettes : une écriture « invalide » une étiquette, et les lectures qui
   // la portent se rechargent toutes seules.
-  tagTypes: ["Me", "MyOrders", "Products", "Categories", "Brands", "Makers", "Models", "Choices", "Orders", "Stats", "Customers", "Series", "Stage", "Cash", "StoreHours"],
+  tagTypes: ["Me", "MyOrders", "Products", "Categories", "Brands", "Makers", "Models", "Choices", "Orders", "Stats", "Customers", "Series", "Stage", "Cash", "StoreHours", "History"],
   endpoints: () => ({}),
 });

@@ -43,6 +43,12 @@ type AdminOrder = OrderReception & {
   limitationsAccepted: boolean;
   allowedTransitions: OrderStatus[];
   user: { id: number; email: string; firstName: string; lastName: string } | null;
+  // L'argent de la commande et ses traces (lot 2) : ce qui est payé (net des corrections), chaque
+  // mouvement du journal, le bénéfice (null = prix d'achat inconnu) et les modifications faites.
+  paid: number;
+  payments: { id: number; createdAt: string; amount: number; method: PaymentMethod; kind: string; note: string | null }[];
+  profit: number | null;
+  events: { id: number; createdAt: string; kind: "edited" | "deleted"; summary: string; amountDelta: number }[];
   items: {
     id: number;
     sku: string;
@@ -56,6 +62,17 @@ type AdminOrder = OrderReception & {
     quantity: number;
     isGift: boolean;
   }[];
+};
+
+// Le corps de PATCH /admin/orders/:id : une ligne existante par son `id`, un nouvel article par son
+// `sku` ; une ligne payante qui n'est pas listée est retirée.
+export type EditOrderLine = { id: number; quantity: number; unitPrice: number } | { sku: string; quantity: number; unitPrice: number };
+export type EditOrderBody = {
+  lines: EditOrderLine[];
+  method?: PaymentMethod;
+  fullName?: string;
+  phone?: string;
+  note?: string | null;
 };
 
 export type Stats = {
@@ -107,6 +124,16 @@ const ordersApi = api.injectEndpoints({
       query: ({ id, method }) => ({ url: `/admin/orders/${id}/pickup`, method: "POST", body: { method } }),
       invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Cash"],
     }),
+    // Modifier une commande après coup (lot 2) : stock, argent et trace suivent côté serveur.
+    editOrder: build.mutation<unknown, { id: number } & EditOrderBody>({
+      query: ({ id, ...body }) => ({ url: `/admin/orders/${id}`, method: "PATCH", body }),
+      invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Cash", "Products", "History"],
+    }),
+    deleteOrder: build.mutation<{ id: number; refunded: number }, number>({
+      query: (id) => ({ url: `/admin/orders/${id}`, method: "DELETE" }),
+      transformResponse: data<{ id: number; refunded: number }>,
+      invalidatesTags: ["Orders", "Stats", "Cash", "Products", "History"],
+    }),
     customers: build.query<Page<Customer>, { q?: string; page: number }>({
       query: (params) => ({ url: "/admin/customers", params }),
       providesTags: ["Customers"],
@@ -120,5 +147,7 @@ export const {
   useAdminOrderQuery,
   useChangeStatusMutation,
   useValidatePickupMutation,
+  useEditOrderMutation,
+  useDeleteOrderMutation,
   useCustomersQuery,
 } = ordersApi;
