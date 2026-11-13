@@ -6,7 +6,7 @@ import { AppError } from "../../utils/AppError.js";
 import { paginate, paginationMeta } from "../../utils/pagination.js";
 import { buildConditionReport, refreshMinPrice } from "../products/product.service.js";
 import { sameColor } from "../models/modelColors.js";
-import { addDays, algiersDate, algiersMidnightAfter, pickupSlots } from "../../utils/algiersTime.js";
+import { algiersDate, algiersMidnightAfter, pickupDays, pickupSlots } from "../../utils/algiersTime.js";
 import { requireOpenCashDay } from "../cash/cash.service.js";
 import { getStoreHours } from "../store/store.service.js";
 import { issueDailyNumber } from "./dailyNumber.js";
@@ -196,16 +196,15 @@ export async function previewCart(items: CartItemInput[], fulfillment: Fulfillme
 // Le jour et la fin de réservation d'un retrait, après vérification du créneau : le serveur fait
 // foi (un créneau passé entre l'affichage du formulaire et l'envoi est refusé).
 async function pickupSlot(tx: Tx, input: Extract<CreateOrderInput, { fulfillment: "pickup" }>, now: Date) {
-  const today = algiersDate(now);
-  const pickupDay = input.pickupDay === "today" ? today : addDays(today, 1);
-  const slots = pickupSlots(await getStoreHours(tx), pickupDay, now);
-  if (!slots.includes(input.pickupTime)) {
+  const hours = await getStoreHours(tx);
+  // Le jour doit être l'un des deux que le formulaire proposait, puis l'heure l'un de ses créneaux.
+  if (!pickupDays(hours, now).includes(input.pickupDate) || !pickupSlots(hours, input.pickupDate, now).includes(input.pickupTime)) {
     throw new AppError(400, "Ce créneau n'est pas disponible");
   }
   return {
-    pickupDate: new Date(`${pickupDay}T00:00:00Z`),
+    pickupDate: new Date(`${input.pickupDate}T00:00:00Z`),
     pickupTime: input.pickupTime,
-    reservedUntil: algiersMidnightAfter(pickupDay),
+    reservedUntil: algiersMidnightAfter(input.pickupDate),
   };
 }
 

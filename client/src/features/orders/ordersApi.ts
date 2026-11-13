@@ -17,7 +17,7 @@ type CheckoutBase = {
 
 type CheckoutInput =
   | (CheckoutBase & { fulfillment: "delivery"; wilaya: string; commune: string; address: string })
-  | (CheckoutBase & { fulfillment: "pickup"; pickupDay: "today" | "tomorrow"; pickupTime: string });
+  | (CheckoutBase & { fulfillment: "pickup"; pickupDate: string; pickupTime: string });
 
 export type PlacedOrder = {
   number: number;

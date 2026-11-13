@@ -11,9 +11,10 @@ import { WILAYAS as FRONT_WILAYAS } from "../../client/src/config/wilayas.js";
 import {
   addDays as frontAddDays,
   algiersDate as frontAlgiersDate,
+  pickupDays as frontPickupDays,
   pickupSlots as frontPickupSlots,
 } from "../../client/src/lib/algiersTime.js";
-import { addDays, algiersDate, pickupSlots } from "../src/utils/algiersTime.js";
+import { addDays, algiersDate, pickupDays, pickupSlots } from "../src/utils/algiersTime.js";
 
 // Trois règles existent en deux exemplaires, un dans client/ et un dans server/ : les deux
 // dossiers se déploient chacun de leur côté (Vercel et Render), donc un paquet partagé
@@ -60,6 +61,7 @@ describe("Les règles écrites des deux côtés (client/ et server/) restent ide
     for (const hours of hourSets) {
       for (const now of moments) {
         expect(frontAlgiersDate(now)).toBe(algiersDate(now));
+        expect(frontPickupDays(hours, now), now.toISOString()).toEqual(pickupDays(hours, now));
         for (const day of [algiersDate(now), addDays(algiersDate(now), 1)]) {
           expect(frontAddDays(day, 1)).toBe(addDays(day, 1));
           expect(frontPickupSlots(hours, day, now), `${day} ${now.toISOString()}`).toEqual(pickupSlots(hours, day, now));

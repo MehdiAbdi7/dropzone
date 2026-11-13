@@ -11,7 +11,7 @@ import { CONDITION_LABELS } from "@/config/catalog";
 import { clearCart, openCart } from "@/features/cart/cartSlice";
 import CartSummary from "@/features/cart/CartSummary";
 import { WILAYAS } from "@/config/wilayas";
-import { addDays, algiersDate, pickupSlots } from "@/lib/algiersTime";
+import { algiersDate, describePickupDay, pickupDays, pickupSlots } from "@/lib/algiersTime";
 import { errorMessage } from "@/lib/errors";
 import { formatOptions, formatPrice } from "@/lib/format";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -36,7 +36,7 @@ const schema = z
     wilaya: z.string(),
     commune: z.string().trim(),
     address: z.string().trim(),
-    pickupDay: z.enum(["today", "tomorrow"]),
+    pickupDate: z.string(),
     pickupTime: z.string(),
     note: z.string().trim().max(500).optional(),
     acceptTerms: z.boolean().refine((value) => value, { error: "Acceptez les conditions générales pour commander" }),
@@ -48,6 +48,8 @@ const schema = z
       if (!values.wilaya) issue("wilaya", "Choisissez votre wilaya");
       if (values.commune.length < 2) issue("commune", "Votre commune");
       if (values.address.length < 5) issue("address", "L'adresse de livraison (rue, numéro, repère)");
+    } else if (!values.pickupDate) {
+      issue("pickupDate", "Choisissez le jour où vous passerez");
     } else if (!values.pickupTime) {
       issue("pickupTime", "Choisissez l'heure à laquelle vous passerez");
     }
@@ -92,7 +94,7 @@ export default function CheckoutForm({ user }: { user: User | null }) {
       wilaya: user?.addressWilaya ?? "",
       commune: user?.addressCommune ?? "",
       address: user?.addressLine ?? "",
-      pickupDay: "today",
+      pickupDate: "",
       pickupTime: "",
       note: "",
       acceptTerms: false,
@@ -100,29 +102,30 @@ export default function CheckoutForm({ user }: { user: User | null }) {
     },
   });
   const fulfillment = useWatch({ control, name: "fulfillment" });
-  const pickupDay = useWatch({ control, name: "pickupDay" });
+  const chosenDate = useWatch({ control, name: "pickupDate" });
 
   // `request` : SKU et quantités seulement (les descriptions gardées ne partent pas au serveur).
   // L'aperçu suit le mode de réception : un retrait n'a pas de frais de livraison.
   const { data: preview, refetch, request } = useCartPreview({ skip: !hydrated, fulfillment });
 
+  // Toujours deux jours proposés, nommés (« Samedi », « Dimanche ») : la nuit, après la fermeture,
+  // ce sont demain et après-demain, pour qu'on puisse réserver une affaire vue le soir.
   const today = algiersDate(now);
-  const slots = {
-    today: hours ? pickupSlots(hours, today, now) : [],
-    tomorrow: hours ? pickupSlots(hours, addDays(today, 1), now) : [],
-  };
-  const daySlots = slots[pickupDay];
+  const days = hours ? pickupDays(hours, now) : [];
+  const daySlots = hours && chosenDate ? pickupSlots(hours, chosenDate, now) : [];
 
-  // Plus de créneau aujourd'hui (le soir, ou jour de fermeture) : on passe à demain.
+  // Le jour choisi n'est plus proposé (rien de choisi encore, ou le magasin vient de fermer et la
+  // liste a glissé d'un jour) : on prend le premier jour proposé.
+  const daysKey = days.join(",");
   useEffect(() => {
-    if (hours && pickupDay === "today" && slots.today.length === 0 && slots.tomorrow.length > 0) {
-      setValue("pickupDay", "tomorrow");
-    }
-  }, [hours, pickupDay, slots.today.length, slots.tomorrow.length, setValue]);
+    if (days.length > 0 && !days.includes(chosenDate)) setValue("pickupDate", days[0]);
+    // `days` est recalculé à chaque rendu : sa clé texte évite de relancer l'effet pour rien.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [daysKey, chosenDate, setValue]);
   // Changer de jour efface l'heure choisie : elle n'existe peut-être pas l'autre jour.
   useEffect(() => {
     setValue("pickupTime", "");
-  }, [pickupDay, setValue]);
+  }, [chosenDate, setValue]);
 
   if (!hydrated) {
     return <p className="text-ink-muted">Chargement du panier…</p>;
@@ -257,29 +260,28 @@ export default function CheckoutForm({ user }: { user: User | null }) {
             <div className="space-y-4">
               {!hours ? (
                 <p className="text-sm text-ink-muted">Chargement des horaires du magasin…</p>
+              ) : days.length === 0 ? (
+                <p className="text-sm text-ink-muted">Le retrait au magasin n&apos;est pas disponible pour le moment.</p>
               ) : (
                 <>
                   <fieldset>
                     <legend className="mb-2 text-sm font-semibold">Quel jour passez-vous ?</legend>
                     <div className="grid grid-cols-2 gap-3">
-                      {(["today", "tomorrow"] as const).map((day) => {
-                        const closed = slots[day].length === 0;
+                      {days.map((day) => {
+                        const label = describePickupDay(day, today);
                         return (
-                          <label key={day} className={choiceClass(pickupDay === day, closed)}>
+                          <label key={day} className={choiceClass(chosenDate === day, false)}>
                             <input
                               type="radio"
                               value={day}
-                              disabled={closed}
-                              {...register("pickupDay")}
+                              {...register("pickupDate")}
                               className="mt-1 size-5 accent-[var(--blue)]"
                             />
                             <span>
-                              <span className="block font-semibold">{day === "today" ? "Aujourd'hui" : "Demain"}</span>
-                              {closed ? (
-                                <span className="text-sm text-ink-muted">
-                                  {day === "today" ? "Plus de créneau aujourd'hui" : "Magasin fermé"}
-                                </span>
-                              ) : null}
+                              <span className="block font-semibold">{label.weekday}</span>
+                              <span className="text-sm text-ink-muted">
+                                {label.relative ? `${label.relative} · ${label.date}` : label.date}
+                              </span>
                             </span>
                           </label>
                         );

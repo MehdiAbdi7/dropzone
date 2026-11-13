@@ -16,7 +16,7 @@ async function reserveToday(sku = "IP-NEW-256") {
   vi.setSystemTime(at("2026-11-14T10:00"));
   const response = await previewThenOrder([{ sku, quantity: 1 }], {
     fulfillment: "pickup",
-    pickupDay: "today",
+    pickupDate: "2026-11-14",
     pickupTime: "15:00",
   });
   expect(response.status).toBe(201);

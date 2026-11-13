@@ -10,7 +10,7 @@ const stockOf = async (sku: string) => (await prisma.productVariant.findUniqueOr
 async function reserve() {
   const response = await previewThenOrder([{ sku: "IP-NEW-256", quantity: 1 }], {
     fulfillment: "pickup",
-    pickupDay: "today",
+    pickupDate: "2026-11-14",
     pickupTime: "15:00",
   });
   expect(response.status).toBe(201);

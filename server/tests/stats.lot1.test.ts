@@ -4,8 +4,10 @@ import { createCatalog, loginAs, previewThenOrder, resetDb } from "./helpers.js"
 
 // L'accueil du back-office (14/11) : la journée du magasin plutôt que le stock faible.
 const at = (algiers: string) => new Date(`${algiers}+01:00`);
-const reserve = (pickupDay: "today" | "tomorrow", pickupTime: string, fullName = "Amine Test") =>
-  previewThenOrder([{ sku: "IP-NEW-256", quantity: 1 }], { fulfillment: "pickup", pickupDay, pickupTime, fullName });
+const TODAY = "2026-11-14";
+const TOMORROW = "2026-11-15";
+const reserve = (pickupDate: string, pickupTime: string, fullName = "Amine Test") =>
+  previewThenOrder([{ sku: "IP-NEW-256", quantity: 1 }], { fulfillment: "pickup", pickupDate, pickupTime, fullName });
 
 beforeEach(async () => {
   await resetDb();
@@ -27,9 +29,9 @@ describe("GET /admin/stats", () => {
   });
 
   it("liste les retraits attendus aujourd'hui, par heure", async () => {
-    await reserve("today", "17:00", "Karim Tard");
-    await reserve("today", "11:00", "Sofia Tôt");
-    await reserve("tomorrow", "10:00", "Demain");
+    await reserve(TODAY, "17:00", "Karim Tard");
+    await reserve(TODAY, "11:00", "Sofia Tôt");
+    await reserve(TOMORROW, "10:00", "Demain");
     const { agent } = await loginAs("admin");
     const { pickupsToday } = (await agent.get("/admin/stats")).body.data;
     expect(pickupsToday.map((p: { fullName: string; pickupTime: string }) => [p.fullName, p.pickupTime])).toEqual([
@@ -40,7 +42,7 @@ describe("GET /admin/stats", () => {
   });
 
   it("ne compte pas une réservation comme une vente, et dit ce qui est encaissé", async () => {
-    const order = await reserve("today", "15:00");
+    const order = await reserve(TODAY, "15:00");
     const { agent } = await loginAs("admin");
     const before = (await agent.get("/admin/stats")).body.data;
     expect(before).toMatchObject({ revenueToday: 0, ordersToday: 0, cash: { open: false, closed: false, cashedToday: 0 } });

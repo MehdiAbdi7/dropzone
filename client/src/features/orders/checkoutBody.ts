@@ -12,7 +12,7 @@ export type CheckoutValues = {
   note?: string;
   acceptTerms: boolean;
   acceptLimitations: boolean;
-  pickupDay: "today" | "tomorrow";
+  pickupDate: string;
   pickupTime: string;
 };
 
@@ -34,5 +34,5 @@ export function checkoutBody(
   };
   return fulfillment === "delivery"
     ? { ...base, fulfillment, wilaya: values.wilaya, commune: values.commune, address: values.address }
-    : { ...base, fulfillment, pickupDay: values.pickupDay, pickupTime: values.pickupTime };
+    : { ...base, fulfillment, pickupDate: values.pickupDate, pickupTime: values.pickupTime };
 }
