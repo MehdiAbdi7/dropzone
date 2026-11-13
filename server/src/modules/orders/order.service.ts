@@ -1,12 +1,13 @@
 import { createHash } from "node:crypto";
 import { prisma, type Tx } from "../../config/db.js";
 import { computeShippingFee } from "../../config/shipping.js";
-import type { Condition, OrderStatus, Prisma } from "../../generated/prisma/client.js";
+import type { Condition, OrderStatus, PaymentMethod, Prisma } from "../../generated/prisma/client.js";
 import { AppError } from "../../utils/AppError.js";
 import { paginate, paginationMeta } from "../../utils/pagination.js";
 import { buildConditionReport, refreshMinPrice } from "../products/product.service.js";
 import { sameColor } from "../models/modelColors.js";
 import { addDays, algiersDate, algiersMidnightAfter, pickupSlots } from "../../utils/algiersTime.js";
+import { requireOpenCashDay } from "../cash/cash.service.js";
 import { getStoreHours } from "../store/store.service.js";
 import { issueDailyNumber } from "./dailyNumber.js";
 import { restockItems } from "./reservations.js";
@@ -387,8 +388,9 @@ const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   shipped: ["delivered"],
   delivered: [],
   cancelled: [],
-  // Un retrait : complété avec la validation au comptoir (même lot, tâche 7).
-  reserved: [],
+  // Un retrait réservé ne passe « récupérée » que par validatePickup (avec son paiement) ;
+  // à la main, on peut seulement l'annuler (le stock revient). Expirée : par releaseExpiredReservations.
+  reserved: ["cancelled"],
   picked_up: [],
   expired: [],
 };
@@ -451,6 +453,10 @@ export async function changeOrderStatus(id: number, next: OrderStatus) {
     if (!order) {
       throw new AppError(404, "Commande introuvable");
     }
+    // « Récupérée » encaisse de l'argent : jamais par un simple changement d'état.
+    if (next === "picked_up") {
+      throw new AppError(409, "Validez le retrait avec son moyen de paiement");
+    }
     if (!TRANSITIONS[order.status].includes(next)) {
       throw new AppError(
         409,
@@ -470,5 +476,38 @@ export async function changeOrderStatus(id: number, next: OrderStatus) {
       await restockItems(tx, order.items);
     }
     return { id, status: next, allowedTransitions: TRANSITIONS[next] };
+  });
+}
+
+// Valider un retrait au comptoir (14/11) : le client est venu et a payé. La commande passe
+// « récupérée » et le paiement entre dans le journal, à la date du jour : il compte dans la
+// caisse de ce jour-là (en espèces) ou dans le total du jour (autres moyens).
+export async function validatePickup(id: number, method: PaymentMethod, userId: number, now: Date = new Date()) {
+  return prisma.$transaction(async (tx) => {
+    await requireOpenCashDay(tx, now);
+    // Conditionnelle : un deuxième clic, ou l'expiration de minuit, a pu passer avant. Seul
+    // l'appel qui fait passer la commande de « réservée » à « récupérée » encaisse.
+    const { count } = await tx.order.updateMany({
+      where: { id, type: "pickup", status: "reserved", reservedUntil: { gt: now } },
+      data: { status: "picked_up" },
+    });
+    if (count !== 1) {
+      const order = await tx.order.findUnique({ where: { id }, select: { type: true, status: true } });
+      if (!order) throw new AppError(404, "Commande introuvable");
+      if (order.type !== "pickup") throw new AppError(409, "Cette commande n'est pas un retrait au magasin");
+      throw new AppError(409, `Ce retrait est déjà ${STATUS_LABELS[order.status]}`);
+    }
+    const order = await tx.order.findUniqueOrThrow({ where: { id }, select: { total: true } });
+    await tx.moneyMovement.create({
+      data: {
+        businessDate: new Date(`${algiersDate(now)}T00:00:00Z`),
+        amount: order.total,
+        method,
+        kind: "pickup",
+        orderId: id,
+        userId,
+      },
+    });
+    return { id, status: "picked_up" as const, allowedTransitions: TRANSITIONS.picked_up };
   });
 }

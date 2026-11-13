@@ -9,6 +9,7 @@ import {
   listMyOrders,
   previewCart,
   trackOrder,
+  validatePickup,
 } from "./order.service.js";
 
 export async function postPreview(req: Request, res: Response) {
@@ -37,6 +38,10 @@ export async function getAdminOrders(_req: Request, res: Response) {
 
 export async function getAdminOrderOne(req: Request, res: Response) {
   res.json({ data: await getAdminOrder(Number(req.params.id)) });
+}
+
+export async function postPickup(req: Request, res: Response) {
+  res.json({ data: await validatePickup(Number(req.params.id), req.body.method, res.locals.user!.id) });
 }
 
 export async function patchStatus(req: Request, res: Response) {

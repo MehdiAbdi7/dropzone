@@ -10,6 +10,7 @@ import {
   getMineOne,
   patchStatus,
   postOrder,
+  postPickup,
   postPreview,
   postTrack,
 } from "./order.controller.js";
@@ -17,6 +18,7 @@ import {
   adminOrderListQuerySchema,
   createOrderSchema,
   orderNumberParamsSchema,
+  pickupBodySchema,
   previewBodySchema,
   statusBodySchema,
   trackOrderSchema,
@@ -38,4 +40,10 @@ orderAdminRouter.patch(
   "/orders/:id/status",
   validate({ params: idParamsSchema, body: statusBodySchema }),
   patchStatus,
+);
+// Valider un retrait au comptoir : le client paie, l'argent entre dans la caisse du jour (14/11).
+orderAdminRouter.post(
+  "/orders/:id/pickup",
+  validate({ params: idParamsSchema, body: pickupBodySchema }),
+  postPickup,
 );

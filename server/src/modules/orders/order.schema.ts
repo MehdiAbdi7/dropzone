@@ -76,7 +76,16 @@ export const trackOrderSchema = z.object({
 
 export const orderNumberParamsSchema = z.object({ number: z.coerce.number().int().min(1) });
 
-const orderStatusSchema = z.enum(["pending", "confirmed", "shipped", "delivered", "cancelled"]);
+const orderStatusSchema = z.enum([
+  "pending",
+  "confirmed",
+  "shipped",
+  "delivered",
+  "cancelled",
+  "reserved",
+  "picked_up",
+  "expired",
+]);
 
 export const adminOrderListQuerySchema = z.object({
   status: orderStatusSchema.optional(),
@@ -87,3 +96,9 @@ export const adminOrderListQuerySchema = z.object({
 export type AdminOrderListQuery = z.infer<typeof adminOrderListQuerySchema>;
 
 export const statusBodySchema = z.object({ status: orderStatusSchema });
+
+// Les moyens de paiement au comptoir (14/11), Espèces par défaut dans le back-office.
+export const paymentMethodSchema = z.enum(["cash", "baridimob", "ccp", "card", "transfer"], {
+  error: "Moyen de paiement inconnu",
+});
+export const pickupBodySchema = z.object({ method: paymentMethodSchema });
