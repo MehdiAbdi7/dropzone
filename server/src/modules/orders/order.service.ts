@@ -6,6 +6,7 @@ import { AppError } from "../../utils/AppError.js";
 import { paginate, paginationMeta } from "../../utils/pagination.js";
 import { buildConditionReport, refreshMinPrice } from "../products/product.service.js";
 import { sameColor } from "../models/modelColors.js";
+import { issueDailyNumber } from "./dailyNumber.js";
 import type { AdminOrderListQuery, CartItemInput, CreateOrderInput } from "./order.schema.js";
 
 const MAX_QUANTITY = 10;
@@ -224,9 +225,13 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
       }
     }
 
+    // Le numéro du jour, dans la même transaction : une commande refusée plus haut n'en prend pas.
+    const { dailyNumber, businessDate } = await issueDailyNumber(tx, new Date());
     const order = await tx.order.create({
       data: {
         userId,
+        dailyNumber,
+        businessDate,
         fullName: input.fullName,
         phone: input.phone,
         wilaya: input.wilaya,
@@ -329,6 +334,9 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   shipped: "expédiée",
   delivered: "livrée",
   cancelled: "annulée",
+  reserved: "réservée",
+  picked_up: "récupérée",
+  expired: "expirée",
 };
 
 const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
@@ -337,6 +345,10 @@ const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   shipped: ["delivered"],
   delivered: [],
   cancelled: [],
+  // Un retrait : complété avec la validation au comptoir (même lot, tâche 7).
+  reserved: [],
+  picked_up: [],
+  expired: [],
 };
 
 export async function listAdminOrders(query: AdminOrderListQuery) {

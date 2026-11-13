@@ -107,6 +107,8 @@ describe("La base du vrai catalogue", () => {
         wilaya: "Alger",
         commune: "Kouba",
         address: "Rue",
+        dailyNumber: 1,
+        businessDate: new Date("2026-11-14"),
         subtotal: 1,
         shippingFee: 0,
         total: 1,

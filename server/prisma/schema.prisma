@@ -63,6 +63,35 @@ enum OrderStatus {
   shipped
   delivered
   cancelled
+  // Un retrait au magasin (14/11) : réservé jusqu'à minuit le jour choisi, puis récupéré
+  // (payé au magasin) ou expiré (le stock revient tout seul).
+  reserved
+  picked_up
+  expired
+}
+
+// Comment le client reçoit sa commande (14/11).
+enum OrderType {
+  delivery
+  pickup
+  in_store
+}
+
+enum PaymentMethod {
+  cash
+  baridimob
+  ccp
+  card
+  transfer
+}
+
+// L'origine d'un mouvement d'argent du journal (money_movements).
+enum MovementKind {
+  sale
+  pickup
+  delivery
+  exchange
+  correction
 }
 
 // ---------- Le catalogue ----------
@@ -274,6 +303,8 @@ model ProductVariant {
   sku              String        @unique
   options          Json          @default("{}")
   price            Int
+  // Le prix d'achat du magasin (14/11), admin seulement, jamais montré sur le site.
+  purchasePrice    Int?          @map("purchase_price")
   stock            Int
   stockedAt        DateTime      @default(now()) @map("stocked_at")
   condition        Condition     @default(new)
@@ -378,9 +409,20 @@ model Order {
   user                User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   fullName            String      @map("full_name")
   phone               String
-  wilaya              String
-  commune             String
-  address             String
+  // Le type de commande (14/11). Une livraison a toujours son adresse ; un retrait a son jour,
+  // son heure et sa fin de réservation (CHECK dans la migration 20261114090000).
+  type                OrderType   @default(delivery)
+  // Le numéro du jour (repart à 1 à minuit, heure d'Alger) et ce jour-là.
+  dailyNumber         Int         @map("daily_number")
+  businessDate        DateTime    @map("business_date") @db.Date
+  wilaya              String?
+  commune             String?
+  address             String?
+  pickupDate          DateTime?   @map("pickup_date") @db.Date
+  // L'heure annoncée par le client (« 14:30 »).
+  pickupTime          String?     @map("pickup_time")
+  // Minuit à Alger le soir de pickupDate : après, la réservation expire.
+  reservedUntil       DateTime?   @map("reserved_until")
   subtotal            Int
   shippingFee         Int         @map("shipping_fee")
   total               Int
@@ -392,6 +434,8 @@ model Order {
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
+  @@index([status, reservedUntil])
+  @@index([businessDate])
   @@map("orders")
 }
 
@@ -412,6 +456,9 @@ model OrderItem {
   isGift          Boolean   @default(false) @map("is_gift")
   // La garantie de l'appareil au jour de la commande (null pour un accessoire).
   warrantyMonths  Int?      @map("warranty_months")
+  // Le prix d'achat de la variante au moment de la vente (14/11) : le bénéfice passé ne
+  // change jamais, même quand le prix d'achat change ensuite. null = inconnu.
+  unitCost        Int?      @map("unit_cost")
 
   @@index([orderId])
   @@index([productId])
@@ -439,4 +486,56 @@ model StageSlot {
 
   @@unique([stage, slot])
   @@map("stage_slots")
+}
+
+// ---------- Le magasin : journée, caisse, argent (14/11) ----------
+
+// Le compteur du numéro du jour : une ligne par journée d'Alger.
+model DailyCounter {
+  date  DateTime @id @db.Date
+  value Int
+
+  @@map("daily_counters")
+}
+
+// La journée de caisse : ouverte avec un fond, fermée avec le montant compté.
+model CashDay {
+  id           Int       @id @default(autoincrement())
+  date         DateTime  @unique @db.Date
+  openingFloat Int       @map("opening_float")
+  countedCash  Int?      @map("counted_cash")
+  openedAt     DateTime  @default(now()) @map("opened_at")
+  closedAt     DateTime? @map("closed_at")
+  openedById   Int?      @map("opened_by_id")
+  closedById   Int?      @map("closed_by_id")
+
+  @@map("cash_days")
+}
+
+// Le journal des mouvements d'argent : une ligne par entrée (+) ou sortie (−), jamais
+// modifiée. La caisse, les livraisons et l'historique se calculent à partir de lui.
+model MoneyMovement {
+  id           Int           @id @default(autoincrement())
+  createdAt    DateTime      @default(now()) @map("created_at")
+  businessDate DateTime      @map("business_date") @db.Date
+  amount       Int
+  method       PaymentMethod
+  kind         MovementKind
+  orderId      Int?          @map("order_id")
+  userId       Int?          @map("user_id")
+  note         String?
+
+  @@index([businessDate])
+  @@index([orderId])
+  @@map("money_movements")
+}
+
+// Les réglages du magasin : une seule ligne (id = 1). closedDays : 0 = dimanche … 6 = samedi.
+model StoreSettings {
+  id          Int    @id @default(1)
+  openingTime String @default("09:00") @map("opening_time")
+  closingTime String @default("20:00") @map("closing_time")
+  closedDays  Int[]  @default([]) @map("closed_days")
+
+  @@map("store_settings")
 }
