@@ -1,3 +1,4 @@
 # Les migrations gardent des fins de ligne LF sur tous les PC : Prisma enregistre
 # l'empreinte des octets exacts, et un CRLF ajouté par Windows la change.
 server/prisma/migrations/**/*.sql text eol=lf
+server/src/scripts/lib/*.sql text eol=lf
