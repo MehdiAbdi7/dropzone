@@ -57,7 +57,7 @@ export default function AccessoryDialog({ slug, onClose }: { slug: string | null
           <p className="p-6 text-ink-muted">Chargement…</p>
         ) : (
           // `key` : changer d'accessoire repart de choix vides.
-          <AccessoryChoices key={product.slug} product={product} />
+          <AccessoryChoices key={product.slug} product={product} onAdded={onClose} />
         )}
       </div>
     </dialog>
@@ -84,7 +84,8 @@ function valuesOf(variants: Variant[]): Map<string, string[]> {
   return options;
 }
 
-function AccessoryChoices({ product }: { product: ProductDetail }) {
+// `onAdded` : la fenêtre se ferme dès l'ajout au panier (demande de Mehdi, 13/11).
+function AccessoryChoices({ product, onAdded }: { product: ProductDetail; onAdded: () => void }) {
   const variants = product.variants.filter((variant) => variant.condition === "new");
   const options = optionsOf(variants);
   // Une option à une seule valeur est déjà choisie.
@@ -171,7 +172,7 @@ function AccessoryChoices({ product }: { product: ProductDetail }) {
 
         <div className="space-y-3 border-t border-line pt-4">
           {variant ? (
-            <AddToCartButton variant={variant} />
+            <AddToCartButton variant={variant} onAdded={onAdded} />
           ) : (
             <>
               <p className="font-display text-xl font-bold tabular-nums">

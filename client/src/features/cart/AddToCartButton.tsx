@@ -10,7 +10,8 @@ import { MAX_PER_LINE, addItem, openCart } from "./cartSlice";
 import QuantityStepper from "./QuantityStepper";
 
 // L'achat d'une variante : la quantité est limitée au stock, avec un maximum de 10 par ligne.
-export default function AddToCartButton({ variant }: { variant: Variant }) {
+// `onAdded` : appelé juste après l'ajout (la fenêtre d'un accessoire se ferme, 13/11).
+export default function AddToCartButton({ variant, onAdded }: { variant: Variant; onAdded?: () => void }) {
   const dispatch = useAppDispatch();
   const inCart = useAppSelector((state) => state.cart.items.find((item) => item.sku === variant.sku))?.quantity ?? 0;
   const hydrated = useHydrated();
@@ -51,6 +52,7 @@ export default function AddToCartButton({ variant }: { variant: Variant }) {
             dispatch(addItem({ sku: variant.sku, quantity, max: quantity + (hydrated ? inCart : 0) }));
             setAdded(true);
             setWanted(1);
+            onAdded?.();
           }}
         >
           {limit === 0
