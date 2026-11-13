@@ -37,7 +37,9 @@ export default function PeriodBar({ kind, anchor, today, onChange }: Props) {
         ))}
       </div>
 
-      <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
+      {/* Sur téléphone, les flèches et le nom de la période ont leur propre ligne (sinon le nom
+          est écrasé entre elles). */}
+      <div className="flex min-w-0 basis-full items-center justify-between gap-2 sm:flex-1 sm:basis-auto sm:justify-center">
         <button
           type="button"
           className="btn btn-secondary btn-small"
@@ -46,7 +48,7 @@ export default function PeriodBar({ kind, anchor, today, onChange }: Props) {
         >
           ←
         </button>
-        <h2 className="min-w-0 text-center font-display text-lg font-bold" aria-live="polite">
+        <h2 className="min-w-0 flex-1 text-center font-display text-lg font-bold sm:flex-none" aria-live="polite">
           {periodLabel(kind, anchor)}
         </h2>
         <button
