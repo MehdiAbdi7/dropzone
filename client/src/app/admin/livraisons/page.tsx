@@ -5,6 +5,7 @@ import { useAdminOrdersQuery } from "@/features/admin/api/ordersApi";
 import { useDeliverySummaryQuery } from "@/features/admin/api/deliveriesApi";
 import OrderWindow from "@/features/admin/orders/OrderWindow";
 import OrdersTable from "@/features/admin/orders/OrdersTable";
+import OrdersTabs, { type OrdersTab } from "@/features/admin/orders/OrdersTabs";
 import { useOrderWindow } from "@/features/admin/orders/useOrderWindow";
 import { errorMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/format";
@@ -13,10 +14,12 @@ import { formatPrice } from "@/lib/format";
 // part de la caisse : son argent n'est pas dans le tiroir, il arrive plus tard (le livreur ou la
 // société de livraison le reverse). Ici : ce que les livraisons vont rapporter, ce qui est livré mais
 // pas encore encaissé, et l'argent arrivé jour par jour. « Encaisser » écrit l'argent à la date du
-// jour, dans l'historique (onglet Livraisons). La liste ne montre que les livraisons EN COURS, avec leur
-// badge d'étape en tête (une livraison finie, annulée ou retournée se retrouve dans l'Historique) : un clic sur une livraison ouvre sa fenêtre, placée sur l'étape où elle en
-// est, avec ses boutons (« Confirmer », « Encaisser », « Colis retourné »…). Plus de filtre par état :
-// l'ancien `?status=` des liens du tableau de bord est ignoré.
+// jour, dans l'historique (onglet Livraisons). La liste ne montre que les livraisons ACTIVES, en deux
+// onglets : « Nouvelles commandes » (à confirmer par téléphone, pour ne pas les noyer) et « En cours »
+// (confirmée, expédiée, livrée). Une livraison finie, annulée ou retournée se retrouve dans
+// l'Historique. Chaque ligne porte un badge d'étape ; un clic ouvre la fenêtre de la livraison, placée
+// sur l'étape où elle en est, avec ses boutons (« Confirmer », « Encaisser », « Colis retourné »…).
+// L'ancien `?status=` des liens du tableau de bord est ignoré.
 
 const dayLabel = (iso: string) => {
   const [year, month, day] = iso.split("-");
@@ -36,7 +39,12 @@ function Deliveries() {
   const [page, setPage] = useState(1);
   const orderWindow = useOrderWindow();
   const summary = useDeliverySummaryQuery();
-  const orders = useAdminOrdersQuery({ type: "delivery", active: true, q: q.trim() || undefined, page }, { pollingInterval: 30_000 });
+  // Les nouvelles s'ouvrent d'abord : c'est ce qui attend un appel.
+  const [tab, setTab] = useState<OrdersTab>("new");
+  const orders = useAdminOrdersQuery({ type: "delivery", stage: tab, q: q.trim() || undefined, page }, { pollingInterval: 30_000 });
+  // Le nombre de chaque onglet : une page d'une seule ligne suffit, la réponse porte le total.
+  const newCount = useAdminOrdersQuery({ type: "delivery", stage: "new", limit: 1, page: 1 }, { pollingInterval: 30_000 });
+  const ongoingCount = useAdminOrdersQuery({ type: "delivery", stage: "ongoing", limit: 1, page: 1 }, { pollingInterval: 30_000 });
   const data = summary.data;
 
   return (
@@ -96,6 +104,15 @@ function Deliveries() {
         <h2 id="list-title" className="text-xl">
           Les livraisons
         </h2>
+        <OrdersTabs
+          tab={tab}
+          onChange={(next) => {
+            setTab(next);
+            setPage(1);
+          }}
+          newCount={newCount.data?.pagination.total}
+          ongoingCount={ongoingCount.data?.pagination.total}
+        />
         <label className="block max-w-md">
           <span className="sr-only">Chercher une livraison</span>
           <input
@@ -117,7 +134,7 @@ function Deliveries() {
           <OrdersTable
             orders={orders.data?.data}
             busy={orders.isFetching}
-            empty="Aucune livraison en cours."
+            empty={tab === "new" ? "Aucune nouvelle commande." : "Aucune livraison en cours."}
             onOpen={orderWindow.open}
           />
         )}

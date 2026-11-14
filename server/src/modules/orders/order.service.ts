@@ -414,16 +414,16 @@ const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   returned: [],
 };
 
-// Les états où plus rien ne se passe : la commande est finie, annulée, retournée ou expirée.
-const FINISHED_STATUSES: OrderStatus[] = ["collected", "returned", "cancelled", "expired", "picked_up"];
+// Une livraison en cours : confirmée, expédiée, ou livrée en attente d'encaissement.
+const ONGOING_STATUSES: OrderStatus[] = ["confirmed", "shipped", "delivered"];
 
 export async function listAdminOrders(query: AdminOrderListQuery) {
   const filters: Prisma.OrderWhereInput[] = [];
   if (query.status) {
     filters.push({ status: query.status });
   }
-  if (query.active) {
-    filters.push({ status: { notIn: FINISHED_STATUSES } });
+  if (query.stage) {
+    filters.push({ status: query.stage === "new" ? "pending" : { in: ONGOING_STATUSES } });
   }
   if (query.type) {
     filters.push({ type: query.type });

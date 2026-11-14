@@ -380,30 +380,26 @@ describe("l'accueil du back-office", () => {
   });
 });
 
-// La page Livraisons ne liste que les livraisons en cours : une livraison finie, annulée ou retournée
-// se retrouve dans l'Historique. `active=true` écarte les états où plus rien ne se passe.
-describe("GET /admin/orders?active=true", () => {
-  it("ne garde que les commandes en cours", async () => {
+// Les deux onglets de la page Livraisons : « Nouvelles » (à confirmer par téléphone) et « En cours »
+// (confirmée, expédiée, livrée en attente d'encaissement). `stage` les sépare.
+describe("GET /admin/orders?stage=", () => {
+  it("sépare les nouvelles commandes de celles en cours", async () => {
     const { agent } = await loginAs("admin");
-    // Cinq commandes du même appareil : le catalogue de test n'en a pas assez en stock.
     await prisma.productVariant.update({ where: { sku: "IP-NEW-256" }, data: { stock: 20 } });
-    const pending = await placeDelivery();
-    const shipped = await placeDelivery();
-    await advance(agent, shipped.id, ["confirmed", "shipped"]);
+    const fresh = await placeDelivery();
+    const confirmed = await placeDelivery();
+    await advance(agent, confirmed.id, ["confirmed"]);
+    const delivered = await placeDelivery();
+    await advance(agent, delivered.id, ["confirmed", "shipped", "delivered"]);
     const collected = await placeDelivery();
     await advance(agent, collected.id, ["confirmed", "shipped", "delivered"]);
     await agent.post(`/admin/orders/${collected.id}/collect`).send({ method: "cash" }).expect(200);
-    const returned = await placeDelivery();
-    await advance(agent, returned.id, ["confirmed", "shipped", "returned"]);
-    const cancelled = await placeDelivery();
-    await agent.patch(`/admin/orders/${cancelled.id}/status`).send({ status: "cancelled" }).expect(200);
 
-    const all = await agent.get("/admin/orders?type=delivery");
-    expect(all.body.data).toHaveLength(5);
-
-    const active = await agent.get("/admin/orders?type=delivery&active=true");
-    expect(active.status).toBe(200);
-    expect(active.body.data.map((order: { id: number }) => order.id).sort()).toEqual([pending.id, shipped.id].sort());
-    expect(active.body.pagination.total).toBe(2);
+    const ids = async (query: string) =>
+      ((await agent.get(`/admin/orders?type=delivery&${query}`)).body.data as { id: number }[]).map((order) => order.id).sort();
+    expect(await ids("stage=new")).toEqual([fresh.id]);
+    expect(await ids("stage=ongoing")).toEqual([confirmed.id, delivered.id].sort());
+    expect((await agent.get("/admin/orders?type=delivery&stage=ongoing&limit=1")).body.pagination.total).toBe(2);
+    expect((await agent.get("/admin/orders?stage=autre")).status).toBe(400);
   });
 });

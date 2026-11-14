@@ -94,9 +94,9 @@ export const adminOrderListQuerySchema = z.object({
   status: orderStatusSchema.optional(),
   // Les onglets de la page Commandes (14/11) : livraisons, retraits, ventes au magasin.
   type: z.enum(["delivery", "pickup", "in_store"]).optional(),
-  // `active=true` : seulement les commandes en cours (la page Livraisons). Une commande finie, annulée,
-  // retournée ou expirée se retrouve dans l'Historique.
-  active: z.enum(["true"]).transform(() => true).optional(),
+  // `stage` sépare les deux onglets des livraisons : `new` = à confirmer par téléphone, `ongoing` =
+  // confirmée, expédiée ou livrée (l'argent n'est pas encore arrivé).
+  stage: z.enum(["new", "ongoing"]).optional(),
   q: z.string().trim().min(1).max(80).optional(),
   ...paginationQuery,
   limit: z.coerce.number().int().min(1).max(50).default(20),
