@@ -63,6 +63,7 @@ export async function negotiateOrderPrices(
     data: {
       kind: "edited",
       orderId,
+      orderType: order.type,
       orderNumber: order.number,
       userId,
       summary: `Prix négocié : ${result.changes.map((c) => `${c.name} : ${groupThousands(c.from)} → ${groupThousands(c.to)} DA`).join(" ; ")}`,

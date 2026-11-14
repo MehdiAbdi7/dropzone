@@ -194,8 +194,10 @@ export async function getHistory(query: HistoryQuery) {
   // 5. Les modifications et suppressions de la période (jours d'Alger, UTC+1).
   const start = new Date(asDay(from).getTime() - HOUR);
   const end = new Date(asDay(to).getTime() + 24 * HOUR - HOUR);
+  // Sous un onglet, seulement les traces de ce type de commande ; le Total les montre toutes (même
+  // celles d'avant le lot 4 dont le type est inconnu).
   const events = await prisma.orderEvent.findMany({
-    where: { createdAt: { gte: start, lt: end } },
+    where: { createdAt: { gte: start, lt: end }, ...(query.type ? { orderType: query.type } : {}) },
     orderBy: { id: "desc" },
   });
   const users = await prisma.user.findMany({
