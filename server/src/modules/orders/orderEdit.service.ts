@@ -261,6 +261,7 @@ export async function editOrder(id: number, input: EditOrderInput, userId: numbe
       data: {
         kind: "edited",
         orderId: id,
+        orderType: order.type,
         orderNumber: order.number,
         userId,
         summary: phrases.join(" ; "),
@@ -310,6 +311,7 @@ export async function deleteOrder(id: number, userId: number, now: Date = new Da
       data: {
         kind: "deleted",
         orderId: id,
+        orderType: order.type,
         orderNumber: order.number,
         userId,
         summary: `Commande supprimée : ${order.fullName}, ${groupThousands(order.total)} DA, ${order.items.length} ligne(s)`,

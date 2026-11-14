@@ -131,6 +131,36 @@ describe("l'historique par onglet", () => {
     expect(row.cashDay).toMatchObject({ openingFloat: 1000, countedCash: 1000, gap: 0 });
   });
 
+  // Les modifications et suppressions suivent l'onglet : sous « Livraisons », seulement celles
+  // des livraisons. Chaque trace garde le type de sa commande (elle survit à la suppression).
+  it("les modifications suivent l'onglet choisi, le Total les montre toutes", async () => {
+    const { store, pickup, delivery } = await seed();
+    const trace = (order: { id: number; number: number }, orderType: OrderType, summary: string) =>
+      prisma.orderEvent.create({ data: { kind: "edited", orderId: order.id, orderNumber: order.number, orderType, summary } });
+    await trace(store, "in_store", "Modif magasin");
+    await trace(pickup, "pickup", "Modif réservation");
+    await trace(delivery, "delivery", "Modif livraison");
+    // Une trace d'avant le lot 4 (type inconnu) : seulement dans le Total.
+    await prisma.orderEvent.create({ data: { kind: "deleted", orderNumber: 999, summary: "Ancienne suppression" } });
+
+    const summaries = async (tab: string) =>
+      ((await history(`from=2026-11-01&to=2026-11-30${tab}`)).changes as { summary: string }[]).map((change) => change.summary).sort();
+    expect(await summaries("")).toEqual(["Ancienne suppression", "Modif livraison", "Modif magasin", "Modif réservation"]);
+    expect(await summaries("&type=in_store")).toEqual(["Modif magasin"]);
+    expect(await summaries("&type=delivery")).toEqual(["Modif livraison"]);
+    expect(await summaries("&type=pickup")).toEqual(["Modif réservation"]);
+  });
+
+  it("une suppression ou une modification faite par l'appli garde le type de la commande", async () => {
+    const { agent } = await loginAs("admin");
+    const order = await makeOrder("delivery", "2026-11-20", 300, 250);
+    await agent.delete(`/admin/orders/${order.id}`).expect(200);
+    const [event] = await prisma.orderEvent.findMany();
+    expect(event).toMatchObject({ kind: "deleted", orderType: "delivery" });
+    expect((await history("from=2026-11-20&to=2026-11-20&type=delivery")).changes).toHaveLength(1);
+    expect((await history("from=2026-11-20&to=2026-11-20&type=in_store")).changes).toHaveLength(0);
+  });
+
   it("refuse un onglet inconnu", async () => {
     const { agent } = await loginAs("admin");
     expect((await agent.get("/admin/history?from=2026-11-09&to=2026-11-12&type=autre")).status).toBe(400);
