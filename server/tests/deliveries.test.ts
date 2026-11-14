@@ -379,3 +379,31 @@ describe("l'accueil du back-office", () => {
     expect(stats.revenueToday).toBe(order.total);
   });
 });
+
+// La page Livraisons ne liste que les livraisons en cours : une livraison finie, annulée ou retournée
+// se retrouve dans l'Historique. `active=true` écarte les états où plus rien ne se passe.
+describe("GET /admin/orders?active=true", () => {
+  it("ne garde que les commandes en cours", async () => {
+    const { agent } = await loginAs("admin");
+    // Cinq commandes du même appareil : le catalogue de test n'en a pas assez en stock.
+    await prisma.productVariant.update({ where: { sku: "IP-NEW-256" }, data: { stock: 20 } });
+    const pending = await placeDelivery();
+    const shipped = await placeDelivery();
+    await advance(agent, shipped.id, ["confirmed", "shipped"]);
+    const collected = await placeDelivery();
+    await advance(agent, collected.id, ["confirmed", "shipped", "delivered"]);
+    await agent.post(`/admin/orders/${collected.id}/collect`).send({ method: "cash" }).expect(200);
+    const returned = await placeDelivery();
+    await advance(agent, returned.id, ["confirmed", "shipped", "returned"]);
+    const cancelled = await placeDelivery();
+    await agent.patch(`/admin/orders/${cancelled.id}/status`).send({ status: "cancelled" }).expect(200);
+
+    const all = await agent.get("/admin/orders?type=delivery");
+    expect(all.body.data).toHaveLength(5);
+
+    const active = await agent.get("/admin/orders?type=delivery&active=true");
+    expect(active.status).toBe(200);
+    expect(active.body.data.map((order: { id: number }) => order.id).sort()).toEqual([pending.id, shipped.id].sort());
+    expect(active.body.pagination.total).toBe(2);
+  });
+});

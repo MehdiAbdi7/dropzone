@@ -46,3 +46,14 @@ export function initialStep(steps: OrderStep[]): number {
   const current = steps.findIndex((step) => step.state === "current" || step.state === "exit");
   return current === -1 ? steps.length - 1 : current;
 }
+
+// Le badge placé devant une commande dans le tableau : où elle en est, d'un coup d'œil. « 3/5 ·
+// Expédiée » pour une étape du circuit ; le nom seul pour une sortie (annulée, retournée, expirée) ou
+// une vente au magasin, qui n'ont pas de position.
+export function stepBadge(type: OrderType, status: OrderStatus): string {
+  const steps = orderSteps(type, status);
+  const at = steps.findIndex((step) => step.status === status);
+  if (at === -1 || steps[at].state === "exit") return STATUS_LABELS[status];
+  const total = steps.filter((step) => step.state !== "exit").length;
+  return `${at + 1}/${total} · ${steps[at].label}`;
+}

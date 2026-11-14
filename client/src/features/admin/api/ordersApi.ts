@@ -115,7 +115,7 @@ const ordersApi = api.injectEndpoints({
       transformResponse: data<Stats>,
       providesTags: ["Stats"],
     }),
-    adminOrders: build.query<Page<AdminOrderRow>, { status?: OrderStatus; type?: OrderType; q?: string; page: number }>({
+    adminOrders: build.query<Page<AdminOrderRow>, { status?: OrderStatus; type?: OrderType; active?: boolean; q?: string; page: number }>({
       query: (params) => ({ url: "/admin/orders", params }),
       providesTags: ["Orders"],
     }),

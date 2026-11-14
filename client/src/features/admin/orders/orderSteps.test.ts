@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialStep, orderSteps } from "./orderSteps";
+import { initialStep, orderSteps, stepBadge } from "./orderSteps";
 
 const labels = (type: "delivery" | "pickup", status: Parameters<typeof orderSteps>[1]) =>
   orderSteps(type, status).map((step) => `${step.label}:${step.state}`);
@@ -63,5 +63,23 @@ describe("initialStep", () => {
   it("une commande sortie ouvre sur sa pastille de sortie", () => {
     expect(initialStep(orderSteps("delivery", "cancelled"))).toBe(5);
     expect(initialStep(orderSteps("pickup", "expired"))).toBe(2);
+  });
+});
+
+describe("stepBadge", () => {
+  it("dit où en est la commande : sa position dans le circuit et le nom de l'étape", () => {
+    expect(stepBadge("delivery", "pending")).toBe("1/5 · À confirmer");
+    expect(stepBadge("delivery", "shipped")).toBe("3/5 · Expédiée");
+    expect(stepBadge("delivery", "collected")).toBe("5/5 · Encaissée");
+    expect(stepBadge("pickup", "reserved")).toBe("1/2 · Réservée");
+  });
+
+  it("une sortie n'a pas de position : seulement son nom", () => {
+    expect(stepBadge("delivery", "returned")).toBe("Retournée");
+    expect(stepBadge("pickup", "expired")).toBe("Expirée");
+  });
+
+  it("une vente au magasin n'a pas d'étapes : son état tel quel", () => {
+    expect(stepBadge("in_store", "picked_up")).toBe("Récupérée");
   });
 });
