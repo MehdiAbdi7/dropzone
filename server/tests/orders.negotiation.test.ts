@@ -1,4 +1,6 @@
+import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import app from "../src/app.js";
 import { prisma } from "../src/config/db.js";
 import { negotiateOrderPrices } from "../src/modules/orders/negotiation.service.js";
 import { createCatalog, loginAs, previewThenOrder, resetDb } from "./helpers.js";
@@ -152,6 +154,35 @@ describe("negotiateOrderPrices", () => {
 
   it("répond 404 pour une commande inconnue", async () => {
     await expect(negotiate(999_999, 1)).rejects.toMatchObject({ statusCode: 404 });
+  });
+});
+
+describe("la réduction dans la lecture du back-office", () => {
+  it("donne le prix catalogue, qui a accordé le prix et la réduction ; rien de tout cela au client", async () => {
+    const order = await placed();
+    const { agent } = await loginAs("admin");
+    await agent
+      .patch(`/admin/orders/${order.id}/status`)
+      .send({ status: "confirmed", prices: [{ id: order.items[0].id, unitPrice: 240_000 }] })
+      .expect(200);
+
+    const read = (await agent.get(`/admin/orders/${order.id}`)).body.data;
+    expect(read.discount).toBe(5_000);
+    expect(read.items[0]).toMatchObject({ unitPrice: 240_000, listPrice: 245_000, grantedByName: "Amine Test" });
+
+    const tracked = await request(app).post("/orders/track").send({ number: order.number, phone: "0555123456" });
+    for (const secret of ["listPrice", "grantedBy", "discount"]) {
+      expect(JSON.stringify(tracked.body)).not.toContain(secret);
+    }
+  });
+
+  it("n'invente pas de réduction pour une commande d'avant le lot 3", async () => {
+    const order = await placed();
+    await prisma.orderItem.updateMany({ where: { orderId: order.id }, data: { listPrice: null } });
+    const { agent } = await loginAs("admin");
+    const read = (await agent.get(`/admin/orders/${order.id}`)).body.data;
+    expect(read.discount).toBe(0);
+    expect(read.items[0].grantedByName).toBeNull();
   });
 });
 

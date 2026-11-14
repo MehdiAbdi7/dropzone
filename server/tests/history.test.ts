@@ -26,7 +26,7 @@ async function makeOrder(opts: {
   date: string;
   type?: OrderType;
   fullName?: string;
-  lines?: { unitPrice: number; unitCost: number | null; quantity?: number }[];
+  lines?: { unitPrice: number; unitCost: number | null; quantity?: number; listPrice?: number | null }[];
   shippingFee?: number;
   status?: "pending" | "picked_up" | "reserved" | "delivered";
 }) {
@@ -58,6 +58,7 @@ async function makeOrder(opts: {
           unitPrice: line.unitPrice,
           quantity: line.quantity ?? 1,
           unitCost: line.unitCost,
+          listPrice: line.listPrice ?? null,
           isGift: line.unitPrice === 0,
         })),
       },
@@ -229,6 +230,31 @@ describe("GET /admin/history", () => {
     expect((await request(app).get("/admin/history?from=2026-11-10&to=2026-11-10")).status).toBe(401);
     const { agent } = await loginAs("customer");
     expect((await history(agent, "2026-11-10", "2026-11-10")).status).toBe(403);
+  });
+});
+
+describe("les réductions (lot 3)", () => {
+  it("montre la réduction de chaque commande et son total sur la période", async () => {
+    const { agent } = await loginAs("admin");
+    const negotiated = await makeOrder({ date: "2026-11-10", lines: [{ unitPrice: 290_000, unitCost: 250_000, listPrice: 299_000 }] });
+    const plain = await makeOrder({ date: "2026-11-10", lines: [{ unitPrice: 100, unitCost: 80, listPrice: 100 }] });
+    const old = await makeOrder({ date: "2026-11-10", lines: [{ unitPrice: 500, unitCost: 400 }] });
+    for (const order of [negotiated, plain, old]) await pay(order.id, "2026-11-10", order.total);
+
+    const data = (await history(agent, "2026-11-10", "2026-11-10")).body.data;
+    const discountOf = (id: number) => data.orders.find((order: { id: number }) => order.id === id).discount;
+    expect(discountOf(negotiated.id)).toBe(9_000);
+    expect(discountOf(plain.id)).toBe(0);
+    expect(discountOf(old.id)).toBe(0);
+    expect(data.totals.discount).toBe(9_000);
+  });
+
+  it("compte une réduction au jour de la vente, comme le bénéfice", async () => {
+    const { agent } = await loginAs("admin");
+    const order = await makeOrder({ date: "2026-11-10", lines: [{ unitPrice: 290_000, unitCost: 250_000, listPrice: 299_000 }] });
+    await pay(order.id, "2026-11-12", order.total);
+    expect((await history(agent, "2026-11-10", "2026-11-11")).body.data.totals.discount).toBe(0);
+    expect((await history(agent, "2026-11-12", "2026-11-12")).body.data.totals.discount).toBe(9_000);
   });
 });
 

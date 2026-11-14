@@ -10,6 +10,7 @@ import { algiersDate, algiersMidnightAfter, pickupDays, pickupSlots } from "../.
 import { requireOpenCashDay } from "../cash/cash.service.js";
 import { getStoreHours } from "../store/store.service.js";
 import { issueDailyNumber } from "./dailyNumber.js";
+import { priceReduction } from "./negotiation.js";
 import { negotiateOrderPrices } from "./negotiation.service.js";
 import { lockOrder } from "./orderLock.js";
 import { STATUS_LABELS } from "./orderStatus.js";
@@ -471,12 +472,23 @@ export async function getAdminOrder(id: number) {
     prisma.moneyMovement.findMany({ where: { orderId: id }, orderBy: { id: "asc" } }),
     prisma.orderEvent.findMany({ where: { orderId: id }, orderBy: { id: "desc" } }),
   ]);
+  // Qui a accordé chaque prix négocié (lot 3) : le nom, pour l'afficher à côté de la réduction.
+  const grantors = await prisma.user.findMany({
+    where: { id: { in: order.items.map((item) => item.grantedById).filter((value): value is number => value !== null) } },
+    select: { id: true, firstName: true, lastName: true },
+  });
+  const grantorName = (userId: number | null) => {
+    const user = grantors.find((candidate) => candidate.id === userId);
+    return user ? `${user.firstName} ${user.lastName}` : null;
+  };
   return {
     ...order,
+    items: order.items.map((item) => ({ ...item, grantedByName: grantorName(item.grantedById) })),
     allowedTransitions: TRANSITIONS[order.status],
     payments,
     paid: payments.reduce((sum, movement) => sum + movement.amount, 0),
     profit: orderProfit(order.items),
+    discount: priceReduction(order.items),
     events,
   };
 }
