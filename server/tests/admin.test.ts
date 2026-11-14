@@ -440,7 +440,8 @@ describe("Commandes", () => {
       const response = await admin.patch(`/admin/orders/${order.id}/status`).send({ status });
       expect(response.status).toBe(200);
     }
-    expect((await admin.get(`/admin/orders/${order.id}`)).body.data.allowedTransitions).toEqual([]);
+    // Livrée : l'argent n'est pas encore arrivé (lot 4), on peut l'encaisser ou la marquer retournée.
+    expect((await admin.get(`/admin/orders/${order.id}`)).body.data.allowedTransitions).toEqual(["collected", "returned"]);
   });
 
   it("calcule le tableau de bord en SQL", async () => {
@@ -448,9 +449,11 @@ describe("Commandes", () => {
     const response = await admin.get("/admin/stats");
     expect(response.status).toBe(200);
     expect(response.body.data).toMatchObject({
-      revenueToday: 185000,
-      revenueMonth: 185000,
-      ordersToday: 1,
+      // Une livraison ne compte comme vente qu'une fois son argent arrivé (lot 4, 17/11) : encore en
+      // attente, elle n'est ni dans le chiffre du jour ni dans celui du mois.
+      revenueToday: 0,
+      revenueMonth: 0,
+      ordersToday: 0,
       ordersByStatus: { pending: 1 },
       refurbishedAvailable: 1,
       // Les appareils commandés (hors annulations), pas les fiches à 0 : une affaire peut

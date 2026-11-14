@@ -68,6 +68,10 @@ enum OrderStatus {
   reserved
   picked_up
   expired
+  // Une livraison (17/11, lot 4) : « Encaissée » quand l'argent est arrivé (mouvement du journal à
+  // ce jour-là, hors caisse), « Retournée » quand le client refuse le colis (stock remis, rien encaissé).
+  collected
+  returned
 }
 
 // Comment le client reçoit sa commande (14/11).
@@ -544,6 +548,10 @@ model MoneyMovement {
   orderId      Int?          @map("order_id")
   userId       Int?          @map("user_id")
   note         String?
+  // Le type de la commande qui a produit ce mouvement (17/11, lot 4), recopié : il survit à la
+  // suppression de la commande. Il décide de la caisse (l'argent d'une livraison n'entre jamais
+  // dans le tiroir) et de l'onglet de l'historique (Magasin, Livraisons, Réservations).
+  orderType    OrderType?    @map("order_type")
 
   @@index([businessDate])
   @@index([orderId])

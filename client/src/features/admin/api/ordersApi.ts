@@ -142,6 +142,11 @@ const ordersApi = api.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Cash", "History"],
     }),
+    // Encaisser une livraison livrée (17/11, lot 4) : l'argent est arrivé, hors caisse.
+    collectDelivery: build.mutation<unknown, { id: number; method: PaymentMethod }>({
+      query: ({ id, method }) => ({ url: `/admin/orders/${id}/collect`, method: "POST", body: { method } }),
+      invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Cash", "History"],
+    }),
     // Modifier une commande après coup (lot 2) : stock, argent et trace suivent côté serveur.
     editOrder: build.mutation<unknown, { id: number } & EditOrderBody>({
       query: ({ id, ...body }) => ({ url: `/admin/orders/${id}`, method: "PATCH", body }),
@@ -165,6 +170,7 @@ export const {
   useAdminOrderQuery,
   useChangeStatusMutation,
   useValidatePickupMutation,
+  useCollectDeliveryMutation,
   useEditOrderMutation,
   useDeleteOrderMutation,
   useCustomersQuery,

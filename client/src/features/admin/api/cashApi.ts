@@ -41,6 +41,8 @@ export type CashToday = {
   day: { openingFloat: number; countedCash: number | null; openedAt: string; closedAt: string | null } | null;
   summary: CashSummary | null;
   movements: CashMovement[];
+  // L'argent de livraisons arrivé aujourd'hui : jamais dans le tiroir, montré à part (17/11, lot 4).
+  deliveriesCollected: number;
   reopenings: CashReopening[];
 };
 

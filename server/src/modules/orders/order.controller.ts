@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import type { AdminOrderListQuery } from "./order.schema.js";
 import {
   changeOrderStatus,
+  collectDelivery,
   createOrder,
   getAdminOrder,
   getMyOrder,
@@ -51,6 +52,10 @@ export async function postPickup(req: Request, res: Response) {
   res.json({
     data: await validatePickup(Number(req.params.id), req.body.method, res.locals.user!.id, req.body.prices),
   });
+}
+
+export async function postCollect(req: Request, res: Response) {
+  res.json({ data: await collectDelivery(Number(req.params.id), req.body.method, res.locals.user!.id) });
 }
 
 export async function patchOrder(req: Request, res: Response) {

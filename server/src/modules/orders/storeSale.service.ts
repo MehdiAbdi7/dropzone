@@ -113,6 +113,7 @@ export async function createStoreSale(input: StoreSaleInput, userId: number, now
         amount: order.total,
         method: input.method,
         kind: "sale",
+        orderType: "in_store",
         orderId: order.id,
         userId,
       },

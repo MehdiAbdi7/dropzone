@@ -8,12 +8,18 @@ const asDate = (day: string) => new Date(`${day}T00:00:00Z`);
 // La journée de caisse d'aujourd'hui (heure d'Alger), avec ses mouvements et son résumé.
 export async function getTodayCash(now: Date = new Date()) {
   const date = algiersDate(now);
-  const [day, movements, reopenings] = await Promise.all([
+  const [day, allMovements, reopenings] = await Promise.all([
     prisma.cashDay.findUnique({ where: { date: asDate(date) } }),
     prisma.moneyMovement.findMany({ where: { businessDate: asDate(date) }, orderBy: { createdAt: "asc" } }),
     prisma.cashReopening.findMany({ where: { businessDate: asDate(date) }, orderBy: { id: "asc" } }),
   ]);
-  return { date, day, summary: day ? cashSummary(day, movements) : null, movements, reopenings };
+  // La caisse, c'est le tiroir du magasin : l'argent d'une livraison (17/11, lot 4) n'y entre jamais.
+  // Il est montré à part, pour que le vendeur sache qu'il est arrivé aujourd'hui.
+  const movements = allMovements.filter((movement) => movement.orderType !== "delivery");
+  const deliveriesCollected = allMovements
+    .filter((movement) => movement.orderType === "delivery")
+    .reduce((sum, movement) => sum + movement.amount, 0);
+  return { date, day, summary: day ? cashSummary(day, movements) : null, movements, deliveriesCollected, reopenings };
 }
 
 // Rouvrir la caisse d'AUJOURD'HUI, fermée par erreur ou pour une vente tardive. L'argent déjà

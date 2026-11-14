@@ -41,6 +41,8 @@ const LINKS: NavLink[] = [
   { href: "/admin/caisse", label: "Caisse", icon: CashIcon, primary: true },
   // La vente au magasin (16/11, lot 3) : dans le panneau « Plus » sur téléphone, la barre du bas garde ses 4 entrées.
   { href: "/admin/vente", label: "Vente", icon: SwapIcon },
+  // Les livraisons (17/11, lot 4) : suivies à part de la caisse, dans le panneau « Plus » sur téléphone.
+  { href: "/admin/livraisons", label: "Livraisons", icon: PackageIcon },
   // L'historique par jour, mois et année (15/11, lot 2) : dans le panneau « Plus » sur téléphone.
   { href: "/admin/historique", label: "Historique", icon: DocumentIcon },
   { href: "/admin/produits", label: "Produits", icon: PhoneIcon },

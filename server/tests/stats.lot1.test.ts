@@ -88,11 +88,11 @@ describe("GET /admin/stats", () => {
     expect((await agent.get("/admin/stats")).body.data.revenueMonth).toBe(0);
   });
 
-  it("garde une livraison à sa date de commande", async () => {
+  it("ne compte pas une livraison avant que son argent soit arrivé (lot 4)", async () => {
     await previewThenOrder([{ sku: "IP-NEW-256", quantity: 1 }]);
     const { agent } = await loginAs("admin");
     const stats = (await agent.get("/admin/stats")).body.data;
-    expect(stats.ordersToday).toBe(1);
-    expect(stats.revenueToday).toBeGreaterThan(0);
+    expect(stats.ordersToday).toBe(0);
+    expect(stats.revenueToday).toBe(0);
   });
 });

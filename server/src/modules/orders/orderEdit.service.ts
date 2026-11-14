@@ -1,5 +1,5 @@
 import { prisma, type Tx } from "../../config/db.js";
-import type { PaymentMethod } from "../../generated/prisma/client.js";
+import type { OrderStatus, PaymentMethod } from "../../generated/prisma/client.js";
 import { AppError } from "../../utils/AppError.js";
 import { algiersDate } from "../../utils/algiersTime.js";
 import { requireOpenCashDay } from "../cash/cash.service.js";
@@ -29,6 +29,9 @@ const MAX_TOTAL = 2_000_000_000;
 
 const asDay = (now: Date) => new Date(`${algiersDate(now)}T00:00:00Z`);
 
+// Les états où le stock de la commande est déjà revenu (annulée, retraits expirés, colis retourné).
+const STOCK_ALREADY_RETURNED: OrderStatus[] = ["cancelled", "expired", "returned"];
+
 // Ce que le journal a déjà reçu pour la commande, par moyen de paiement (corrections comprises).
 // `hasPayment` : la commande a été payée un jour (un mouvement qui n'est pas une correction),
 // même si une correction a ramené son net à 0 DA. C'est lui qui dit « payée », pas le net : sinon
@@ -57,8 +60,9 @@ export async function editOrder(id: number, input: EditOrderInput, userId: numbe
   return prisma.$transaction(async (tx) => {
     await lockOrder(tx, id);
     const order = await tx.order.findUniqueOrThrow({ where: { id }, include: { items: { orderBy: { id: "asc" } } } });
-    if (order.status === "cancelled" || order.status === "expired") {
-      throw new AppError(409, "Une commande annulée ou expirée ne peut plus être modifiée");
+    // Annulée, expirée ou retournée : le stock est déjà rendu, modifier les lignes le fausserait.
+    if (STOCK_ALREADY_RETURNED.includes(order.status)) {
+      throw new AppError(409, "Une commande annulée, expirée ou retournée ne peut plus être modifiée");
     }
 
     const gifts = order.items.filter((item) => item.isGift);
@@ -168,7 +172,8 @@ export async function editOrder(id: number, input: EditOrderInput, userId: numbe
     if (phrases.length === 0 && corrections.length === 0) {
       return { id, total: order.total, status: order.status };
     }
-    if (corrections.length > 0) {
+    // L'argent d'une livraison n'est jamais dans le tiroir : la corriger n'exige pas de caisse ouverte.
+    if (corrections.length > 0 && order.type !== "delivery") {
       await requireOpenCashDay(tx, now);
     }
 
@@ -240,6 +245,7 @@ export async function editOrder(id: number, input: EditOrderInput, userId: numbe
           amount: movement.amount,
           method: movement.method,
           kind: "correction",
+          orderType: order.type,
           orderId: id,
           userId,
           note: `Modification de la commande n° ${order.number}`,
@@ -273,11 +279,11 @@ export async function deleteOrder(id: number, userId: number, now: Date = new Da
     const order = await tx.order.findUniqueOrThrow({ where: { id }, include: { items: true } });
     const money = await paidByMethod(tx, id);
     const refunds = (Object.entries(money.paid) as [PaymentMethod, number][]).filter(([, amount]) => amount !== 0);
-    if (refunds.length > 0) {
+    if (refunds.length > 0 && order.type !== "delivery") {
       await requireOpenCashDay(tx, now);
     }
 
-    if (order.status !== "cancelled" && order.status !== "expired") {
+    if (!STOCK_ALREADY_RETURNED.includes(order.status)) {
       await restockItems(tx, order.items);
     }
     for (const [method, amount] of refunds) {
@@ -287,6 +293,7 @@ export async function deleteOrder(id: number, userId: number, now: Date = new Da
           amount: -amount,
           method,
           kind: "correction",
+          orderType: order.type,
           orderId: id,
           userId,
           note: `Suppression de la commande n° ${order.number}`,
