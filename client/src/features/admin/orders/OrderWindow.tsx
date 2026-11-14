@@ -138,8 +138,9 @@ const FINISHED_TEXT: Partial<Record<AdminOrder["status"], string>> = {
 
 function StepPanel({ order, step, steps }: { order: AdminOrder; step: OrderStep; steps: OrderStep[] }) {
   if (step.state === "current") {
-    // « À confirmer » : le client attend un appel, la fiche d'appel passe avant les boutons.
-    return order.status === "pending" ? (
+    // « À confirmer » (le client attend un appel) et « Réservée » (il vient au magasin) : la fiche du
+    // client passe avant les boutons.
+    return order.status === "pending" || order.status === "reserved" ? (
       <div className="space-y-5">
         <CallSheet order={order} />
         <StepActions order={order} />

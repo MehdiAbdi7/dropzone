@@ -84,15 +84,16 @@ export function ArticlesCard({ order }: { order: AdminOrder }) {
   );
 }
 
-// L'étape « À confirmer » : le client attend un appel. Tout ce qu'il faut pour le passer, en haut de
-// la fenêtre, avant les boutons : le nom et le numéro en grand (un appui sur le numéro lance l'appel
-// sur téléphone), l'adresse, ce qui est commandé et ce qu'il paiera.
+// L'étape « À confirmer » d'une livraison (le client attend un appel) ou « Réservée » d'un retrait (le
+// client vient chercher sa commande). Tout ce qu'il faut sous les yeux, en haut de la fenêtre, avant
+// les boutons : le nom et le numéro (un appui sur le numéro lance l'appel sur téléphone), l'adresse
+// ou le créneau de retrait, ce qui est commandé et ce qu'il paiera.
 export function CallSheet({ order }: { order: AdminOrder }) {
   const delivery = order.type === "delivery";
   return (
     <div className="space-y-4">
-      <section className="card space-y-1 border-2 border-blue p-3 text-sm" aria-label="Client à appeler">
-        <p className="text-xs font-semibold text-ink-muted">Client à appeler</p>
+      <section className="card space-y-1 border-2 border-blue p-3 text-sm" aria-label={delivery ? "Client à appeler" : "Client attendu"}>
+        <p className="text-xs font-semibold text-ink-muted">{delivery ? "Client à appeler" : "Client attendu au magasin"}</p>
         <p className="font-display text-base font-bold">{order.fullName}</p>
         <a href={`tel:${order.phone}`} className="inline-block font-display text-base font-bold tabular-nums text-blue-ink underline">
           {order.phone}
