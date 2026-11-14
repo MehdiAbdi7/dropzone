@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { PAYMENT_METHOD_LABELS } from "@/config/catalog";
 import { useEditOrderMutation, type AdminOrder } from "@/features/admin/api/ordersApi";
-import EditDialog from "@/features/admin/products/EditDialog";
 import VariantPicker from "@/features/admin/sales/VariantPicker";
 import type { VariantHit } from "@/features/admin/sales/ticket";
 import { errorMessage } from "@/lib/errors";
@@ -16,17 +15,9 @@ const METHODS = Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[];
 
 // Modifier une commande après coup (15/11, lot 2) : quantités, prix accordés, articles ajoutés ou
 // retirés, moyen de paiement, coordonnées. Le serveur ajuste le stock et corrige l'argent à la
-// date du jour (une caisse fermée n'est jamais réécrite) et garde une trace.
-export default function EditOrderDialog({ order, open, onClose }: { order: AdminOrder; open: boolean; onClose: () => void }) {
-  return (
-    <EditDialog open={open} title={`Modifier la commande suivi ${order.number}`} closeLabel="Annuler" onClose={onClose}>
-      {/* Monté seulement fenêtre ouverte : chaque ouverture repart de la commande telle qu'elle est. */}
-      <EditForm order={order} onDone={onClose} />
-    </EditDialog>
-  );
-}
-
-function EditForm({ order, onDone }: { order: AdminOrder; onDone: () => void }) {
+// date du jour (une caisse fermée n'est jamais réécrite) et garde une trace. Ce formulaire s'affiche
+// dans la fenêtre de la commande (vue « Modifier »), pas dans une seconde fenêtre.
+export default function EditOrderForm({ order, onDone }: { order: AdminOrder; onDone: () => void }) {
   const [editOrder, { isLoading, error }] = useEditOrderMutation();
   const gifts = order.items.filter((item) => item.isGift);
   // « Payée » = un paiement a été encaissé un jour, même si une correction a ramené le net à 0 DA.
@@ -68,7 +59,14 @@ function EditForm({ order, onDone }: { order: AdminOrder; onDone: () => void }) 
   }
 
   return (
-    <form onSubmit={submit} className="space-y-5">
+    // Entrée dans un champ ne doit pas enregistrer : une touche de trop modifierait la commande (comme avant, dans l'ancienne fenêtre).
+    <form
+      onSubmit={submit}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" && event.target instanceof HTMLInputElement) event.preventDefault();
+      }}
+      className="space-y-5"
+    >
       <fieldset className="space-y-3">
         <legend className="mb-1 text-lg">Articles</legend>
         {lines.map((line) => (

@@ -1,14 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { STATUS_LABELS } from "@/config/catalog";
 import { useAdminOrdersQuery } from "@/features/admin/api/ordersApi";
 import { useDeliverySummaryQuery } from "@/features/admin/api/deliveriesApi";
-import CollectDelivery from "@/features/admin/deliveries/CollectDelivery";
-import ReturnDelivery from "@/features/admin/deliveries/ReturnDelivery";
-import { dailyLabel } from "@/features/admin/orders/orderLabels";
+import OrderWindow from "@/features/admin/orders/OrderWindow";
+import OrdersTable from "@/features/admin/orders/OrdersTable";
+import { useOrderWindow } from "@/features/admin/orders/useOrderWindow";
 import { errorMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/format";
 import type { OrderStatus } from "@/types/api";
@@ -18,7 +17,8 @@ import type { OrderStatus } from "@/types/api";
 // société de livraison le reverse). Ici : ce que les livraisons vont rapporter, ce qui est livré mais
 // pas encore encaissé, et l'argent arrivé jour par jour. « Encaisser » écrit l'argent à la date du
 // jour, dans l'historique (onglet Livraisons). L'état choisi vit dans l'adresse (`?status=`) : un lien
-// du tableau de bord ouvre le bon état.
+// du tableau de bord ouvre le bon état. Un clic sur une livraison ouvre sa fenêtre, placée sur
+// l'étape où elle en est : « Encaisser », « Colis retourné » et les autres boutons y sont.
 const TABS: { status: OrderStatus; label: string }[] = [
   { status: "pending", label: "À confirmer" },
   { status: "confirmed", label: "En préparation" },
@@ -51,6 +51,7 @@ function Deliveries() {
   const status: OrderStatus = asked && KNOWN.includes(asked) ? asked : "delivered";
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
+  const orderWindow = useOrderWindow();
   const summary = useDeliverySummaryQuery();
   const orders = useAdminOrdersQuery({ type: "delivery", status, q: q.trim() || undefined, page }, { pollingInterval: 30_000 });
   const data = summary.data;
@@ -141,29 +142,13 @@ function Deliveries() {
           <p role="alert" className="field-error">
             {errorMessage(orders.error)}
           </p>
-        ) : orders.data && orders.data.data.length === 0 ? (
-          <p className="text-sm text-ink-muted">Aucune livraison « {STATUS_LABELS[status]} ».</p>
         ) : (
-          <ul className="space-y-3" aria-busy={orders.isFetching}>
-            {orders.data?.data.map((order) => (
-              <li key={order.id} className="card space-y-3 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <Link href={`/admin/commandes/${order.id}`} className="font-semibold text-blue-ink underline">
-                      Commande {dailyLabel(order.dailyNumber, order.businessDate)}
-                    </Link>
-                    <p className="text-sm text-ink-muted">
-                      {order.fullName} · {order.phone}
-                      {order.wilaya ? ` · ${order.wilaya}` : ""}
-                    </p>
-                  </div>
-                  <p className="font-display text-lg font-bold tabular-nums">{formatPrice(order.total)}</p>
-                </div>
-                {status === "delivered" ? <CollectDelivery compact orderId={order.id} total={order.total} /> : null}
-                {status === "shipped" || status === "delivered" ? <ReturnDelivery orderId={order.id} number={order.number} /> : null}
-              </li>
-            ))}
-          </ul>
+          <OrdersTable
+            orders={orders.data?.data}
+            busy={orders.isFetching}
+            empty={`Aucune livraison « ${STATUS_LABELS[status]} ».`}
+            onOpen={orderWindow.open}
+          />
         )}
         {orders.data && orders.data.pagination.pages > 1 ? (
           <div className="flex items-center justify-center gap-3">
@@ -184,6 +169,8 @@ function Deliveries() {
           </div>
         ) : null}
       </section>
+
+      <OrderWindow id={orderWindow.id} onClose={orderWindow.close} />
     </div>
   );
 }
