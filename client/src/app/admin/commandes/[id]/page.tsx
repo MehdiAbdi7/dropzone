@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { CONDITION_LABELS, ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS, STATUS_LABELS } from "@/config/catalog";
 import { warrantyLabel } from "@/config/warranty";
@@ -12,6 +12,7 @@ import {
   useDeleteOrderMutation,
   useValidatePickupMutation,
 } from "@/features/admin/api/ordersApi";
+import { acknowledge } from "@/features/admin/alerts/acknowledged";
 import CollectDelivery from "@/features/admin/deliveries/CollectDelivery";
 import ReturnDelivery from "@/features/admin/deliveries/ReturnDelivery";
 import { ordersListHref } from "@/features/admin/navConfig";
@@ -47,6 +48,13 @@ export default function AdminOrderPage() {
   // Les prix négociés saisis par ligne (lot 3) : envoyés avec « Confirmer » ou « Valider le retrait ».
   const [prices, setPrices] = useState<Record<number, number>>({});
   const router = useRouter();
+
+  // Ouvrir une commande en attente, c'est l'avoir vue : l'alerte (son et bannière) se tait pour elle.
+  const openedId = order?.id;
+  const openedStatus = order?.status;
+  useEffect(() => {
+    if (openedId !== undefined && (openedStatus === "pending" || openedStatus === "reserved")) acknowledge([openedId]);
+  }, [openedId, openedStatus]);
 
   async function remove(orderId: number, listHref: string) {
     try {

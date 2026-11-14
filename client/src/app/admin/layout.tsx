@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import NewOrderAlert from "@/features/admin/alerts/NewOrderAlert";
 import AdminNav, { AdminBottomNav } from "@/features/admin/AdminNav";
 import AdminSubNav from "@/features/admin/AdminSubNav";
 import AdminTopbar from "@/features/admin/AdminTopbar";
@@ -25,6 +26,8 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     <div className="flex flex-1 flex-col">
       {/* La barre du haut (logo, boutique, menu ☰) reste collée en haut, comme sur Niwa (14/11). */}
       <AdminTopbar />
+      {/* L'alerte des nouvelles commandes (son et bannière), sur toutes les pages du back-office. */}
+      <NewOrderAlert />
       <div className="flex flex-1 flex-col lg:flex-row">
         {/* Sur ordinateur, la barre latérale (les sept sections) reste en place pendant le
             défilement : sticky sous la barre du haut, avec son propre défilement si besoin.

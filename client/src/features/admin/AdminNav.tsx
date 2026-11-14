@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { CloseIcon, DotsIcon } from "@/components/ui/icons";
+import PendingBadge from "./alerts/PendingBadge";
+import { usePendingDeliveries } from "./alerts/usePendingDeliveries";
 import { BOTTOM_MORE, BOTTOM_PRIMARY, NAV_SECTIONS, sectionFor } from "./navConfig";
 
 // La section de la page affichée : la barre latérale et la barre du bas l'allument.
@@ -16,6 +18,8 @@ function useActiveKey() {
 // Réglages, le thème et la déconnexion sont dans la barre du haut (AdminTopbar).
 export default function AdminNav() {
   const activeKey = useActiveKey();
+  // Les livraisons à confirmer : la pastille rouge de « Commandes », comme sur Niwa Food.
+  const { count: pending } = usePendingDeliveries();
 
   return (
     <nav aria-label="Back-office" className="hidden px-2 py-3 lg:block">
@@ -31,6 +35,7 @@ export default function AdminNav() {
             >
               <SectionIcon size={18} />
               {label}
+              {key === "commandes" ? <PendingBadge count={pending} className="ml-auto" /> : null}
             </Link>
           </li>
         ))}
@@ -45,6 +50,7 @@ export default function AdminNav() {
 // dans le menu ☰ de la barre du haut : jamais deux fois au même endroit.
 export function AdminBottomNav() {
   const activeKey = useActiveKey();
+  const { count: pending } = usePendingDeliveries();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreActive = BOTTOM_MORE.some((section) => section.key === activeKey);
 
@@ -106,11 +112,13 @@ export function AdminBottomNav() {
               className="flex flex-1 flex-col items-center gap-0.5 pb-2 text-[11px] font-bold"
             >
               <span
-                className={`-mt-5 grid h-14 w-14 place-items-center rounded-full border-4 border-surface bg-blue text-on-brand shadow-lg ${
+                className={`relative -mt-5 grid h-14 w-14 place-items-center rounded-full border-4 border-surface bg-blue text-on-brand shadow-lg ${
                   activeKey === key ? "ring-2 ring-blue-ink" : ""
                 }`}
               >
                 <SectionIcon size={26} />
+                {/* La pastille rouge : des livraisons attendent d'être confirmées par téléphone. */}
+                <PendingBadge count={pending} className="absolute -right-1 -top-1 border-2 border-surface" />
               </span>
               <span className={activeKey === key ? "text-blue-ink" : "text-ink"}>{short ?? label}</span>
             </Link>
