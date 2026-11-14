@@ -143,6 +143,58 @@ describe("POST /admin/sales", () => {
     expect(await stockOf("IP-NEW-256")).toBe(stock);
   });
 
+  it("dit qu'un cadeau épuisé n'est pas offert, au lieu de le faire disparaître sans rien dire", async () => {
+    const { agent } = await counter();
+    await prisma.productVariant.update({ where: { sku: "CHG-20W" }, data: { stock: 0 } });
+    const response = await agent.post("/admin/sales").send(sale({ lines: [{ sku: "IP-R-DEAL", quantity: 1 }] }));
+    expect(response.status).toBe(201);
+    expect(response.body.data.notices).toHaveLength(1);
+    expect(response.body.data.notices[0]).toMatch(/Chargeur USB-C 20 W.*épuisé/);
+    expect(await prisma.orderItem.count({ where: { isGift: true } })).toBe(0);
+  });
+
+  it("répond sans mise en garde quand tout est offert", async () => {
+    const { agent } = await counter();
+    const response = await agent.post("/admin/sales").send(sale());
+    expect(response.body.data.notices).toEqual([]);
+  });
+
+  it("refuse deux prix différents pour le même article du ticket", async () => {
+    const { agent } = await counter();
+    const response = await agent.post("/admin/sales").send(
+      sale({
+        lines: [
+          { sku: "IP-NEW-256", quantity: 1, unitPrice: 240_000 },
+          { sku: "IP-NEW-256", quantity: 1, unitPrice: 230_000 },
+        ],
+      }),
+    );
+    expect(response.status).toBe(400);
+    expect(await prisma.order.count()).toBe(0);
+  });
+
+  it("refuse un total qui dépasse la limite d'un entier de la base, par une erreur claire", async () => {
+    const { agent } = await counter();
+    const accessories = await prisma.category.findFirstOrThrow({ where: { slug: "accessoires" } });
+    // 25 articles à 10 exemplaires et 10 000 000 DA : 2,5 milliards, au-delà de 2 milliards.
+    await prisma.product.create({
+      data: {
+        name: "Lot de test",
+        slug: "lot-de-test",
+        description: "Test",
+        categoryId: accessories.id,
+        status: "published",
+        variants: { create: Array.from({ length: 25 }, (_, index) => ({ sku: `BULK-${index}`, price: 1_000, stock: 10 })) },
+      },
+    });
+    const lines = Array.from({ length: 25 }, (_, index) => ({ sku: `BULK-${index}`, quantity: 10, unitPrice: 10_000_000 }));
+    const response = await agent.post("/admin/sales").send(sale({ lines }));
+    expect(response.status).toBe(400);
+    expect(response.body.error.message).toMatch(/trop élevé/);
+    expect(await prisma.order.count()).toBe(0);
+    expect(await stockOf("BULK-0")).toBe(10);
+  });
+
   it("de deux ventes simultanées du dernier exemplaire, une seule passe", async () => {
     const { agent } = await counter();
     const lines = [{ sku: "IP-R-WIFI", quantity: 1 }];

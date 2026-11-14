@@ -18,26 +18,41 @@ export type VariantHit = {
 
 // 0 : le SKU exact ; 1 : un nom qui commence par la recherche ; 2 : le reste.
 function rank(hit: { sku: string; productName: string }, q: string): number {
-  if (hit.sku.toLowerCase() === q) return 0;
-  return hit.productName.toLowerCase().startsWith(q) ? 1 : 2;
+  if (normalize(hit.sku) === q) return 0;
+  return normalize(hit.productName).startsWith(q) ? 1 : 2;
 }
 
+// Sans accents ni majuscules : « Écouteurs » devient « ecouteurs ». Le même passage des deux côtés
+// (la recherche en JavaScript, le texte de la base par `translate` en SQL) fait qu'on trouve
+// « Câble » en tapant « cable ». PostgreSQL n'a pas `unaccent` d'office : on liste les lettres.
+const ACCENTED = "àâäçéèêëîïôöùûüÿ";
+const PLAIN = "aaaceeeeiioouuuy";
+const normalize = (text: string) => text.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+
+// `%` et `_` sont des jokers de LIKE : on les neutralise pour qu'ils ne cherchent que ces caractères.
+const escapeLike = (text: string) => text.replace(/[\\%_]/g, (character) => `\\${character}`);
+
 export async function searchVariants({ q, limit = 20 }: { q: string; limit?: number }): Promise<VariantHit[]> {
+  const needle = normalize(q);
+  const pattern = `%${escapeLike(needle)}%`;
+  // Les variantes qui correspondent (publiées, en stock), choisies en SQL. 500 au plus : une borne
+  // large avant le tri de pertinence, qui se fait en JavaScript.
+  const matches = await prisma.$queryRaw<{ id: number }[]>`
+    SELECT v.id
+    FROM product_variants v
+    JOIN products p ON p.id = v.product_id
+    WHERE v.stock > 0
+      AND p.status = 'published'
+      AND (
+        translate(lower(v.sku), ${ACCENTED}, ${PLAIN}) LIKE ${pattern} ESCAPE '\\'
+        OR translate(lower(p.name), ${ACCENTED}, ${PLAIN}) LIKE ${pattern} ESCAPE '\\'
+      )
+    LIMIT 500`;
   const variants = await prisma.productVariant.findMany({
-    where: {
-      stock: { gt: 0 },
-      product: { status: "published" },
-      OR: [
-        { sku: { contains: q, mode: "insensitive" } },
-        { product: { name: { contains: q, mode: "insensitive" } } },
-      ],
-    },
+    where: { id: { in: matches.map((row) => row.id) } },
     include: { product: { select: { name: true, images: { orderBy: { position: "asc" }, take: 1, select: { url: true } } } } },
-    // Une borne large avant le tri : le tri de pertinence se fait en JavaScript.
-    take: 200,
   });
 
-  const needle = q.toLowerCase();
   return variants
     .map((variant) => ({
       sku: variant.sku,

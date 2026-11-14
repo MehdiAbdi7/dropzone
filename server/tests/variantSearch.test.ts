@@ -65,6 +65,60 @@ describe("GET /admin/variants", () => {
     expect(text).not.toContain("200000");
   });
 
+  it("ignore aussi les accents, dans la recherche comme dans le nom", async () => {
+    const accessories = await prisma.category.findFirstOrThrow({ where: { slug: "accessoires" } });
+    await prisma.product.create({
+      data: {
+        name: "Câble Apple USB-C",
+        slug: "cable-apple-usb-c",
+        description: "Câble",
+        categoryId: accessories.id,
+        status: "published",
+        variants: { create: [{ sku: "CAB-APPLE", price: 3_000, stock: 4 }] },
+      },
+    });
+    await prisma.product.create({
+      data: {
+        name: "Écouteurs sans fil",
+        slug: "ecouteurs-sans-fil",
+        description: "Écouteurs",
+        categoryId: accessories.id,
+        status: "published",
+        variants: { create: [{ sku: "ECO-1", price: 9_000, stock: 2 }] },
+      },
+    });
+    for (const q of ["cable", "CÂBLE", "câble apple"]) {
+      expect((await search(q)).body.data.map((hit: { sku: string }) => hit.sku), q).toContain("CAB-APPLE");
+    }
+    for (const q of ["ecouteurs", "écouteurs", "ÉCOUTEURS"]) {
+      expect((await search(q)).body.data.map((hit: { sku: string }) => hit.sku), q).toContain("ECO-1");
+    }
+  });
+
+  it("ne traite pas % et _ comme des jokers", async () => {
+    for (const q of ["%%", "__", "i_"]) {
+      expect((await search(q)).body.data, q).toEqual([]);
+    }
+  });
+
+  it("classe le SKU exact, puis un nom qui commence par la recherche, puis le reste", async () => {
+    const accessories = await prisma.category.findFirstOrThrow({ where: { slug: "accessoires" } });
+    await prisma.product.create({
+      data: {
+        name: "Support voiture",
+        slug: "support-voiture",
+        description: "Support",
+        categoryId: accessories.id,
+        status: "published",
+        variants: { create: [{ sku: "IPHONE", price: 1_500, stock: 3 }] },
+      },
+    });
+    const skus = (await search("iphone")).body.data.map((hit: { sku: string }) => hit.sku);
+    expect(skus[0]).toBe("IPHONE");
+    // « iPhone 15 Pro Max » commence par la recherche : avant « Coque antichoc iPhone… » qui la contient.
+    expect(skus.indexOf("IP-NEW-256")).toBeLessThan(skus.indexOf("COQ-IP15PM"));
+  });
+
   it("est réservé à l'admin", async () => {
     expect((await request(app).get("/admin/variants?q=iphone")).status).toBe(401);
     const { agent } = await loginAs("customer");

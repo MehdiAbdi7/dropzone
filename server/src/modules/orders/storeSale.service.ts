@@ -118,6 +118,8 @@ export async function createStoreSale(input: StoreSaleInput, userId: number, now
       },
     });
     await refreshMinPrice(tx, cart.lines.map((line) => line.productId));
-    return order;
+    // Les mises en garde du calcul du ticket : un cadeau épuisé n'est PAS offert, et le vendeur doit
+    // le savoir (la page les affiche à l'encaissement).
+    return { ...order, notices: cart.notices };
   });
 }

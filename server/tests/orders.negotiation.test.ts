@@ -76,6 +76,40 @@ describe("valider un retrait avec un prix négocié", () => {
   });
 });
 
+describe("une négociation refusée pendant une validation ne laisse aucune trace", () => {
+  it("garde le retrait réservé, sans mouvement, sans trace, au prix d'origine", async () => {
+    const order = await placed({ fulfillment: "pickup", pickupDate: TODAY, pickupTime: "15:00" }, [{ sku: "IP-R-DEAL", quantity: 1 }]);
+    const gift = order.items.find((item) => item.isGift)!;
+    const paying = order.items.find((item) => !item.isGift)!;
+    const { agent } = await openCounter();
+    const stock = (await prisma.productVariant.findUniqueOrThrow({ where: { sku: "IP-R-DEAL" } })).stock;
+
+    for (const prices of [[{ id: gift.id, unitPrice: 100 }], [{ id: paying.id, unitPrice: 10.5 }]]) {
+      const response = await agent.post(`/admin/orders/${order.id}/pickup`).send({ method: "cash", prices });
+      expect(response.status).toBe(400);
+    }
+    const after = await prisma.order.findUniqueOrThrow({ where: { id: order.id }, include: { items: true } });
+    expect(after.status).toBe("reserved");
+    expect(after.total).toBe(order.total);
+    expect(after.items.find((item) => item.id === paying.id)).toMatchObject({ unitPrice: paying.unitPrice, grantedById: null });
+    expect(await prisma.moneyMovement.count()).toBe(0);
+    expect(await prisma.orderEvent.count()).toBe(0);
+    expect((await prisma.productVariant.findUniqueOrThrow({ where: { sku: "IP-R-DEAL" } })).stock).toBe(stock);
+  });
+
+  it("refuse une ligne d'une autre commande", async () => {
+    const mine = await placed();
+    const other = await placed();
+    const { agent } = await loginAs("admin");
+    const response = await agent
+      .patch(`/admin/orders/${mine.id}/status`)
+      .send({ status: "confirmed", prices: [{ id: other.items[0].id, unitPrice: 100 }] });
+    expect(response.status).toBe(400);
+    expect((await prisma.orderItem.findUniqueOrThrow({ where: { id: other.items[0].id } })).unitPrice).toBe(other.items[0].unitPrice);
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: mine.id } })).status).toBe("pending");
+  });
+});
+
 describe("confirmer une livraison avec un prix négocié", () => {
   it("met le total à jour, garde les frais de livraison et passe à « confirmée »", async () => {
     const order = await placed();
