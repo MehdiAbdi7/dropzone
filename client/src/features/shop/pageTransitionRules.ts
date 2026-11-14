@@ -1,7 +1,9 @@
 // Quand deux adresses du MÊME chemin comptent quand même comme deux pages différentes : l'animation
 // de page doit alors jouer (elle ne joue sinon que si le chemin change). Deux cas :
 //  - la couleur choisie d'une fiche produit (`?couleur=`), qui change l'affiche entière ;
-//  - les onglets Retraits et Magasin de Commandes (`?type=`, 17/11) : deux listes, sur la même page.
+//  - le type de la page Commandes (`?type=`, 17/11) : c'est une autre liste, pas un filtre. Aujourd'hui
+//    seul Retraits y vit (Livraisons a son chemin, les ventes au magasin l'Historique) : la règle
+//    garde le même comportement si un onglet s'y ajoute.
 // Un simple filtre (l'état d'une commande, le canal de l'historique) n'anime pas.
 export function isSwitchWithinPath(current: URL, destination: URL): boolean {
   if (destination.pathname !== current.pathname) return false;
