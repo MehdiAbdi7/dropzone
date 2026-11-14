@@ -2,6 +2,7 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { isBrowseSwitch } from "@/features/categories/tiles";
+import { isSwitchWithinPath } from "./pageTransitionRules";
 import {
   Suspense,
   useEffect,
@@ -73,11 +74,9 @@ export default function ShopPageTransition({ children }: { children: ReactNode }
       const destination = new URL(link.href, window.location.href);
       const current = new URL(window.location.href);
       const pathChanged = destination.pathname !== current.pathname;
-      const selectedColorChanged =
-        destination.pathname === current.pathname &&
-        destination.pathname.startsWith("/produits/") &&
-        destination.searchParams.get("couleur") !== current.searchParams.get("couleur");
-      if (destination.origin === current.origin && (pathChanged || selectedColorChanged)) {
+      // Même chemin mais autre « page » : une couleur de fiche produit, un onglet de Commandes.
+      const switchedWithinPath = isSwitchWithinPath(current, destination);
+      if (destination.origin === current.origin && (pathChanged || switchedWithinPath)) {
         saveCurrentPage();
       }
     }
