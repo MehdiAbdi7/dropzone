@@ -14,6 +14,7 @@ import {
 } from "@/features/admin/api/ordersApi";
 import CollectDelivery from "@/features/admin/deliveries/CollectDelivery";
 import ReturnDelivery from "@/features/admin/deliveries/ReturnDelivery";
+import { ordersListHref } from "@/features/admin/navConfig";
 import EditOrderDialog from "@/features/admin/orders/EditOrderDialog";
 import OrderEvents from "@/features/admin/orders/OrderEvents";
 import NegotiatePrices from "@/features/admin/orders/NegotiatePrices";
@@ -47,11 +48,11 @@ export default function AdminOrderPage() {
   const [prices, setPrices] = useState<Record<number, number>>({});
   const router = useRouter();
 
-  async function remove(orderId: number) {
+  async function remove(orderId: number, listHref: string) {
     try {
       await deleteOrder(orderId).unwrap();
       setRemoved(true);
-      router.push("/admin/commandes");
+      router.push(listHref);
     } catch {
       // L'erreur RTK Query est affichée sous les boutons de la commande.
     }
@@ -84,8 +85,8 @@ export default function AdminOrderPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <Link href="/admin/commandes" className="text-sm text-blue-ink underline">
-        Commandes
+      <Link href={ordersListHref(order.type)} className="text-sm text-blue-ink underline">
+        ← Retour à la liste
       </Link>
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="text-3xl">Commande {dailyLabel(order.dailyNumber, order.businessDate)}</h1>
@@ -136,7 +137,7 @@ export default function AdminOrderPage() {
           trigger="Supprimer"
           title={`Supprimer la commande suivi ${order.number} ?`}
           confirmLabel="Supprimer la commande"
-          onConfirm={() => remove(order.id)}
+          onConfirm={() => remove(order.id, ordersListHref(order.type))}
         >
           Le stock de chaque article, cadeaux compris, est rendu
           {order.status === "cancelled" || order.status === "expired" ? " (déjà fait : la commande est " + STATUS_LABELS[order.status] + ")" : ""}.

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { STATUS_LABELS } from "@/config/catalog";
 import { useAdminOrdersQuery } from "@/features/admin/api/ordersApi";
 import { useDeliverySummaryQuery } from "@/features/admin/api/deliveriesApi";
@@ -12,10 +13,12 @@ import { errorMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/format";
 import type { OrderStatus } from "@/types/api";
 
-// La page Livraisons (17/11, lot 4). Une livraison se suit à part de la caisse : son argent n'est pas
-// dans le tiroir, il arrive plus tard (le livreur ou la société de livraison le reverse). Ici : ce
-// que les livraisons vont rapporter, ce qui est livré mais pas encore encaissé, et l'argent arrivé
-// jour par jour. « Encaisser » écrit l'argent à la date du jour, dans l'historique (onglet Livraisons).
+// La page Livraisons (17/11, lot 4), premier onglet de la section Commandes. Une livraison se suit à
+// part de la caisse : son argent n'est pas dans le tiroir, il arrive plus tard (le livreur ou la
+// société de livraison le reverse). Ici : ce que les livraisons vont rapporter, ce qui est livré mais
+// pas encore encaissé, et l'argent arrivé jour par jour. « Encaisser » écrit l'argent à la date du
+// jour, dans l'historique (onglet Livraisons). L'état choisi vit dans l'adresse (`?status=`) : un lien
+// du tableau de bord ouvre le bon état.
 const TABS: { status: OrderStatus; label: string }[] = [
   { status: "pending", label: "À confirmer" },
   { status: "confirmed", label: "En préparation" },
@@ -23,7 +26,9 @@ const TABS: { status: OrderStatus; label: string }[] = [
   { status: "delivered", label: "À encaisser" },
   { status: "collected", label: "Encaissées" },
   { status: "returned", label: "Retournées" },
+  { status: "cancelled", label: "Annulées" },
 ];
+const KNOWN = TABS.map((tab) => tab.status);
 
 const dayLabel = (iso: string) => {
   const [year, month, day] = iso.split("-");
@@ -31,10 +36,29 @@ const dayLabel = (iso: string) => {
 };
 
 export default function DeliveriesPage() {
-  const [status, setStatus] = useState<OrderStatus>("delivered");
+  return (
+    <Suspense>
+      <Deliveries />
+    </Suspense>
+  );
+}
+
+function Deliveries() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const asked = params.get("status") as OrderStatus | null;
+  // Par défaut : ce qui attend d'être encaissé, le plus utile au quotidien.
+  const status: OrderStatus = asked && KNOWN.includes(asked) ? asked : "delivered";
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const summary = useDeliverySummaryQuery();
-  const orders = useAdminOrdersQuery({ type: "delivery", status, page: 1 });
+  const orders = useAdminOrdersQuery({ type: "delivery", status, q: q.trim() || undefined, page }, { pollingInterval: 30_000 });
   const data = summary.data;
+
+  const pick = (next: OrderStatus) => {
+    setPage(1);
+    router.replace(`/admin/livraisons?status=${next}`);
+  };
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -95,17 +119,24 @@ export default function DeliveriesPage() {
         </h2>
         <div role="group" aria-label="État de la livraison" className="flex flex-wrap gap-2">
           {TABS.map((tab) => (
-            <button
-              key={tab.status}
-              type="button"
-              className="chip"
-              aria-pressed={status === tab.status}
-              onClick={() => setStatus(tab.status)}
-            >
+            <button key={tab.status} type="button" className="chip" aria-pressed={status === tab.status} onClick={() => pick(tab.status)}>
               {tab.label}
             </button>
           ))}
         </div>
+        <label className="block max-w-md">
+          <span className="sr-only">Chercher une livraison</span>
+          <input
+            className="input"
+            type="search"
+            placeholder="Numéro, téléphone ou nom…"
+            value={q}
+            onChange={(event) => {
+              setQ(event.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
         {orders.isError ? (
           <p role="alert" className="field-error">
             {errorMessage(orders.error)}
@@ -113,7 +144,7 @@ export default function DeliveriesPage() {
         ) : orders.data && orders.data.data.length === 0 ? (
           <p className="text-sm text-ink-muted">Aucune livraison « {STATUS_LABELS[status]} ».</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-3" aria-busy={orders.isFetching}>
             {orders.data?.data.map((order) => (
               <li key={order.id} className="card space-y-3 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -135,13 +166,22 @@ export default function DeliveriesPage() {
           </ul>
         )}
         {orders.data && orders.data.pagination.pages > 1 ? (
-          <p className="text-sm text-ink-muted">
-            {orders.data.data.length} affichées sur {orders.data.pagination.total} : ouvrez{" "}
-            <Link href="/admin/commandes" className="underline">
-              Commandes
-            </Link>{" "}
-            pour la suite.
-          </p>
+          <div className="flex items-center justify-center gap-3">
+            <button type="button" className="btn btn-secondary btn-small" disabled={page === 1} onClick={() => setPage(page - 1)}>
+              Précédente
+            </button>
+            <p className="text-sm">
+              Page {orders.data.pagination.page} sur {orders.data.pagination.pages}
+            </p>
+            <button
+              type="button"
+              className="btn btn-secondary btn-small"
+              disabled={page >= orders.data.pagination.pages}
+              onClick={() => setPage(page + 1)}
+            >
+              Suivante
+            </button>
+          </div>
         ) : null}
       </section>
     </div>
