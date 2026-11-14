@@ -110,8 +110,37 @@ export function buildSaleBody(input: {
     method: input.method,
     ...(note ? { note } : {}),
     acceptLimitations: input.acceptLimitations,
-    lines: input.lines.map((line) => ({ sku: line.sku, quantity: line.quantity, unitPrice: line.unitPrice })),
+    // Le prix n'est envoyé que s'il a été négocié : sans lui, le serveur prend le prix catalogue
+    // d'AUJOURD'HUI. Envoyer toujours le prix vu à la recherche ferait passer un prix périmé pour une
+    // remise (ou un supplément) accordée par le vendeur.
+    lines: input.lines.map((line) => ({
+      sku: line.sku,
+      quantity: line.quantity,
+      ...(line.unitPrice !== line.listPrice ? { unitPrice: line.unitPrice } : {}),
+    })),
   };
+}
+
+// Le prix catalogue a pu changer depuis la recherche (un autre admin, un autre onglet). Le
+// récapitulatif du serveur (`current`) donne le prix d'aujourd'hui de chaque ligne : on y aligne
+// le prix catalogue du ticket, et le prix accordé quand le vendeur ne l'avait pas négocié. Rend le
+// MÊME tableau quand rien ne change, et les noms des lignes touchées pour le dire au vendeur.
+export function syncCatalogPrices(
+  lines: TicketLine[],
+  current: { sku: string; unitPrice: number }[],
+): { lines: TicketLine[]; changed: string[] } {
+  const changed: string[] = [];
+  const next = lines.map((line) => {
+    const now = current.find((candidate) => candidate.sku === line.sku);
+    if (!now || now.unitPrice === line.listPrice) return line;
+    changed.push(line.name);
+    return {
+      ...line,
+      listPrice: now.unitPrice,
+      unitPrice: line.unitPrice === line.listPrice ? now.unitPrice : line.unitPrice,
+    };
+  });
+  return { lines: changed.length > 0 ? next : lines, changed };
 }
 
 // Les prix négociés à envoyer avec la validation d'un retrait ou la confirmation d'une livraison :

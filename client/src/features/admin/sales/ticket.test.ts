@@ -5,6 +5,7 @@ import {
   buildSaleBody,
   pricesToSend,
   reductionText,
+  syncCatalogPrices,
   ticketProblem,
   ticketReduction,
   ticketTotal,
@@ -75,7 +76,7 @@ describe("ticketTotal et ticketReduction", () => {
     expect(ticketReduction([line({ unitPrice: 250_000 })])).toBe(-5_000);
   });
 
-  it("ne produit pas de NaN quand un prix est encore vide", () => {
+  it("donne NaN pour le total tant qu'un prix est vide, sans fausser la réduction", () => {
     expect(Number.isNaN(ticketTotal([line({ unitPrice: Number.NaN })]))).toBe(true);
     expect(ticketReduction([line({ unitPrice: Number.NaN })])).toBe(0);
   });
@@ -125,9 +126,45 @@ describe("buildSaleBody", () => {
     });
   });
 
+  it("n'envoie le prix d'une ligne que s'il a été négocié : sinon le serveur prend le prix catalogue d'aujourd'hui", () => {
+    const body = buildSaleBody({
+      lines: [line({ quantity: 1 }), line({ sku: "B", key: "B", listPrice: 1_000, unitPrice: 900 })],
+      form,
+      method: "cash",
+      note: "",
+      acceptLimitations: false,
+    });
+    expect(body.lines).toEqual([{ sku: "IP-NEW-256", quantity: 1 }, { sku: "B", quantity: 1, unitPrice: 900 }]);
+  });
+
   it("n'envoie pas de remarque vide", () => {
     const body = buildSaleBody({ lines: [line()], form, method: "cash", note: "  ", acceptLimitations: false });
     expect(body).not.toHaveProperty("note");
+  });
+});
+
+describe("syncCatalogPrices", () => {
+  it("ne change rien quand le prix catalogue est toujours le même (et rend le même tableau)", () => {
+    const lines = [line()];
+    const result = syncCatalogPrices(lines, [{ sku: "IP-NEW-256", unitPrice: 245_000 }]);
+    expect(result.lines).toBe(lines);
+    expect(result.changed).toEqual([]);
+  });
+
+  it("met à jour le prix catalogue périmé, et le prix accordé quand il n'avait pas été négocié", () => {
+    const result = syncCatalogPrices([line()], [{ sku: "IP-NEW-256", unitPrice: 239_000 }]);
+    expect(result.lines[0]).toMatchObject({ listPrice: 239_000, unitPrice: 239_000 });
+    expect(result.changed).toEqual(["iPhone 15 Pro Max"]);
+  });
+
+  it("garde le prix négocié du vendeur quand le catalogue change", () => {
+    const result = syncCatalogPrices([line({ unitPrice: 240_000 })], [{ sku: "IP-NEW-256", unitPrice: 239_000 }]);
+    expect(result.lines[0]).toMatchObject({ listPrice: 239_000, unitPrice: 240_000 });
+  });
+
+  it("ignore une ligne que le récapitulatif ne connaît pas encore", () => {
+    const lines = [line()];
+    expect(syncCatalogPrices(lines, []).lines).toBe(lines);
   });
 });
 

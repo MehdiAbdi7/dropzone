@@ -10,8 +10,17 @@ export default function SaleDone({ sale, onNew }: { sale: Done; onNew: () => voi
         Vente n° {sale.dailyNumber} encaissée
       </h2>
       <p className="text-lg">
-        <strong className="font-display tabular-nums">{formatPrice(sale.total)}</strong> sont entrés dans la caisse du jour.
+        <strong className="font-display tabular-nums">{formatPrice(sale.total)}</strong> encaissés, enregistrés dans le journal du
+        jour.
       </p>
+      {/* Ce que le calcul du ticket a signalé : un cadeau épuisé n'a PAS été offert. */}
+      {sale.notices.length > 0 ? (
+        <ul role="alert" className="list-disc space-y-1 pl-5 font-semibold text-red">
+          {sale.notices.map((notice) => (
+            <li key={notice}>{notice}</li>
+          ))}
+        </ul>
+      ) : null}
       <div className="flex flex-wrap gap-3">
         <button type="button" className="btn btn-primary" onClick={onNew}>
           Nouvelle vente

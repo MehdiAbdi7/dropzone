@@ -33,8 +33,14 @@ export default function VariantPicker({
           className="input"
           type="search"
           autoComplete="off"
+          // 60 caractères au plus, comme l'API : au-delà elle répondrait 400 (« la recherche ne répond pas »).
+          maxLength={60}
           placeholder="iPhone, Galaxy, SKU…"
           value={text}
+          // Entrée (une douchette l'envoie) ne doit jamais valider le formulaire qui contient ce champ.
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.preventDefault();
+          }}
           onChange={(event) => setText(event.target.value)}
         />
       </label>

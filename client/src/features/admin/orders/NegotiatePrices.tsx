@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { reductionText } from "@/features/admin/sales/ticket";
 import { formatPrice } from "@/lib/format";
 import { negotiationState, type NegotiableItem } from "./negotiation";
@@ -21,8 +22,11 @@ export default function NegotiatePrices({
 }) {
   const lines = items.filter((item) => !item.isGift);
   const state = negotiationState(items, prices, shippingFee);
+  // Ouvert ou fermé par le vendeur, jamais par le calcul : un panneau qui se refermait quand le champ
+  // était vide (rien à envoyer) lui faisait perdre la saisie et cachait l'erreur.
+  const [open, setOpen] = useState(false);
   return (
-    <details className="w-full rounded-lg border border-line p-3" open={state.toSend.length > 0 || undefined}>
+    <details className="w-full rounded-lg border border-line p-3" open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary className="cursor-pointer font-semibold">Négocier les prix</summary>
       <div className="mt-3 space-y-3">
         {lines.map((item) => {
@@ -39,6 +43,7 @@ export default function NegotiatePrices({
                 <input
                   className="input"
                   inputMode="numeric"
+                  aria-label={`Prix accordé de ${item.name}`}
                   value={Number.isNaN(value) ? "" : value}
                   onChange={(event) => {
                     const digits = event.target.value.replace(/\D/g, "");

@@ -45,7 +45,11 @@ export default function HistoryOrders({ orders, truncated }: { orders: History["
                 <span className="block font-bold">{formatPrice(order.total)}</span>
                 <span className="block text-ink-muted">payé {formatPrice(order.paid)}</span>
                 <span className="block text-ink-muted">bénéfice {profitText(order)}</span>
-                {order.discount !== 0 ? <span className="block text-ink-muted">{discountText(order.discount)}</span> : null}
+                {order.discount !== 0 ? (
+                  <span className="block text-ink-muted">
+                    {order.discount > 0 ? "réduction" : "supplément"} {formatPrice(Math.abs(order.discount))}
+                  </span>
+                ) : null}
               </span>
             </Link>
           </li>

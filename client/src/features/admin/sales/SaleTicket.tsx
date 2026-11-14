@@ -9,7 +9,15 @@ import { useCartPreviewQuery } from "@/features/orders/ordersApi";
 import { errorMessage } from "@/lib/errors";
 import { formatOptions, formatPrice } from "@/lib/format";
 import type { CartLine, PaymentMethod } from "@/types/api";
-import { buildSaleBody, reductionText, ticketProblem, ticketTotal, type SaleForm, type TicketLine } from "./ticket";
+import {
+  buildSaleBody,
+  reductionText,
+  syncCatalogPrices,
+  ticketProblem,
+  ticketTotal,
+  type SaleForm,
+  type TicketLine,
+} from "./ticket";
 
 const METHODS = Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[];
 // Un nombre vide reste vide (NaN) : le ticket le refuse au lieu de l'envoyer comme 0.
@@ -31,7 +39,6 @@ export default function SaleTicket({
   const [form, setForm] = useState<SaleForm>({ fullName: "", phone: "" });
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [note, setNote] = useState("");
-  const [accepted, setAccepted] = useState(false);
 
   // Le récapitulatif du serveur : cadeaux d'une affaire, limitations, problèmes de stock. Le même
   // calcul que la commande du site (retrait : pas de frais de livraison).
@@ -40,10 +47,25 @@ export default function SaleTicket({
   const gifts: CartLine[] = preview?.lines.filter((line) => line.isGift) ?? [];
   const limitations = preview?.limitations ?? [];
   const problems = preview?.lines.filter((line) => line.problem) ?? [];
+  // « Un cadeau n'est plus offert, il est épuisé » : le vendeur doit le voir avant d'encaisser.
+  const notices = preview?.notices ?? [];
 
-  const total = ticketTotal(lines);
+  // Les lignes affichées : le prix catalogue du ticket est aligné sur celui d'AUJOURD'HUI donné par le
+  // récapitulatif (il a pu changer depuis la recherche). Calculé à l'affichage, sans effet.
+  const synced = useMemo(
+    () => syncCatalogPrices(lines, preview?.lines.filter((line) => !line.isGift) ?? []),
+    [lines, preview],
+  );
+  const shown = synced.lines;
+
+  // La case des limitations est liée aux appareils qui les ont : changer d'appareil la décoche.
+  const limitationsKey = limitations.map((item) => item.sku).join(",");
+  const [acceptedFor, setAcceptedFor] = useState<string | null>(null);
+  const accepted = limitations.length > 0 && acceptedFor === limitationsKey;
+
+  const total = ticketTotal(shown);
   const problem =
-    ticketProblem(lines, form) ??
+    ticketProblem(shown, form) ??
     (limitations.length > 0 && !accepted ? "Le client doit accepter les limitations des appareils reconditionnés." : null);
 
   const patch = (key: string, changes: Partial<TicketLine>) =>
@@ -53,7 +75,7 @@ export default function SaleTicket({
     event.preventDefault();
     if (problem) return;
     try {
-      const sale = await createSale(buildSaleBody({ lines, form, method, note, acceptLimitations: accepted })).unwrap();
+      const sale = await createSale(buildSaleBody({ lines: shown, form, method, note, acceptLimitations: accepted })).unwrap();
       onDone(sale);
     } catch {
       // L'erreur RTK Query est affichée sous le bouton ; le ticket reste tel quel.
@@ -61,14 +83,32 @@ export default function SaleTicket({
   }
 
   return (
-    <form onSubmit={submit} className="card space-y-5 p-4 sm:p-5" aria-label="Ticket de vente">
+    <form
+      onSubmit={submit}
+      className="card space-y-5 p-4 sm:p-5"
+      aria-label="Ticket de vente"
+      // Entrée dans un champ (prix, remarque, ou une douchette) ne doit pas encaisser par mégarde :
+      // on encaisse avec le bouton.
+      onKeyDown={(event) => {
+        if (event.key === "Enter" && event.target instanceof HTMLInputElement && event.target.type !== "checkbox") {
+          event.preventDefault();
+        }
+      }}
+    >
       <h2 className="text-xl">Ticket</h2>
 
-      {lines.length === 0 ? (
+      {synced.changed.length > 0 ? (
+        <p role="status" className="rounded-md bg-surface-2 p-3 text-sm font-semibold">
+          Le prix catalogue a changé depuis la recherche : {synced.changed.map((name) => `« ${name} »`).join(", ")}. Le ticket est
+          à jour.
+        </p>
+      ) : null}
+
+      {shown.length === 0 ? (
         <p className="text-ink-muted">Cherchez un appareil et choisissez-le pour l&apos;ajouter au ticket.</p>
       ) : (
         <ul className="space-y-3">
-          {lines.map((line) => {
+          {shown.map((line) => {
             const reduction = reductionText(line);
             return (
               <li key={line.key} className="space-y-3 rounded-lg border border-line bg-surface-2 p-3">
@@ -100,6 +140,7 @@ export default function SaleTicket({
                     <input
                       className="input w-40"
                       inputMode="numeric"
+                      aria-label={`Prix accordé de ${line.name}`}
                       value={Number.isNaN(line.unitPrice) ? "" : line.unitPrice}
                       onChange={(event) => patch(line.key, { unitPrice: toNumber(event.target.value.replace(/\D/g, "")) })}
                     />
@@ -122,6 +163,13 @@ export default function SaleTicket({
           Offert avec cette affaire : {gifts.map((gift) => `${gift.quantity} × ${gift.name}`).join(", ")}. Le stock du cadeau
           baisse aussi.
         </p>
+      ) : null}
+      {notices.length > 0 ? (
+        <ul role="alert" className="list-disc space-y-1 pl-5 text-sm font-semibold text-red">
+          {notices.map((notice) => (
+            <li key={notice}>{notice}</li>
+          ))}
+        </ul>
       ) : null}
       {problems.length > 0 ? (
         <p role="alert" className="field-error">
@@ -179,7 +227,12 @@ export default function SaleTicket({
             ))}
           </ul>
           <label className="flex items-start gap-2 font-semibold">
-            <input type="checkbox" className="mt-1 size-5" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} />
+            <input
+              type="checkbox"
+              className="mt-1 size-5"
+              checked={accepted}
+              onChange={(event) => setAcceptedFor(event.target.checked ? limitationsKey : null)}
+            />
             <span>Le client a pris connaissance de ces limitations et les accepte.</span>
           </label>
         </div>
