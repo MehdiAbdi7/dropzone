@@ -459,6 +459,12 @@ model OrderItem {
   // Le prix d'achat de la variante au moment de la vente (14/11) : le bénéfice passé ne
   // change jamais, même quand le prix d'achat change ensuite. null = inconnu.
   unitCost        Int?      @map("unit_cost")
+  // Le prix catalogue au moment de la commande (16/11, lot 3) et qui a accordé le prix actuel
+  // quand il en diffère. `unitPrice` est le prix accordé : la caisse et les totaux le comptent.
+  // null = commande d'avant le lot 3, dont le prix catalogue n'est pas connu. Pas de clé étrangère
+  // sur `grantedById`, comme `userId` des mouvements : la trace survit à un compte supprimé.
+  listPrice       Int?      @map("list_price")
+  grantedById     Int?      @map("granted_by_id")
 
   @@index([orderId])
   @@index([productId])
