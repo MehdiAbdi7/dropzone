@@ -29,11 +29,19 @@ export type CashMovement = {
   note: string | null;
 };
 
+// Une réouverture de la caisse du jour (15/11) : le comptage qu'elle a effacé reste visible.
+export type CashReopening = {
+  id: number;
+  createdAt: string;
+  previousCountedCash: number | null;
+};
+
 export type CashToday = {
   date: string;
   day: { openingFloat: number; countedCash: number | null; openedAt: string; closedAt: string | null } | null;
   summary: CashSummary | null;
   movements: CashMovement[];
+  reopenings: CashReopening[];
 };
 
 const cashApi = api.injectEndpoints({
@@ -51,7 +59,12 @@ const cashApi = api.injectEndpoints({
       query: (body) => ({ url: "/admin/cash/close", method: "POST", body }),
       invalidatesTags: ["Cash", "Stats", "History"],
     }),
+    reopenCash: build.mutation<CashToday, void>({
+      query: () => ({ url: "/admin/cash/reopen", method: "POST" }),
+      transformResponse: data<CashToday>,
+      invalidatesTags: ["Cash", "Stats", "History"],
+    }),
   }),
 });
 
-export const { useCashTodayQuery, useOpenCashMutation, useCloseCashMutation } = cashApi;
+export const { useCashTodayQuery, useOpenCashMutation, useCloseCashMutation, useReopenCashMutation } = cashApi;
