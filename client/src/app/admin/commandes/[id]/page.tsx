@@ -14,7 +14,10 @@ import {
 } from "@/features/admin/api/ordersApi";
 import EditOrderDialog from "@/features/admin/orders/EditOrderDialog";
 import OrderEvents from "@/features/admin/orders/OrderEvents";
+import NegotiatePrices from "@/features/admin/orders/NegotiatePrices";
 import OrderMoney from "@/features/admin/orders/OrderMoney";
+import { negotiationState, type NegotiableItem } from "@/features/admin/orders/negotiation";
+import { reductionText } from "@/features/admin/sales/ticket";
 import { dailyLabel, receptionLabel } from "@/features/admin/orders/orderLabels";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatOptions, formatPrice } from "@/lib/format";
@@ -38,6 +41,8 @@ export default function AdminOrderPage() {
   // Après la suppression, la lecture de la commande se relance et répond 404 : sans ce drapeau,
   // « Cette commande est introuvable » s'afficherait un instant avant la redirection.
   const [removed, setRemoved] = useState(false);
+  // Les prix négociés saisis par ligne (lot 3) : envoyés avec « Confirmer » ou « Valider le retrait ».
+  const [prices, setPrices] = useState<Record<number, number>>({});
   const router = useRouter();
 
   async function remove(orderId: number) {
@@ -63,6 +68,13 @@ export default function AdminOrderPage() {
   const forward = order.allowedTransitions.filter((status) => status !== "cancelled");
   const canCancel = order.allowedTransitions.includes("cancelled");
   const pickup = order.type === "pickup";
+  // On ne négocie que le prix d'une commande dont l'argent n'est pas encore entré (lot 3) ; une
+  // commande payée se corrige par « Modifier ».
+  const canNegotiate =
+    ["pending", "confirmed", "reserved"].includes(order.status) &&
+    !order.payments.some((payment) => payment.kind !== "correction");
+  const negotiation = negotiationState(order.items, canNegotiate ? prices : {}, order.shippingFee);
+  const setPrice = (itemId: number, value: number) => setPrices((current) => ({ ...current, [itemId]: value }));
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -85,12 +97,18 @@ export default function AdminOrderPage() {
             key={status}
             type="button"
             className="btn btn-primary"
-            disabled={isLoading}
-            onClick={() => changeStatus({ id: order.id, status })}
+            disabled={isLoading || (status === "confirmed" && negotiation.problem !== null)}
+            onClick={() =>
+              // La confirmation d'une livraison est le moment de négocier le prix (lot 3).
+              changeStatus({ id: order.id, status, ...(status === "confirmed" ? { prices: negotiation.toSend } : {}) })
+            }
           >
             {ACTION_LABELS[status as keyof typeof ACTION_LABELS]}
           </button>
         ))}
+        {canNegotiate && !pickup && forward.includes("confirmed") ? (
+          <NegotiatePrices items={order.items} prices={prices} onPrice={setPrice} shippingFee={order.shippingFee} />
+        ) : null}
         {canCancel ? (
           <ConfirmDialog
             trigger={pickup ? "Annuler la réservation" : "Annuler la commande"}
@@ -138,7 +156,16 @@ export default function AdminOrderPage() {
 
       <EditOrderDialog order={order} open={editing} onClose={() => setEditing(false)} />
 
-      {pickup && order.status === "reserved" ? <ValidatePickup orderId={order.id} total={order.total} /> : null}
+      {pickup && order.status === "reserved" ? (
+        <ValidatePickup
+          orderId={order.id}
+          negotiation={negotiation}
+          items={order.items}
+          prices={prices}
+          onPrice={setPrice}
+          shippingFee={order.shippingFee}
+        />
+      ) : null}
 
       <div className="grid gap-6 md:grid-cols-2">
         <section className="card space-y-1 p-5 text-sm" aria-labelledby="client">
@@ -186,7 +213,16 @@ export default function AdminOrderPage() {
                 <p className="mt-1 font-semibold">{warrantyLabel(item.warrantyMonths)}</p>
               ) : null}
             </div>
-            <p className="font-semibold">{item.isGift ? "Offert" : formatPrice(item.unitPrice * item.quantity)}</p>
+            <p className="text-right font-semibold">
+              {item.isGift ? "Offert" : formatPrice(item.unitPrice * item.quantity)}
+              {/* La réduction accordée (lot 3) : prix catalogue → prix accordé, et par qui. */}
+              {!item.isGift && item.listPrice !== null && item.listPrice !== item.unitPrice ? (
+                <span className="block text-xs font-normal text-ink-muted">
+                  {reductionText({ listPrice: item.listPrice, unitPrice: item.unitPrice })}
+                  {item.grantedByName ? ` · accordée par ${item.grantedByName}` : ""}
+                </span>
+              ) : null}
+            </p>
           </div>
         ))}
       </section>
@@ -199,7 +235,23 @@ export default function AdminOrderPage() {
 
 // Le client est venu : il paie, et le paiement entre dans la caisse du jour (14/11).
 // Espèces par défaut : c'est le cas le plus courant au comptoir.
-function ValidatePickup({ orderId, total }: { orderId: number; total: number }) {
+// Avant d'encaisser, le prix de chaque article peut se négocier (lot 3) : le nouveau total est
+// celui qui entre dans la caisse.
+function ValidatePickup({
+  orderId,
+  negotiation,
+  items,
+  prices,
+  onPrice,
+  shippingFee,
+}: {
+  orderId: number;
+  negotiation: ReturnType<typeof negotiationState>;
+  items: NegotiableItem[];
+  prices: Record<number, number>;
+  onPrice: (id: number, value: number) => void;
+  shippingFee: number;
+}) {
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [validate, { isLoading, error }] = useValidatePickupMutation();
   return (
@@ -207,6 +259,7 @@ function ValidatePickup({ orderId, total }: { orderId: number; total: number }) 
       <h2 id="pickup-title" className="text-lg">
         Le client est venu ?
       </h2>
+      <NegotiatePrices items={items} prices={prices} onPrice={onPrice} shippingFee={shippingFee} />
       <div className="flex flex-wrap items-end gap-3">
         <label className="space-y-1 text-sm font-semibold">
           <span className="block">Moyen de paiement</span>
@@ -218,8 +271,13 @@ function ValidatePickup({ orderId, total }: { orderId: number; total: number }) 
             ))}
           </select>
         </label>
-        <button type="button" className="btn btn-primary" disabled={isLoading} onClick={() => validate({ id: orderId, method })}>
-          Valider le retrait · {formatPrice(total)}
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={isLoading || negotiation.problem !== null}
+          onClick={() => validate({ id: orderId, method, prices: negotiation.toSend })}
+        >
+          Valider le retrait · {Number.isNaN(negotiation.total) ? "—" : formatPrice(negotiation.total)}
         </button>
       </div>
       {error ? (

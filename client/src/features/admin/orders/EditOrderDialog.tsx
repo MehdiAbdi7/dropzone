@@ -5,6 +5,8 @@ import { useState, type FormEvent } from "react";
 import { PAYMENT_METHOD_LABELS } from "@/config/catalog";
 import { useEditOrderMutation, type AdminOrder } from "@/features/admin/api/ordersApi";
 import EditDialog from "@/features/admin/products/EditDialog";
+import VariantPicker from "@/features/admin/sales/VariantPicker";
+import type { VariantHit } from "@/features/admin/sales/ticket";
 import { errorMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/format";
 import type { PaymentMethod } from "@/types/api";
@@ -34,8 +36,6 @@ function EditForm({ order, onDone }: { order: AdminOrder; onDone: () => void }) 
   const [fullName, setFullName] = useState(order.fullName);
   const [phone, setPhone] = useState(order.phone);
   const [note, setNote] = useState(order.note ?? "");
-  const [sku, setSku] = useState("");
-  const [skuMessage, setSkuMessage] = useState<string | null>(null);
   const problem = draftProblem(lines);
   const total = draftTotal(lines, order.shippingFee);
   const difference = total - order.total;
@@ -45,18 +45,15 @@ function EditForm({ order, onDone }: { order: AdminOrder; onDone: () => void }) 
   // Un nombre vide reste vide (NaN) : le brouillon le refuse au lieu de l'envoyer comme 0.
   const toNumber = (text: string) => (text.trim() === "" ? Number.NaN : Number(text));
 
-  function addArticle() {
-    const value = sku.trim().toUpperCase();
-    if (!value) return;
-    // Un article déjà dans la commande (même retiré du brouillon) ne se rajoute pas par son SKU :
-    // sa ligne garde son prix d'achat copié à la vente. On change sa quantité ou son prix.
-    if (lines.some((line) => line.sku === value) || order.items.some((item) => item.sku === value)) {
-      setSkuMessage("Cet article est déjà dans la commande : gardez sa ligne et changez sa quantité ou son prix.");
-      return;
-    }
-    setSkuMessage(null);
-    setLines((current) => [...current, { key: `new-${value}`, sku: value, name: value, quantity: 1, unitPrice: Number.NaN }]);
-    setSku("");
+  // Un article choisi dans le sélecteur (lot 3) : son prix de départ est son prix catalogue. Un article
+  // déjà dans la commande (même retiré du brouillon) n'est pas proposé : sa ligne garde son prix
+  // d'achat copié à la vente, on change sa quantité ou son prix.
+  const takenSkus = [...order.items.map((item) => item.sku), ...lines.flatMap((line) => (line.sku ? [line.sku] : []))];
+  function addArticle(hit: VariantHit) {
+    setLines((current) => [
+      ...current,
+      { key: `new-${hit.sku}`, sku: hit.sku, name: hit.productName, quantity: 1, unitPrice: hit.price },
+    ]);
   }
 
   async function submit(event: FormEvent) {
@@ -114,20 +111,7 @@ function EditForm({ order, onDone }: { order: AdminOrder; onDone: () => void }) 
             Pour changer les articles, supprimez la commande et refaites-la.
           </p>
         ) : (
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="block text-sm font-semibold">
-              <span className="label">Ajouter un article par son SKU</span>
-              <input className="input" value={sku} onChange={(event) => setSku(event.target.value)} placeholder="Ex. COQ-IP15PM" />
-            </label>
-            <button type="button" className="btn btn-secondary" onClick={addArticle} disabled={!sku.trim()}>
-              Ajouter
-            </button>
-            {skuMessage ? (
-              <p role="alert" className="field-error w-full">
-                {skuMessage}
-              </p>
-            ) : null}
-          </div>
+          <VariantPicker label="Ajouter un article" onPick={addArticle} disabledSkus={takenSkus} />
         )}
       </fieldset>
 
