@@ -518,6 +518,20 @@ model CashDay {
   @@map("cash_days")
 }
 
+// Chaque réouverture d'une caisse fermée (15/11) : qui, quand, et le comptage qu'on a effacé.
+// Sans cette trace, on pourrait cacher un écart en rouvrant puis en refermant avec un autre montant.
+model CashReopening {
+  id                  Int       @id @default(autoincrement())
+  createdAt           DateTime  @default(now()) @map("created_at")
+  businessDate        DateTime  @map("business_date") @db.Date
+  userId              Int?      @map("user_id")
+  previousCountedCash Int?      @map("previous_counted_cash")
+  previousClosedAt    DateTime? @map("previous_closed_at")
+
+  @@index([businessDate])
+  @@map("cash_reopenings")
+}
+
 // Le journal des mouvements d'argent : une ligne par entrée (+) ou sortie (−), jamais
 // modifiée. La caisse, les livraisons et l'historique se calculent à partir de lui.
 model MoneyMovement {

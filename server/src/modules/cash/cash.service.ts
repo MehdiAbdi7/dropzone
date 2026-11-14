@@ -8,11 +8,39 @@ const asDate = (day: string) => new Date(`${day}T00:00:00Z`);
 // La journée de caisse d'aujourd'hui (heure d'Alger), avec ses mouvements et son résumé.
 export async function getTodayCash(now: Date = new Date()) {
   const date = algiersDate(now);
-  const [day, movements] = await Promise.all([
+  const [day, movements, reopenings] = await Promise.all([
     prisma.cashDay.findUnique({ where: { date: asDate(date) } }),
     prisma.moneyMovement.findMany({ where: { businessDate: asDate(date) }, orderBy: { createdAt: "asc" } }),
+    prisma.cashReopening.findMany({ where: { businessDate: asDate(date) }, orderBy: { id: "asc" } }),
   ]);
-  return { date, day, summary: day ? cashSummary(day, movements) : null, movements };
+  return { date, day, summary: day ? cashSummary(day, movements) : null, movements, reopenings };
+}
+
+// Rouvrir la caisse d'AUJOURD'HUI, fermée par erreur ou pour une vente tardive. L'argent déjà
+// encaissé reste dans le jour (les dates restent vraies) ; seul le comptage est effacé, et la
+// trace garde l'ancien. Conditionnelle comme la fermeture : seul celui qui fait passer la ligne
+// de « fermée » à « ouverte » écrit la trace. Une caisse d'un jour passé ne se rouvre pas : une
+// correction s'écrit le jour où elle est faite.
+export async function reopenCashDay(userId: number, now: Date = new Date()) {
+  const date = asDate(algiersDate(now));
+  await prisma.$transaction(async (tx) => {
+    // `FOR UPDATE` : la ligne est verrouillée avant d'être lue. Une fermeture ou une autre
+    // réouverture simultanée attend la fin de cette transaction, donc le comptage qu'on trace
+    // est bien celui qu'on efface (sinon la trace pourrait garder un ancien montant).
+    const [day] = await tx.$queryRaw<{ counted_cash: number | null; closed_at: Date | null }[]>`
+      SELECT counted_cash, closed_at FROM cash_days WHERE date = ${algiersDate(now)}::date FOR UPDATE`;
+    if (!day) {
+      throw new AppError(409, "Ouvrez la journée de caisse d'abord");
+    }
+    if (!day.closed_at) {
+      throw new AppError(409, "La journée de caisse est déjà ouverte");
+    }
+    await tx.cashDay.update({ where: { date }, data: { countedCash: null, closedAt: null, closedById: null } });
+    await tx.cashReopening.create({
+      data: { businessDate: date, userId, previousCountedCash: day.counted_cash, previousClosedAt: day.closed_at },
+    });
+  });
+  return getTodayCash(now);
 }
 
 export async function openCashDay(openingFloat: number, userId: number, now: Date = new Date()) {
@@ -56,7 +84,7 @@ export async function requireOpenCashDay(tx: Tx, now: Date) {
     throw new AppError(409, "Ouvrez la journée de caisse d'abord");
   }
   if (day.closed_at) {
-    throw new AppError(409, "La journée de caisse est fermée");
+    throw new AppError(409, "La journée de caisse est fermée : rouvrez-la dans Caisse, puis recommencez");
   }
   return day;
 }

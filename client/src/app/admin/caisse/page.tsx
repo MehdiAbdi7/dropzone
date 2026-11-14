@@ -8,7 +8,9 @@ import {
   useCashTodayQuery,
   useCloseCashMutation,
   useOpenCashMutation,
+  useReopenCashMutation,
   type CashMovement,
+  type CashReopening,
   type CashSummary,
 } from "@/features/admin/api/cashApi";
 import { errorMessage } from "@/lib/errors";
@@ -18,7 +20,9 @@ import type { PaymentMethod } from "@/types/api";
 // La journée de caisse (14/11). Le matin : saisir le fond. Pendant la journée : chaque
 // paiement entre dans le journal (les espèces dans le tiroir). Le soir : compter le tiroir et
 // saisir le montant ; l'app affiche ce qui est rentré, ce qui était attendu, et l'écart.
-// Une caisse fermée ne se rouvre pas : une correction s'écrira le jour où elle est faite.
+// Une caisse fermée par erreur (ou avant une vente tardive) se rouvre le jour même : l'argent déjà
+// encaissé reste dans le jour, le comptage est effacé, et la trace garde l'ancien montant. Une
+// caisse d'un jour passé ne se rouvre pas : une correction s'écrit le jour où elle est faite.
 
 const KIND_LABELS: Record<CashMovement["kind"], string> = {
   sale: "Vente au magasin",
@@ -64,7 +68,8 @@ export default function CashPage() {
       ) : (
         <>
           <Summary summary={data.summary} closed={data.day.closedAt !== null} />
-          {data.day.closedAt === null ? <CloseCash expected={data.summary.expectedCash} /> : null}
+          {data.day.closedAt === null ? <CloseCash expected={data.summary.expectedCash} /> : <ReopenCash />}
+          <Reopenings reopenings={data.reopenings} />
           <Movements movements={data.movements} />
         </>
       )}
@@ -184,8 +189,8 @@ function CloseCash({ expected }: { expected: number }) {
     <form onSubmit={submit} className="card max-w-md space-y-4 p-5">
       <h2 className="text-lg">Fermer la journée</h2>
       <p className="text-sm text-ink-muted">
-        Comptez tout l&apos;argent du tiroir. Attendu : <strong>{formatPrice(expected)}</strong>. Une fois fermée, la journée ne
-        change plus.
+        Comptez tout l&apos;argent du tiroir. Attendu : <strong>{formatPrice(expected)}</strong>. Une fois fermée, le comptage ne
+        change plus (sauf en rouvrant la journée, ce qui est noté).
       </p>
       <Field id="countedCash" label="Montant compté (DA)" error={error ? errorMessage(error) : undefined}>
         <input
@@ -200,6 +205,62 @@ function CloseCash({ expected }: { expected: number }) {
         Fermer la journée
       </button>
     </form>
+  );
+}
+
+function ReopenCash() {
+  const [reopenCash, { isLoading, error }] = useReopenCashMutation();
+  const [confirming, setConfirming] = useState(false);
+  return (
+    <section aria-labelledby="reopen-title" className="card max-w-md space-y-3 p-5">
+      <h2 id="reopen-title" className="text-lg">
+        Rouvrir la journée
+      </h2>
+      <p className="text-sm text-ink-muted">
+        Pour corriger une erreur ou encaisser une vente après la fermeture. L&apos;argent déjà encaissé reste dans cette journée, le
+        montant compté est effacé (il faudra recompter) et la réouverture est notée.
+      </p>
+      {error ? (
+        <p role="alert" className="text-sm font-semibold text-red">
+          {errorMessage(error)}
+        </p>
+      ) : null}
+      {confirming ? (
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn btn-primary" disabled={isLoading} onClick={() => reopenCash()}>
+            Oui, rouvrir
+          </button>
+          <button type="button" className="btn" disabled={isLoading} onClick={() => setConfirming(false)}>
+            Annuler
+          </button>
+        </div>
+      ) : (
+        <button type="button" className="btn" onClick={() => setConfirming(true)}>
+          Rouvrir la journée
+        </button>
+      )}
+    </section>
+  );
+}
+
+function Reopenings({ reopenings }: { reopenings: CashReopening[] }) {
+  if (reopenings.length === 0) return null;
+  return (
+    <section aria-labelledby="reopenings-title" className="card p-5">
+      <h2 id="reopenings-title" className="text-lg">
+        Réouvertures du jour
+      </h2>
+      <ul className="mt-3 divide-y divide-line text-sm">
+        {reopenings.map((reopening) => (
+          <li key={reopening.id} className="py-2">
+            <span className="tabular-nums text-ink-muted">{time(reopening.createdAt)}</span> Journée rouverte
+            {reopening.previousCountedCash !== null ? (
+              <span className="text-ink-muted"> · comptage effacé : {formatPrice(reopening.previousCountedCash)}</span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

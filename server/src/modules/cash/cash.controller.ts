@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { closeCashDay, getTodayCash, openCashDay } from "./cash.service.js";
+import { closeCashDay, getTodayCash, openCashDay, reopenCashDay } from "./cash.service.js";
 
 export async function getToday(_req: Request, res: Response) {
   res.json({ data: await getTodayCash() });
@@ -7,6 +7,10 @@ export async function getToday(_req: Request, res: Response) {
 
 export async function postOpen(req: Request, res: Response) {
   res.status(201).json({ data: await openCashDay(req.body.openingFloat, res.locals.user!.id) });
+}
+
+export async function postReopen(_req: Request, res: Response) {
+  res.json({ data: await reopenCashDay(res.locals.user!.id) });
 }
 
 export async function postClose(req: Request, res: Response) {

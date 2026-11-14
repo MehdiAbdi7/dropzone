@@ -137,7 +137,7 @@ describe("POST /admin/sales", () => {
     await agent.post("/admin/cash/close").send({ countedCash: 0 }).expect(200);
     const afterClose = await agent.post("/admin/sales").send(sale());
     expect(afterClose.status).toBe(409);
-    expect(afterClose.body.error.message).toBe("La journée de caisse est fermée");
+    expect(afterClose.body.error.message).toMatch(/^La journée de caisse est fermée/);
     expect(await prisma.order.count()).toBe(0);
     expect(await prisma.moneyMovement.count()).toBe(0);
     expect(await stockOf("IP-NEW-256")).toBe(stock);
