@@ -1,4 +1,5 @@
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { Fulfillment } from "@/features/orders/ordersApi";
 import type { CartLine } from "@/types/api";
 import { snapshotOf, toRequest, type StoredCartItem } from "./cartSnapshot";
 
@@ -13,9 +14,13 @@ type CartState = {
   // La fenêtre du panier (06/11, comme le ticket de Niwa) : ouverte par l'en-tête, la barre
   // ou « Voir le panier ». Pas gardée dans localStorage (StoreProvider n'y écrit que `items`).
   open: boolean;
+  // Le mode de réception choisi sur la page de commande (15/11) : la fenêtre du panier, ouverte
+  // depuis cette page, calcule ses frais dans le même mode. Pas gardé non plus ; hors de la page
+  // de commande, c'est toujours « delivery ».
+  fulfillment: Fulfillment;
 };
 
-const initialState: CartState = { items: [], hydrated: false, open: false };
+const initialState: CartState = { items: [], hydrated: false, open: false, fulfillment: "delivery" };
 
 export const MAX_PER_LINE = 10;
 
@@ -70,10 +75,13 @@ const cartSlice = createSlice({
     closeCart(state) {
       state.open = false;
     },
+    setFulfillment(state, action: PayloadAction<Fulfillment>) {
+      state.fulfillment = action.payload;
+    },
   },
 });
 
-export const { hydrate, linesConfirmed, addItem, setQuantity, removeItem, clearCart, openCart, closeCart } =
+export const { hydrate, linesConfirmed, addItem, setQuantity, removeItem, clearCart, openCart, closeCart, setFulfillment } =
   cartSlice.actions;
 export default cartSlice.reducer;
 

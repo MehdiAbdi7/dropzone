@@ -1,12 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { CONDITION_LABELS, ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS, STATUS_LABELS } from "@/config/catalog";
 import { warrantyLabel } from "@/config/warranty";
-import { useAdminOrderQuery, useChangeStatusMutation, useValidatePickupMutation } from "@/features/admin/api/ordersApi";
+import {
+  useAdminOrderQuery,
+  useChangeStatusMutation,
+  useDeleteOrderMutation,
+  useValidatePickupMutation,
+} from "@/features/admin/api/ordersApi";
+import EditOrderDialog from "@/features/admin/orders/EditOrderDialog";
+import OrderEvents from "@/features/admin/orders/OrderEvents";
+import OrderMoney from "@/features/admin/orders/OrderMoney";
 import { dailyLabel, receptionLabel } from "@/features/admin/orders/orderLabels";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatOptions, formatPrice } from "@/lib/format";
@@ -25,7 +33,26 @@ export default function AdminOrderPage() {
   const { id } = useParams<{ id: string }>();
   const { data: order, isError } = useAdminOrderQuery(Number(id));
   const [changeStatus, { isLoading, error }] = useChangeStatusMutation();
+  const [deleteOrder, deleteState] = useDeleteOrderMutation();
+  const [editing, setEditing] = useState(false);
+  // Après la suppression, la lecture de la commande se relance et répond 404 : sans ce drapeau,
+  // « Cette commande est introuvable » s'afficherait un instant avant la redirection.
+  const [removed, setRemoved] = useState(false);
+  const router = useRouter();
 
+  async function remove(orderId: number) {
+    try {
+      await deleteOrder(orderId).unwrap();
+      setRemoved(true);
+      router.push("/admin/commandes");
+    } catch {
+      // L'erreur RTK Query est affichée sous les boutons de la commande.
+    }
+  }
+
+  if (removed) {
+    return <p role="status">Commande supprimée, retour à la liste…</p>;
+  }
   if (isError) {
     return <p role="alert">Cette commande est introuvable.</p>;
   }
@@ -74,8 +101,42 @@ export default function AdminOrderPage() {
             Le stock de chaque article, cadeaux compris, est rendu. Une commande annulée ne peut plus changer.
           </ConfirmDialog>
         ) : null}
+        {/* Modifier et supprimer : après coup, avec stock, argent et trace qui suivent (lot 2). */}
+        {order.status !== "cancelled" && order.status !== "expired" ? (
+          <button type="button" className="btn btn-secondary" onClick={() => setEditing(true)}>
+            Modifier
+          </button>
+        ) : null}
+        <ConfirmDialog
+          trigger="Supprimer"
+          title={`Supprimer la commande suivi ${order.number} ?`}
+          confirmLabel="Supprimer la commande"
+          onConfirm={() => remove(order.id)}
+        >
+          Le stock de chaque article, cadeaux compris, est rendu
+          {order.status === "cancelled" || order.status === "expired" ? " (déjà fait : la commande est " + STATUS_LABELS[order.status] + ")" : ""}.
+          {order.paid !== 0
+            ? ` Les ${formatPrice(order.paid)} encaissés sont rendus dans la caisse d'aujourd'hui, qui doit être ouverte.`
+            : " Rien n'a été encaissé."}{" "}
+          La commande disparaît, une trace reste dans l&apos;historique.
+        </ConfirmDialog>
         {error ? <p className="field-error w-full">{errorMessage(error)}</p> : null}
+        {deleteState.error ? (
+          <p role="alert" className="field-error w-full">
+            {errorMessage(deleteState.error)}
+            {errorMessage(deleteState.error).includes("journée de caisse") ? (
+              <>
+                {" "}
+                <Link href="/admin/caisse" className="underline">
+                  Ouvrir la caisse
+                </Link>
+              </>
+            ) : null}
+          </p>
+        ) : null}
       </section>
+
+      <EditOrderDialog order={order} open={editing} onClose={() => setEditing(false)} />
 
       {pickup && order.status === "reserved" ? <ValidatePickup orderId={order.id} total={order.total} /> : null}
 
@@ -129,6 +190,9 @@ export default function AdminOrderPage() {
           </div>
         ))}
       </section>
+
+      <OrderMoney order={order} />
+      <OrderEvents events={order.events} />
     </div>
   );
 }

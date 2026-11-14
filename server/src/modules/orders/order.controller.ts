@@ -11,6 +11,7 @@ import {
   trackOrder,
   validatePickup,
 } from "./order.service.js";
+import { deleteOrder, editOrder } from "./orderEdit.service.js";
 
 export async function postPreview(req: Request, res: Response) {
   res.json({ data: await previewCart(req.body.items, req.body.fulfillment) });
@@ -42,6 +43,14 @@ export async function getAdminOrderOne(req: Request, res: Response) {
 
 export async function postPickup(req: Request, res: Response) {
   res.json({ data: await validatePickup(Number(req.params.id), req.body.method, res.locals.user!.id) });
+}
+
+export async function patchOrder(req: Request, res: Response) {
+  res.json({ data: await editOrder(Number(req.params.id), req.body, res.locals.user!.id) });
+}
+
+export async function removeOrder(req: Request, res: Response) {
+  res.json({ data: await deleteOrder(Number(req.params.id), res.locals.user!.id) });
 }
 
 export async function patchStatus(req: Request, res: Response) {

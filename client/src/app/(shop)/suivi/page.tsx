@@ -9,7 +9,7 @@ export default async function TrackPage({ searchParams }: PageProps<"/suivi">) {
     <div className="container-page space-y-6 py-8">
       <h1 className="text-3xl">Suivre une commande</h1>
       <p className="max-w-xl text-ink-muted">
-        Entrez le numéro reçu à la commande et le téléphone donné pour la livraison.
+        Entrez le numéro reçu à la commande et le téléphone donné à la commande.
       </p>
       <TrackForm initialNumber={typeof numero === "string" ? numero : undefined} />
     </div>

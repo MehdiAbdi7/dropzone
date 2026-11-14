@@ -8,7 +8,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import Field from "@/components/ui/Field";
 import { CONDITION_LABELS } from "@/config/catalog";
-import { clearCart, openCart } from "@/features/cart/cartSlice";
+import { clearCart, openCart, setFulfillment } from "@/features/cart/cartSlice";
 import CartSummary from "@/features/cart/CartSummary";
 import { WILAYAS } from "@/config/wilayas";
 import { algiersDate, describePickupDay, pickupDays, pickupSlots } from "@/lib/algiersTime";
@@ -107,6 +107,15 @@ export default function CheckoutForm({ user }: { user: User | null }) {
   // `request` : SKU et quantités seulement (les descriptions gardées ne partent pas au serveur).
   // L'aperçu suit le mode de réception : un retrait n'a pas de frais de livraison.
   const { data: preview, refetch, request } = useCartPreview({ skip: !hydrated, fulfillment });
+
+  // La fenêtre du panier, ouverte depuis cette page, calcule dans le même mode que le formulaire ;
+  // en quittant la page, elle revient en livraison.
+  useEffect(() => {
+    dispatch(setFulfillment(fulfillment));
+    return () => {
+      dispatch(setFulfillment("delivery"));
+    };
+  }, [dispatch, fulfillment]);
 
   // Toujours deux jours proposés, nommés (« Samedi », « Dimanche ») : la nuit, après la fermeture,
   // ce sont demain et après-demain, pour qu'on puisse réserver une affaire vue le soir.

@@ -10,7 +10,7 @@ export const PASSWORD = "motdepasse123";
 export async function resetDb() {
   await prisma.$executeRaw`TRUNCATE order_items, orders, users, variant_gifts, product_images,
     product_variants, "_ProductCompatibleModels", "_VariantCompatibleModels", products, accessory_makers, series, brands, choices, device_models, categories, import_records,
-    daily_counters, cash_days, money_movements
+    daily_counters, cash_days, money_movements, order_events
     RESTART IDENTITY CASCADE`;
   // Les réglages du magasin ont une seule ligne (id = 1), créée par la migration : on remet ses
   // valeurs de départ au lieu de la supprimer.

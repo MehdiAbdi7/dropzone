@@ -530,6 +530,30 @@ model MoneyMovement {
   @@map("money_movements")
 }
 
+// Ce que l'admin a fait à une commande après coup (15/11, lot 2).
+enum OrderEventKind {
+  edited
+  deleted
+}
+
+// Le journal des modifications et suppressions de commande. `orderId` n'a PAS de clé étrangère :
+// la trace doit survivre à la suppression de sa commande. Une ligne n'est jamais modifiée.
+model OrderEvent {
+  id          Int            @id @default(autoincrement())
+  createdAt   DateTime       @default(now()) @map("created_at")
+  kind        OrderEventKind
+  orderId     Int?           @map("order_id")
+  orderNumber Int            @map("order_number")
+  userId      Int?           @map("user_id")
+  summary     String
+  // La différence d'argent de cette modification (négative pour une baisse ou un remboursement).
+  amountDelta Int            @default(0) @map("amount_delta")
+
+  @@index([createdAt])
+  @@index([orderId])
+  @@map("order_events")
+}
+
 // Les réglages du magasin : une seule ligne (id = 1). closedDays : 0 = dimanche … 6 = samedi.
 model StoreSettings {
   id          Int    @id @default(1)

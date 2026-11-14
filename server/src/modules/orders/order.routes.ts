@@ -8,15 +8,18 @@ import {
   getAdminOrders,
   getMine,
   getMineOne,
+  patchOrder,
   patchStatus,
   postOrder,
   postPickup,
   postPreview,
   postTrack,
+  removeOrder,
 } from "./order.controller.js";
 import {
   adminOrderListQuerySchema,
   createOrderSchema,
+  editOrderBodySchema,
   orderNumberParamsSchema,
   pickupBodySchema,
   previewBodySchema,
@@ -36,6 +39,13 @@ orderRouter.get("/mine/:number", requireAuth, validate({ params: orderNumberPara
 export const orderAdminRouter = Router();
 orderAdminRouter.get("/orders", validate({ query: adminOrderListQuerySchema }), getAdminOrders);
 orderAdminRouter.get("/orders/:id", validate({ params: idParamsSchema }), getAdminOrderOne);
+// Modifier une commande après coup (15/11, lot 2) : stock, argent et trace suivent.
+orderAdminRouter.patch(
+  "/orders/:id",
+  validate({ params: idParamsSchema, body: editOrderBodySchema }),
+  patchOrder,
+);
+orderAdminRouter.delete("/orders/:id", validate({ params: idParamsSchema }), removeOrder);
 orderAdminRouter.patch(
   "/orders/:id/status",
   validate({ params: idParamsSchema, body: statusBodySchema }),

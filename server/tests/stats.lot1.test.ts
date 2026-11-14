@@ -54,4 +54,45 @@ describe("GET /admin/stats", () => {
     expect(after.revenueToday).toBe(order.body.data.total);
     expect(after.cash).toMatchObject({ open: true, closed: false, cashedToday: order.body.data.total });
   });
+
+  // Lot 2 (15/11) : un retrait compte à la date de son paiement, pas de sa réservation.
+  it("compte un retrait réservé hier et payé aujourd'hui dans les ventes d'aujourd'hui", async () => {
+    vi.setSystemTime(at("2026-11-13T12:00"));
+    const order = await reserve(TODAY, "15:00");
+    const { agent } = await loginAs("admin");
+    vi.setSystemTime(at("2026-11-14T10:00"));
+    await agent.post("/admin/cash/open").send({ openingFloat: 0 }).expect(201);
+    const { id } = await prisma.order.findUniqueOrThrow({ where: { number: order.body.data.number } });
+    await agent.post(`/admin/orders/${id}/pickup`).send({ method: "cash" }).expect(200);
+
+    const today = (await agent.get("/admin/stats")).body.data;
+    expect(today).toMatchObject({ revenueToday: order.body.data.total, ordersToday: 1 });
+    // La veille, cette vente n'existait pas encore : l'ancien calcul l'aurait rangée au 13.
+    vi.setSystemTime(at("2026-11-13T18:00"));
+    expect((await agent.get("/admin/stats")).body.data).toMatchObject({ revenueToday: 0, ordersToday: 0 });
+  });
+
+  it("range un retrait réservé le 31/10 et payé le 01/11 dans novembre, et suit l'horloge de l'application", async () => {
+    vi.setSystemTime(at("2026-10-31T12:00"));
+    const order = await reserve("2026-11-01", "15:00");
+    expect(order.status).toBe(201);
+    const { agent } = await loginAs("admin");
+    vi.setSystemTime(at("2026-11-01T10:00"));
+    await agent.post("/admin/cash/open").send({ openingFloat: 0 }).expect(201);
+    const { id } = await prisma.order.findUniqueOrThrow({ where: { number: order.body.data.number } });
+    await agent.post(`/admin/orders/${id}/pickup`).send({ method: "cash" }).expect(200);
+
+    expect((await agent.get("/admin/stats")).body.data).toMatchObject({ revenueMonth: order.body.data.total });
+    // Le 31/10, avant le paiement : le mois d'octobre n'a rien vendu.
+    vi.setSystemTime(at("2026-10-31T23:00"));
+    expect((await agent.get("/admin/stats")).body.data.revenueMonth).toBe(0);
+  });
+
+  it("garde une livraison à sa date de commande", async () => {
+    await previewThenOrder([{ sku: "IP-NEW-256", quantity: 1 }]);
+    const { agent } = await loginAs("admin");
+    const stats = (await agent.get("/admin/stats")).body.data;
+    expect(stats.ordersToday).toBe(1);
+    expect(stats.revenueToday).toBeGreaterThan(0);
+  });
 });

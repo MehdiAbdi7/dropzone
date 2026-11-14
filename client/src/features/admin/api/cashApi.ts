@@ -45,11 +45,11 @@ const cashApi = api.injectEndpoints({
     }),
     openCash: build.mutation<CashToday, { openingFloat: number }>({
       query: (body) => ({ url: "/admin/cash/open", method: "POST", body }),
-      invalidatesTags: ["Cash", "Stats"],
+      invalidatesTags: ["Cash", "Stats", "History"],
     }),
     closeCash: build.mutation<CashToday, { countedCash: number }>({
       query: (body) => ({ url: "/admin/cash/close", method: "POST", body }),
-      invalidatesTags: ["Cash", "Stats"],
+      invalidatesTags: ["Cash", "Stats", "History"],
     }),
   }),
 });

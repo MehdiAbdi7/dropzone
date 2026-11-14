@@ -5,27 +5,33 @@ import { getTodayCash } from "../cash/cash.service.js";
 // Le tableau de bord, écrit en SQL : GROUP BY et SUM sont plus lisibles ici qu'en
 // Prisma, et c'est ce SQL qu'on demande en entretien. Les valeurs passent toujours
 // en paramètres (les ${…} d'un $queryRaw ne sont jamais collés dans le texte SQL).
-// Les journées commencent à minuit heure d'Alger, pas à minuit UTC. Prisma range les
-// dates en UTC dans des colonnes sans fuseau : le CTE `bounds` calcule minuit à Alger,
-// puis le convertit en heure UTC pour le comparer à created_at.
+// Les journées sont celles d'Alger (minuit à minuit, UTC+1) : `algiersDate(now)` donne le jour,
+// passé au SQL en paramètre, et les commandes portent leur jour dans `business_date`.
 
 // Depuis le 14/11, plus de « stock faible » : avec les affaires, beaucoup d'articles sont
 // toujours à 0, la liste ne disait rien. L'accueil montre la journée du magasin.
 export async function getStats(now: Date = new Date()) {
+  // Les bornes viennent de la date d'Alger passée en paramètre (et non de now() de la base) :
+  // le même calcul sert en production et dans les tests à horloge simulée.
+  const today = algiersDate(now);
+  const monthStart = `${today.slice(0, 7)}-01`;
   const [revenue] = await prisma.$queryRaw<{ today: bigint; month: bigint; orders_today: bigint }[]>`
-    WITH bounds AS (
-      SELECT
-        (date_trunc('day', now() AT TIME ZONE 'Africa/Algiers') AT TIME ZONE 'Africa/Algiers') AT TIME ZONE 'UTC' AS day_start,
-        (date_trunc('month', now() AT TIME ZONE 'Africa/Algiers') AT TIME ZONE 'Africa/Algiers') AT TIME ZONE 'UTC' AS month_start
-    )
     SELECT
-      COALESCE(SUM(o.total) FILTER (WHERE o.created_at >= b.day_start), 0) AS today,
-      COALESCE(SUM(o.total) FILTER (WHERE o.created_at >= b.month_start), 0) AS month,
-      COUNT(*) FILTER (WHERE o.created_at >= b.day_start) AS orders_today
-    FROM orders o
-    CROSS JOIN bounds b
-    -- Une réservation n'est pas une vente tant que le client n'est pas venu payer (14/11).
-    WHERE o.status NOT IN ('cancelled', 'reserved', 'expired')
+      COALESCE(SUM(s.total) FILTER (WHERE s.sale_date = ${today}::date), 0) AS today,
+      COALESCE(SUM(s.total) FILTER (WHERE s.sale_date BETWEEN ${monthStart}::date AND ${today}::date), 0) AS month,
+      COUNT(*) FILTER (WHERE s.sale_date = ${today}::date) AS orders_today
+    FROM (
+      -- La date d'une vente (lot 2, 15/11) : le jour du paiement au comptoir pour un retrait ou une
+      -- vente au magasin ; le jour de la commande pour une livraison (son argent suit à part).
+      SELECT o.total,
+             COALESCE(
+               (SELECT MIN(m.business_date) FROM money_movements m
+                 WHERE m.order_id = o.id AND m.kind IN ('sale', 'pickup')),
+               o.business_date) AS sale_date
+      FROM orders o
+      -- Une réservation n'est pas une vente tant que le client n'est pas venu payer (14/11).
+      WHERE o.status NOT IN ('cancelled', 'reserved', 'expired')
+    ) s
   `;
 
   const byStatus = await prisma.$queryRaw<{ status: string; count: bigint }[]>`
@@ -35,9 +41,9 @@ export async function getStats(now: Date = new Date()) {
   `;
 
   // Les retraits attendus aujourd'hui (heure d'Alger), dans l'ordre de leur heure.
-  const today = new Date(`${algiersDate(now)}T00:00:00Z`);
+  const todayDate = new Date(`${today}T00:00:00Z`);
   const pickupsToday = await prisma.order.findMany({
-    where: { type: "pickup", status: "reserved", pickupDate: today },
+    where: { type: "pickup", status: "reserved", pickupDate: todayDate },
     orderBy: [{ pickupTime: "asc" }, { id: "asc" }],
     select: { id: true, dailyNumber: true, fullName: true, phone: true, pickupTime: true, total: true },
   });
