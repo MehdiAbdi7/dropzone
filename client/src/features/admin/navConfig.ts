@@ -10,9 +10,11 @@ import {
   UsersIcon,
 } from "@/components/ui/icons";
 
-// Le plan du back-office (14/11) : sept sections, chacune avec ses sous-onglets. Un seul fichier le
-// décrit ; la barre latérale, la barre du bas et les sous-onglets le lisent. Les pages gardent leur
-// adresse : rien ne casse, les favoris et les liens du tableau de bord continuent de marcher.
+// Le plan du back-office (14/11) : huit sections, chacune avec ses sous-onglets. Un seul fichier le
+// décrit ; la barre latérale, la barre du bas, le menu ☰ et les sous-onglets le lisent. Les pages
+// gardent leur adresse : rien ne casse, les favoris et les liens du tableau de bord continuent de marcher.
+// Chaque section est affichée à UN seul endroit : la barre latérale et la barre du bas pour le travail
+// de tous les jours, le menu ☰ de la barre du haut pour la Caisse et la Personnalisation.
 export type NavTab = {
   label: string;
   href: string;
@@ -27,8 +29,10 @@ export type NavSection = {
   short?: string;
   icon: ComponentType<{ size?: number; className?: string }>;
   href: string;
-  // Dans la barre du bas ; les autres sections sont dans le panneau « Plus ».
+  // Dans la barre du bas, sur téléphone ; les autres sections sont dans le panneau « Plus ».
   primary?: boolean;
+  // Dans le menu ☰ de la barre du haut, et ni dans la barre latérale ni dans la barre du bas.
+  inMenu?: boolean;
   // La page affichée appartient à cette section.
   owns: (path: string) => boolean;
   tabs?: NavTab[];
@@ -42,8 +46,8 @@ export const SECTIONS: NavSection[] = [
   // La vente au magasin et la caisse sont deux pages à part (demande de Mehdi du 14/11) : on y passe
   // toute la journée, au comptoir. Une vente au magasin n'a pas d'étapes : elle est encaissée sur place
   // et se retrouve dans l'Historique (onglet Magasin), où l'admin peut la modifier ou l'annuler.
-  { key: "vente", label: "Vente au magasin", short: "Vente", icon: SwapIcon, href: "/admin/vente", primary: true, owns: (path) => under(path, "/admin/vente") },
-  { key: "caisse", label: "Caisse", icon: CashIcon, href: "/admin/caisse", primary: true, owns: (path) => under(path, "/admin/caisse") },
+  { key: "vente", label: "Vente au magasin", short: "Ventes", icon: SwapIcon, href: "/admin/vente", primary: true, owns: (path) => under(path, "/admin/vente") },
+  { key: "caisse", label: "Caisse", icon: CashIcon, href: "/admin/caisse", inMenu: true, owns: (path) => under(path, "/admin/caisse") },
   {
     key: "commandes",
     label: "Commandes",
@@ -61,6 +65,7 @@ export const SECTIONS: NavSection[] = [
     label: "Catalogue",
     icon: GridIcon,
     href: "/admin/catalogue",
+    primary: true,
     owns: (path) => anyUnder(path, ["/admin/catalogue", "/admin/produits"]),
     tabs: [
       { label: "Par catégorie", href: "/admin/catalogue", match: (path) => under(path, "/admin/catalogue") },
@@ -74,6 +79,7 @@ export const SECTIONS: NavSection[] = [
     label: "Personnalisation",
     icon: StoreIcon,
     href: "/admin/accueil",
+    inMenu: true,
     owns: (path) => anyUnder(path, ["/admin/accueil", "/admin/listes"]),
     tabs: [
       { label: "Boutique", href: "/admin/accueil", match: (path) => under(path, "/admin/accueil") },
@@ -84,6 +90,14 @@ export const SECTIONS: NavSection[] = [
 
 // Les entrées du menu ☰ de la barre du haut : ce qui n'est pas une section.
 export const SETTINGS_HREF = "/admin/reglages";
+
+// Qui s'affiche où : le menu ☰ (Caisse, Personnalisation), la barre latérale (tout le reste), la barre
+// du bas du téléphone (Accueil, Ventes, Commandes au milieu, Catalogue) et son panneau « Plus » (ce qui
+// reste : Historique, Clients).
+export const MENU_SECTIONS = SECTIONS.filter((section) => section.inMenu);
+export const NAV_SECTIONS = SECTIONS.filter((section) => !section.inMenu);
+export const BOTTOM_PRIMARY = NAV_SECTIONS.filter((section) => section.primary);
+export const BOTTOM_MORE = NAV_SECTIONS.filter((section) => !section.primary);
 
 export function sectionFor(path: string): NavSection | undefined {
   return SECTIONS.find((section) => section.owns(path));
