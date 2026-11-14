@@ -68,6 +68,7 @@ export default function AdminOrderPage() {
   const forward = order.allowedTransitions.filter((status) => status !== "cancelled");
   const canCancel = order.allowedTransitions.includes("cancelled");
   const pickup = order.type === "pickup";
+  const delivery = order.type === "delivery";
   // On ne négocie que le prix d'une commande dont l'argent n'est pas encore entré (lot 3) ; une
   // commande payée se corrige par « Modifier ».
   const canNegotiate =
@@ -178,7 +179,8 @@ export default function AdminOrderPage() {
               {order.phone}
             </a>
           </p>
-          <p>{pickup ? receptionLabel(order) : `${order.address}, ${order.commune}, ${order.wilaya}`}</p>
+          {/* Seule une livraison a une adresse : un retrait et une vente au magasin n'en ont pas. */}
+          <p>{delivery ? `${order.address}, ${order.commune}, ${order.wilaya}` : receptionLabel(order)}</p>
           {order.user ? <p className="text-ink-muted">Compte : {order.user.email}</p> : <p className="text-ink-muted">Commande sans compte</p>}
           {order.note ? <p className="mt-2 rounded-md bg-surface-2 p-2">Remarque : {order.note}</p> : null}
         </section>
@@ -187,7 +189,7 @@ export default function AdminOrderPage() {
             Montants
           </h2>
           <p>Articles : {formatPrice(order.subtotal)}</p>
-          {pickup ? null : <p>Livraison : {order.shippingFee === 0 ? "offerte" : formatPrice(order.shippingFee)}</p>}
+          {delivery ? <p>Livraison : {order.shippingFee === 0 ? "offerte" : formatPrice(order.shippingFee)}</p> : null}
           <p className="font-display text-xl font-bold">
             {order.status === "picked_up" ? "Encaissé" : "À encaisser"} : {formatPrice(order.total)}
           </p>
