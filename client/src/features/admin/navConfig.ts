@@ -6,6 +6,7 @@ import {
   HomeIcon,
   PackageIcon,
   StoreIcon,
+  SwapIcon,
   UsersIcon,
 } from "@/components/ui/icons";
 
@@ -38,18 +39,11 @@ const anyUnder = (path: string, prefixes: string[]) => prefixes.some((prefix) =>
 
 export const SECTIONS: NavSection[] = [
   { key: "accueil", label: "Tableau de bord", short: "Accueil", icon: HomeIcon, href: "/admin", primary: true, owns: (path) => path === "/admin" },
-  {
-    key: "ventes",
-    label: "Ventes",
-    icon: CashIcon,
-    href: "/admin/caisse",
-    primary: true,
-    owns: (path) => anyUnder(path, ["/admin/caisse", "/admin/vente"]),
-    tabs: [
-      { label: "Caisse", href: "/admin/caisse", match: (path) => under(path, "/admin/caisse") },
-      { label: "Vente au magasin", href: "/admin/vente", match: (path) => under(path, "/admin/vente") },
-    ],
-  },
+  // La vente au magasin et la caisse sont deux pages à part (demande de Mehdi du 14/11) : on y passe
+  // toute la journée, au comptoir. Une vente au magasin n'a pas d'étapes : elle est encaissée sur place
+  // et se retrouve dans l'Historique (onglet Magasin), où l'admin peut la modifier ou l'annuler.
+  { key: "vente", label: "Vente au magasin", short: "Vente", icon: SwapIcon, href: "/admin/vente", primary: true, owns: (path) => under(path, "/admin/vente") },
+  { key: "caisse", label: "Caisse", icon: CashIcon, href: "/admin/caisse", primary: true, owns: (path) => under(path, "/admin/caisse") },
   {
     key: "commandes",
     label: "Commandes",
@@ -60,7 +54,6 @@ export const SECTIONS: NavSection[] = [
     tabs: [
       { label: "Livraisons", href: "/admin/livraisons", match: (path) => under(path, "/admin/livraisons") },
       { label: "Retraits", href: "/admin/commandes?type=pickup", match: (path, params) => path === "/admin/commandes" && params.get("type") === "pickup" },
-      { label: "Magasin", href: "/admin/commandes?type=in_store", match: (path, params) => path === "/admin/commandes" && params.get("type") === "in_store" },
     ],
   },
   {
@@ -68,7 +61,6 @@ export const SECTIONS: NavSection[] = [
     label: "Catalogue",
     icon: GridIcon,
     href: "/admin/catalogue",
-    primary: true,
     owns: (path) => anyUnder(path, ["/admin/catalogue", "/admin/produits"]),
     tabs: [
       { label: "Par catégorie", href: "/admin/catalogue", match: (path) => under(path, "/admin/catalogue") },
@@ -101,9 +93,12 @@ export function activeTab(section: NavSection, path: string, params: URLSearchPa
   return section.tabs?.find((tab) => tab.match(path, params));
 }
 
-// La liste où retrouver une commande d'un type : le retour de sa page de détail.
+// La liste où retrouver une commande d'un type : le retour de sa page de détail. Une vente au magasin
+// n'a pas de liste de suivi (pas d'étapes) : on la retrouve dans l'Historique, onglet Magasin.
 export function ordersListHref(type: "delivery" | "pickup" | "in_store"): string {
-  return type === "delivery" ? "/admin/livraisons" : `/admin/commandes?type=${type}`;
+  if (type === "delivery") return "/admin/livraisons";
+  if (type === "pickup") return "/admin/commandes?type=pickup";
+  return "/admin/historique?type=in_store";
 }
 
 const PICKUP_STATUSES = ["reserved", "picked_up", "expired"];

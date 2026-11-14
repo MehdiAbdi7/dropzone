@@ -10,11 +10,10 @@ import { dailyLabel, receptionLabel } from "@/features/admin/orders/orderLabels"
 import { formatDate, formatPrice } from "@/lib/format";
 import type { OrderStatus, OrderType } from "@/types/api";
 
-// Les onglets Retraits et Magasin de la section Commandes (14/11). Les livraisons ont leur page
-// (/admin/livraisons). Les états proposés suivent l'onglet : un retrait n'a que quatre états, une vente
-// au magasin un seul (donc aucun filtre d'état).
+// L'onglet Retraits de la section Commandes (14/11). Les livraisons ont leur page (/admin/livraisons).
+// Une vente au magasin n'a pas d'étapes : elle est encaissée sur place et se retrouve dans l'Historique
+// (onglet Magasin), où l'admin peut la modifier ou l'annuler : elle n'a pas de liste ici.
 const PICKUP_STATUSES: OrderStatus[] = ["reserved", "picked_up", "expired", "cancelled"];
-const TITLES: Partial<Record<OrderType, string>> = { pickup: "Retraits au magasin", in_store: "Ventes au magasin" };
 
 export default function AdminOrdersPage() {
   return (
@@ -28,18 +27,20 @@ function OrdersList() {
   const router = useRouter();
   const params = useSearchParams();
   const rawType = params.get("type");
-  // Seuls Retraits et Magasin passent par cette page ; les livraisons ont la leur.
-  const type: OrderType | undefined = rawType === "pickup" || rawType === "in_store" ? rawType : undefined;
-  const status = type === "pickup" ? ((params.get("status") as OrderStatus | null) ?? undefined) : undefined;
+  // Seuls les retraits passent par cette page ; les livraisons ont la leur, les ventes au magasin
+  // l'Historique.
+  const type: OrderType | undefined = rawType === "pickup" ? "pickup" : undefined;
+  const status = (params.get("status") as OrderStatus | null) ?? undefined;
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const { data, isFetching } = useAdminOrdersQuery({ status, type, q: q || undefined, page }, { pollingInterval: 30_000, skip: !type });
 
-  // Un ancien lien (`/admin/commandes?status=pending`, un type de livraison, ou rien) mène à l'onglet
-  // où l'on gère cet état : Livraisons la plupart du temps.
+  // Un ancien lien (`/admin/commandes?status=pending`, un type de livraison ou de vente au magasin, ou
+  // rien) mène à l'endroit où l'on gère cette commande.
   useEffect(() => {
-    if (!type) router.replace(ordersHref(params.get("status") ?? undefined));
-  }, [type, params, router]);
+    if (type) return;
+    router.replace(rawType === "in_store" ? "/admin/historique?type=in_store" : ordersHref(params.get("status") ?? undefined));
+  }, [type, rawType, params, router]);
 
   // Le filtre d'état vit dans l'adresse : un lien du tableau de bord ouvre le bon état.
   const go = (next?: OrderStatus) => {
@@ -51,16 +52,14 @@ function OrdersList() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl">{TITLES[type]}</h1>
-      {type === "pickup" ? (
-        <div role="group" aria-label="État du retrait" className="flex flex-wrap gap-2">
-          {[undefined, ...PICKUP_STATUSES].map((value) => (
-            <button key={value ?? "all"} type="button" className="chip" aria-pressed={status === value} onClick={() => go(value)}>
-              {value ? STATUS_LABELS[value] : "Tous les états"}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <h1 className="text-3xl">Retraits au magasin</h1>
+      <div role="group" aria-label="État du retrait" className="flex flex-wrap gap-2">
+        {[undefined, ...PICKUP_STATUSES].map((value) => (
+          <button key={value ?? "all"} type="button" className="chip" aria-pressed={status === value} onClick={() => go(value)}>
+            {value ? STATUS_LABELS[value] : "Tous les états"}
+          </button>
+        ))}
+      </div>
       <label className="block max-w-md">
         <span className="sr-only">Chercher une commande</span>
         <input

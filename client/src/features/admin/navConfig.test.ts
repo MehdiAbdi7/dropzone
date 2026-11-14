@@ -4,17 +4,20 @@ import { SECTIONS, activeTab, ordersHref, ordersListHref, sectionFor } from "./n
 const params = (query = "") => new URLSearchParams(query);
 
 describe("les sections du back-office", () => {
-  it("sept sections, sans doublon d'adresse", () => {
+  it("huit sections : la vente au magasin et la caisse sont des pages à part", () => {
     expect(SECTIONS.map((section) => section.key)).toEqual([
       "accueil",
-      "ventes",
+      "vente",
+      "caisse",
       "commandes",
       "catalogue",
       "historique",
       "clients",
       "personnalisation",
     ]);
-    // Une section s'ouvre sur son premier onglet ; aucune adresse n'apparaît deux fois ailleurs.
+  });
+
+  it("une section à onglets s'ouvre sur son premier onglet, et aucune adresse n'apparaît deux fois ailleurs", () => {
     for (const section of SECTIONS) {
       if (section.tabs) expect(section.href, section.key).toBe(section.tabs[0]!.href);
     }
@@ -27,8 +30,8 @@ describe("les sections du back-office", () => {
   it("chaque page appartient à une section", () => {
     const cases: [string, string][] = [
       ["/admin", "accueil"],
-      ["/admin/caisse", "ventes"],
-      ["/admin/vente", "ventes"],
+      ["/admin/vente", "vente"],
+      ["/admin/caisse", "caisse"],
       ["/admin/livraisons", "commandes"],
       ["/admin/commandes", "commandes"],
       ["/admin/commandes/12", "commandes"],
@@ -52,6 +55,11 @@ describe("les sections du back-office", () => {
   it("« /admin » seul ne tire pas toutes les pages vers l'accueil", () => {
     expect(sectionFor("/admin/inconnue")).toBeUndefined();
   });
+
+  it("la vente au magasin et la caisse n'ont pas de sous-onglets", () => {
+    expect(sectionFor("/admin/vente")?.tabs).toBeUndefined();
+    expect(sectionFor("/admin/caisse")?.tabs).toBeUndefined();
+  });
 });
 
 describe("l'onglet actif d'une section", () => {
@@ -60,10 +68,11 @@ describe("l'onglet actif d'une section", () => {
     return activeTab(section, path, params(query))?.href;
   };
 
-  it("Commandes : Livraisons, Retraits et Magasin", () => {
+  it("Commandes : seulement Livraisons et Retraits (une vente au magasin n'a pas d'étapes)", () => {
+    expect(sectionFor("/admin/livraisons")?.tabs?.map((tab) => tab.label)).toEqual(["Livraisons", "Retraits"]);
     expect(tabHref("/admin/livraisons")).toBe("/admin/livraisons");
     expect(tabHref("/admin/commandes", "type=pickup")).toBe("/admin/commandes?type=pickup");
-    expect(tabHref("/admin/commandes", "type=in_store&status=picked_up")).toBe("/admin/commandes?type=in_store");
+    expect(tabHref("/admin/commandes", "type=pickup&status=reserved")).toBe("/admin/commandes?type=pickup");
   });
 
   it("Catalogue : par catégorie, ou tous les produits", () => {
@@ -71,9 +80,7 @@ describe("l'onglet actif d'une section", () => {
     expect(tabHref("/admin/produits/12")).toBe("/admin/produits");
   });
 
-  it("Ventes et Personnalisation", () => {
-    expect(tabHref("/admin/vente")).toBe("/admin/vente");
-    expect(tabHref("/admin/caisse")).toBe("/admin/caisse");
+  it("Personnalisation : Boutique et Listes", () => {
     expect(tabHref("/admin/listes")).toBe("/admin/listes");
     expect(tabHref("/admin/accueil")).toBe("/admin/accueil");
   });
@@ -84,10 +91,10 @@ describe("l'onglet actif d'une section", () => {
 });
 
 describe("ordersListHref : le retour du détail d'une commande", () => {
-  it("chaque type revient à sa liste", () => {
+  it("une livraison et un retrait reviennent à leur liste, une vente au magasin à l'historique", () => {
     expect(ordersListHref("delivery")).toBe("/admin/livraisons");
     expect(ordersListHref("pickup")).toBe("/admin/commandes?type=pickup");
-    expect(ordersListHref("in_store")).toBe("/admin/commandes?type=in_store");
+    expect(ordersListHref("in_store")).toBe("/admin/historique?type=in_store");
   });
 });
 
