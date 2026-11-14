@@ -22,24 +22,14 @@ export default function DashboardPage() {
     return <p className="text-ink-muted">Chargement…</p>;
   }
 
-  const pending = stats.ordersByStatus.pending ?? 0;
   const { cash } = stats;
 
+  // Les commandes à confirmer ne s'annoncent plus ici : l'alerte du back-office (son et bannière, sur
+  // toutes les pages) et la pastille rouge de « Commandes » le font déjà. Le détail par statut reste
+  // plus bas.
   return (
     <div className="space-y-8">
       <h1 className="text-3xl">Tableau de bord</h1>
-
-      {pending > 0 ? (
-        <Link
-          href={ordersHref("pending")}
-          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red bg-red-soft p-4 font-semibold"
-        >
-          <span>
-            {pending} commande{pending > 1 ? "s" : ""} à confirmer par téléphone
-          </span>
-          <span className="text-red underline">Voir</span>
-        </Link>
-      ) : null}
 
       <section aria-labelledby="journee" className="card flex flex-wrap items-center justify-between gap-4 p-5">
         <div>
