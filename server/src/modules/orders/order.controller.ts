@@ -4,6 +4,7 @@ import {
   changeOrderStatus,
   collectDelivery,
   createOrder,
+  returnDelivery,
   getAdminOrder,
   getMyOrder,
   listAdminOrders,
@@ -56,6 +57,10 @@ export async function postPickup(req: Request, res: Response) {
 
 export async function postCollect(req: Request, res: Response) {
   res.json({ data: await collectDelivery(Number(req.params.id), req.body.method, res.locals.user!.id) });
+}
+
+export async function postReturn(req: Request, res: Response) {
+  res.json({ data: await returnDelivery(Number(req.params.id), req.body.fee, req.body.method, res.locals.user!.id) });
 }
 
 export async function patchOrder(req: Request, res: Response) {

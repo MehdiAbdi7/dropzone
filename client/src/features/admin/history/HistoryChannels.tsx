@@ -28,6 +28,9 @@ export default function HistoryChannels({ channels, onPick }: { channels: Histor
               <span className="block text-sm text-ink-muted">
                 {channel.salesCount} vente{channel.salesCount > 1 ? "s" : ""} · bénéfice {formatPrice(channel.profit)}
               </span>
+              {channel.returnFees > 0 ? (
+                <span className="block text-sm text-ink-muted">dont frais de retour payés : −{formatPrice(channel.returnFees)}</span>
+              ) : null}
             </button>
           );
         })}

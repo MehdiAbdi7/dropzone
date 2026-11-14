@@ -38,7 +38,12 @@ const STOCK_ALREADY_RETURNED: OrderStatus[] = ["cancelled", "expired", "returned
 // une commande ramenée à 0 puis remise à son prix passerait pour « pas encore payée » et son
 // argent ne serait jamais réécrit.
 async function paidByMethod(tx: Tx, orderId: number) {
-  const movements = await tx.moneyMovement.findMany({ where: { orderId }, select: { method: true, amount: true, kind: true } });
+  // Les frais de retour (17/11) sont une perte de DropZone, pas de l'argent du client : ils ne
+  // sont jamais « payés » ni remboursés, supprimer la commande ne les efface pas.
+  const movements = await tx.moneyMovement.findMany({
+    where: { orderId, kind: { not: "return_fee" } },
+    select: { method: true, amount: true, kind: true },
+  });
   const paid: Partial<Record<PaymentMethod, number>> = {};
   for (const movement of movements) {
     paid[movement.method] = (paid[movement.method] ?? 0) + movement.amount;

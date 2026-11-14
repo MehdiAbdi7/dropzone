@@ -18,6 +18,7 @@ export async function getDeliverySummary(now: Date = new Date()) {
       to_collect_count: bigint;
       to_collect_total: bigint;
       returned_count: bigint;
+      return_fees: bigint;
     }[]
   >`
     SELECT
@@ -25,7 +26,10 @@ export async function getDeliverySummary(now: Date = new Date()) {
       COALESCE(SUM(total) FILTER (WHERE status IN ('pending', 'confirmed', 'shipped')), 0) AS in_progress_total,
       COUNT(*) FILTER (WHERE status = 'delivered') AS to_collect_count,
       COALESCE(SUM(total) FILTER (WHERE status = 'delivered'), 0) AS to_collect_total,
-      COUNT(*) FILTER (WHERE status = 'returned') AS returned_count
+      COUNT(*) FILTER (WHERE status = 'returned') AS returned_count,
+      -- Ce que DropZone a payé pour les colis retournés (positif) : lu dans le journal, il survit à
+      -- la suppression d'une commande.
+      (SELECT COALESCE(-SUM(amount), 0) FROM money_movements WHERE kind = 'return_fee') AS return_fees
     FROM orders
     WHERE type = 'delivery'`;
 
@@ -43,7 +47,7 @@ export async function getDeliverySummary(now: Date = new Date()) {
   return {
     inProgress: { count: Number(orders?.in_progress_count ?? 0), total: Number(orders?.in_progress_total ?? 0) },
     toCollect: { count: Number(orders?.to_collect_count ?? 0), total: Number(orders?.to_collect_total ?? 0) },
-    returned: { count: Number(orders?.returned_count ?? 0) },
+    returned: { count: Number(orders?.returned_count ?? 0), fees: Number(orders?.return_fees ?? 0) },
     collectedByDay: collected.map((row) => ({ date: row.day.toISOString().slice(0, 10), total: Number(row.total) })),
     // Tout ce que les livraisons ont rapporté depuis le début (pas seulement les 30 derniers jours).
     collectedTotal: Number(allTime?.total ?? 0),

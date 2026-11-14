@@ -73,9 +73,9 @@ describe("l'historique par onglet", () => {
     const data = await history("from=2026-11-09&to=2026-11-12");
     expect(data.totals).toMatchObject({ collected: 600, salesCount: 3, profit: 20 + 40 + 50 });
     expect(data.channels).toEqual({
-      in_store: { collected: 100, salesCount: 1, profit: 20, unknownCostSales: 0, discount: 0 },
-      delivery: { collected: 300, salesCount: 1, profit: 50, unknownCostSales: 0, discount: 0 },
-      pickup: { collected: 200, salesCount: 1, profit: 40, unknownCostSales: 0, discount: 0 },
+      in_store: { collected: 100, salesCount: 1, profit: 20, unknownCostSales: 0, discount: 0, returnFees: 0 },
+      delivery: { collected: 300, salesCount: 1, profit: 50, unknownCostSales: 0, discount: 0, returnFees: 0 },
+      pickup: { collected: 200, salesCount: 1, profit: 40, unknownCostSales: 0, discount: 0, returnFees: 0 },
     });
   });
 

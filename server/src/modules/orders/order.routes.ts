@@ -14,6 +14,7 @@ import {
   postOrder,
   postPickup,
   postPreview,
+  postReturn,
   postSale,
   postTrack,
   removeOrder,
@@ -26,6 +27,7 @@ import {
   orderNumberParamsSchema,
   pickupBodySchema,
   previewBodySchema,
+  returnBodySchema,
   statusBodySchema,
   storeSaleBodySchema,
   trackOrderSchema,
@@ -62,6 +64,12 @@ orderAdminRouter.post(
   "/orders/:id/collect",
   validate({ params: idParamsSchema, body: collectBodySchema }),
   postCollect,
+);
+// Un colis qui revient : le stock revient, DropZone paie les frais de retour qu'on saisit (17/11).
+orderAdminRouter.post(
+  "/orders/:id/return",
+  validate({ params: idParamsSchema, body: returnBodySchema }),
+  postReturn,
 );
 // Valider un retrait au comptoir : le client paie, l'argent entre dans la caisse du jour (14/11).
 orderAdminRouter.post(

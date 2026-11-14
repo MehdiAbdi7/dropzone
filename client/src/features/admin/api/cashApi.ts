@@ -24,7 +24,7 @@ export type CashMovement = {
   createdAt: string;
   amount: number;
   method: PaymentMethod;
-  kind: "sale" | "pickup" | "delivery" | "exchange" | "correction";
+  kind: "sale" | "pickup" | "delivery" | "exchange" | "correction" | "return_fee";
   orderId: number | null;
   note: string | null;
 };

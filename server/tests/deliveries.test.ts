@@ -28,9 +28,164 @@ async function placeDelivery(sku = "IP-NEW-256") {
 // Fait avancer une livraison jusqu'à un état, par les vraies routes.
 async function advance(agent: Awaited<ReturnType<typeof loginAs>>["agent"], id: number, states: string[]) {
   for (const status of states) {
-    await agent.patch(`/admin/orders/${id}/status`).send({ status }).expect(200);
+    if (status === "returned") {
+      // Un retour passe par sa propre route : on y indique ce que DropZone paie (ici rien).
+      await agent.post(`/admin/orders/${id}/return`).send({ fee: 0, method: "ccp" }).expect(200);
+    } else {
+      await agent.patch(`/admin/orders/${id}/status`).send({ status }).expect(200);
+    }
   }
 }
+
+const giveBack = (agent: Awaited<ReturnType<typeof loginAs>>["agent"], id: number, body: Record<string, unknown>) =>
+  agent.post(`/admin/orders/${id}/return`).send(body);
+
+// Les frais de retour (17/11) : quand le client ne répond pas à la société de livraison ou refuse
+// le colis, DropZone paie le retour (le montant dépend de la wilaya et de la société : l'admin le
+// saisit). Le produit revient en vente, et ces frais se retranchent de l'argent des livraisons.
+describe("POST /admin/orders/:id/return", () => {
+  it("remet le produit en vente et écrit les frais en négatif, hors caisse, à la date du retour", async () => {
+    const stock = await stockOf("IP-NEW-256");
+    const { agent, user } = await loginAs("admin");
+    await agent.post("/admin/cash/open").send({ openingFloat: 10_000 }).expect(201);
+    const order = await placeDelivery();
+    await advance(agent, order.id, ["confirmed", "shipped"]);
+
+    const response = await giveBack(agent, order.id, { fee: 800, method: "ccp" });
+    expect(response.status).toBe(200);
+    expect(response.body.data.status).toBe("returned");
+    expect(await stockOf("IP-NEW-256")).toBe(stock);
+
+    const [movement] = await prisma.moneyMovement.findMany();
+    expect(movement).toMatchObject({
+      kind: "return_fee",
+      orderType: "delivery",
+      method: "ccp",
+      amount: -800,
+      orderId: order.id,
+      userId: user.id,
+    });
+    expect(movement?.businessDate.toISOString().slice(0, 10)).toBe("2026-11-14");
+
+    // Hors caisse : le tiroir ne bouge pas, la ligne des livraisons montre le net.
+    const today = (await agent.get("/admin/cash/today")).body.data;
+    expect(today.movements).toEqual([]);
+    expect(today.summary).toMatchObject({ cashIn: 0, expectedCash: 10_000 });
+    expect(today.deliveriesCollected).toBe(-800);
+  });
+
+  it("marche aussi depuis « Livrée », sans frais : aucun mouvement", async () => {
+    const stock = await stockOf("IP-NEW-256");
+    const { agent } = await loginAs("admin");
+    const order = await placeDelivery();
+    await advance(agent, order.id, ["confirmed", "shipped", "delivered"]);
+    expect((await giveBack(agent, order.id, { fee: 0, method: "cash" })).status).toBe(200);
+    expect(await stockOf("IP-NEW-256")).toBe(stock);
+    expect(await prisma.moneyMovement.count()).toBe(0);
+  });
+
+  it("refuse des frais négatifs ou à virgule, et un corps incomplet", async () => {
+    const { agent } = await loginAs("admin");
+    const order = await placeDelivery();
+    await advance(agent, order.id, ["confirmed", "shipped"]);
+    for (const body of [{ fee: -1, method: "ccp" }, { fee: 10.5, method: "ccp" }, { method: "ccp" }, { fee: 100 }, { fee: 100, method: "or" }]) {
+      expect((await giveBack(agent, order.id, body)).status, JSON.stringify(body)).toBe(400);
+    }
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("shipped");
+  });
+
+  it("refuse une livraison pas encore expédiée, déjà retournée, encaissée, ou un retrait", async () => {
+    const { agent } = await loginAs("admin");
+    const early = await placeDelivery();
+    await advance(agent, early.id, ["confirmed"]);
+    expect((await giveBack(agent, early.id, { fee: 0, method: "ccp" })).status).toBe(409);
+
+    const returned = await placeDelivery();
+    await advance(agent, returned.id, ["confirmed", "shipped"]);
+    await giveBack(agent, returned.id, { fee: 500, method: "ccp" }).expect(200);
+    expect((await giveBack(agent, returned.id, { fee: 500, method: "ccp" })).status).toBe(409);
+    expect(await prisma.moneyMovement.count({ where: { kind: "return_fee" } })).toBe(1);
+
+    const collected = await placeDelivery();
+    await advance(agent, collected.id, ["confirmed", "shipped", "delivered"]);
+    await agent.post(`/admin/orders/${collected.id}/collect`).send({ method: "cash" }).expect(200);
+    expect((await giveBack(agent, collected.id, { fee: 0, method: "ccp" })).status).toBe(409);
+
+    const pickup = await previewThenOrder([{ sku: "CHG-20W", quantity: 1 }], { fulfillment: "pickup", pickupDate: "2026-11-14", pickupTime: "15:00" });
+    const pickupOrder = await prisma.order.findUniqueOrThrow({ where: { number: pickup.body.data.number } });
+    expect((await giveBack(agent, pickupOrder.id, { fee: 0, method: "ccp" })).status).toBe(409);
+  });
+
+  it("deux retours simultanés : un seul passe, une seule fois le stock et les frais", async () => {
+    const stock = await stockOf("IP-NEW-256");
+    const { agent } = await loginAs("admin");
+    const order = await placeDelivery();
+    await advance(agent, order.id, ["confirmed", "shipped"]);
+    const results = await Promise.all([giveBack(agent, order.id, { fee: 700, method: "ccp" }), giveBack(agent, order.id, { fee: 700, method: "ccp" })]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(await stockOf("IP-NEW-256")).toBe(stock);
+    expect(await prisma.moneyMovement.count()).toBe(1);
+  });
+
+  it("« Retournée » ne s'obtient pas par un simple changement d'état : les frais sont demandés", async () => {
+    const { agent } = await loginAs("admin");
+    const order = await placeDelivery();
+    await advance(agent, order.id, ["confirmed", "shipped"]);
+    expect((await agent.patch(`/admin/orders/${order.id}/status`).send({ status: "returned" })).status).toBe(409);
+  });
+
+  it("supprimer la commande retournée garde les frais payés : la perte reste dans l'historique", async () => {
+    const stock = await stockOf("IP-NEW-256");
+    const { agent } = await loginAs("admin");
+    const order = await placeDelivery();
+    await advance(agent, order.id, ["confirmed", "shipped"]);
+    await giveBack(agent, order.id, { fee: 800, method: "ccp" }).expect(200);
+    expect((await agent.delete(`/admin/orders/${order.id}`)).status).toBe(200);
+    expect(await stockOf("IP-NEW-256")).toBe(stock);
+    expect((await prisma.moneyMovement.findMany()).map((m) => [m.kind, m.amount])).toEqual([["return_fee", -800]]);
+  });
+
+  it("l'historique : onglet Livraisons en négatif, bénéfice diminué, frais détaillés", async () => {
+    const { agent } = await loginAs("admin");
+    const sold = await placeDelivery("CHG-20W");
+    await advance(agent, sold.id, ["confirmed", "shipped", "delivered"]);
+    await agent.post(`/admin/orders/${sold.id}/collect`).send({ method: "ccp" }).expect(200);
+    const refused = await placeDelivery();
+    await advance(agent, refused.id, ["confirmed", "shipped"]);
+    await giveBack(agent, refused.id, { fee: 800, method: "ccp" }).expect(200);
+
+    const data = (await agent.get("/admin/history?from=2026-11-14&to=2026-11-14&type=delivery")).body.data;
+    expect(data.totals.collected).toBe(sold.total - 800);
+    expect(data.totals.byKind).toMatchObject({ delivery: sold.total, return_fee: -800 });
+    expect(data.totals.returnFees).toBe(800);
+    expect(data.channels.delivery.returnFees).toBe(800);
+    // Le bénéfice de la vente moins les frais : le retour est une perte.
+    const gain = (await prisma.orderItem.findFirstOrThrow({ where: { orderId: sold.id } }));
+    const expected = gain.unitCost === null ? 0 : (gain.unitPrice - gain.unitCost) * gain.quantity;
+    expect(data.totals.profit).toBe(expected - 800);
+
+    const total = (await agent.get("/admin/history?from=2026-11-14&to=2026-11-14")).body.data;
+    expect(total.totals.profit).toBe(expected - 800);
+    const stores = (await agent.get("/admin/history?from=2026-11-14&to=2026-11-14&type=in_store")).body.data;
+    expect(stores.totals.returnFees).toBe(0);
+  });
+
+  it("la page Livraisons compte les retours et les frais, et les retranche de l'argent arrivé", async () => {
+    const { agent } = await loginAs("admin");
+    const order = await placeDelivery();
+    await advance(agent, order.id, ["confirmed", "shipped"]);
+    await giveBack(agent, order.id, { fee: 800, method: "ccp" }).expect(200);
+    const { body } = await agent.get("/admin/deliveries/summary");
+    expect(body.data.returned).toEqual({ count: 1, fees: 800 });
+    expect(body.data.collectedByDay).toEqual([{ date: "2026-11-14", total: -800 }]);
+    expect(body.data.collectedTotal).toBe(-800);
+  });
+
+  it("est réservé à l'admin", async () => {
+    const { agent } = await loginAs("customer");
+    expect((await agent.post("/admin/orders/1/return").send({ fee: 0, method: "ccp" })).status).toBe(403);
+  });
+});
 
 describe("états d'une livraison", () => {
   it("Retournée (colis refusé) depuis Expédiée ou Livrée : stock remis, rien d'encaissé", async () => {

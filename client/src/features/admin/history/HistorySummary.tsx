@@ -20,6 +20,12 @@ export default function HistorySummary({ totals }: { totals: History["totals"] }
               <dd className="font-semibold tabular-nums">{formatPrice(totals.byMethod[method])}</dd>
             </div>
           ))}
+          {totals.returnFees > 0 ? (
+            <div className="flex justify-between gap-3 border-t border-line pt-1">
+              <dt className="text-ink-muted">dont frais de retour (colis retournés)</dt>
+              <dd className="font-semibold tabular-nums">−{formatPrice(totals.returnFees)}</dd>
+            </div>
+          ) : null}
           {totals.byKind.correction !== 0 ? (
             <div className="flex justify-between gap-3 border-t border-line pt-1">
               <dt className="text-ink-muted">dont corrections</dt>

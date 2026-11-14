@@ -6,7 +6,8 @@ import { data } from "./shared";
 export type DeliverySummary = {
   inProgress: { count: number; total: number };
   toCollect: { count: number; total: number };
-  returned: { count: number };
+  // `fees` : ce que DropZone a payé en frais de retour (positif), déjà retranché de l'argent arrivé.
+  returned: { count: number; fees: number };
   collectedByDay: { date: string; total: number }[];
   collectedTotal: number;
 };

@@ -6,6 +6,7 @@ import { STATUS_LABELS } from "@/config/catalog";
 import { useAdminOrdersQuery } from "@/features/admin/api/ordersApi";
 import { useDeliverySummaryQuery } from "@/features/admin/api/deliveriesApi";
 import CollectDelivery from "@/features/admin/deliveries/CollectDelivery";
+import ReturnDelivery from "@/features/admin/deliveries/ReturnDelivery";
 import { dailyLabel } from "@/features/admin/orders/orderLabels";
 import { errorMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/format";
@@ -50,7 +51,11 @@ export default function DeliveriesPage() {
           <Card title="En cours" value={formatPrice(data.inProgress.total)} note={`${data.inProgress.count} livraison${data.inProgress.count > 1 ? "s" : ""} à venir`} />
           <Card title="À encaisser" value={formatPrice(data.toCollect.total)} note={`${data.toCollect.count} livrée${data.toCollect.count > 1 ? "s" : ""}, argent pas encore arrivé`} />
           <Card title="Encaissé en tout" value={formatPrice(data.collectedTotal)} note="Hors caisse du magasin" />
-          <Card title="Retournées" value={String(data.returned.count)} note="Colis refusés, stock remis" />
+          <Card
+            title="Retournées"
+            value={String(data.returned.count)}
+            note={data.returned.fees > 0 ? `Frais de retour payés : ${formatPrice(data.returned.fees)}` : "Colis refusés, stock remis"}
+          />
         </section>
       ) : (
         <p className="text-ink-muted">Chargement…</p>
@@ -124,6 +129,7 @@ export default function DeliveriesPage() {
                   <p className="font-display text-lg font-bold tabular-nums">{formatPrice(order.total)}</p>
                 </div>
                 {status === "delivered" ? <CollectDelivery compact orderId={order.id} total={order.total} /> : null}
+                {status === "shipped" || status === "delivered" ? <ReturnDelivery orderId={order.id} number={order.number} /> : null}
               </li>
             ))}
           </ul>
