@@ -8,6 +8,7 @@ import { acknowledge } from "@/features/admin/alerts/acknowledged";
 import { formatDate } from "@/lib/format";
 import EditOrderForm from "./EditOrderForm";
 import OrderDetails from "./OrderDetails";
+import { CallSheet } from "./OrderInfo";
 import OrderStepper from "./OrderStepper";
 import StepActions from "./StepActions";
 import { dailyLabel } from "./orderLabels";
@@ -136,7 +137,17 @@ const FINISHED_TEXT: Partial<Record<AdminOrder["status"], string>> = {
 };
 
 function StepPanel({ order, step, steps }: { order: AdminOrder; step: OrderStep; steps: OrderStep[] }) {
-  if (step.state === "current") return <StepActions order={order} />;
+  if (step.state === "current") {
+    // « À confirmer » : le client attend un appel, la fiche d'appel passe avant les boutons.
+    return order.status === "pending" ? (
+      <div className="space-y-5">
+        <CallSheet order={order} />
+        <StepActions order={order} />
+      </div>
+    ) : (
+      <StepActions order={order} />
+    );
+  }
 
   if (step.state === "exit") return <p>{EXIT_TEXT[order.status] ?? STATUS_LABELS[order.status]}</p>;
 

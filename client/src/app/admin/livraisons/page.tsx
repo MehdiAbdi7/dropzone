@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { STATUS_LABELS } from "@/config/catalog";
 import { useAdminOrdersQuery } from "@/features/admin/api/ordersApi";
 import { useDeliverySummaryQuery } from "@/features/admin/api/deliveriesApi";
 import OrderWindow from "@/features/admin/orders/OrderWindow";
@@ -10,25 +8,15 @@ import OrdersTable from "@/features/admin/orders/OrdersTable";
 import { useOrderWindow } from "@/features/admin/orders/useOrderWindow";
 import { errorMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/format";
-import type { OrderStatus } from "@/types/api";
 
 // La page Livraisons (17/11, lot 4), premier onglet de la section Commandes. Une livraison se suit à
 // part de la caisse : son argent n'est pas dans le tiroir, il arrive plus tard (le livreur ou la
 // société de livraison le reverse). Ici : ce que les livraisons vont rapporter, ce qui est livré mais
 // pas encore encaissé, et l'argent arrivé jour par jour. « Encaisser » écrit l'argent à la date du
-// jour, dans l'historique (onglet Livraisons). L'état choisi vit dans l'adresse (`?status=`) : un lien
-// du tableau de bord ouvre le bon état. Un clic sur une livraison ouvre sa fenêtre, placée sur
-// l'étape où elle en est : « Encaisser », « Colis retourné » et les autres boutons y sont.
-const TABS: { status: OrderStatus; label: string }[] = [
-  { status: "pending", label: "À confirmer" },
-  { status: "confirmed", label: "En préparation" },
-  { status: "shipped", label: "Expédiées" },
-  { status: "delivered", label: "À encaisser" },
-  { status: "collected", label: "Encaissées" },
-  { status: "returned", label: "Retournées" },
-  { status: "cancelled", label: "Annulées" },
-];
-const KNOWN = TABS.map((tab) => tab.status);
+// jour, dans l'historique (onglet Livraisons). La liste ne montre que les livraisons EN COURS, avec leur
+// badge d'étape en tête (une livraison finie, annulée ou retournée se retrouve dans l'Historique) : un clic sur une livraison ouvre sa fenêtre, placée sur l'étape où elle en
+// est, avec ses boutons (« Confirmer », « Encaisser », « Colis retourné »…). Plus de filtre par état :
+// l'ancien `?status=` des liens du tableau de bord est ignoré.
 
 const dayLabel = (iso: string) => {
   const [year, month, day] = iso.split("-");
@@ -44,22 +32,12 @@ export default function DeliveriesPage() {
 }
 
 function Deliveries() {
-  const router = useRouter();
-  const params = useSearchParams();
-  const asked = params.get("status") as OrderStatus | null;
-  // Par défaut : ce qui attend d'être encaissé, le plus utile au quotidien.
-  const status: OrderStatus = asked && KNOWN.includes(asked) ? asked : "delivered";
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const orderWindow = useOrderWindow();
   const summary = useDeliverySummaryQuery();
-  const orders = useAdminOrdersQuery({ type: "delivery", status, q: q.trim() || undefined, page }, { pollingInterval: 30_000 });
+  const orders = useAdminOrdersQuery({ type: "delivery", active: true, q: q.trim() || undefined, page }, { pollingInterval: 30_000 });
   const data = summary.data;
-
-  const pick = (next: OrderStatus) => {
-    setPage(1);
-    router.replace(`/admin/livraisons?status=${next}`);
-  };
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -118,13 +96,6 @@ function Deliveries() {
         <h2 id="list-title" className="text-xl">
           Les livraisons
         </h2>
-        <div role="group" aria-label="État de la livraison" className="flex flex-wrap gap-2">
-          {TABS.map((tab) => (
-            <button key={tab.status} type="button" className="chip" aria-pressed={status === tab.status} onClick={() => pick(tab.status)}>
-              {tab.label}
-            </button>
-          ))}
-        </div>
         <label className="block max-w-md">
           <span className="sr-only">Chercher une livraison</span>
           <input
@@ -146,7 +117,7 @@ function Deliveries() {
           <OrdersTable
             orders={orders.data?.data}
             busy={orders.isFetching}
-            empty={`Aucune livraison « ${STATUS_LABELS[status]} ».`}
+            empty="Aucune livraison en cours."
             onOpen={orderWindow.open}
           />
         )}
