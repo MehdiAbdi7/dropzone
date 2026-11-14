@@ -53,10 +53,19 @@ export const adminProductListQuerySchema = z.object({
 });
 export type AdminProductListQuery = z.infer<typeof adminProductListQuerySchema>;
 
-// La recherche de variantes du comptoir (16/11, lot 3) : de 2 à 60 caractères, 20 résultats au plus.
+// La recherche de variantes du comptoir (16/11, lot 3, refaite le 17/11) : des mots (vide ou de 2 à
+// 60 caractères : vide = tout parcourir), filtrable par catégorie et par état, 50 résultats par
+// défaut et 200 au plus (la réponse dit aussi combien il y en a en tout).
 export const variantSearchQuerySchema = z.object({
-  q: z.string().trim().min(2).max(60),
-  limit: z.coerce.number().int().min(1).max(20).default(20),
+  q: z
+    .string()
+    .trim()
+    .max(60)
+    .refine((text) => text === "" || text.length >= 2, { error: "Au moins 2 caractères" })
+    .default(""),
+  category: z.string().trim().min(1).max(60).optional(),
+  condition: z.enum(["new", "refurbished"]).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
 });
 export type VariantSearchQuery = z.infer<typeof variantSearchQuerySchema>;
 
