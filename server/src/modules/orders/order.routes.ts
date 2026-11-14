@@ -13,6 +13,7 @@ import {
   postOrder,
   postPickup,
   postPreview,
+  postSale,
   postTrack,
   removeOrder,
 } from "./order.controller.js";
@@ -24,6 +25,7 @@ import {
   pickupBodySchema,
   previewBodySchema,
   statusBodySchema,
+  storeSaleBodySchema,
   trackOrderSchema,
 } from "./order.schema.js";
 
@@ -51,6 +53,8 @@ orderAdminRouter.patch(
   validate({ params: idParamsSchema, body: statusBodySchema }),
   patchStatus,
 );
+// Une vente saisie au comptoir, encaissée dans la caisse du jour (16/11, lot 3).
+orderAdminRouter.post("/sales", validate({ body: storeSaleBodySchema }), postSale);
 // Valider un retrait au comptoir : le client paie, l'argent entre dans la caisse du jour (14/11).
 orderAdminRouter.post(
   "/orders/:id/pickup",

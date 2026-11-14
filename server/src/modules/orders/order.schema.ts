@@ -123,3 +123,24 @@ export const editOrderBodySchema = z.object({
   note: z.string().trim().max(500).nullable().optional(),
 });
 export type EditOrderInput = z.infer<typeof editOrderBodySchema>;
+
+// La vente au magasin (16/11, lot 3) : le vendeur saisit le ticket au comptoir. `unitPrice` est le
+// prix accordé ; absent, c'est le prix catalogue. Nom, téléphone et moyen de paiement obligatoires.
+export const storeSaleBodySchema = z.object({
+  fullName: z.string().trim().min(3, { error: "Le nom et le prénom du client (3 caractères au minimum)" }).max(80),
+  phone: phoneSchema,
+  method: paymentMethodSchema,
+  note: z.string().trim().max(500).optional(),
+  acceptLimitations: z.boolean().default(false),
+  lines: z
+    .array(
+      z.object({
+        sku: z.string().trim().toUpperCase().min(3).max(40),
+        quantity: z.number().int().min(1).max(10),
+        unitPrice: z.number().int().min(0).max(10_000_000).optional(),
+      }),
+    )
+    .min(1, { error: "Le ticket est vide" })
+    .max(30),
+});
+export type StoreSaleInput = z.infer<typeof storeSaleBodySchema>;

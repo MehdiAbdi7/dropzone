@@ -210,6 +210,41 @@ async function pickupSlot(tx: Tx, input: Extract<CreateOrderInput, { fulfillment
   };
 }
 
+// La baisse conditionnelle du stock : « seulement s'il en reste assez ». Deux clients qui prennent
+// le dernier article en même temps : PostgreSQL verrouille la ligne, le second relit un stock à 0 et
+// ne change rien (count = 0). Toujours dans le même ordre (par SKU) pour que deux commandes ne
+// s'attendent jamais l'une l'autre. Partagée par la commande du site et la vente au magasin.
+export async function takeStock(
+  tx: Tx,
+  lines: { sku: string; quantity: number; isGift: boolean; name: string }[],
+  where: string,
+) {
+  for (const line of [...lines].sort((a, b) => a.sku.localeCompare(b.sku))) {
+    const { count } = await tx.productVariant.updateMany({
+      where: { sku: line.sku, stock: { gte: line.quantity } },
+      data: { stock: { decrement: line.quantity } },
+    });
+    if (count !== 1) {
+      throw new AppError(
+        409,
+        line.isGift
+          ? `L'article offert « ${line.name} » vient d'être épuisé, vérifiez ${where}`
+          : `Le stock de « ${line.name} » vient de changer, vérifiez ${where}`,
+      );
+    }
+  }
+}
+
+// Le prix d'achat du moment, figé sur chaque ligne vendue (14/11) : lu ici et jamais par
+// priceCart, qui sert aussi l'aperçu public.
+export async function variantCosts(tx: Tx, skus: string[]): Promise<Map<string, number | null>> {
+  const variants = await tx.productVariant.findMany({
+    where: { sku: { in: skus } },
+    select: { sku: true, purchasePrice: true },
+  });
+  return new Map(variants.map((variant) => [variant.sku, variant.purchasePrice]));
+}
+
 export async function createOrder(input: CreateOrderInput, userId: number | undefined) {
   return prisma.$transaction(async (tx) => {
     const now = new Date();
@@ -229,38 +264,11 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
       throw new AppError(400, "Acceptez les limitations des appareils reconditionnés de votre commande");
     }
 
-    // La baisse conditionnelle : « seulement s'il en reste assez ». Deux clients qui
-    // prennent le dernier article en même temps : PostgreSQL verrouille la ligne, le
-    // second relit un stock à 0 et ne change rien (count = 0). Toujours dans le même
-    // ordre (par SKU) pour que deux commandes ne s'attendent jamais l'une l'autre.
-    const sorted = [...cart.lines].sort((a, b) => a.sku.localeCompare(b.sku));
-    for (const line of sorted) {
-      const { count } = await tx.productVariant.updateMany({
-        where: { sku: line.sku, stock: { gte: line.quantity } },
-        data: { stock: { decrement: line.quantity } },
-      });
-      if (count !== 1) {
-        throw new AppError(
-          409,
-          line.isGift
-            ? `L'article offert « ${line.name} » vient d'être épuisé, vérifiez votre panier`
-            : `Le stock de « ${line.name} » vient de changer, vérifiez votre panier`,
-        );
-      }
-    }
+    await takeStock(tx, cart.lines, "votre panier");
 
     // Le numéro du jour, dans la même transaction : une commande refusée plus haut n'en prend pas.
     const { dailyNumber, businessDate } = await issueDailyNumber(tx, now);
-    // Le prix d'achat du moment, figé sur chaque ligne (14/11) : lu ici et jamais par priceCart,
-    // qui sert aussi l'aperçu public.
-    const costs = new Map(
-      (
-        await tx.productVariant.findMany({
-          where: { sku: { in: cart.lines.map((line) => line.sku) } },
-          select: { sku: true, purchasePrice: true },
-        })
-      ).map((variant) => [variant.sku, variant.purchasePrice]),
-    );
+    const costs = await variantCosts(tx, cart.lines.map((line) => line.sku));
     const order = await tx.order.create({
       data: {
         userId,
@@ -287,6 +295,9 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
             conditionReport: line.conditionReport,
             warrantyMonths: line.warrantyMonths,
             unitPrice: line.unitPrice,
+            // Le prix catalogue du moment (lot 3) : une négociation ultérieure s'y compare. Un
+            // cadeau n'a pas de prix catalogue à montrer.
+            listPrice: line.isGift ? null : line.unitPrice,
             quantity: line.quantity,
             isGift: line.isGift,
             unitCost: costs.get(line.sku) ?? null,

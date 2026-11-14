@@ -12,6 +12,12 @@ import {
   validatePickup,
 } from "./order.service.js";
 import { deleteOrder, editOrder } from "./orderEdit.service.js";
+import { createStoreSale } from "./storeSale.service.js";
+
+// La vente au magasin (16/11, lot 3) : créée et encaissée au comptoir.
+export async function postSale(req: Request, res: Response) {
+  res.status(201).json({ data: await createStoreSale(req.body, res.locals.user!.id) });
+}
 
 export async function postPreview(req: Request, res: Response) {
   res.json({ data: await previewCart(req.body.items, req.body.fulfillment) });
