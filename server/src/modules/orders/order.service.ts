@@ -10,7 +10,9 @@ import { algiersDate, algiersMidnightAfter, pickupDays, pickupSlots } from "../.
 import { requireOpenCashDay } from "../cash/cash.service.js";
 import { getStoreHours } from "../store/store.service.js";
 import { issueDailyNumber } from "./dailyNumber.js";
+import { negotiateOrderPrices } from "./negotiation.service.js";
 import { lockOrder } from "./orderLock.js";
+import { STATUS_LABELS } from "./orderStatus.js";
 import { orderProfit } from "./orderMath.js";
 import { restockItems } from "./reservations.js";
 import type { AdminOrderListQuery, CartItemInput, CreateOrderInput, Fulfillment } from "./order.schema.js";
@@ -392,16 +394,7 @@ export async function getMyOrder(userId: number, number: number) {
 
 // ---------- Admin ----------
 
-export const STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: "en attente",
-  confirmed: "confirmée",
-  shipped: "expédiée",
-  delivered: "livrée",
-  cancelled: "annulée",
-  reserved: "réservée",
-  picked_up: "récupérée",
-  expired: "expirée",
-};
+export { STATUS_LABELS };
 
 const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ["confirmed", "cancelled"],
@@ -488,7 +481,16 @@ export async function getAdminOrder(id: number) {
   };
 }
 
-export async function changeOrderStatus(id: number, next: OrderStatus) {
+// `prices` : les prix négociés (16/11, lot 3), acceptés seulement avec la confirmation d'une livraison.
+export async function changeOrderStatus(
+  id: number,
+  next: OrderStatus,
+  userId: number,
+  prices?: { id: number; unitPrice: number }[],
+) {
+  if (prices && prices.length > 0 && next !== "confirmed") {
+    throw new AppError(400, "Les prix ne se négocient qu'à la confirmation de la commande");
+  }
   return prisma.$transaction(async (tx) => {
     // Le verrou d'abord : une modification qui passe en même temps (lot 2) change les lignes, et
     // l'annulation doit rendre au stock les lignes d'APRÈS, pas celles qu'elle aurait lues avant.
@@ -519,6 +521,10 @@ export async function changeOrderStatus(id: number, next: OrderStatus) {
     if (next === "cancelled") {
       await restockItems(tx, order.items);
     }
+    // La confirmation d'une livraison est le moment de négocier le prix (le magasin a appelé le client).
+    if (prices && prices.length > 0) {
+      await negotiateOrderPrices(tx, id, prices, userId);
+    }
     return { id, status: next, allowedTransitions: TRANSITIONS[next] };
   });
 }
@@ -526,7 +532,14 @@ export async function changeOrderStatus(id: number, next: OrderStatus) {
 // Valider un retrait au comptoir (14/11) : le client est venu et a payé. La commande passe
 // « récupérée » et le paiement entre dans le journal, à la date du jour : il compte dans la
 // caisse de ce jour-là (en espèces) ou dans le total du jour (autres moyens).
-export async function validatePickup(id: number, method: PaymentMethod, userId: number, now: Date = new Date()) {
+// `prices` : les prix négociés (lot 3), appliqués avant d'encaisser le nouveau total.
+export async function validatePickup(
+  id: number,
+  method: PaymentMethod,
+  userId: number,
+  prices?: { id: number; unitPrice: number }[],
+  now: Date = new Date(),
+) {
   return prisma.$transaction(async (tx) => {
     await requireOpenCashDay(tx, now);
     // Conditionnelle : un deuxième clic, ou l'expiration de minuit, a pu passer avant. Seul
@@ -540,6 +553,12 @@ export async function validatePickup(id: number, method: PaymentMethod, userId: 
       if (!order) throw new AppError(404, "Commande introuvable");
       if (order.type !== "pickup") throw new AppError(409, "Cette commande n'est pas un retrait au magasin");
       throw new AppError(409, `Ce retrait est déjà ${STATUS_LABELS[order.status]}`);
+    }
+    // Négocier AVANT de lire le total : l'argent encaissé est le prix accordé. La commande vient d'être
+    // marquée « récupérée » mais rien n'est encore écrit dans le journal : c'est le seul moment où
+    // une négociation sur un retrait « récupéré » est permise.
+    if (prices && prices.length > 0) {
+      await negotiateOrderPrices(tx, id, prices, userId, ["reserved", "picked_up"]);
     }
     const order = await tx.order.findUniqueOrThrow({ where: { id }, select: { total: true } });
     await tx.moneyMovement.create({

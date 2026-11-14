@@ -98,13 +98,20 @@ export const adminOrderListQuerySchema = z.object({
 });
 export type AdminOrderListQuery = z.infer<typeof adminOrderListQuerySchema>;
 
-export const statusBodySchema = z.object({ status: orderStatusSchema });
+// Les prix négociés (16/11, lot 3) : une ligne de la commande par son `id`, son nouveau prix accordé.
+// Les limites et les cadeaux sont vérifiés par `applyPrices`, qui répond par un message précis.
+const negotiatedPricesSchema = z
+  .array(z.object({ id: z.number().int().positive(), unitPrice: z.number() }))
+  .max(30)
+  .optional();
+
+export const statusBodySchema = z.object({ status: orderStatusSchema, prices: negotiatedPricesSchema });
 
 // Les moyens de paiement au comptoir (14/11), Espèces par défaut dans le back-office.
 export const paymentMethodSchema = z.enum(["cash", "baridimob", "ccp", "card", "transfer"], {
   error: "Moyen de paiement inconnu",
 });
-export const pickupBodySchema = z.object({ method: paymentMethodSchema });
+export const pickupBodySchema = z.object({ method: paymentMethodSchema, prices: negotiatedPricesSchema });
 
 // Modifier une commande (15/11, lot 2). Une ligne existante se désigne par son `id`, un nouvel
 // article par son `sku` ; une ligne payante qui n'est pas listée est retirée. Les cadeaux ne sont

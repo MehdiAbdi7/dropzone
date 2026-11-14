@@ -48,7 +48,9 @@ export async function getAdminOrderOne(req: Request, res: Response) {
 }
 
 export async function postPickup(req: Request, res: Response) {
-  res.json({ data: await validatePickup(Number(req.params.id), req.body.method, res.locals.user!.id) });
+  res.json({
+    data: await validatePickup(Number(req.params.id), req.body.method, res.locals.user!.id, req.body.prices),
+  });
 }
 
 export async function patchOrder(req: Request, res: Response) {
@@ -60,5 +62,7 @@ export async function removeOrder(req: Request, res: Response) {
 }
 
 export async function patchStatus(req: Request, res: Response) {
-  res.json({ data: await changeOrderStatus(Number(req.params.id), req.body.status) });
+  res.json({
+    data: await changeOrderStatus(Number(req.params.id), req.body.status, res.locals.user!.id, req.body.prices),
+  });
 }
