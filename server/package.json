@@ -19,7 +19,8 @@
     "colors:official": "tsx src/scripts/officialColors.ts",
     "colors:variants": "tsx src/scripts/variantColors.ts",
     "accessories:clear": "tsx src/scripts/accessoriesClear.ts",
-    "accessories:refonte": "tsx src/scripts/accessoriesRefonte.ts"
+    "accessories:refonte": "tsx src/scripts/accessoriesRefonte.ts",
+    "orders:reset": "tsx src/scripts/ordersReset.ts"
   },
   "type": "module",
   "engines": {
