@@ -8,6 +8,7 @@ import Logo from "@/components/ui/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useCashTodayQuery } from "@/features/admin/api/cashApi";
 import { useLogoutMutation } from "@/features/auth/authApi";
+import { playTestChime } from "@/lib/orderAlertSound";
 import { MENU_SECTIONS, SETTINGS_HREF, sectionFor } from "./navConfig";
 
 // La barre du haut du back-office (14/11), comme sur Niwa Food : le logo, « Voir la boutique », et un
@@ -18,6 +19,7 @@ export default function AdminTopbar() {
   const pathname = usePathname();
   const [logout] = useLogoutMutation();
   const [open, setOpen] = useState(false);
+  const [soundTest, setSoundTest] = useState<"ok" | "bloqué" | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   // L'état de la caisse ne se lit qu'à l'ouverture du menu : un appel de plus à chaque page, pour une
   // information que personne ne regarde encore, serait du gaspillage.
@@ -113,6 +115,18 @@ export default function AdminTopbar() {
                 Thème
                 <ThemeToggle />
               </div>
+              {/* Le navigateur n'autorise le son qu'après un geste : ce bouton le débloque et le fait entendre. */}
+              <button
+                type="button"
+                role="menuitem"
+                onClick={async () => setSoundTest((await playTestChime()) ? "ok" : "bloqué")}
+                className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-surface-2"
+              >
+                Tester le son des alertes
+                <span className="text-xs font-normal text-ink-muted">
+                  {soundTest === "ok" ? "Entendu ?" : soundTest === "bloqué" ? "Son bloqué" : ""}
+                </span>
+              </button>
               <Link
                 role="menuitem"
                 href={SETTINGS_HREF}

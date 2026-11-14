@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import PendingBadge from "./alerts/PendingBadge";
+import { usePendingDeliveries } from "./alerts/usePendingDeliveries";
 import { activeTab, sectionFor } from "./navConfig";
 
 // Les sous-onglets de la section affichée (Commandes : Livraisons, Retraits, Magasin…), en haut de
@@ -10,6 +12,7 @@ import { activeTab, sectionFor } from "./navConfig";
 export default function AdminSubNav() {
   const path = usePathname();
   const params = useSearchParams();
+  const { count: pending } = usePendingDeliveries();
   const section = sectionFor(path);
   if (!section?.tabs) return null;
   const current = activeTab(section, path, params);
@@ -22,11 +25,12 @@ export default function AdminSubNav() {
           key={tab.href}
           href={tab.href}
           aria-current={current?.href === tab.href ? "page" : undefined}
-          className={`rounded-full px-4 py-2 text-sm font-semibold ${
+          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${
             current?.href === tab.href ? "bg-blue text-on-brand" : "bg-surface-2 text-ink hover:text-blue-ink"
           }`}
         >
           {tab.label}
+          {tab.href === "/admin/livraisons" ? <PendingBadge count={pending} /> : null}
         </Link>
       ))}
     </nav>

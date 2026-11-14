@@ -16,7 +16,7 @@ type OrderReception = {
   wilaya: string | null;
 };
 
-type AdminOrderRow = OrderReception & {
+export type AdminOrderRow = OrderReception & {
   id: number;
   number: number;
   fullName: string;
