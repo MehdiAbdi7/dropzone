@@ -10,7 +10,10 @@ import { algiersDate, algiersMidnightAfter, pickupDays, pickupSlots } from "../.
 import { requireOpenCashDay } from "../cash/cash.service.js";
 import { getStoreHours } from "../store/store.service.js";
 import { issueDailyNumber } from "./dailyNumber.js";
+import { priceReduction } from "./negotiation.js";
+import { negotiateOrderPrices } from "./negotiation.service.js";
 import { lockOrder } from "./orderLock.js";
+import { STATUS_LABELS } from "./orderStatus.js";
 import { orderProfit } from "./orderMath.js";
 import { restockItems } from "./reservations.js";
 import type { AdminOrderListQuery, CartItemInput, CreateOrderInput, Fulfillment } from "./order.schema.js";
@@ -210,6 +213,41 @@ async function pickupSlot(tx: Tx, input: Extract<CreateOrderInput, { fulfillment
   };
 }
 
+// La baisse conditionnelle du stock : « seulement s'il en reste assez ». Deux clients qui prennent
+// le dernier article en même temps : PostgreSQL verrouille la ligne, le second relit un stock à 0 et
+// ne change rien (count = 0). Toujours dans le même ordre (par SKU) pour que deux commandes ne
+// s'attendent jamais l'une l'autre. Partagée par la commande du site et la vente au magasin.
+export async function takeStock(
+  tx: Tx,
+  lines: { sku: string; quantity: number; isGift: boolean; name: string }[],
+  where: string,
+) {
+  for (const line of [...lines].sort((a, b) => a.sku.localeCompare(b.sku))) {
+    const { count } = await tx.productVariant.updateMany({
+      where: { sku: line.sku, stock: { gte: line.quantity } },
+      data: { stock: { decrement: line.quantity } },
+    });
+    if (count !== 1) {
+      throw new AppError(
+        409,
+        line.isGift
+          ? `L'article offert « ${line.name} » vient d'être épuisé, vérifiez ${where}`
+          : `Le stock de « ${line.name} » vient de changer, vérifiez ${where}`,
+      );
+    }
+  }
+}
+
+// Le prix d'achat du moment, figé sur chaque ligne vendue (14/11) : lu ici et jamais par
+// priceCart, qui sert aussi l'aperçu public.
+export async function variantCosts(tx: Tx, skus: string[]): Promise<Map<string, number | null>> {
+  const variants = await tx.productVariant.findMany({
+    where: { sku: { in: skus } },
+    select: { sku: true, purchasePrice: true },
+  });
+  return new Map(variants.map((variant) => [variant.sku, variant.purchasePrice]));
+}
+
 export async function createOrder(input: CreateOrderInput, userId: number | undefined) {
   return prisma.$transaction(async (tx) => {
     const now = new Date();
@@ -229,38 +267,11 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
       throw new AppError(400, "Acceptez les limitations des appareils reconditionnés de votre commande");
     }
 
-    // La baisse conditionnelle : « seulement s'il en reste assez ». Deux clients qui
-    // prennent le dernier article en même temps : PostgreSQL verrouille la ligne, le
-    // second relit un stock à 0 et ne change rien (count = 0). Toujours dans le même
-    // ordre (par SKU) pour que deux commandes ne s'attendent jamais l'une l'autre.
-    const sorted = [...cart.lines].sort((a, b) => a.sku.localeCompare(b.sku));
-    for (const line of sorted) {
-      const { count } = await tx.productVariant.updateMany({
-        where: { sku: line.sku, stock: { gte: line.quantity } },
-        data: { stock: { decrement: line.quantity } },
-      });
-      if (count !== 1) {
-        throw new AppError(
-          409,
-          line.isGift
-            ? `L'article offert « ${line.name} » vient d'être épuisé, vérifiez votre panier`
-            : `Le stock de « ${line.name} » vient de changer, vérifiez votre panier`,
-        );
-      }
-    }
+    await takeStock(tx, cart.lines, "votre panier");
 
     // Le numéro du jour, dans la même transaction : une commande refusée plus haut n'en prend pas.
     const { dailyNumber, businessDate } = await issueDailyNumber(tx, now);
-    // Le prix d'achat du moment, figé sur chaque ligne (14/11) : lu ici et jamais par priceCart,
-    // qui sert aussi l'aperçu public.
-    const costs = new Map(
-      (
-        await tx.productVariant.findMany({
-          where: { sku: { in: cart.lines.map((line) => line.sku) } },
-          select: { sku: true, purchasePrice: true },
-        })
-      ).map((variant) => [variant.sku, variant.purchasePrice]),
-    );
+    const costs = await variantCosts(tx, cart.lines.map((line) => line.sku));
     const order = await tx.order.create({
       data: {
         userId,
@@ -287,6 +298,9 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
             conditionReport: line.conditionReport,
             warrantyMonths: line.warrantyMonths,
             unitPrice: line.unitPrice,
+            // Le prix catalogue du moment (lot 3) : une négociation ultérieure s'y compare. Un
+            // cadeau n'a pas de prix catalogue à montrer.
+            listPrice: line.isGift ? null : line.unitPrice,
             quantity: line.quantity,
             isGift: line.isGift,
             unitCost: costs.get(line.sku) ?? null,
@@ -381,16 +395,7 @@ export async function getMyOrder(userId: number, number: number) {
 
 // ---------- Admin ----------
 
-export const STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: "en attente",
-  confirmed: "confirmée",
-  shipped: "expédiée",
-  delivered: "livrée",
-  cancelled: "annulée",
-  reserved: "réservée",
-  picked_up: "récupérée",
-  expired: "expirée",
-};
+export { STATUS_LABELS };
 
 const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ["confirmed", "cancelled"],
@@ -467,17 +472,37 @@ export async function getAdminOrder(id: number) {
     prisma.moneyMovement.findMany({ where: { orderId: id }, orderBy: { id: "asc" } }),
     prisma.orderEvent.findMany({ where: { orderId: id }, orderBy: { id: "desc" } }),
   ]);
+  // Qui a accordé chaque prix négocié (lot 3) : le nom, pour l'afficher à côté de la réduction.
+  const grantors = await prisma.user.findMany({
+    where: { id: { in: order.items.map((item) => item.grantedById).filter((value): value is number => value !== null) } },
+    select: { id: true, firstName: true, lastName: true },
+  });
+  const grantorName = (userId: number | null) => {
+    const user = grantors.find((candidate) => candidate.id === userId);
+    return user ? `${user.firstName} ${user.lastName}` : null;
+  };
   return {
     ...order,
+    items: order.items.map((item) => ({ ...item, grantedByName: grantorName(item.grantedById) })),
     allowedTransitions: TRANSITIONS[order.status],
     payments,
     paid: payments.reduce((sum, movement) => sum + movement.amount, 0),
     profit: orderProfit(order.items),
+    discount: priceReduction(order.items),
     events,
   };
 }
 
-export async function changeOrderStatus(id: number, next: OrderStatus) {
+// `prices` : les prix négociés (16/11, lot 3), acceptés seulement avec la confirmation d'une livraison.
+export async function changeOrderStatus(
+  id: number,
+  next: OrderStatus,
+  userId: number,
+  prices?: { id: number; unitPrice: number }[],
+) {
+  if (prices && prices.length > 0 && next !== "confirmed") {
+    throw new AppError(400, "Les prix ne se négocient qu'à la confirmation de la commande");
+  }
   return prisma.$transaction(async (tx) => {
     // Le verrou d'abord : une modification qui passe en même temps (lot 2) change les lignes, et
     // l'annulation doit rendre au stock les lignes d'APRÈS, pas celles qu'elle aurait lues avant.
@@ -508,6 +533,10 @@ export async function changeOrderStatus(id: number, next: OrderStatus) {
     if (next === "cancelled") {
       await restockItems(tx, order.items);
     }
+    // La confirmation d'une livraison est le moment de négocier le prix (le magasin a appelé le client).
+    if (prices && prices.length > 0) {
+      await negotiateOrderPrices(tx, id, prices, userId);
+    }
     return { id, status: next, allowedTransitions: TRANSITIONS[next] };
   });
 }
@@ -515,7 +544,14 @@ export async function changeOrderStatus(id: number, next: OrderStatus) {
 // Valider un retrait au comptoir (14/11) : le client est venu et a payé. La commande passe
 // « récupérée » et le paiement entre dans le journal, à la date du jour : il compte dans la
 // caisse de ce jour-là (en espèces) ou dans le total du jour (autres moyens).
-export async function validatePickup(id: number, method: PaymentMethod, userId: number, now: Date = new Date()) {
+// `prices` : les prix négociés (lot 3), appliqués avant d'encaisser le nouveau total.
+export async function validatePickup(
+  id: number,
+  method: PaymentMethod,
+  userId: number,
+  prices?: { id: number; unitPrice: number }[],
+  now: Date = new Date(),
+) {
   return prisma.$transaction(async (tx) => {
     await requireOpenCashDay(tx, now);
     // Conditionnelle : un deuxième clic, ou l'expiration de minuit, a pu passer avant. Seul
@@ -529,6 +565,12 @@ export async function validatePickup(id: number, method: PaymentMethod, userId: 
       if (!order) throw new AppError(404, "Commande introuvable");
       if (order.type !== "pickup") throw new AppError(409, "Cette commande n'est pas un retrait au magasin");
       throw new AppError(409, `Ce retrait est déjà ${STATUS_LABELS[order.status]}`);
+    }
+    // Négocier AVANT de lire le total : l'argent encaissé est le prix accordé. La commande vient d'être
+    // marquée « récupérée » mais rien n'est encore écrit dans le journal : c'est le seul moment où
+    // une négociation sur un retrait « récupéré » est permise.
+    if (prices && prices.length > 0) {
+      await negotiateOrderPrices(tx, id, prices, userId, ["reserved", "picked_up"]);
     }
     const order = await tx.order.findUniqueOrThrow({ where: { id }, select: { total: true } });
     await tx.moneyMovement.create({

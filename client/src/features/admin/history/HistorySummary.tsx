@@ -36,6 +36,11 @@ export default function HistorySummary({ totals }: { totals: History["totals"] }
         <h2 className="text-sm font-semibold text-ink-muted">Ventes</h2>
         <p className="font-display text-3xl font-bold tabular-nums">{totals.salesCount}</p>
         <p className="text-sm text-ink-muted">Une vente compte le jour de son premier paiement.</p>
+        {totals.discount !== 0 ? (
+          <p className="text-sm font-semibold">
+            {totals.discount > 0 ? "Réductions accordées" : "Suppléments sur le catalogue"} : {formatPrice(Math.abs(totals.discount))}
+          </p>
+        ) : null}
       </div>
 
       <div className="card space-y-3 p-5">

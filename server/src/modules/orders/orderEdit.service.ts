@@ -196,7 +196,17 @@ export async function editOrder(id: number, input: EditOrderInput, userId: numbe
     await tx.orderItem.deleteMany({ where: { orderId: id, isGift: false, id: { notIn: [...keptIds] } } });
     for (const item of paying.filter((candidate) => keptIds.has(candidate.id))) {
       const line = requested.get(item.id)!;
-      await tx.orderItem.update({ where: { id: item.id }, data: { quantity: line.quantity, unitPrice: line.unitPrice } });
+      // Un prix changé : le prix catalogue est gardé (l'ancien prix accordé d'une commande d'avant le
+      // lot 3 devient le catalogue) et on retient qui l'a changé (lot 3).
+      const priceChanged = line.unitPrice !== item.unitPrice;
+      await tx.orderItem.update({
+        where: { id: item.id },
+        data: {
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          ...(priceChanged ? { listPrice: item.listPrice ?? item.unitPrice, grantedById: userId } : {}),
+        },
+      });
     }
     for (const line of newLines) {
       const variant = bySku.get(line.sku)!;
@@ -211,6 +221,10 @@ export async function editOrder(id: number, input: EditOrderInput, userId: numbe
           conditionReport: buildConditionReport(variant),
           warrantyMonths: variant.warrantyMonths,
           unitPrice: line.unitPrice,
+          // Un article ajouté : son prix catalogue est celui de la variante ; l'auteur est retenu
+          // quand le prix accordé en diffère (lot 3).
+          listPrice: variant.price,
+          grantedById: line.unitPrice !== variant.price ? userId : null,
           quantity: line.quantity,
           unitCost: variant.purchasePrice,
         },

@@ -29,6 +29,13 @@ export default function OrderMoney({ order }: { order: AdminOrder }) {
             {order.profit === null ? "inconnu (prix d'achat manquant)" : formatPrice(order.profit)}
           </dd>
         </div>
+        {/* La réduction accordée par rapport au prix catalogue (lot 3), quand il y en a une. */}
+        {order.discount !== 0 ? (
+          <div className="flex justify-between gap-3">
+            <dt className="text-ink-muted">{order.discount > 0 ? "Réduction accordée" : "Supplément sur le catalogue"}</dt>
+            <dd className="font-semibold tabular-nums">{formatPrice(Math.abs(order.discount))}</dd>
+          </div>
+        ) : null}
       </dl>
       {order.payments.length > 0 ? (
         <ul className="divide-y divide-line border-t border-line">

@@ -98,13 +98,20 @@ export const adminOrderListQuerySchema = z.object({
 });
 export type AdminOrderListQuery = z.infer<typeof adminOrderListQuerySchema>;
 
-export const statusBodySchema = z.object({ status: orderStatusSchema });
+// Les prix négociés (16/11, lot 3) : une ligne de la commande par son `id`, son nouveau prix accordé.
+// Les limites et les cadeaux sont vérifiés par `applyPrices`, qui répond par un message précis.
+const negotiatedPricesSchema = z
+  .array(z.object({ id: z.number().int().positive(), unitPrice: z.number() }))
+  .max(30)
+  .optional();
+
+export const statusBodySchema = z.object({ status: orderStatusSchema, prices: negotiatedPricesSchema });
 
 // Les moyens de paiement au comptoir (14/11), Espèces par défaut dans le back-office.
 export const paymentMethodSchema = z.enum(["cash", "baridimob", "ccp", "card", "transfer"], {
   error: "Moyen de paiement inconnu",
 });
-export const pickupBodySchema = z.object({ method: paymentMethodSchema });
+export const pickupBodySchema = z.object({ method: paymentMethodSchema, prices: negotiatedPricesSchema });
 
 // Modifier une commande (15/11, lot 2). Une ligne existante se désigne par son `id`, un nouvel
 // article par son `sku` ; une ligne payante qui n'est pas listée est retirée. Les cadeaux ne sont
@@ -123,3 +130,24 @@ export const editOrderBodySchema = z.object({
   note: z.string().trim().max(500).nullable().optional(),
 });
 export type EditOrderInput = z.infer<typeof editOrderBodySchema>;
+
+// La vente au magasin (16/11, lot 3) : le vendeur saisit le ticket au comptoir. `unitPrice` est le
+// prix accordé ; absent, c'est le prix catalogue. Nom, téléphone et moyen de paiement obligatoires.
+export const storeSaleBodySchema = z.object({
+  fullName: z.string().trim().min(3, { error: "Le nom et le prénom du client (3 caractères au minimum)" }).max(80),
+  phone: phoneSchema,
+  method: paymentMethodSchema,
+  note: z.string().trim().max(500).optional(),
+  acceptLimitations: z.boolean().default(false),
+  lines: z
+    .array(
+      z.object({
+        sku: z.string().trim().toUpperCase().min(3).max(40),
+        quantity: z.number().int().min(1).max(10),
+        unitPrice: z.number().int().min(0).max(10_000_000).optional(),
+      }),
+    )
+    .min(1, { error: "Le ticket est vide" })
+    .max(30),
+});
+export type StoreSaleInput = z.infer<typeof storeSaleBodySchema>;

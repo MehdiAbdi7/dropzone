@@ -29,7 +29,9 @@ export function computeMinNewPrice(
 // Recalcule les prix affichés après une commande, une annulation ou une modification.
 // Reçoit le client de la transaction : les prix changent en même temps que le stock.
 export async function refreshMinPrice(tx: Tx, productIds: (number | null)[]): Promise<void> {
-  const ids = new Set(productIds.filter((id): id is number => id !== null));
+  // Toujours dans le même ordre (par identifiant) : deux transactions qui touchent les mêmes
+  // produits ne se verrouillent pas en sens inverse (interblocage, donc erreur 500).
+  const ids = [...new Set(productIds.filter((id): id is number => id !== null))].sort((a, b) => a - b);
   for (const id of ids) {
     const variants = await tx.productVariant.findMany({
       where: { productId: id },

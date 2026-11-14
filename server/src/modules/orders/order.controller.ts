@@ -12,6 +12,12 @@ import {
   validatePickup,
 } from "./order.service.js";
 import { deleteOrder, editOrder } from "./orderEdit.service.js";
+import { createStoreSale } from "./storeSale.service.js";
+
+// La vente au magasin (16/11, lot 3) : créée et encaissée au comptoir.
+export async function postSale(req: Request, res: Response) {
+  res.status(201).json({ data: await createStoreSale(req.body, res.locals.user!.id) });
+}
 
 export async function postPreview(req: Request, res: Response) {
   res.json({ data: await previewCart(req.body.items, req.body.fulfillment) });
@@ -42,7 +48,9 @@ export async function getAdminOrderOne(req: Request, res: Response) {
 }
 
 export async function postPickup(req: Request, res: Response) {
-  res.json({ data: await validatePickup(Number(req.params.id), req.body.method, res.locals.user!.id) });
+  res.json({
+    data: await validatePickup(Number(req.params.id), req.body.method, res.locals.user!.id, req.body.prices),
+  });
 }
 
 export async function patchOrder(req: Request, res: Response) {
@@ -54,5 +62,7 @@ export async function removeOrder(req: Request, res: Response) {
 }
 
 export async function patchStatus(req: Request, res: Response) {
-  res.json({ data: await changeOrderStatus(Number(req.params.id), req.body.status) });
+  res.json({
+    data: await changeOrderStatus(Number(req.params.id), req.body.status, res.locals.user!.id, req.body.prices),
+  });
 }

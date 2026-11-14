@@ -1,5 +1,6 @@
 import { prisma } from "../../config/db.js";
 import type { MovementKind, PaymentMethod, Prisma } from "../../generated/prisma/client.js";
+import { priceReduction } from "../orders/negotiation.js";
 import { orderProfit } from "../orders/orderMath.js";
 import type { HistoryQuery } from "./history.schema.js";
 
@@ -44,7 +45,8 @@ export async function getHistory(query: HistoryQuery) {
 
   // 2. Les ventes de la période : une commande qui existe encore, à la date de son premier
   // paiement. Son bénéfice est inconnu (NULL) dès qu'une ligne n'a pas de prix d'achat.
-  const sales = await prisma.$queryRaw<{ order_id: number; profit: bigint | null }[]>`
+  // `discount` (lot 3) : Σ (prix catalogue − prix accordé) × quantité, lignes sans prix catalogue ignorées.
+  const sales = await prisma.$queryRaw<{ order_id: number; profit: bigint | null; discount: bigint }[]>`
     WITH sales AS (
       SELECT order_id, MIN(business_date) AS sale_date
       FROM money_movements
@@ -53,7 +55,8 @@ export async function getHistory(query: HistoryQuery) {
     )
     SELECT s.order_id,
            CASE WHEN bool_or(i.unit_cost IS NULL) THEN NULL
-                ELSE SUM((i.unit_price - i.unit_cost) * i.quantity) END AS profit
+                ELSE SUM((i.unit_price - i.unit_cost) * i.quantity) END AS profit,
+           SUM(CASE WHEN i.list_price IS NULL THEN 0 ELSE (i.list_price - i.unit_price) * i.quantity END) AS discount
     FROM sales s
     JOIN orders o ON o.id = s.order_id
     JOIN order_items i ON i.order_id = o.id
@@ -107,7 +110,7 @@ export async function getHistory(query: HistoryQuery) {
     where: { AND: filters },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: MAX_ORDERS + 1,
-    include: { items: { select: { unitPrice: true, unitCost: true, quantity: true } } },
+    include: { items: { select: { unitPrice: true, unitCost: true, listPrice: true, quantity: true } } },
   });
   const ordersTruncated = found.length > MAX_ORDERS;
   const rows = found.slice(0, MAX_ORDERS);
@@ -136,6 +139,8 @@ export async function getHistory(query: HistoryQuery) {
       saleDate: saleDates[0] ?? null,
       // Le bénéfice n'a de sens que pour une vente faite : une réservation n'en a pas encore.
       profit: saleDates.length > 0 ? orderProfit(order.items) : null,
+      // La réduction accordée (lot 3) ; 0 sans prix catalogue connu (commande d'avant le lot 3).
+      discount: priceReduction(order.items),
     };
   });
 
@@ -174,6 +179,8 @@ export async function getHistory(query: HistoryQuery) {
       salesCount: sales.length,
       profit: known.reduce((sum, sale) => sum + Number(sale.profit), 0),
       unknownCostSales: sales.length - known.length,
+      // Les réductions accordées sur les ventes de la période (lot 3).
+      discount: sales.reduce((sum, sale) => sum + Number(sale.discount), 0),
     },
     days,
     orders,

@@ -12,6 +12,9 @@ function profitText(order: HistoryOrder): string {
   return order.profit === null ? "inconnu" : formatPrice(order.profit);
 }
 
+// La réduction accordée sur une commande (lot 3) : « −9 000 DA » ; « +5 000 DA » quand un prix dépasse le catalogue.
+const discountText = (discount: number) => `${discount > 0 ? "−" : "+"}${formatPrice(Math.abs(discount))}`;
+
 // Les commandes créées ou encaissées dans la période. Chaque ligne ouvre la commande, où se
 // trouvent Modifier et Supprimer.
 export default function HistoryOrders({ orders, truncated }: { orders: History["orders"]; truncated: boolean }) {
@@ -42,6 +45,11 @@ export default function HistoryOrders({ orders, truncated }: { orders: History["
                 <span className="block font-bold">{formatPrice(order.total)}</span>
                 <span className="block text-ink-muted">payé {formatPrice(order.paid)}</span>
                 <span className="block text-ink-muted">bénéfice {profitText(order)}</span>
+                {order.discount !== 0 ? (
+                  <span className="block text-ink-muted">
+                    {order.discount > 0 ? "réduction" : "supplément"} {formatPrice(Math.abs(order.discount))}
+                  </span>
+                ) : null}
               </span>
             </Link>
           </li>
@@ -60,6 +68,7 @@ export default function HistoryOrders({ orders, truncated }: { orders: History["
               <th scope="col">Total</th>
               <th scope="col">Payé</th>
               <th scope="col">Bénéfice</th>
+              <th scope="col">Réduction</th>
             </tr>
           </thead>
           <tbody>
@@ -82,6 +91,7 @@ export default function HistoryOrders({ orders, truncated }: { orders: History["
                 <td className="tabular-nums">{formatPrice(order.total)}</td>
                 <td className="tabular-nums">{formatPrice(order.paid)}</td>
                 <td className="tabular-nums">{profitText(order)}</td>
+                <td className="tabular-nums">{order.discount === 0 ? "—" : discountText(order.discount)}</td>
               </tr>
             ))}
           </tbody>
