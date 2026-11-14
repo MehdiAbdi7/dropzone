@@ -31,6 +31,8 @@ export type HistoryOrder = {
   saleDate: string | null;
   // null : pas encore vendue, ou prix d'achat inconnu sur une ligne.
   profit: number | null;
+  // La réduction accordée sur la commande (lot 3) : 0 sans prix catalogue connu.
+  discount: number;
 };
 
 export type History = {
@@ -43,6 +45,8 @@ export type History = {
     salesCount: number;
     profit: number;
     unknownCostSales: number;
+    // Les réductions accordées sur les ventes de la période (lot 3).
+    discount: number;
   };
   days: HistoryDay[];
   orders: HistoryOrder[];

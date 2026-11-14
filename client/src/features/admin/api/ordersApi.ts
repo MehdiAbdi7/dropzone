@@ -59,10 +59,19 @@ export type AdminOrder = OrderReception & {
     // La garantie au jour de la commande (null pour un accessoire ou une commande d'avant).
     warrantyMonths?: number | null;
     unitPrice: number;
+    // Le prix catalogue d'origine et qui a accordé le prix actuel (lot 3) ; null pour une commande
+    // d'avant le lot 3 ou une ligne sans remise.
+    listPrice: number | null;
+    grantedByName: string | null;
     quantity: number;
     isGift: boolean;
   }[];
+  // La réduction totale de la commande (lot 3), 0 sans prix catalogue connu.
+  discount: number;
 };
+
+// Un prix négocié : une ligne de la commande par son `id`, son nouveau prix accordé.
+export type NegotiatedPrice = { id: number; unitPrice: number };
 
 // Le corps de PATCH /admin/orders/:id : une ligne existante par son `id`, un nouvel article par son
 // `sku` ; une ligne payante qui n'est pas listée est retirée.
@@ -115,13 +124,22 @@ const ordersApi = api.injectEndpoints({
       transformResponse: data<AdminOrder>,
       providesTags: (_result, _error, id) => [{ type: "Orders", id }],
     }),
-    changeStatus: build.mutation<unknown, { id: number; status: OrderStatus }>({
-      query: ({ id, status }) => ({ url: `/admin/orders/${id}/status`, method: "PATCH", body: { status } }),
+    // `prices` : les prix négociés (lot 3), acceptés avec la confirmation d'une livraison.
+    changeStatus: build.mutation<unknown, { id: number; status: OrderStatus; prices?: NegotiatedPrice[] }>({
+      query: ({ id, status, prices }) => ({
+        url: `/admin/orders/${id}/status`,
+        method: "PATCH",
+        body: { status, ...(prices && prices.length > 0 ? { prices } : {}) },
+      }),
       invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Products", "History"],
     }),
     // Valider un retrait au comptoir (14/11) : le paiement entre dans la caisse du jour.
-    validatePickup: build.mutation<unknown, { id: number; method: PaymentMethod }>({
-      query: ({ id, method }) => ({ url: `/admin/orders/${id}/pickup`, method: "POST", body: { method } }),
+    validatePickup: build.mutation<unknown, { id: number; method: PaymentMethod; prices?: NegotiatedPrice[] }>({
+      query: ({ id, method, prices }) => ({
+        url: `/admin/orders/${id}/pickup`,
+        method: "POST",
+        body: { method, ...(prices && prices.length > 0 ? { prices } : {}) },
+      }),
       invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Cash", "History"],
     }),
     // Modifier une commande après coup (lot 2) : stock, argent et trace suivent côté serveur.
