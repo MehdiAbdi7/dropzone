@@ -35,6 +35,14 @@ export type HistoryOrder = {
   discount: number;
 };
 
+export type HistoryChannel = {
+  collected: number;
+  salesCount: number;
+  profit: number;
+  unknownCostSales: number;
+  discount: number;
+};
+
 export type History = {
   from: string;
   to: string;
@@ -48,6 +56,8 @@ export type History = {
     // Les réductions accordées sur les ventes de la période (lot 3).
     discount: number;
   };
+  // Ce que chaque canal rapporte sur la période, quel que soit l'onglet choisi (17/11, lot 4).
+  channels: Record<OrderType, HistoryChannel>;
   days: HistoryDay[];
   orders: HistoryOrder[];
   ordersTruncated: boolean;

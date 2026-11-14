@@ -2,9 +2,9 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { ORDER_TYPE_LABELS } from "@/config/catalog";
 import { useHistoryQuery } from "@/features/admin/api/historyApi";
 import HistoryChanges from "@/features/admin/history/HistoryChanges";
+import HistoryChannels, { CHANNEL_LABELS, CHANNEL_ORDER } from "@/features/admin/history/HistoryChannels";
 import HistoryDays from "@/features/admin/history/HistoryDays";
 import HistoryOrders from "@/features/admin/history/HistoryOrders";
 import HistorySummary from "@/features/admin/history/HistorySummary";
@@ -16,7 +16,11 @@ import { periodRange } from "@/lib/period";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import type { OrderType } from "@/types/api";
 
-const TYPES = Object.keys(ORDER_TYPE_LABELS) as OrderType[];
+// Les 4 onglets (17/11, lot 4) : le Total, puis ce que rapporte chaque canal.
+const TABS: { type: OrderType | undefined; label: string }[] = [
+  { type: undefined, label: "Total" },
+  ...CHANNEL_ORDER.map((type) => ({ type, label: CHANNEL_LABELS[type] })),
+];
 
 export default function HistoryPage() {
   return (
@@ -47,6 +51,21 @@ function History() {
       <h1 className="text-3xl">Historique</h1>
       <PeriodBar kind={view.kind} anchor={view.anchor} today={today} onChange={(next) => go(next)} />
 
+      {/* Total, Magasin, Livraisons, Réservations : chaque onglet change tous les chiffres de la page. */}
+      <div role="group" aria-label="Canal de vente" className="flex flex-wrap gap-2">
+        {TABS.map((tab) => (
+          <button
+            key={tab.type ?? "total"}
+            type="button"
+            className="chip"
+            aria-pressed={view.type === tab.type}
+            onClick={() => go({ type: tab.type })}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {error ? (
         <p role="alert" className="field-error">
           {errorMessage(error)}
@@ -55,16 +74,11 @@ function History() {
 
       <div className={isFetching ? "space-y-6 opacity-70" : "space-y-6"} aria-busy={isFetching}>
         {data ? <HistorySummary totals={data.totals} /> : <p className="text-ink-muted">Chargement…</p>}
-        {data ? <HistoryDays days={data.days} /> : null}
+        {/* Sous le Total : ce que rapporte chacun des trois canaux, qui se somment dans le Total. */}
+        {data && view.type === undefined ? <HistoryChannels channels={data.channels} onPick={(type) => go({ type })} /> : null}
+        {data ? <HistoryDays days={data.days} tab={view.type} /> : null}
 
         <div className="space-y-3">
-          <div role="group" aria-label="Type de commande" className="flex flex-wrap gap-2">
-            {[undefined, ...TYPES].map((type) => (
-              <button key={type ?? "all"} type="button" className="chip" aria-pressed={view.type === type} onClick={() => go({ type })}>
-                {type ? ORDER_TYPE_LABELS[type] : "Tous les types"}
-              </button>
-            ))}
-          </div>
           <label className="block max-w-md">
             <span className="sr-only">Chercher une commande</span>
             <input

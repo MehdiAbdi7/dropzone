@@ -12,6 +12,7 @@ import {
   useDeleteOrderMutation,
   useValidatePickupMutation,
 } from "@/features/admin/api/ordersApi";
+import CollectDelivery from "@/features/admin/deliveries/CollectDelivery";
 import EditOrderDialog from "@/features/admin/orders/EditOrderDialog";
 import OrderEvents from "@/features/admin/orders/OrderEvents";
 import NegotiatePrices from "@/features/admin/orders/NegotiatePrices";
@@ -65,8 +66,11 @@ export default function AdminOrderPage() {
     return <p className="text-ink-muted">Chargement…</p>;
   }
 
-  const forward = order.allowedTransitions.filter((status) => status !== "cancelled");
+  // « Encaissée » et « Retournée » ont leur propre bloc : l'une écrit l'argent (moyen de paiement),
+  // l'autre remet le stock et demande confirmation.
+  const forward = order.allowedTransitions.filter((status) => !["cancelled", "collected", "returned"].includes(status));
   const canCancel = order.allowedTransitions.includes("cancelled");
+  const canReturn = order.allowedTransitions.includes("returned");
   const pickup = order.type === "pickup";
   const delivery = order.type === "delivery";
   // On ne négocie que le prix d'une commande dont l'argent n'est pas encore entré (lot 3) ; une
@@ -120,8 +124,19 @@ export default function AdminOrderPage() {
             Le stock de chaque article, cadeaux compris, est rendu. Une commande annulée ne peut plus changer.
           </ConfirmDialog>
         ) : null}
+        {canReturn ? (
+          <ConfirmDialog
+            trigger="Colis refusé (retournée)"
+            title={`Marquer la commande n° ${order.number} retournée ?`}
+            confirmLabel="Oui, colis retourné"
+            onConfirm={() => changeStatus({ id: order.id, status: "returned" })}
+          >
+            Le client a refusé le colis : le stock de chaque article, cadeaux compris, est rendu et rien n&apos;est encaissé. Une
+            livraison retournée ne peut plus changer.
+          </ConfirmDialog>
+        ) : null}
         {/* Modifier et supprimer : après coup, avec stock, argent et trace qui suivent (lot 2). */}
-        {order.status !== "cancelled" && order.status !== "expired" ? (
+        {order.status !== "cancelled" && order.status !== "expired" && order.status !== "returned" ? (
           <button type="button" className="btn btn-secondary" onClick={() => setEditing(true)}>
             Modifier
           </button>
@@ -157,6 +172,8 @@ export default function AdminOrderPage() {
 
       <EditOrderDialog order={order} open={editing} onClose={() => setEditing(false)} />
 
+      {delivery && order.status === "delivered" ? <CollectDelivery orderId={order.id} total={order.total} /> : null}
+
       {pickup && order.status === "reserved" ? (
         <ValidatePickup
           orderId={order.id}
@@ -191,7 +208,8 @@ export default function AdminOrderPage() {
           <p>Articles : {formatPrice(order.subtotal)}</p>
           {delivery ? <p>Livraison : {order.shippingFee === 0 ? "offerte" : formatPrice(order.shippingFee)}</p> : null}
           <p className="font-display text-xl font-bold">
-            {order.status === "picked_up" ? "Encaissé" : "À encaisser"} : {formatPrice(order.total)}
+            {order.status === "picked_up" || order.status === "collected" ? "Encaissé" : order.status === "returned" ? "Non encaissé (colis retourné)" : "À encaisser"} :{" "}
+            {formatPrice(order.total)}
           </p>
           {order.limitationsAccepted ? (
             <p className="mt-2 font-semibold text-red">Le client a accepté les limitations des affaires.</p>

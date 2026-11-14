@@ -86,6 +86,8 @@ const orderStatusSchema = z.enum([
   "reserved",
   "picked_up",
   "expired",
+  "collected",
+  "returned",
 ]);
 
 export const adminOrderListQuerySchema = z.object({
@@ -112,6 +114,8 @@ export const paymentMethodSchema = z.enum(["cash", "baridimob", "ccp", "card", "
   error: "Moyen de paiement inconnu",
 });
 export const pickupBodySchema = z.object({ method: paymentMethodSchema, prices: negotiatedPricesSchema });
+// Encaisser une livraison (17/11, lot 4) : le moyen par lequel l'argent est arrivé (CCP, BaridiMob…).
+export const collectBodySchema = z.object({ method: paymentMethodSchema });
 
 // Modifier une commande (15/11, lot 2). Une ligne existante se désigne par son `id`, un nouvel
 // article par son `sku` ; une ligne payante qui n'est pas listée est retirée. Les cadeaux ne sont

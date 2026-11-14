@@ -12,7 +12,10 @@ export type OrderStatus =
   | "cancelled"
   | "reserved"
   | "picked_up"
-  | "expired";
+  | "expired"
+  // Une livraison dont l'argent est arrivé, ou dont le colis a été refusé (17/11, lot 4).
+  | "collected"
+  | "returned";
 export type OrderType = "delivery" | "pickup" | "in_store";
 export type PaymentMethod = "cash" | "baridimob" | "ccp" | "card" | "transfer";
 export type Role = "customer" | "admin";

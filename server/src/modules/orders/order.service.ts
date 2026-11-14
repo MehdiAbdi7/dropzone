@@ -400,14 +400,18 @@ export { STATUS_LABELS };
 const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ["confirmed", "cancelled"],
   confirmed: ["shipped", "cancelled"],
-  shipped: ["delivered"],
-  delivered: [],
+  // Un colis refusé revient : « Retournée » (stock remis, rien d'encaissé) depuis Expédiée ou Livrée.
+  // « Encaissée » n'est pas un simple changement d'état : elle écrit l'argent (voir collectDelivery).
+  shipped: ["delivered", "returned"],
+  delivered: ["collected", "returned"],
   cancelled: [],
   // Un retrait réservé ne passe « récupérée » que par validatePickup (avec son paiement) ;
   // à la main, on peut seulement l'annuler (le stock revient). Expirée : par releaseExpiredReservations.
   reserved: ["cancelled"],
   picked_up: [],
   expired: [],
+  collected: [],
+  returned: [],
 };
 
 export async function listAdminOrders(query: AdminOrderListQuery) {
@@ -515,6 +519,10 @@ export async function changeOrderStatus(
     if (next === "picked_up") {
       throw new AppError(409, "Validez le retrait avec son moyen de paiement");
     }
+    // « Encaissée » aussi : l'argent s'écrit avec son moyen de paiement (collectDelivery).
+    if (next === "collected") {
+      throw new AppError(409, "Encaissez la livraison avec son moyen de paiement");
+    }
     if (!TRANSITIONS[order.status].includes(next)) {
       throw new AppError(
         409,
@@ -530,7 +538,8 @@ export async function changeOrderStatus(
     if (count !== 1) {
       throw new AppError(409, "La commande vient d'être modifiée, rechargez la page");
     }
-    if (next === "cancelled") {
+    // Annulée ou retournée (colis refusé) : les articles, cadeaux compris, reviennent en stock.
+    if (next === "cancelled" || next === "returned") {
       await restockItems(tx, order.items);
     }
     // La confirmation d'une livraison est le moment de négocier le prix (le magasin a appelé le client).
@@ -579,10 +588,46 @@ export async function validatePickup(
         amount: order.total,
         method,
         kind: "pickup",
+        orderType: "pickup",
         orderId: id,
         userId,
       },
     });
     return { id, status: "picked_up" as const, allowedTransitions: TRANSITIONS.picked_up };
+  });
+}
+
+// Encaisser une livraison livrée (17/11, lot 4) : l'argent est arrivé (la société de livraison l'a
+// reversé, ou le client a payé le livreur). Le mouvement est daté du jour de l'encaissement, pas de
+// la commande : c'est ce jour-là que l'historique le compte. Il n'entre JAMAIS dans la caisse du
+// magasin (le tiroir ne reçoit pas cet argent) : pas de journée de caisse exigée.
+export async function collectDelivery(id: number, method: PaymentMethod, userId: number, now: Date = new Date()) {
+  return prisma.$transaction(async (tx) => {
+    // Conditionnelle : un deuxième clic, ou un autre onglet, a pu passer avant. Seul l'appel qui
+    // fait passer la commande de « livrée » à « encaissée » écrit l'argent.
+    const { count } = await tx.order.updateMany({
+      where: { id, type: "delivery", status: "delivered" },
+      data: { status: "collected" },
+    });
+    if (count !== 1) {
+      const order = await tx.order.findUnique({ where: { id }, select: { type: true, status: true } });
+      if (!order) throw new AppError(404, "Commande introuvable");
+      if (order.type !== "delivery") throw new AppError(409, "Cette commande n'est pas une livraison");
+      if (order.status === "collected") throw new AppError(409, "Cette livraison est déjà encaissée");
+      throw new AppError(409, `Une livraison ${STATUS_LABELS[order.status]} ne peut pas être encaissée : elle doit d'abord être livrée`);
+    }
+    const order = await tx.order.findUniqueOrThrow({ where: { id }, select: { total: true } });
+    await tx.moneyMovement.create({
+      data: {
+        businessDate: new Date(`${algiersDate(now)}T00:00:00Z`),
+        amount: order.total,
+        method,
+        kind: "delivery",
+        orderType: "delivery",
+        orderId: id,
+        userId,
+      },
+    });
+    return { id, status: "collected" as const, allowedTransitions: TRANSITIONS.collected };
   });
 }

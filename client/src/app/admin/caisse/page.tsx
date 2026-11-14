@@ -68,6 +68,16 @@ export default function CashPage() {
       ) : (
         <>
           <Summary summary={data.summary} closed={data.day.closedAt !== null} />
+          {/* L'argent des livraisons n'entre jamais dans le tiroir (17/11, lot 4) : une ligne à part. */}
+          {data.deliveriesCollected !== 0 ? (
+            <p className="text-sm text-ink-muted">
+              Livraisons encaissées aujourd&apos;hui : <strong>{formatPrice(data.deliveriesCollected)}</strong>, hors caisse (voir{" "}
+              <Link href="/admin/livraisons" className="underline">
+                Livraisons
+              </Link>
+              ).
+            </p>
+          ) : null}
           {data.day.closedAt === null ? <CloseCash expected={data.summary.expectedCash} /> : <ReopenCash />}
           <Reopenings reopenings={data.reopenings} />
           <Movements movements={data.movements} />

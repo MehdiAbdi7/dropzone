@@ -10,6 +10,7 @@ import {
   getMineOne,
   patchOrder,
   patchStatus,
+  postCollect,
   postOrder,
   postPickup,
   postPreview,
@@ -19,6 +20,7 @@ import {
 } from "./order.controller.js";
 import {
   adminOrderListQuerySchema,
+  collectBodySchema,
   createOrderSchema,
   editOrderBodySchema,
   orderNumberParamsSchema,
@@ -55,6 +57,12 @@ orderAdminRouter.patch(
 );
 // Une vente saisie au comptoir, encaissée dans la caisse du jour (16/11, lot 3).
 orderAdminRouter.post("/sales", validate({ body: storeSaleBodySchema }), postSale);
+// Encaisser une livraison livrée : l'argent est arrivé, hors caisse (17/11, lot 4).
+orderAdminRouter.post(
+  "/orders/:id/collect",
+  validate({ params: idParamsSchema, body: collectBodySchema }),
+  postCollect,
+);
 // Valider un retrait au comptoir : le client paie, l'argent entre dans la caisse du jour (14/11).
 orderAdminRouter.post(
   "/orders/:id/pickup",

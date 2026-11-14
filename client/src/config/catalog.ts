@@ -150,6 +150,8 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   reserved: "Réservée",
   picked_up: "Récupérée",
   expired: "Expirée",
+  collected: "Encaissée",
+  returned: "Retournée",
 };
 
 export const ORDER_TYPE_LABELS: Record<OrderType, string> = {

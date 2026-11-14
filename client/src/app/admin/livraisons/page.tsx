@@ -1,0 +1,153 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { STATUS_LABELS } from "@/config/catalog";
+import { useAdminOrdersQuery } from "@/features/admin/api/ordersApi";
+import { useDeliverySummaryQuery } from "@/features/admin/api/deliveriesApi";
+import CollectDelivery from "@/features/admin/deliveries/CollectDelivery";
+import { dailyLabel } from "@/features/admin/orders/orderLabels";
+import { errorMessage } from "@/lib/errors";
+import { formatPrice } from "@/lib/format";
+import type { OrderStatus } from "@/types/api";
+
+// La page Livraisons (17/11, lot 4). Une livraison se suit à part de la caisse : son argent n'est pas
+// dans le tiroir, il arrive plus tard (le livreur ou la société de livraison le reverse). Ici : ce
+// que les livraisons vont rapporter, ce qui est livré mais pas encore encaissé, et l'argent arrivé
+// jour par jour. « Encaisser » écrit l'argent à la date du jour, dans l'historique (onglet Livraisons).
+const TABS: { status: OrderStatus; label: string }[] = [
+  { status: "pending", label: "À confirmer" },
+  { status: "confirmed", label: "En préparation" },
+  { status: "shipped", label: "Expédiées" },
+  { status: "delivered", label: "À encaisser" },
+  { status: "collected", label: "Encaissées" },
+  { status: "returned", label: "Retournées" },
+];
+
+const dayLabel = (iso: string) => {
+  const [year, month, day] = iso.split("-");
+  return `${day}/${month}/${year}`;
+};
+
+export default function DeliveriesPage() {
+  const [status, setStatus] = useState<OrderStatus>("delivered");
+  const summary = useDeliverySummaryQuery();
+  const orders = useAdminOrdersQuery({ type: "delivery", status, page: 1 });
+  const data = summary.data;
+
+  return (
+    <div className="max-w-4xl space-y-6">
+      <h1 className="text-3xl">Livraisons</h1>
+
+      {summary.isError ? (
+        <p role="alert" className="field-error">
+          {errorMessage(summary.error)}
+        </p>
+      ) : null}
+
+      {data ? (
+        <section aria-label="Chiffres des livraisons" className="grid gap-4 md:grid-cols-4">
+          <Card title="En cours" value={formatPrice(data.inProgress.total)} note={`${data.inProgress.count} livraison${data.inProgress.count > 1 ? "s" : ""} à venir`} />
+          <Card title="À encaisser" value={formatPrice(data.toCollect.total)} note={`${data.toCollect.count} livrée${data.toCollect.count > 1 ? "s" : ""}, argent pas encore arrivé`} />
+          <Card title="Encaissé en tout" value={formatPrice(data.collectedTotal)} note="Hors caisse du magasin" />
+          <Card title="Retournées" value={String(data.returned.count)} note="Colis refusés, stock remis" />
+        </section>
+      ) : (
+        <p className="text-ink-muted">Chargement…</p>
+      )}
+
+      {data && data.collectedByDay.length > 0 ? (
+        <section aria-labelledby="by-day" className="space-y-3">
+          <h2 id="by-day" className="text-xl">
+            Argent arrivé, jour par jour
+          </h2>
+          <div className="card overflow-x-auto">
+            <table className="table min-w-[320px]">
+              <thead>
+                <tr>
+                  <th scope="col">Jour</th>
+                  <th scope="col">Encaissé</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.collectedByDay.map((day) => (
+                  <tr key={day.date}>
+                    <th scope="row" className="font-semibold">
+                      {dayLabel(day.date)}
+                    </th>
+                    <td className="tabular-nums">{formatPrice(day.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      <section aria-labelledby="list-title" className="space-y-3">
+        <h2 id="list-title" className="text-xl">
+          Les livraisons
+        </h2>
+        <div role="group" aria-label="État de la livraison" className="flex flex-wrap gap-2">
+          {TABS.map((tab) => (
+            <button
+              key={tab.status}
+              type="button"
+              className="chip"
+              aria-pressed={status === tab.status}
+              onClick={() => setStatus(tab.status)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {orders.isError ? (
+          <p role="alert" className="field-error">
+            {errorMessage(orders.error)}
+          </p>
+        ) : orders.data && orders.data.data.length === 0 ? (
+          <p className="text-sm text-ink-muted">Aucune livraison « {STATUS_LABELS[status]} ».</p>
+        ) : (
+          <ul className="space-y-3">
+            {orders.data?.data.map((order) => (
+              <li key={order.id} className="card space-y-3 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link href={`/admin/commandes/${order.id}`} className="font-semibold text-blue-ink underline">
+                      Commande {dailyLabel(order.dailyNumber, order.businessDate)}
+                    </Link>
+                    <p className="text-sm text-ink-muted">
+                      {order.fullName} · {order.phone}
+                      {order.wilaya ? ` · ${order.wilaya}` : ""}
+                    </p>
+                  </div>
+                  <p className="font-display text-lg font-bold tabular-nums">{formatPrice(order.total)}</p>
+                </div>
+                {status === "delivered" ? <CollectDelivery compact orderId={order.id} total={order.total} /> : null}
+              </li>
+            ))}
+          </ul>
+        )}
+        {orders.data && orders.data.pagination.pages > 1 ? (
+          <p className="text-sm text-ink-muted">
+            {orders.data.data.length} affichées sur {orders.data.pagination.total} : ouvrez{" "}
+            <Link href="/admin/commandes" className="underline">
+              Commandes
+            </Link>{" "}
+            pour la suite.
+          </p>
+        ) : null}
+      </section>
+    </div>
+  );
+}
+
+function Card({ title, value, note }: { title: string; value: string; note: string }) {
+  return (
+    <div className="card space-y-2 p-5">
+      <h2 className="text-sm font-semibold text-ink-muted">{title}</h2>
+      <p className="font-display text-2xl font-bold tabular-nums">{value}</p>
+      <p className="text-sm text-ink-muted">{note}</p>
+    </div>
+  );
+}
