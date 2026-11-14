@@ -16,6 +16,7 @@ import {
   PackageIcon,
   PhoneIcon,
   StoreIcon,
+  SwapIcon,
   UsersIcon,
 } from "@/components/ui/icons";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -38,6 +39,8 @@ const LINKS: NavLink[] = [
   { href: "/admin/catalogue", label: "Catalogue", icon: GridIcon, primary: true },
   // La caisse du jour (14/11), utilisée au comptoir : dans la barre du bas, à la place de Produits.
   { href: "/admin/caisse", label: "Caisse", icon: CashIcon, primary: true },
+  // La vente au magasin (16/11, lot 3) : dans le panneau « Plus » sur téléphone, la barre du bas garde ses 4 entrées.
+  { href: "/admin/vente", label: "Vente", icon: SwapIcon },
   // L'historique par jour, mois et année (15/11, lot 2) : dans le panneau « Plus » sur téléphone.
   { href: "/admin/historique", label: "Historique", icon: DocumentIcon },
   { href: "/admin/produits", label: "Produits", icon: PhoneIcon },

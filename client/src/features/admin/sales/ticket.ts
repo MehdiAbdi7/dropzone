@@ -1,3 +1,4 @@
+import { formatPrice } from "@/lib/format";
 import type { Condition, Options, PaymentMethod } from "@/types/api";
 
 // Le ticket de la vente au magasin (16/11, lot 3). Fonctions pures : ce que la page affiche (lignes,
@@ -65,6 +66,13 @@ export const ticketReduction = (lines: TicketLine[]): number =>
     (sum, line) => (Number.isNaN(line.unitPrice) ? sum : sum + (line.listPrice - line.unitPrice) * line.quantity),
     0,
   );
+
+// « 245 000 DA → 240 000 DA, −5 000 DA » (ou « +5 000 DA » quand c'est plus cher) ; null sans réduction.
+export function reductionText(line: { listPrice: number; unitPrice: number }): string | null {
+  if (Number.isNaN(line.unitPrice) || line.listPrice === line.unitPrice) return null;
+  const difference = line.listPrice - line.unitPrice;
+  return `${formatPrice(line.listPrice)} → ${formatPrice(line.unitPrice)}, ${difference > 0 ? "−" : "+"}${formatPrice(Math.abs(difference))}`;
+}
 
 export type SaleForm = { fullName: string; phone: string };
 

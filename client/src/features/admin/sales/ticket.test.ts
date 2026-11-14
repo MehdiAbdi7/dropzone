@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { addToTicket, buildSaleBody, pricesToSend, ticketProblem, ticketReduction, ticketTotal, type TicketLine } from "./ticket";
+import { formatPrice } from "@/lib/format";
+import {
+  addToTicket,
+  buildSaleBody,
+  pricesToSend,
+  reductionText,
+  ticketProblem,
+  ticketReduction,
+  ticketTotal,
+  type TicketLine,
+} from "./ticket";
 
 // Le ticket de la vente au magasin (16/11, lot 3) : ce qui s'affiche et ce qui part vers l'API.
 const hit = {
@@ -118,6 +128,21 @@ describe("buildSaleBody", () => {
   it("n'envoie pas de remarque vide", () => {
     const body = buildSaleBody({ lines: [line()], form, method: "cash", note: "  ", acceptLimitations: false });
     expect(body).not.toHaveProperty("note");
+  });
+});
+
+describe("reductionText", () => {
+  it("écrit le prix catalogue, le prix accordé et la différence", () => {
+    expect(reductionText(line({ unitPrice: 240_000 }))).toBe(
+      `${formatPrice(245_000)} → ${formatPrice(240_000)}, −${formatPrice(5_000)}`,
+    );
+    expect(reductionText(line({ unitPrice: 250_000 }))).toBe(
+      `${formatPrice(245_000)} → ${formatPrice(250_000)}, +${formatPrice(5_000)}`,
+    );
+  });
+  it("ne dit rien sans réduction, ni quand le prix est encore vide", () => {
+    expect(reductionText(line())).toBeNull();
+    expect(reductionText(line({ unitPrice: Number.NaN }))).toBeNull();
   });
 });
 

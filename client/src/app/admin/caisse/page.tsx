@@ -46,11 +46,17 @@ export default function CashPage() {
   const [year, month, day] = data.date.split("-");
   return (
     <div className="max-w-4xl space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-3xl">Caisse</h1>
-        <p className="text-ink-muted">
-          Journée du {day}/{month}/{year}
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-3xl">Caisse</h1>
+          <p className="text-ink-muted">
+            Journée du {day}/{month}/{year}
+          </p>
+        </div>
+        {/* Une vente saisie au comptoir (lot 3) ; elle exige la journée de caisse ouverte. */}
+        <Link href="/admin/vente" className="btn btn-primary">
+          Nouvelle vente
+        </Link>
       </header>
 
       {!data.day || !data.summary ? (
