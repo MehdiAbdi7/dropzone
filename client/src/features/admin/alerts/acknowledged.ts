@@ -23,6 +23,31 @@ function read(): number[] {
   return current;
 }
 
+// Relit le stockage : un autre onglet du même navigateur a pu marquer des commandes « Vu » depuis la
+// dernière lecture. Sans cela, cet onglet continuerait de sonner, et un « Vu » d'ici effacerait celui de
+// l'autre onglet (on réécrirait une liste périmée).
+function reload() {
+  try {
+    const stored = parseAcknowledged(window.localStorage.getItem(STORAGE_KEY));
+    // Même contenu : on garde le même tableau. Un nouveau tableau à chaque lecture ferait croire à
+    // React que la liste a changé (useSyncExternalStore compare les références) et relancerait les
+    // effets qui en dépendent, en boucle.
+    if (JSON.stringify(stored) !== JSON.stringify(current)) current = stored;
+  } catch {
+    // Stockage indisponible : on garde la liste en mémoire.
+  }
+}
+
+// Un « Vu » fait dans un autre onglet arrive ici par l'événement `storage` (il ne se déclenche que
+// dans les AUTRES onglets, jamais dans celui qui a écrit).
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key !== STORAGE_KEY && event.key !== null) return;
+    reload();
+    listeners.forEach((listener) => listener());
+  });
+}
+
 function write(ids: number[]) {
   current = ids;
   try {
@@ -35,6 +60,7 @@ function write(ids: number[]) {
 
 // Marque des commandes « Vu ».
 export function acknowledge(ids: number[]) {
+  reload();
   const known = new Set(read());
   const added = ids.filter((id) => !known.has(id));
   if (added.length > 0) write([...read(), ...added]);
@@ -42,6 +68,7 @@ export function acknowledge(ids: number[]) {
 
 // Ne garde que les « Vu » de ces commandes (celles encore en attente).
 export function keepOnly(ids: number[]) {
+  reload();
   const wanted = new Set(ids);
   const kept = read().filter((id) => wanted.has(id));
   if (kept.length !== read().length) write(kept);
