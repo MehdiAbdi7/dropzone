@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SECTIONS, activeTab, ordersHref, ordersListHref, sectionFor } from "./navConfig";
+import { BOTTOM_MORE, BOTTOM_PRIMARY, MENU_SECTIONS, NAV_SECTIONS, SECTIONS, activeTab, ordersHref, ordersListHref, sectionFor } from "./navConfig";
 
 const params = (query = "") => new URLSearchParams(query);
 
@@ -59,6 +59,31 @@ describe("les sections du back-office", () => {
   it("la vente au magasin et la caisse n'ont pas de sous-onglets", () => {
     expect(sectionFor("/admin/vente")?.tabs).toBeUndefined();
     expect(sectionFor("/admin/caisse")?.tabs).toBeUndefined();
+  });
+});
+
+// Où chaque section s'affiche (demande de Mehdi du 14/11) : la Caisse et la Personnalisation sont dans le
+// menu ☰ de la barre du haut (ordinateur comme téléphone), pas dans la barre latérale ni la barre du bas.
+describe("où s'affiche chaque section", () => {
+  const keys = (sections: { key: string }[]) => sections.map((section) => section.key);
+
+  it("le menu ☰ prend la Caisse et la Personnalisation", () => {
+    expect(keys(MENU_SECTIONS)).toEqual(["caisse", "personnalisation"]);
+  });
+
+  it("la barre latérale garde les six autres, dans l'ordre de travail", () => {
+    expect(keys(NAV_SECTIONS)).toEqual(["accueil", "vente", "commandes", "catalogue", "historique", "clients"]);
+  });
+
+  it("sur téléphone : Accueil, Ventes, Commandes au milieu, Catalogue, puis Plus avec le reste", () => {
+    expect(keys(BOTTOM_PRIMARY)).toEqual(["accueil", "vente", "commandes", "catalogue"]);
+    expect(keys(BOTTOM_MORE)).toEqual(["historique", "clients"]);
+  });
+
+  it("aucune section n'apparaît à deux endroits", () => {
+    const all = [...keys(MENU_SECTIONS), ...keys(BOTTOM_PRIMARY), ...keys(BOTTOM_MORE)];
+    expect(new Set(all).size).toBe(all.length);
+    expect(all.sort()).toEqual(keys(SECTIONS).sort());
   });
 });
 

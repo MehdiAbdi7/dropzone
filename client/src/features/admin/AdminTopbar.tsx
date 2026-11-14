@@ -1,20 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ClipboardCheckIcon, CloseIcon, LogoutIcon, MenuIcon, StoreIcon } from "@/components/ui/icons";
+import { CashIcon, ClipboardCheckIcon, CloseIcon, LogoutIcon, MenuIcon, StoreIcon } from "@/components/ui/icons";
 import Logo from "@/components/ui/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useCashTodayQuery } from "@/features/admin/api/cashApi";
 import { useLogoutMutation } from "@/features/auth/authApi";
-import { SETTINGS_HREF } from "./navConfig";
+import { MENU_SECTIONS, SETTINGS_HREF, sectionFor } from "./navConfig";
 
 // La barre du haut du back-office (14/11), comme sur Niwa Food : le logo, « Voir la boutique », et un
 // menu ☰ avec ce qui n'est pas une page de travail : le thème, l'état de la caisse (avec un lien pour
 // l'ouvrir ou la fermer), les réglages et la déconnexion.
 export default function AdminTopbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [logout] = useLogoutMutation();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -78,18 +79,36 @@ export default function AdminTopbar() {
               aria-label="Menu du back-office"
               className="absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] space-y-1 rounded-xl border border-line bg-surface p-2 shadow-lg"
             >
+              {/* La Caisse : l'état du jour et un lien pour l'ouvrir, la fermer ou la voir. */}
               <Link
                 role="menuitem"
                 href="/admin/caisse"
+                aria-current={sectionFor(pathname)?.key === "caisse" ? "page" : undefined}
                 onClick={() => setOpen(false)}
                 className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"
               >
-                <span>
-                  <span className="block text-xs text-ink-muted">Caisse du jour</span>
-                  <span className="font-semibold">{cashText}</span>
+                <span className="flex items-center gap-2.5">
+                  <CashIcon size={18} />
+                  <span>
+                    <span className="block font-semibold">Caisse</span>
+                    <span className="block text-xs text-ink-muted">{cashText}</span>
+                  </span>
                 </span>
                 <span className="text-xs font-semibold text-blue-ink underline">{cash ? cashAction : ""}</span>
               </Link>
+              {MENU_SECTIONS.filter((section) => section.key !== "caisse").map(({ key, href, label, icon: SectionIcon }) => (
+                <Link
+                  key={key}
+                  role="menuitem"
+                  href={href}
+                  aria-current={sectionFor(pathname)?.key === key ? "page" : undefined}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold hover:bg-surface-2"
+                >
+                  <SectionIcon size={18} />
+                  {label}
+                </Link>
+              ))}
               <div className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold">
                 Thème
                 <ThemeToggle />

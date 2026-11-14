@@ -3,23 +3,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ClipboardCheckIcon, CloseIcon, DotsIcon, StoreIcon } from "@/components/ui/icons";
-import { SECTIONS, SETTINGS_HREF, sectionFor } from "./navConfig";
+import { CloseIcon, DotsIcon } from "@/components/ui/icons";
+import { BOTTOM_MORE, BOTTOM_PRIMARY, NAV_SECTIONS, sectionFor } from "./navConfig";
 
 // La section de la page affichée : la barre latérale et la barre du bas l'allument.
 function useActiveKey() {
   return sectionFor(usePathname())?.key;
 }
 
-// La barre latérale, sur ordinateur (lg et plus) : les sept sections. Leurs sous-onglets sont en
-// haut de la page (AdminSubNav). Le logo, le thème et la déconnexion sont dans la barre du haut.
+// La barre latérale, sur ordinateur (lg et plus) : le travail de tous les jours. Leurs sous-onglets sont
+// en haut de la page (AdminSubNav). Le logo, « Voir la boutique », la Caisse, la Personnalisation, les
+// Réglages, le thème et la déconnexion sont dans la barre du haut (AdminTopbar).
 export default function AdminNav() {
   const activeKey = useActiveKey();
 
   return (
     <nav aria-label="Back-office" className="hidden px-2 py-3 lg:block">
       <ul className="flex flex-col gap-1">
-        {SECTIONS.map(({ key, href, label, icon: SectionIcon }) => (
+        {NAV_SECTIONS.map(({ key, href, label, icon: SectionIcon }) => (
           <li key={key}>
             <Link
               href={href}
@@ -38,17 +39,14 @@ export default function AdminNav() {
   );
 }
 
-// La barre du bas, sur téléphone et tablette (sous lg), comme une application : les 4 sections de
-// tous les jours sous le pouce, le reste dans le panneau « Plus » qui monte du bas (même principe
-// que le back-office de Niwa Food). Le thème et la déconnexion sont dans le menu ☰ de la barre du haut.
+// La barre du bas, sur téléphone et tablette (sous lg), comme une application : Accueil, Ventes,
+// Commandes au milieu (le bouton le plus utilisé, en relief), Catalogue, puis « Plus » avec ce qui
+// reste (Historique, Clients). La Caisse, la Personnalisation, les Réglages et « Voir la boutique » sont
+// dans le menu ☰ de la barre du haut : jamais deux fois au même endroit.
 export function AdminBottomNav() {
   const activeKey = useActiveKey();
-  const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
-  const primary = SECTIONS.filter((section) => section.primary);
-  const secondary = SECTIONS.filter((section) => !section.primary);
-  const settingsActive = pathname.startsWith(SETTINGS_HREF);
-  const moreActive = settingsActive || secondary.some((section) => section.key === activeKey);
+  const moreActive = BOTTOM_MORE.some((section) => section.key === activeKey);
 
   return (
     <>
@@ -76,7 +74,7 @@ export function AdminBottomNav() {
           </button>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          {secondary.map(({ key, href, label, short, icon: SectionIcon }) => (
+          {BOTTOM_MORE.map(({ key, href, label, short, icon: SectionIcon }) => (
             <Link
               key={key}
               href={href}
@@ -90,25 +88,6 @@ export function AdminBottomNav() {
               {short ?? label}
             </Link>
           ))}
-          <Link
-            href={SETTINGS_HREF}
-            onClick={() => setMoreOpen(false)}
-            aria-current={settingsActive ? "page" : undefined}
-            className={`flex flex-col items-center gap-1.5 rounded-2xl px-2 py-3 text-xs font-semibold ${
-              settingsActive ? "bg-blue text-on-brand" : "bg-surface-2 text-ink"
-            }`}
-          >
-            <ClipboardCheckIcon size={22} />
-            Réglages
-          </Link>
-          <Link
-            href="/"
-            onClick={() => setMoreOpen(false)}
-            className="flex flex-col items-center gap-1.5 rounded-2xl bg-surface-2 px-2 py-3 text-xs font-semibold text-ink"
-          >
-            <StoreIcon size={22} />
-            Boutique
-          </Link>
         </div>
       </div>
 
@@ -117,19 +96,38 @@ export function AdminBottomNav() {
         aria-label="Back-office"
         className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
-        {primary.map(({ key, href, label, short, icon: SectionIcon }) => (
-          <Link
-            key={key}
-            href={href}
-            aria-current={activeKey === key ? "page" : undefined}
-            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold ${
-              activeKey === key ? "text-blue-ink" : "text-ink-muted"
-            }`}
-          >
-            <SectionIcon size={22} />
-            {short ?? label}
-          </Link>
-        ))}
+        {BOTTOM_PRIMARY.map(({ key, href, label, short, icon: SectionIcon }) =>
+          key === "commandes" ? (
+            // Le bouton du milieu, bien démarqué : un rond en relief au-dessus de la barre.
+            <Link
+              key={key}
+              href={href}
+              aria-current={activeKey === key ? "page" : undefined}
+              className="flex flex-1 flex-col items-center gap-0.5 pb-2 text-[11px] font-bold"
+            >
+              <span
+                className={`-mt-5 grid h-14 w-14 place-items-center rounded-full border-4 border-surface bg-blue text-on-brand shadow-lg ${
+                  activeKey === key ? "ring-2 ring-blue-ink" : ""
+                }`}
+              >
+                <SectionIcon size={26} />
+              </span>
+              <span className={activeKey === key ? "text-blue-ink" : "text-ink"}>{short ?? label}</span>
+            </Link>
+          ) : (
+            <Link
+              key={key}
+              href={href}
+              aria-current={activeKey === key ? "page" : undefined}
+              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold ${
+                activeKey === key ? "text-blue-ink" : "text-ink-muted"
+              }`}
+            >
+              <SectionIcon size={22} />
+              {short ?? label}
+            </Link>
+          ),
+        )}
         <button
           type="button"
           aria-expanded={moreOpen}
