@@ -13,7 +13,8 @@ import {
 } from "./productAdmin.service.js";
 
 export async function getVariants(_req: Request, res: Response) {
-  res.json({ data: await searchVariants(res.locals.query as VariantSearchQuery) });
+  const { hits, total } = await searchVariants(res.locals.query as VariantSearchQuery);
+  res.json({ data: hits, meta: { total } });
 }
 
 export async function getProducts(_req: Request, res: Response) {

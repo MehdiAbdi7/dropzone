@@ -25,11 +25,22 @@ export type SaleDone = {
   notices: string[];
 };
 
+export type VariantSearchArgs = { q: string; category?: string; condition?: "new" | "refurbished"; limit: number };
+export type VariantSearchResult = { hits: VariantHit[]; total: number };
+
 const salesApi = api.injectEndpoints({
   endpoints: (build) => ({
-    searchVariants: build.query<VariantHit[], string>({
-      query: (q) => ({ url: "/admin/variants", params: { q } }),
-      transformResponse: data<VariantHit[]>,
+    // Des mots (ou rien pour tout parcourir), filtrés par catégorie et par état. `total` : combien de
+    // variantes correspondent en tout, `hits` n'en montre que `limit`.
+    searchVariants: build.query<VariantSearchResult, VariantSearchArgs>({
+      query: ({ q, category, condition, limit }) => ({
+        url: "/admin/variants",
+        params: { q, category, condition, limit },
+      }),
+      transformResponse: (body: { data: VariantHit[]; meta: { total: number } }): VariantSearchResult => ({
+        hits: body.data,
+        total: body.meta.total,
+      }),
       // Une vente ou une modification change le stock : la recherche se relit (sinon l'appareil vendu
       // resterait « 1 en stock » pendant une minute).
       providesTags: ["Products"],
