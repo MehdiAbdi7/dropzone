@@ -24,16 +24,20 @@ export async function getTodayCash(now: Date = new Date()) {
 export async function reopenCashDay(userId: number, now: Date = new Date()) {
   const date = asDate(algiersDate(now));
   await prisma.$transaction(async (tx) => {
-    const day = await tx.cashDay.findUnique({ where: { date } });
-    const { count } = await tx.cashDay.updateMany({
-      where: { date, closedAt: { not: null } },
-      data: { countedCash: null, closedAt: null, closedById: null },
-    });
-    if (count !== 1 || !day) {
-      throw new AppError(409, day ? "La journée de caisse est déjà ouverte" : "Ouvrez la journée de caisse d'abord");
+    // `FOR UPDATE` : la ligne est verrouillée avant d'être lue. Une fermeture ou une autre
+    // réouverture simultanée attend la fin de cette transaction, donc le comptage qu'on trace
+    // est bien celui qu'on efface (sinon la trace pourrait garder un ancien montant).
+    const [day] = await tx.$queryRaw<{ counted_cash: number | null; closed_at: Date | null }[]>`
+      SELECT counted_cash, closed_at FROM cash_days WHERE date = ${algiersDate(now)}::date FOR UPDATE`;
+    if (!day) {
+      throw new AppError(409, "Ouvrez la journée de caisse d'abord");
     }
+    if (!day.closed_at) {
+      throw new AppError(409, "La journée de caisse est déjà ouverte");
+    }
+    await tx.cashDay.update({ where: { date }, data: { countedCash: null, closedAt: null, closedById: null } });
     await tx.cashReopening.create({
-      data: { businessDate: date, userId, previousCountedCash: day.countedCash, previousClosedAt: day.closedAt },
+      data: { businessDate: date, userId, previousCountedCash: day.counted_cash, previousClosedAt: day.closed_at },
     });
   });
   return getTodayCash(now);

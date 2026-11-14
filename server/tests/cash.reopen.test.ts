@@ -66,6 +66,17 @@ describe("POST /admin/cash/reopen", () => {
     expect(yesterday.closedAt).not.toBeNull();
   });
 
+  it("deux réouvertures simultanées : une seule passe, une seule trace avec le bon comptage", async () => {
+    const { agent } = await loginAs("admin");
+    await agent.post("/admin/cash/open").send({ openingFloat: 10_000 }).expect(201);
+    await agent.post("/admin/cash/close").send({ countedCash: 9_000 }).expect(200);
+    const results = await Promise.all([agent.post("/admin/cash/reopen"), agent.post("/admin/cash/reopen")]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    const rows = await prisma.cashReopening.findMany();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.previousCountedCash).toBe(9_000);
+  });
+
   it("est réservée à l'admin", async () => {
     const { agent } = await loginAs("customer");
     expect((await agent.post("/admin/cash/reopen")).status).toBe(403);
