@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { STATUS_LABELS } from "@/config/catalog";
 import { useAdminOrdersQuery } from "@/features/admin/api/ordersApi";
+import { ordersHref } from "@/features/admin/navConfig";
 import { dailyLabel, receptionLabel } from "@/features/admin/orders/orderLabels";
 import { formatDate, formatPrice } from "@/lib/format";
 import type { OrderStatus, OrderType } from "@/types/api";
 
-const STATUSES = Object.keys(STATUS_LABELS) as OrderStatus[];
-// Les onglets par type (14/11) : livraisons, retraits, ventes au magasin.
-const TYPES: (OrderType | undefined)[] = [undefined, "delivery", "pickup", "in_store"];
-const TYPE_TABS: Record<OrderType, string> = { delivery: "Livraisons", pickup: "Retraits", in_store: "Magasin" };
+// Les onglets Retraits et Magasin de la section Commandes (14/11). Les livraisons ont leur page
+// (/admin/livraisons). Les états proposés suivent l'onglet : un retrait n'a que quatre états, une vente
+// au magasin un seul (donc aucun filtre d'état).
+const PICKUP_STATUSES: OrderStatus[] = ["reserved", "picked_up", "expired", "cancelled"];
+const TITLES: Partial<Record<OrderType, string>> = { pickup: "Retraits au magasin", in_store: "Ventes au magasin" };
 
 export default function AdminOrdersPage() {
   return (
@@ -25,53 +27,40 @@ export default function AdminOrdersPage() {
 function OrdersList() {
   const router = useRouter();
   const params = useSearchParams();
-  const status = (params.get("status") as OrderStatus | null) ?? undefined;
-  const type = (params.get("type") as OrderType | null) ?? undefined;
+  const rawType = params.get("type");
+  // Seuls Retraits et Magasin passent par cette page ; les livraisons ont la leur.
+  const type: OrderType | undefined = rawType === "pickup" || rawType === "in_store" ? rawType : undefined;
+  const status = type === "pickup" ? ((params.get("status") as OrderStatus | null) ?? undefined) : undefined;
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
-  const { data, isFetching } = useAdminOrdersQuery({ status, type, q: q || undefined, page }, { pollingInterval: 30_000 });
+  const { data, isFetching } = useAdminOrdersQuery({ status, type, q: q || undefined, page }, { pollingInterval: 30_000, skip: !type });
 
-  // Les deux filtres vivent dans l'adresse : un lien du tableau de bord ouvre le bon onglet.
-  const go = (next: { status?: OrderStatus; type?: OrderType }) => {
+  // Un ancien lien (`/admin/commandes?status=pending`, un type de livraison, ou rien) mène à l'onglet
+  // où l'on gère cet état : Livraisons la plupart du temps.
+  useEffect(() => {
+    if (!type) router.replace(ordersHref(params.get("status") ?? undefined));
+  }, [type, params, router]);
+
+  // Le filtre d'état vit dans l'adresse : un lien du tableau de bord ouvre le bon état.
+  const go = (next?: OrderStatus) => {
     setPage(1);
-    const search = new URLSearchParams();
-    if (next.type) search.set("type", next.type);
-    if (next.status) search.set("status", next.status);
-    router.push(`/admin/commandes${search.size ? `?${search}` : ""}`);
+    router.push(`/admin/commandes?type=pickup${next ? `&status=${next}` : ""}`);
   };
+
+  if (!type) return <p className="text-ink-muted">Chargement…</p>;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl">Commandes</h1>
-      <div role="tablist" aria-label="Type de commande" className="flex flex-wrap gap-2 border-b border-line pb-3">
-        {TYPES.map((value) => (
-          <button
-            key={value ?? "all"}
-            type="button"
-            role="tab"
-            aria-selected={type === value}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              type === value ? "bg-blue text-on-brand" : "bg-surface-2 text-ink hover:text-blue-ink"
-            }`}
-            onClick={() => go({ type: value, status })}
-          >
-            {value ? TYPE_TABS[value] : "Toutes"}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {[undefined, ...STATUSES].map((value) => (
-          <button
-            key={value ?? "all"}
-            type="button"
-            className="chip"
-            aria-pressed={status === value}
-            onClick={() => go({ type, status: value })}
-          >
-            {value ? STATUS_LABELS[value] : "Tous les états"}
-          </button>
-        ))}
-      </div>
+      <h1 className="text-3xl">{TITLES[type]}</h1>
+      {type === "pickup" ? (
+        <div role="group" aria-label="État du retrait" className="flex flex-wrap gap-2">
+          {[undefined, ...PICKUP_STATUSES].map((value) => (
+            <button key={value ?? "all"} type="button" className="chip" aria-pressed={status === value} onClick={() => go(value)}>
+              {value ? STATUS_LABELS[value] : "Tous les états"}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <label className="block max-w-md">
         <span className="sr-only">Chercher une commande</span>
         <input

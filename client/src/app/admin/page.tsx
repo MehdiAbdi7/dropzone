@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { STATUS_LABELS } from "@/config/catalog";
 import { useStatsQuery } from "@/features/admin/api/ordersApi";
+import { ordersHref } from "@/features/admin/navConfig";
 import { formatPrice } from "@/lib/format";
 import type { OrderStatus } from "@/types/api";
 
@@ -30,7 +31,7 @@ export default function DashboardPage() {
 
       {pending > 0 ? (
         <Link
-          href="/admin/commandes?status=pending"
+          href={ordersHref("pending")}
           className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red bg-red-soft p-4 font-semibold"
         >
           <span>
@@ -107,7 +108,7 @@ export default function DashboardPage() {
           <ul className="mt-3 divide-y divide-line text-sm">
             {STATUSES.map((status) => (
               <li key={status}>
-                <Link href={`/admin/commandes?status=${status}`} className="flex justify-between py-2 hover:text-blue-ink">
+                <Link href={ordersHref(status)} className="flex justify-between py-2 hover:text-blue-ink">
                   <span>{STATUS_LABELS[status]}</span>
                   <span className="font-semibold tabular-nums">{stats.ordersByStatus[status] ?? 0}</span>
                 </Link>
