@@ -53,6 +53,13 @@ export const adminProductListQuerySchema = z.object({
 });
 export type AdminProductListQuery = z.infer<typeof adminProductListQuerySchema>;
 
+// La recherche de variantes du comptoir (16/11, lot 3) : de 2 à 60 caractères, 20 résultats au plus.
+export const variantSearchQuerySchema = z.object({
+  q: z.string().trim().min(2).max(60),
+  limit: z.coerce.number().int().min(1).max(20).default(20),
+});
+export type VariantSearchQuery = z.infer<typeof variantSearchQuerySchema>;
+
 // { "Stockage": "256 Go", "Couleur": "Titane naturel" }
 const labelRecord = (valueMax: number) =>
   z

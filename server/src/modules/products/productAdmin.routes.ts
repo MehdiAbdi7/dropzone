@@ -6,6 +6,7 @@ import {
   getGiftOptions,
   getProduct,
   getProducts,
+  getVariants,
   patchProduct,
   postImage,
   postProduct,
@@ -16,12 +17,15 @@ import {
   adminProductListQuerySchema,
   imageParamsSchema,
   productBodySchema,
+  variantSearchQuerySchema,
 } from "./product.schema.js";
 
 // Monté sous /admin, déjà protégé par requireAuth et requireRole("admin").
 export const productAdminRouter = Router();
 
 productAdminRouter.get("/gift-options", getGiftOptions);
+// Le sélecteur de variantes du comptoir : vente au magasin et fenêtre « Modifier » (lot 3).
+productAdminRouter.get("/variants", validate({ query: variantSearchQuerySchema }), getVariants);
 productAdminRouter.get("/products", validate({ query: adminProductListQuerySchema }), getProducts);
 productAdminRouter.post("/products", validate({ body: productBodySchema }), postProduct);
 productAdminRouter.get("/products/:id", validate({ params: idParamsSchema }), getProduct);

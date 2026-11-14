@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
-import type { AdminProductListQuery } from "./product.schema.js";
+import type { AdminProductListQuery, VariantSearchQuery } from "./product.schema.js";
+import { searchVariants } from "./variantSearch.service.js";
 import {
   addImage,
   createProduct,
@@ -10,6 +11,10 @@ import {
   removeImage,
   updateProduct,
 } from "./productAdmin.service.js";
+
+export async function getVariants(_req: Request, res: Response) {
+  res.json({ data: await searchVariants(res.locals.query as VariantSearchQuery) });
+}
 
 export async function getProducts(_req: Request, res: Response) {
   res.json(await listAdminProducts(res.locals.query as AdminProductListQuery));
