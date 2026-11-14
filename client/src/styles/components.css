@@ -237,6 +237,39 @@
     background: rgb(0 0 0 / 0.6);
   }
 
+  /* La fenêtre d'une commande : au centre sur ordinateur, une feuille collée en bas sur téléphone
+     (comme le panneau « Plus » du back-office), qui monte au lieu d'apparaître d'un coup. */
+  .order-window {
+    margin: auto;
+    width: min(44rem, calc(100vw - 2rem));
+    max-width: none;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    border-radius: var(--radius-card);
+  }
+  @media (max-width: 639px) {
+    .order-window {
+      margin: auto 0 0;
+      width: 100%;
+      max-height: 92dvh;
+      border-radius: var(--radius-block) var(--radius-block) 0 0;
+    }
+    .order-window[open] {
+      animation: order-window-up 220ms ease-out;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .order-window[open] {
+      animation: none;
+    }
+  }
+  @keyframes order-window-up {
+    from {
+      transform: translateY(2rem);
+      opacity: 0;
+    }
+  }
+
   /* La recherche de l'en-tête : un <details>, qui s'ouvre même sans JavaScript. */
   .search-toggle > summary {
     list-style: none;

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { STATUS_LABELS } from "@/config/catalog";
 import type { History, HistoryOrder } from "@/features/admin/api/historyApi";
 import { dailyLabel } from "@/features/admin/orders/orderLabels";
@@ -17,7 +16,7 @@ const discountText = (discount: number) => `${discount > 0 ? "−" : "+"}${forma
 
 // Les commandes créées ou encaissées dans la période. Chaque ligne ouvre la commande, où se
 // trouvent Modifier et Supprimer.
-export default function HistoryOrders({ orders, truncated }: { orders: History["orders"]; truncated: boolean }) {
+export default function HistoryOrders({ orders, truncated, onOpen }: { orders: History["orders"]; truncated: boolean; onOpen: (id: number) => void }) {
   return (
     <section aria-labelledby="orders-title" className="space-y-3">
       <h2 id="orders-title" className="text-xl">
@@ -33,7 +32,7 @@ export default function HistoryOrders({ orders, truncated }: { orders: History["
       <ul className="space-y-2 md:hidden">
         {orders.map((order) => (
           <li key={order.id}>
-            <Link href={`/admin/commandes/${order.id}`} className="card flex items-center gap-3 p-3">
+            <button type="button" onClick={() => onOpen(order.id)} className="card flex w-full items-center gap-3 p-3 text-left">
               <span className="min-w-0 flex-1">
                 <span className="font-display font-bold text-blue-ink">{dailyLabel(order.dailyNumber, order.businessDate)}</span>
                 <span className="block truncate text-sm font-semibold">{order.fullName}</span>
@@ -51,7 +50,7 @@ export default function HistoryOrders({ orders, truncated }: { orders: History["
                   </span>
                 ) : null}
               </span>
-            </Link>
+            </button>
           </li>
         ))}
         {orders.length === 0 ? <li className="card p-6 text-ink-muted">Aucune commande sur cette période.</li> : null}
@@ -75,9 +74,9 @@ export default function HistoryOrders({ orders, truncated }: { orders: History["
             {orders.map((order) => (
               <tr key={order.id}>
                 <td>
-                  <Link href={`/admin/commandes/${order.id}`} className="font-display font-bold text-blue-ink underline">
+                  <button type="button" onClick={() => onOpen(order.id)} className="font-display font-bold text-blue-ink underline">
                     {dailyLabel(order.dailyNumber, order.businessDate)}
-                  </Link>
+                  </button>
                   <br />
                   <span className="text-xs text-ink-muted">suivi {order.number}</span>
                 </td>

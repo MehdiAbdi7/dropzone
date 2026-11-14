@@ -10,6 +10,8 @@ import HistoryOrders from "@/features/admin/history/HistoryOrders";
 import HistorySummary from "@/features/admin/history/HistorySummary";
 import PeriodBar from "@/features/admin/history/PeriodBar";
 import { historyHref, parseHistoryView } from "@/features/admin/history/historyView";
+import OrderWindow from "@/features/admin/orders/OrderWindow";
+import { useOrderWindow } from "@/features/admin/orders/useOrderWindow";
 import { algiersDate } from "@/lib/algiersTime";
 import { errorMessage } from "@/lib/errors";
 import { periodRange } from "@/lib/period";
@@ -39,6 +41,7 @@ function History() {
   const [today] = useState(() => algiersDate(new Date()));
   const view = parseHistoryView(params, today);
   const [q, setQ] = useState("");
+  const orderWindow = useOrderWindow();
   const { from, to } = periodRange(view.kind, view.anchor);
   // La recherche attend une pause dans la saisie : chaque touche relancerait tout l'historique.
   const search = useDebouncedValue(q.trim());
@@ -91,9 +94,11 @@ function History() {
           </label>
         </div>
 
-        {data ? <HistoryOrders orders={data.orders} truncated={data.ordersTruncated} /> : null}
+        {data ? <HistoryOrders orders={data.orders} truncated={data.ordersTruncated} onOpen={orderWindow.open} /> : null}
         {data ? <HistoryChanges changes={data.changes} /> : null}
       </div>
+
+      <OrderWindow id={orderWindow.id} onClose={orderWindow.close} />
     </div>
   );
 }
