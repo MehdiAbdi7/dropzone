@@ -91,10 +91,10 @@ export function CallSheet({ order }: { order: AdminOrder }) {
   const delivery = order.type === "delivery";
   return (
     <div className="space-y-4">
-      <section className="card space-y-2 border-2 border-blue p-4" aria-label="Client à appeler">
-        <p className="text-sm font-semibold text-ink-muted">Client à appeler</p>
-        <p className="font-display text-2xl font-bold">{order.fullName}</p>
-        <a href={`tel:${order.phone}`} className="inline-block font-display text-3xl font-bold tabular-nums text-blue-ink underline">
+      <section className="card space-y-1 border-2 border-blue p-3 text-sm" aria-label="Client à appeler">
+        <p className="text-xs font-semibold text-ink-muted">Client à appeler</p>
+        <p className="font-display text-base font-bold">{order.fullName}</p>
+        <a href={`tel:${order.phone}`} className="inline-block font-display text-base font-bold tabular-nums text-blue-ink underline">
           {order.phone}
         </a>
         <p>{delivery ? `${order.address}, ${order.commune}, ${order.wilaya}` : receptionLabel(order)}</p>
@@ -102,12 +102,12 @@ export function CallSheet({ order }: { order: AdminOrder }) {
         {order.limitationsAccepted ? <p className="font-semibold text-red">Le client a accepté les limitations des affaires.</p> : null}
       </section>
       <ArticlesCard order={order} />
-      <p className="flex flex-wrap items-baseline justify-between gap-2 px-1">
-        <span className="text-sm text-ink-muted">
+      <p className="flex flex-wrap items-baseline justify-between gap-2 px-1 text-sm">
+        <span className="text-ink-muted">
           {delivery ? `Livraison ${order.shippingFee === 0 ? "offerte" : formatPrice(order.shippingFee)} · ` : ""}
           {STATUS_LABELS[order.status]}
         </span>
-        <span className="font-display text-xl font-bold">À encaisser : {formatPrice(order.total)}</span>
+        <span className="font-display text-base font-bold">À encaisser : {formatPrice(order.total)}</span>
       </p>
     </div>
   );
