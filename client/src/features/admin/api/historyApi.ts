@@ -5,7 +5,7 @@ import { data } from "./shared";
 // L'historique d'une période (15/11, lot 2) : l'argent à sa date d'encaissement, les ventes et le
 // bénéfice à la date de la vente, les caisses, les commandes et les modifications.
 
-export type MovementKind = "sale" | "pickup" | "delivery" | "exchange" | "correction";
+export type MovementKind = "sale" | "pickup" | "delivery" | "exchange" | "correction" | "return_fee";
 
 export type HistoryDay = {
   date: string;
@@ -41,6 +41,8 @@ export type HistoryChannel = {
   profit: number;
   unknownCostSales: number;
   discount: number;
+  // Ce que DropZone a payé pour des colis retournés : déjà retranché de `collected` et de `profit`.
+  returnFees: number;
 };
 
 export type History = {
@@ -55,6 +57,7 @@ export type History = {
     unknownCostSales: number;
     // Les réductions accordées sur les ventes de la période (lot 3).
     discount: number;
+    returnFees: number;
   };
   // Ce que chaque canal rapporte sur la période, quel que soit l'onglet choisi (17/11, lot 4).
   channels: Record<OrderType, HistoryChannel>;

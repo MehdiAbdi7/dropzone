@@ -116,6 +116,12 @@ export const paymentMethodSchema = z.enum(["cash", "baridimob", "ccp", "card", "
 export const pickupBodySchema = z.object({ method: paymentMethodSchema, prices: negotiatedPricesSchema });
 // Encaisser une livraison (17/11, lot 4) : le moyen par lequel l'argent est arrivé (CCP, BaridiMob…).
 export const collectBodySchema = z.object({ method: paymentMethodSchema });
+// Un colis qui revient (17/11) : les frais que DropZone paie à la société de livraison, en dinars
+// entiers (0 si elle ne facture rien), et le moyen par lequel il les paie.
+export const returnBodySchema = z.object({
+  fee: z.number().int({ error: "Un montant en dinars, sans virgule" }).min(0).max(10_000_000),
+  method: paymentMethodSchema,
+});
 
 // Modifier une commande (15/11, lot 2). Une ligne existante se désigne par son `id`, un nouvel
 // article par son `sku` ; une ligne payante qui n'est pas listée est retirée. Les cadeaux ne sont

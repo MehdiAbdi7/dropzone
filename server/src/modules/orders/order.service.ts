@@ -523,6 +523,10 @@ export async function changeOrderStatus(
     if (next === "collected") {
       throw new AppError(409, "Encaissez la livraison avec son moyen de paiement");
     }
+    // « Retournée » : DropZone paie le retour, le montant se saisit (returnDelivery).
+    if (next === "returned") {
+      throw new AppError(409, "Marquez la livraison retournée en indiquant les frais de retour");
+    }
     if (!TRANSITIONS[order.status].includes(next)) {
       throw new AppError(
         409,
@@ -538,8 +542,8 @@ export async function changeOrderStatus(
     if (count !== 1) {
       throw new AppError(409, "La commande vient d'être modifiée, rechargez la page");
     }
-    // Annulée ou retournée (colis refusé) : les articles, cadeaux compris, reviennent en stock.
-    if (next === "cancelled" || next === "returned") {
+    // Annulée : les articles, cadeaux compris, reviennent en stock.
+    if (next === "cancelled") {
       await restockItems(tx, order.items);
     }
     // La confirmation d'une livraison est le moment de négocier le prix (le magasin a appelé le client).
@@ -594,6 +598,43 @@ export async function validatePickup(
       },
     });
     return { id, status: "picked_up" as const, allowedTransitions: TRANSITIONS.picked_up };
+  });
+}
+
+// Le colis revient (17/11) : le client l'a refusé, ou n'a pas répondu à la société de livraison.
+// Les articles, cadeaux compris, reviennent en stock et se remettent en vente tout seuls. DropZone
+// paie le retour : `fee` est le montant de la société (il dépend de la wilaya et de la société, donc
+// l'admin le saisit à chaque retour). Il s'écrit en NÉGATIF dans le journal, à la date du retour,
+// hors caisse (type livraison) : il se retranche de l'argent des livraisons et du bénéfice.
+// Possible depuis « Expédiée » ou « Livrée » ; jamais une fois encaissée.
+export async function returnDelivery(id: number, fee: number, method: PaymentMethod, userId: number, now: Date = new Date()) {
+  return prisma.$transaction(async (tx) => {
+    await lockOrder(tx, id);
+    const order = await tx.order.findUnique({ where: { id }, include: { items: true } });
+    if (!order) throw new AppError(404, "Commande introuvable");
+    if (order.type !== "delivery") throw new AppError(409, "Cette commande n'est pas une livraison");
+    if (order.status !== "shipped" && order.status !== "delivered") {
+      throw new AppError(409, `Une livraison ${STATUS_LABELS[order.status]} ne peut pas être marquée retournée : elle doit être expédiée ou livrée`);
+    }
+    // Conditionnelle : un autre onglet a pu passer avant, le stock ne revient qu'une fois.
+    const { count } = await tx.order.updateMany({ where: { id, status: order.status }, data: { status: "returned" } });
+    if (count !== 1) throw new AppError(409, "La commande vient d'être modifiée, rechargez la page");
+    await restockItems(tx, order.items);
+    if (fee > 0) {
+      await tx.moneyMovement.create({
+        data: {
+          businessDate: new Date(`${algiersDate(now)}T00:00:00Z`),
+          amount: -fee,
+          method,
+          kind: "return_fee",
+          orderType: "delivery",
+          orderId: id,
+          userId,
+          note: `Frais de retour de la commande n° ${order.number}`,
+        },
+      });
+    }
+    return { id, status: "returned" as const, allowedTransitions: TRANSITIONS.returned };
   });
 }
 

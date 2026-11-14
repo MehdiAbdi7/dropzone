@@ -96,6 +96,9 @@ enum MovementKind {
   delivery
   exchange
   correction
+  // Les frais de retour d'une livraison (17/11) : DropZone paie la société de livraison quand le
+  // client refuse le colis ou ne répond pas. Toujours négatif, hors caisse (type de commande livraison).
+  return_fee
 }
 
 // ---------- Le catalogue ----------

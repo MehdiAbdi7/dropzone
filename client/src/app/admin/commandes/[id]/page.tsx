@@ -13,6 +13,7 @@ import {
   useValidatePickupMutation,
 } from "@/features/admin/api/ordersApi";
 import CollectDelivery from "@/features/admin/deliveries/CollectDelivery";
+import ReturnDelivery from "@/features/admin/deliveries/ReturnDelivery";
 import EditOrderDialog from "@/features/admin/orders/EditOrderDialog";
 import OrderEvents from "@/features/admin/orders/OrderEvents";
 import NegotiatePrices from "@/features/admin/orders/NegotiatePrices";
@@ -124,17 +125,7 @@ export default function AdminOrderPage() {
             Le stock de chaque article, cadeaux compris, est rendu. Une commande annulée ne peut plus changer.
           </ConfirmDialog>
         ) : null}
-        {canReturn ? (
-          <ConfirmDialog
-            trigger="Colis refusé (retournée)"
-            title={`Marquer la commande n° ${order.number} retournée ?`}
-            confirmLabel="Oui, colis retourné"
-            onConfirm={() => changeStatus({ id: order.id, status: "returned" })}
-          >
-            Le client a refusé le colis : le stock de chaque article, cadeaux compris, est rendu et rien n&apos;est encaissé. Une
-            livraison retournée ne peut plus changer.
-          </ConfirmDialog>
-        ) : null}
+        {canReturn ? <ReturnDelivery orderId={order.id} number={order.number} /> : null}
         {/* Modifier et supprimer : après coup, avec stock, argent et trace qui suivent (lot 2). */}
         {order.status !== "cancelled" && order.status !== "expired" && order.status !== "returned" ? (
           <button type="button" className="btn btn-secondary" onClick={() => setEditing(true)}>

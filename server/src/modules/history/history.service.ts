@@ -17,7 +17,7 @@ import type { HistoryQuery } from "./history.schema.js";
 // Le SQL est écrit à la main (GROUP BY, bool_or) : c'est lui qu'on explique en entretien.
 
 const METHODS: PaymentMethod[] = ["cash", "baridimob", "ccp", "card", "transfer"];
-const KINDS: MovementKind[] = ["sale", "pickup", "delivery", "exchange", "correction"];
+const KINDS: MovementKind[] = ["sale", "pickup", "delivery", "exchange", "correction", "return_fee"];
 const CHANNELS: OrderType[] = ["in_store", "delivery", "pickup"];
 const MAX_ORDERS = 500;
 const HOUR = 60 * 60 * 1000;
@@ -36,7 +36,9 @@ function channelOf(row: { order_type: OrderType | null; kind: MovementKind }): O
 }
 
 type SaleRow = { order_id: number; type: OrderType; profit: bigint | null; discount: bigint };
-const emptyChannel = () => ({ collected: 0, salesCount: 0, profit: 0, unknownCostSales: 0, discount: 0 });
+// `returnFees` : ce que DropZone a payé pour des colis retournés (positif), déjà retranché de
+// `collected` (le mouvement est négatif) et de `profit`.
+const emptyChannel = () => ({ collected: 0, salesCount: 0, profit: 0, unknownCostSales: 0, discount: 0, returnFees: 0 });
 
 export async function getHistory(query: HistoryQuery) {
   const { from, to } = query;
@@ -64,6 +66,7 @@ export async function getHistory(query: HistoryQuery) {
     const channel = channelOf(row);
     const key = isoDay(row.day);
     channels[channel].collected += amount;
+    if (row.kind === "return_fee") channels[channel].returnFees -= amount;
     if (channel !== "delivery" && row.method === "cash") {
       drawerCash.set(key, (drawerCash.get(key) ?? 0) + amount);
     }
@@ -101,7 +104,10 @@ export async function getHistory(query: HistoryQuery) {
     else channel.profit += Number(sale.profit);
     channel.discount += Number(sale.discount);
   }
+  // Un retour est une perte : les frais payés se retranchent du bénéfice de leur canal.
+  for (const channel of CHANNELS) channels[channel].profit -= channels[channel].returnFees;
   const sales = allSales.filter((sale) => inTab(sale.type));
+  const tabReturnFees = CHANNELS.filter(inTab).reduce((sum, channel) => sum + channels[channel].returnFees, 0);
 
   // 3. Les caisses de la période. L'écart se calcule sur le tiroir seul : l'argent d'une
   // livraison arrivé ce jour-là n'est pas dans le tiroir.
@@ -218,7 +224,8 @@ export async function getHistory(query: HistoryQuery) {
       byMethod,
       byKind,
       salesCount: sales.length,
-      profit: known.reduce((sum, sale) => sum + Number(sale.profit), 0),
+      profit: known.reduce((sum, sale) => sum + Number(sale.profit), 0) - tabReturnFees,
+      returnFees: tabReturnFees,
       unknownCostSales: sales.length - known.length,
       // Les réductions accordées sur les ventes de la période (lot 3).
       discount: sales.reduce((sum, sale) => sum + Number(sale.discount), 0),

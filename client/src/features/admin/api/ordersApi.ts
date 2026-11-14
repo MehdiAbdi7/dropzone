@@ -147,6 +147,11 @@ const ordersApi = api.injectEndpoints({
       query: ({ id, method }) => ({ url: `/admin/orders/${id}/collect`, method: "POST", body: { method } }),
       invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Cash", "History"],
     }),
+    // Un colis qui revient (17/11) : le stock revient, `fee` est ce que DropZone paie à la société.
+    returnDelivery: build.mutation<unknown, { id: number; fee: number; method: PaymentMethod }>({
+      query: ({ id, fee, method }) => ({ url: `/admin/orders/${id}/return`, method: "POST", body: { fee, method } }),
+      invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Cash", "Products", "History"],
+    }),
     // Modifier une commande après coup (lot 2) : stock, argent et trace suivent côté serveur.
     editOrder: build.mutation<unknown, { id: number } & EditOrderBody>({
       query: ({ id, ...body }) => ({ url: `/admin/orders/${id}`, method: "PATCH", body }),
@@ -171,6 +176,7 @@ export const {
   useChangeStatusMutation,
   useValidatePickupMutation,
   useCollectDeliveryMutation,
+  useReturnDeliveryMutation,
   useEditOrderMutation,
   useDeleteOrderMutation,
   useCustomersQuery,
