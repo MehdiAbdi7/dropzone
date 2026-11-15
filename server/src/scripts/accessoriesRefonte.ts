@@ -26,6 +26,10 @@ function summary(report: ReplaceReport): string {
     ...created.map((a) => `  ${a.name} : ${a.variants} variantes`),
     `Déjà là, inchangés : ${report.fill.accessories.filter((a) => a.status === "existe déjà").length}`,
     `Valeurs de listes ajoutées : ${report.fill.created.choices}, listes créées : ${report.fill.created.lists}`,
+    // Câbles → Chargeurs : à relire avant d'écrire, un produit ajouté à la main dans « Câbles » suit.
+    `Type Câbles fusionné dans Chargeurs : ${report.merged.typeRemoved ? "oui" : "rien à fusionner"}`,
+    ...report.merged.moved.map((name) => `  déplacé : ${name}`),
+    `Marques créées dans Chargeurs : ${report.merged.makersCreated.length ? report.merged.makersCreated.join(", ") : "aucune"}`,
     `Marques retirées (sans produit) : ${report.makersRemoved.length ? report.makersRemoved.join(", ") : "aucune"}`,
     `Téléphones sans verre à leur taille : ${report.phonesWithoutGlass.length ? report.phonesWithoutGlass.join(", ") : "aucun"}`,
   ].join("\n");

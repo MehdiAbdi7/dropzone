@@ -9,7 +9,7 @@ export type AccessoryVariant = { sku: string; options: Record<string, string>; p
 export type AccessoryProduct = {
   name: string;
   // Le type d'accessoire du back-office (la « marque » de la catégorie Accessoires).
-  type: "Coques" | "Chargeurs" | "Câbles" | "Incassable Écran";
+  type: "Coques" | "Chargeurs" | "Incassable Écran";
   // La marque dans le type : Apple, Samsung, Anker (chargeurs, câbles) ; iPhone, Samsung (coques).
   // null : sans marque (les verres incassables, 12/11).
   maker: string | null;
@@ -235,7 +235,7 @@ function chargers(): AccessoryProduct[] {
     // ---------- Câbles seuls ----------
     {
       name: "Câble Apple USB-C vers Lightning",
-      type: "Câbles",
+      type: "Chargeurs",
       maker: "Apple",
       description: "Câble Apple USB-C vers Lightning de 1 m, pour charger et synchroniser un iPhone ou un iPad à connecteur Lightning.",
       specs: { Connecteurs: "USB-C vers Lightning", Longueur: "1 m" },
@@ -245,7 +245,7 @@ function chargers(): AccessoryProduct[] {
     },
     {
       name: "Câble Apple USB-C vers USB-C",
-      type: "Câbles",
+      type: "Chargeurs",
       maker: "Apple",
       description: "Câble Apple USB-C vers USB-C de 1 m, pour charger et synchroniser un iPhone 15 ou plus récent, un iPad ou un MacBook.",
       specs: { Connecteurs: "USB-C vers USB-C", Longueur: "1 m" },
@@ -255,7 +255,7 @@ function chargers(): AccessoryProduct[] {
     },
     {
       name: "Câble Samsung USB-C vers USB-C",
-      type: "Câbles",
+      type: "Chargeurs",
       maker: "Samsung",
       description: "Câble Samsung USB-C vers USB-C, en 3 A pour la charge courante ou 5 A pour la charge super rapide 45 W.",
       specs: { Connecteurs: "USB-C vers USB-C", Longueur: "1,8 m" },
@@ -268,7 +268,7 @@ function chargers(): AccessoryProduct[] {
     },
     {
       name: "Câble Anker USB-C vers Lightning (MFi)",
-      type: "Câbles",
+      type: "Chargeurs",
       maker: "Anker",
       description: "Câble Anker USB-C vers Lightning certifié MFi (Made for iPhone), en 0,9 m ou 1,8 m, pour charger un iPhone à connecteur Lightning.",
       specs: { Connecteurs: "USB-C vers Lightning", Certification: "MFi (Made for iPhone)" },
@@ -281,7 +281,7 @@ function chargers(): AccessoryProduct[] {
     },
     {
       name: "Câble Anker USB-C vers USB-C 240 W",
-      type: "Câbles",
+      type: "Chargeurs",
       maker: "Anker",
       description: "Câble Anker USB-C vers USB-C de 1,5 m, jusqu'à 240 W : il convient à la charge d'un téléphone, d'une tablette ou d'un ordinateur portable.",
       specs: { Connecteurs: "USB-C vers USB-C", Puissance: "Jusqu'à 240 W", Longueur: "1,5 m" },

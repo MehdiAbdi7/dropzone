@@ -347,7 +347,7 @@ async function fillAccessories(
   if (!category) throw new Error("Aucune catégorie d'accessoires");
   const items = buildAccessories();
 
-  // Les types d'accessoires (la « marque » de la catégorie) : un nouveau, « Câbles ».
+  // Les types d'accessoires (la « marque » de la catégorie) : créés quand ils manquent.
   const typeIds = new Map(brands.filter((b) => b.categoryId === category.id).map((b) => [b.name, b.id]));
   for (const type of new Set(items.map((item) => item.type))) {
     if (!typeIds.has(type)) {
