@@ -121,7 +121,38 @@ describe("replaceAccessories", () => {
     // La marque iPhone des coques sert aux nouvelles coques : elle reste.
     expect(await prisma.accessoryMaker.count({ where: { typeId: caseType.id, slug: "iphone" } })).toBe(1);
   });
-it("signale un téléphone dont la taille n'a pas de verre", async () => {
+
+  it("range dans Chargeurs les câbles de l'ancien type Câbles, sans les créer en double", async () => {
+    // Comme en production : les deux types existent déjà.
+    await prisma.brand.create({ data: { categoryId: catalog.accessories.id, name: "Chargeurs", slug: "chargeurs", position: 1 } });
+    const cableType = await prisma.brand.create({ data: { categoryId: catalog.accessories.id, name: "Câbles", slug: "cables", position: 4 } });
+    const apple = await prisma.accessoryMaker.create({ data: { typeId: cableType.id, name: "Apple", slug: "apple" } });
+    const existing = await prisma.product.create({
+      data: {
+        name: "Câble Apple USB-C vers Lightning",
+        slug: "cable-apple-usb-c-vers-lightning",
+        description: "Déjà en ligne",
+        categoryId: catalog.accessories.id,
+        brandId: cableType.id,
+        makerId: apple.id,
+        status: "published",
+        variants: { create: [{ sku: "CABLE-APPLE-USBC-LIGHTNING", price: 3500, stock: 4, options: { Longueur: "1 m" } }] },
+      },
+    });
+
+    const report = await run();
+
+    expect(report.merged).toMatchObject({ moved: ["Câble Apple USB-C vers Lightning"], typeRemoved: true });
+    expect(await prisma.brand.count({ where: { name: "Câbles" } })).toBe(0);
+    const chargers = await prisma.brand.findFirstOrThrow({ where: { name: "Chargeurs", category: { kind: "accessory" } } });
+    // Le câble déjà en ligne est le même produit (stock gardé), et les 4 autres sont créés dans Chargeurs.
+    expect(await prisma.product.findUnique({ where: { id: existing.id } })).toMatchObject({ brandId: chargers.id });
+    expect(await prisma.productVariant.findFirstOrThrow({ where: { sku: "CABLE-APPLE-USBC-LIGHTNING" } })).toMatchObject({ stock: 4 });
+    expect(await prisma.product.count({ where: { brandId: chargers.id, name: { startsWith: "Câble" } } })).toBe(5);
+    expect(await prisma.product.count({ where: { name: "Câble Apple USB-C vers Lightning" } })).toBe(1);
+  });
+
+  it("signale un téléphone dont la taille n'a pas de verre", async () => {
     const model = await prisma.deviceModel.findFirstOrThrow({ where: { name: "Galaxy S22" } });
     await prisma.product.create({
       data: {

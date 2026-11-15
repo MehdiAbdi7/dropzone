@@ -8,6 +8,7 @@ import type { Tx } from "../../config/db.js";
 import { listScreenSizes } from "../../modules/models/model.service.js";
 import { SCREEN_SIZES, buildAccessories } from "../fill-new/accessories.js";
 import { type FillNewReport, fillNew } from "./fillNew.js";
+import { type MergeReport, mergeAccessoryType } from "./mergeAccessoryType.js";
 
 const REPLACED_TYPES = ["Coques", "Incassable Écran"];
 
@@ -18,10 +19,14 @@ export type ReplaceReport = {
   makersRemoved: string[];
   // Les téléphones du catalogue dont la taille d'écran n'a pas de verre (« Galaxy S22 (5,9 pouces) »).
   phonesWithoutGlass: string[];
+  // Le type « Câbles » fusionné dans « Chargeurs » (15/11) : produits déplacés, marques créées.
+  merged: MergeReport;
   fill: FillNewReport;
 };
 
 export async function replaceAccessories(db: Tx): Promise<ReplaceReport> {
+  // Les câbles rejoignent les chargeurs avant `fillNew`, qui les retrouve alors « déjà là ».
+  const merged = await mergeAccessoryType(db, "Câbles", "Chargeurs");
   const keep = new Set(buildAccessories().map((item) => item.name));
   const old = await db.product.findMany({
     where: { brand: { name: { in: REPLACED_TYPES }, category: { kind: "accessory" } }, name: { notIn: [...keep] } },
@@ -58,6 +63,7 @@ export async function replaceAccessories(db: Tx): Promise<ReplaceReport> {
     deleted: old.map((product) => product.name),
     makersRemoved: empty.map((maker) => `${maker.type.name} › ${maker.name}`),
     phonesWithoutGlass,
+    merged,
     fill,
   };
 }
