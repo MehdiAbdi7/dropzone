@@ -2,7 +2,7 @@
 // gérant y voit le stock de chaque couleur, change sa photo, et ajoute un exemplaire avec le
 // modèle et la couleur déjà remplis.
 import { deleteFromCloudinary, uploadToCloudinary } from "../../config/cloudinary.js";
-import { prisma } from "../../config/db.js";
+import { prisma, type Tx } from "../../config/db.js";
 import { OFFICIAL_SPECS } from "../../scripts/import/official-specs.js";
 import { AppError } from "../../utils/AppError.js";
 import { refreshMinPrice } from "../products/product.service.js";
@@ -135,7 +135,9 @@ export async function removeColorPhoto(id: number, color: string) {
 
 // Un exemplaire ajouté dans une couleur : dans la fiche du modèle, créée et publiée s'il n'en
 // a pas (décision de Mehdi du 05/11 : le gérant ajoute du stock pour le vendre).
-export async function addUnit(id: number, input: UnitBody) {
+// `outer` : la transaction d'un appelant qui écrit d'autres choses avec (la mise en vente d'une
+// reprise, lot 5) ; sans elle, l'ajout ouvre la sienne.
+export async function addUnit(id: number, input: UnitBody, outer?: Tx) {
   const model = await findModel(id);
   // Un appareil n'a pas de téléphones compatibles (c'est une règle des accessoires).
   const { color, id: _id, gifts: _gifts, ...unit } = input;
@@ -157,7 +159,7 @@ export async function addUnit(id: number, input: UnitBody) {
     throw new AppError(400, "Rangez d'abord ce modèle dans une série");
   }
 
-  return prisma.$transaction(async (tx) => {
+  const write = async (tx: Tx) => {
     if (!productId) {
       const series = model.series!;
       const product = await tx.product.create({
@@ -186,5 +188,6 @@ export async function addUnit(id: number, input: UnitBody) {
     // Un nouvel exemplaire est un arrivage : le produit remonte sur l'accueil (12/11).
     await tx.product.update({ where: { id: productId }, data: { stockedAt } });
     return { productId, variantId: created.id };
-  });
+  };
+  return outer ? write(outer) : prisma.$transaction(write);
 }

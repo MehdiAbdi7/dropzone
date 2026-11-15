@@ -1,6 +1,7 @@
 import { CONDITION_LABELS, STATUS_LABELS } from "@/config/catalog";
 import { warrantyLabel } from "@/config/warranty";
 import type { AdminOrder } from "@/features/admin/api/ordersApi";
+import { exchangeDifference, settledText } from "@/features/admin/exchange/exchange";
 import { reductionText } from "@/features/admin/sales/ticket";
 import { formatOptions, formatPrice } from "@/lib/format";
 import { receptionLabel } from "./orderLabels";
@@ -32,6 +33,21 @@ export function ClientCard({ order }: { order: AdminOrder }) {
 
 export function AmountsCard({ order }: { order: AdminOrder }) {
   const delivery = order.type === "delivery";
+  // Un échange (lot 5) : l'argent réel est la DIFFÉRENCE entre ce que le magasin donne et la reprise, pas
+  // le total des articles (« Encaissé : 2 500 DA » serait faux quand le magasin a rendu 147 500 DA).
+  if (order.type === "exchange" && order.tradeIn) {
+    return (
+      <section className="card space-y-1 p-4 text-sm" aria-labelledby="totals">
+        <h3 id="totals" className="mb-2 text-base font-semibold">
+          Montants
+        </h3>
+        <p>Ce que le magasin donne : {formatPrice(order.subtotal)}</p>
+        <p>Téléphone repris : {formatPrice(order.tradeIn.price)}</p>
+        <p className="font-display text-lg font-bold">{settledText(exchangeDifference(order.total, order.tradeIn.price))}</p>
+        {order.limitationsAccepted ? <p className="mt-2 font-semibold text-red">Le client a accepté les limitations des affaires.</p> : null}
+      </section>
+    );
+  }
   return (
     <section className="card space-y-1 p-4 text-sm" aria-labelledby="totals">
       <h3 id="totals" className="mb-2 text-base font-semibold">

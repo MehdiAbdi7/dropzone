@@ -158,6 +158,7 @@ export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   delivery: "Livraison",
   pickup: "Retrait au magasin",
   in_store: "Vente au magasin",
+  exchange: "Échange",
 };
 
 // Dans l'ordre de la liste déroulante : Espèces d'abord, choisi par défaut (14/11).

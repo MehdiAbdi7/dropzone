@@ -68,7 +68,7 @@ const history = async (query: string) => {
 };
 
 describe("l'historique par onglet", () => {
-  it("le total additionne les trois onglets, et chaque canal dit ce qu'il rapporte", async () => {
+  it("le total additionne les onglets, et chaque canal dit ce qu'il rapporte", async () => {
     await seed();
     const data = await history("from=2026-11-09&to=2026-11-12");
     expect(data.totals).toMatchObject({ collected: 600, salesCount: 3, profit: 20 + 40 + 50 });
@@ -76,6 +76,8 @@ describe("l'historique par onglet", () => {
       in_store: { collected: 100, salesCount: 1, profit: 20, unknownCostSales: 0, discount: 0, returnFees: 0 },
       delivery: { collected: 300, salesCount: 1, profit: 50, unknownCostSales: 0, discount: 0, returnFees: 0 },
       pickup: { collected: 200, salesCount: 1, profit: 40, unknownCostSales: 0, discount: 0, returnFees: 0 },
+      // Aucun échange dans cet exemple : le canal existe (lot 5), à zéro.
+      exchange: { collected: 0, salesCount: 0, profit: 0, unknownCostSales: 0, discount: 0, returnFees: 0 },
     });
   });
 

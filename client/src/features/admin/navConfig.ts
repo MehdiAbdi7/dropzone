@@ -46,7 +46,20 @@ export const SECTIONS: NavSection[] = [
   // La vente au magasin et la caisse sont deux pages à part (demande de Mehdi du 14/11) : on y passe
   // toute la journée, au comptoir. Une vente au magasin n'a pas d'étapes : elle est encaissée sur place
   // et se retrouve dans l'Historique (onglet Magasin), où l'admin peut la modifier ou l'annuler.
-  { key: "vente", label: "Vente au magasin", short: "Ventes", icon: SwapIcon, href: "/admin/vente", primary: true, owns: (path) => under(path, "/admin/vente") },
+  // La vente au magasin et l'échange (lot 5) sont les deux gestes du comptoir : une section, deux onglets.
+  {
+    key: "vente",
+    label: "Vente au magasin",
+    short: "Ventes",
+    icon: SwapIcon,
+    href: "/admin/vente",
+    primary: true,
+    owns: (path) => anyUnder(path, ["/admin/vente", "/admin/echange"]),
+    tabs: [
+      { label: "Vente", href: "/admin/vente", match: (path) => under(path, "/admin/vente") },
+      { label: "Échange", href: "/admin/echange", match: (path) => under(path, "/admin/echange") },
+    ],
+  },
   { key: "caisse", label: "Caisse", icon: CashIcon, href: "/admin/caisse", inMenu: true, owns: (path) => under(path, "/admin/caisse") },
   {
     key: "commandes",
@@ -66,10 +79,12 @@ export const SECTIONS: NavSection[] = [
     icon: GridIcon,
     href: "/admin/catalogue",
     primary: true,
-    owns: (path) => anyUnder(path, ["/admin/catalogue", "/admin/produits"]),
+    owns: (path) => anyUnder(path, ["/admin/catalogue", "/admin/produits", "/admin/reprises"]),
     tabs: [
       { label: "Par catégorie", href: "/admin/catalogue", match: (path) => under(path, "/admin/catalogue") },
       { label: "Tous les produits", href: "/admin/produits", match: (path) => under(path, "/admin/produits") },
+      // Les téléphones repris en échange, à mettre en vente (lot 5).
+      { label: "Reprises", href: "/admin/reprises", match: (path) => under(path, "/admin/reprises") },
     ],
   },
   { key: "historique", label: "Historique", icon: DocumentIcon, href: "/admin/historique", owns: (path) => under(path, "/admin/historique") },
@@ -108,10 +123,12 @@ export function activeTab(section: NavSection, path: string, params: URLSearchPa
 }
 
 // La liste où retrouver une commande d'un type : le retour de sa page de détail. Une vente au magasin
-// n'a pas de liste de suivi (pas d'étapes) : on la retrouve dans l'Historique, onglet Magasin.
-export function ordersListHref(type: "delivery" | "pickup" | "in_store"): string {
+// n'a pas de liste de suivi (pas d'étapes) : on la retrouve dans l'Historique, onglet Magasin. Un échange
+// (lot 5) non plus : onglet Échanges.
+export function ordersListHref(type: "delivery" | "pickup" | "in_store" | "exchange"): string {
   if (type === "delivery") return "/admin/livraisons";
   if (type === "pickup") return "/admin/commandes?type=pickup";
+  if (type === "exchange") return "/admin/historique?type=exchange";
   return "/admin/historique?type=in_store";
 }
 

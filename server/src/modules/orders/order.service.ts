@@ -472,6 +472,8 @@ export async function getAdminOrder(id: number) {
     include: {
       items: { orderBy: { id: "asc" } },
       user: { select: { id: true, email: true, firstName: true, lastName: true } },
+      // Le téléphone repris d'un échange (lot 5) ; null pour toute autre commande.
+      tradeIn: { include: { deviceModel: { select: { id: true, brand: true, name: true } } } },
     },
   });
   if (!order) {

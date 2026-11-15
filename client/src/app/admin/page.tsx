@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { STATUS_LABELS } from "@/config/catalog";
+import { useTradeInsQuery } from "@/features/admin/api/exchangeApi";
 import { useStatsQuery } from "@/features/admin/api/ordersApi";
 import { ordersHref } from "@/features/admin/navConfig";
 import { formatPrice } from "@/lib/format";
@@ -14,6 +15,8 @@ const STATUSES: OrderStatus[] = ["pending", "confirmed", "shipped", "delivered",
 // 0, la liste ne disait rien.
 export default function DashboardPage() {
   const { data: stats, isError } = useStatsQuery(undefined, { pollingInterval: 60_000 });
+  // Les téléphones repris en échange qui attendent un prix de revente (lot 5).
+  const { data: tradeIns } = useTradeInsQuery("pending", { pollingInterval: 60_000 });
 
   if (isError) {
     return <p role="alert">Le tableau de bord ne répond pas.</p>;
@@ -48,6 +51,25 @@ export default function DashboardPage() {
           {!cash.open ? "Ouvrir la journée" : "Voir la caisse"}
         </Link>
       </section>
+
+      {/* Les reprises sont en stock mais PAS en vente : elles attendent le prix de revente de l'admin. */}
+      {tradeIns && tradeIns.length > 0 ? (
+        <section aria-labelledby="reprises" className="card flex flex-wrap items-center justify-between gap-4 p-5">
+          <div>
+            <h2 id="reprises" className="text-lg">
+              Reprises à mettre en vente
+            </h2>
+            <p className="text-sm text-ink-muted">
+              {tradeIns.length === 1
+                ? "1 téléphone repris attend son prix de revente."
+                : `${tradeIns.length} téléphones repris attendent leur prix de revente.`}
+            </p>
+          </div>
+          <Link href="/admin/reprises" className="btn btn-primary">
+            Fixer les prix
+          </Link>
+        </section>
+      ) : null}
 
       <dl className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {[

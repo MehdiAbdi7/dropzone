@@ -22,6 +22,7 @@ import { stageAdminRouter, stageRouter } from "./modules/stage/stage.routes.js";
 import { releaseReservationsMiddleware } from "./middlewares/releaseReservations.js";
 import { cashAdminRouter } from "./modules/cash/cash.routes.js";
 import { deliveriesAdminRouter } from "./modules/deliveries/deliveries.routes.js";
+import { exchangeAdminRouter } from "./modules/exchanges/exchange.routes.js";
 import { historyAdminRouter } from "./modules/history/history.routes.js";
 import { statsAdminRouter } from "./modules/stats/stats.routes.js";
 import { storeAdminRouter, storeRouter } from "./modules/store/store.routes.js";
@@ -73,6 +74,7 @@ adminRouter.use(
   cashAdminRouter,
   historyAdminRouter,
   deliveriesAdminRouter,
+  exchangeAdminRouter,
 );
 app.use("/admin", requireAuth, requireRole("admin"), adminRouter);
 

@@ -9,6 +9,7 @@ import { formatPrice } from "@/lib/format";
 import OrderEvents from "./OrderEvents";
 import { AmountsCard, ArticlesCard, ClientCard } from "./OrderInfo";
 import OrderMoney from "./OrderMoney";
+import OrderTradeIn from "./OrderTradeIn";
 
 // L'onglet « Détails » de la fenêtre d'une commande : le client, les montants, les articles, l'argent,
 // les traces, et les deux actions qui valent à n'importe quelle étape : modifier (après coup, avec
@@ -29,7 +30,9 @@ export default function OrderDetails({ order, onEdit, onDeleted }: { order: Admi
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3">
-        {!closed ? (
+        {/* Un échange ne se modifie pas : il lie un téléphone donné, un téléphone repris et une différence
+            d'argent. On le supprime et on le refait. */}
+        {!closed && order.type !== "exchange" ? (
           <button type="button" className="btn btn-secondary" onClick={onEdit}>
             Modifier
           </button>
@@ -45,6 +48,7 @@ export default function OrderDetails({ order, onEdit, onDeleted }: { order: Admi
           {order.paid !== 0
             ? ` Les ${formatPrice(order.paid)} encaissés sont rendus dans la caisse d'aujourd'hui, qui doit être ouverte.`
             : " Rien n'a été encaissé."}{" "}
+          {order.tradeIn ? " Le téléphone repris est retiré de la liste des reprises (impossible s'il est déjà en vente)." : ""}{" "}
           La commande disparaît, une trace reste dans l&apos;historique.
         </ConfirmDialog>
       </div>
@@ -67,6 +71,7 @@ export default function OrderDetails({ order, onEdit, onDeleted }: { order: Admi
         <AmountsCard order={order} />
       </div>
       <ArticlesCard order={order} />
+      {order.tradeIn ? <OrderTradeIn tradeIn={order.tradeIn} /> : null}
       <OrderMoney order={order} />
       <OrderEvents events={order.events} />
     </div>
