@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { CashIcon, ClipboardCheckIcon, CloseIcon, LogoutIcon, MenuIcon, StoreIcon } from "@/components/ui/icons";
+import { CashIcon, ClipboardCheckIcon, CloseIcon, LogoutIcon, MenuIcon, StoreIcon, UsersIcon } from "@/components/ui/icons";
 import Logo from "@/components/ui/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useCashTodayQuery } from "@/features/admin/api/cashApi";
 import { useLogoutMutation } from "@/features/auth/authApi";
 import { playTestChime } from "@/lib/orderAlertSound";
-import { MENU_SECTIONS, SETTINGS_HREF, sectionFor } from "./navConfig";
+import { ACCOUNT_HREF, MENU_SECTIONS, SETTINGS_HREF, sectionFor } from "./navConfig";
 
 // La barre du haut du back-office (14/11), comme sur Niwa Food : le logo, « Voir la boutique », et un
 // menu ☰ avec ce qui n'est pas une page de travail : le thème, l'état de la caisse (avec un lien pour
@@ -134,7 +134,16 @@ export default function AdminTopbar() {
                 className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold hover:bg-surface-2"
               >
                 <ClipboardCheckIcon size={18} />
-                Réglages (horaires)
+                Réglages (horaires, facture)
+              </Link>
+              <Link
+                role="menuitem"
+                href={ACCOUNT_HREF}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold hover:bg-surface-2"
+              >
+                <UsersIcon size={18} />
+                Mon compte (email, mot de passe)
               </Link>
               <button
                 type="button"

@@ -16,3 +16,5 @@ export const loginLimiter = rateLimit({ ...common, windowMs: FIFTEEN_MINUTES, li
 export const registerLimiter = rateLimit({ ...common, windowMs: 60 * 60 * 1000, limit: 5 });
 export const orderLimiter = rateLimit({ ...common, windowMs: FIFTEEN_MINUTES, limit: 10 });
 export const trackLimiter = rateLimit({ ...common, windowMs: FIFTEEN_MINUTES, limit: 20 });
+// Changer son email ou son mot de passe redonne le mot de passe actuel : on limite les essais, comme au login.
+export const accountLimiter = rateLimit({ ...common, windowMs: FIFTEEN_MINUTES, limit: 10 });

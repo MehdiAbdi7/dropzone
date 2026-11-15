@@ -38,6 +38,16 @@ const authApi = api.injectEndpoints({
       transformResponse: (body: { data: User }) => body.data,
       invalidatesTags: ["Me"],
     }),
+    // Mon compte du back-office : le mot de passe et l'email se changent en redonnant le mot de passe actuel.
+    changePassword: build.mutation<{ changed: true }, { currentPassword: string; newPassword: string }>({
+      query: (body) => ({ url: "/auth/password", method: "PATCH", body }),
+      transformResponse: (body: { data: { changed: true } }) => body.data,
+    }),
+    changeEmail: build.mutation<User, { currentPassword: string; email: string }>({
+      query: (body) => ({ url: "/auth/email", method: "PATCH", body }),
+      transformResponse: (body: { data: User }) => body.data,
+      invalidatesTags: ["Me"],
+    }),
     myOrders: build.query<OrderSummary[], void>({
       query: () => "/orders/mine",
       transformResponse: (body: { data: OrderSummary[] }) => body.data,
@@ -57,6 +67,8 @@ export const {
   useRegisterMutation,
   useLogoutMutation,
   useUpdateMeMutation,
+  useChangePasswordMutation,
+  useChangeEmailMutation,
   useMyOrdersQuery,
   useMyOrderQuery,
 } = authApi;

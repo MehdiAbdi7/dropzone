@@ -36,6 +36,43 @@ export async function updateProfile(id: number, data: Prisma.UserUpdateInput) {
   return prisma.user.update({ where: { id }, data });
 }
 
+// Vérifie le mot de passe actuel de celui qui demande un changement sensible (email, mot de passe). Un
+// mauvais mot de passe est une erreur 400, pas 401 : le client n'est pas déconnecté, il se corrige.
+async function requireCurrentPassword(id: number, password: string) {
+  const user = await prisma.user.findUnique({ where: { id }, omit: { passwordHash: false } });
+  if (!user) {
+    throw new AppError(401, "Connexion requise");
+  }
+  if (!(await bcrypt.compare(password, user.passwordHash))) {
+    throw new AppError(400, "Le mot de passe actuel est incorrect");
+  }
+  return user;
+}
+
+export async function changePassword(id: number, currentPassword: string, newPassword: string) {
+  const user = await requireCurrentPassword(id, currentPassword);
+  if (await bcrypt.compare(newPassword, user.passwordHash)) {
+    throw new AppError(400, "Choisissez un mot de passe différent de l'actuel");
+  }
+  await prisma.user.update({ where: { id }, data: { passwordHash: await bcrypt.hash(newPassword, SALT_ROUNDS) } });
+}
+
+export async function changeEmail(id: number, currentPassword: string, email: string) {
+  const user = await requireCurrentPassword(id, currentPassword);
+  if (user.email === email) {
+    throw new AppError(400, "C'est déjà l'email de ce compte");
+  }
+  try {
+    return await prisma.user.update({ where: { id }, data: { email } });
+  } catch (error) {
+    // L'index unique de la base décide : même email écrit autrement, ou deux demandes en même temps.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new AppError(409, "Un compte existe déjà avec cet email");
+    }
+    throw error;
+  }
+}
+
 export async function login(email: string, password: string) {
   const user = await prisma.user.findUnique({
     where: { email },
