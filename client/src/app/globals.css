@@ -9,7 +9,7 @@
    - series-posters.css les affiches des séries et des modèles de la Boutique
    - spinner.css        la roue de chargement
    - utilities.css      les utilitaires de la marque (dégradé du logo, socle néon, liseré)
-   - print.css          l'impression de la facture et du bon de commande (zone `.print-area`)
+   - print.css          l'impression de la facture et du bon de commande (copie `.print-only` du document)
 
    Contrastes vérifiés en WCAG AA (4,5:1 pour le texte courant, 3:1 pour les
    grands titres) : les valeurs sont notées à côté de chaque couleur de texte.

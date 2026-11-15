@@ -1,28 +1,31 @@
 /* L'impression d'un document (lot 6) : la facture A4 du back-office et le bon de commande du site.
-   Une seule règle : à l'impression (ou « Enregistrer en PDF »), seule la zone `.print-area` est visible, quel
-   que soit le décor autour (barre du haut, menus, thème sombre). Le document a ses propres couleurs
-   (papier blanc, texte noir) : il ne suit pas le thème. */
+   Le document est écrit DEUX fois dans la page (voir components/ui/PrintCopy.tsx) : une copie à l'écran
+   (`.no-print` à l'impression) et une copie `.print-only`, posée directement dans <body>, invisible à l'écran.
+   À l'impression (ou « Enregistrer en PDF »), tout ce qui est dans <body> disparaît sauf cette copie : elle
+   part du haut de la page, sans vide, et se coupe proprement sur plusieurs feuilles si besoin. Le document a
+   ses propres couleurs (papier blanc, texte noir) : il ne suit pas le thème. */
+.print-only {
+  display: none;
+}
+
 @media print {
   @page {
     size: A4;
     margin: 12mm;
   }
-  body * {
-    visibility: hidden;
+  body > *:not(.print-only) {
+    display: none !important;
   }
-  .print-area,
-  .print-area * {
-    visibility: visible;
-  }
-  .print-area {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    border: 0;
-    box-shadow: none;
+  .print-only {
+    display: block;
   }
   .no-print {
     display: none !important;
+  }
+  /* Une ligne de tableau ou de totaux ne se coupe pas entre deux feuilles. */
+  .print-only tr,
+  .print-only li,
+  .print-only section {
+    break-inside: avoid;
   }
 }

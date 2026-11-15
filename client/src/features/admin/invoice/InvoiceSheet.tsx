@@ -1,19 +1,21 @@
 import { CONDITION_LABELS } from "@/config/catalog";
+import PrintCopy from "@/components/ui/PrintCopy";
 import { warrantyLabel } from "@/config/warranty";
 import type { Invoice } from "@/features/admin/api/invoiceApi";
 import { formatOptions, formatPrice } from "@/lib/format";
 import { customerAddress, exchangeText, invoiceDate, invoiceTypeLabel, legalLines, paymentText } from "./invoiceView";
 
 // La facture A4 (lot 6). Papier blanc, texte noir, quel que soit le thème : c'est un document qu'on donne au
-// client. Tout vient du serveur (réglages du magasin, commande, numéro) ; la zone `.print-area` est la seule
-// qui s'imprime (voir styles/print.css). Un champ du magasin laissé vide n'apparaît pas.
-export default function InvoiceSheet({ invoice }: { invoice: Invoice }) {
+// client. Tout vient du serveur (réglages du magasin, commande, numéro). Elle est posée deux fois : à l'écran,
+// et dans une copie réservée à l'impression (voir PrintCopy et styles/print.css). Un champ du magasin laissé
+// vide n'apparaît pas.
+function Sheet({ invoice }: { invoice: Invoice }) {
   const { shop, customer } = invoice;
   const address = customerAddress(customer);
   const hasDiscount = invoice.lines.some((line) => !line.isGift && line.listPrice !== line.unitPrice);
 
   return (
-    <article aria-label={`Facture ${invoice.number}`} className="print-area mx-auto w-full max-w-[210mm] space-y-6 bg-white p-6 text-sm text-black sm:p-10">
+    <article aria-label={`Facture ${invoice.number}`} className="mx-auto w-full max-w-[210mm] space-y-6 bg-white p-6 text-sm text-black sm:p-10">
       <header className="flex flex-wrap items-start justify-between gap-6 border-b border-neutral-300 pb-5">
         <div className="space-y-0.5">
           <h1 className="text-2xl font-extrabold">{shop.name}</h1>
@@ -141,5 +143,18 @@ export default function InvoiceSheet({ invoice }: { invoice: Invoice }) {
       {shop.rib ? <p className="text-xs">RIB : {shop.rib}</p> : null}
       {invoice.footerNote ? <p className="border-t border-neutral-300 pt-3 text-center text-xs text-neutral-700">{invoice.footerNote}</p> : null}
     </article>
+  );
+}
+
+export default function InvoiceSheet({ invoice }: { invoice: Invoice }) {
+  return (
+    <>
+      <div className="no-print">
+        <Sheet invoice={invoice} />
+      </div>
+      <PrintCopy>
+        <Sheet invoice={invoice} />
+      </PrintCopy>
+    </>
   );
 }
