@@ -2,35 +2,11 @@ import { type Palette, swatchOf } from "@/config/colors";
 
 // Les petits calculs des affiches de séries, sans React : testés avec Vitest.
 
-// « l'iPhone », « l'iPad », mais « le Galaxy », « le MacBook », « le HP » (h aspiré).
-const ELIDES = /^[aeiouàâéèêëîïôöûü]/i;
-
-export function withArticle(name: string): string {
-  return ELIDES.test(name) ? `l'${name}` : `le ${name}`;
-}
-
-// Le texte sous l'affiche à glisser : vers le modèle suivant, ou retour au précédent
-// quand on est sur le dernier. Rien à dire pour une série d'un seul modèle.
-export function swipeHint(
-  names: string[],
-  index: number,
-): { text: string; back: boolean } | null {
-  if (names.length < 2) {
-    return null;
-  }
-  if (index < names.length - 1) {
-    return {
-      text: `Glisse pour voir ${withArticle(names[index + 1])}`,
-      back: false,
-    };
-  }
-  const previous = names[index - 1];
-  return {
-    text: ELIDES.test(previous)
-      ? `Revenir à l'${previous}`
-      : `Revenir au ${previous}`,
-    back: true,
-  };
+// Un pas de `delta` modèles à partir de `index`, sans jamais sortir de la série :
+// on s'arrête sur le premier ou le dernier. Sert aux flèches ‹ › du sélecteur de modèles
+// et aux flèches du clavier dans sa liste.
+export function moveIndex(index: number, count: number, delta: number): number {
+  return Math.max(0, Math.min(count - 1, index + delta));
 }
 
 // Le mot sous une colonne grisée de l'affiche. Toute la série reste visible : un modèle
