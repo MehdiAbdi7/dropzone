@@ -37,12 +37,6 @@ export default function SeriesCard({
         background: `radial-gradient(70% 90% at 80% 40%, ${glowColor(series.fallback.color, palette)}, transparent 70%), #07080c`,
       }}
     >
-      <p
-        aria-hidden="true"
-        className="series-fallback-title absolute left-4 top-3 max-w-[70%] text-6xl md:text-7xl"
-      >
-        {series.name}
-      </p>
       {series.fallback.image ? (
         <div className="absolute right-[4%] top-[6%] h-[58%] w-[48%]">
           <ProductImage
@@ -60,17 +54,11 @@ export default function SeriesCard({
     <>
       <div className="series-media">{media}</div>
       <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 p-2.5 md:gap-3 md:p-5">
-        <div className="min-w-0">
-          <h2 className="sr-only">{series.name}</h2>
-          <ul
-            aria-label="Modèles de la série"
-            className="series-models"
-          >
-            {series.models.map((model) => (
-              <li key={model} className="series-model-tag">{model}</li>
-            ))}
-          </ul>
-        </div>
+        {/* Le nom de la série au dégradé de la marque, comme dans le Catalogue du back-office.
+            Plus de pastilles de modèles : la série suffit, les modèles se voient sur son affiche. */}
+        <h2 className="text-gradient w-fit max-w-full truncate pb-0.5 text-2xl leading-tight font-extrabold drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] md:text-4xl">
+          {series.name}
+        </h2>
         <div className="flex flex-row items-center justify-between gap-3">
           {series.fromPrice !== null ? (
             <p className="text-xs text-white/80 md:text-sm">
