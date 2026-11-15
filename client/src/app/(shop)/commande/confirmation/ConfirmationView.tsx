@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useSyncExternalStore } from "react";
 import { STORE_INFO } from "@/config/storeInfo";
-import OrderSlip from "@/features/orders/OrderSlip";
+import OrderSlipSection from "@/features/orders/OrderSlipSection";
 import { useTrackOrderMutation, type PlacedOrder } from "@/features/orders/ordersApi";
 import { formatPrice } from "@/lib/format";
 import { pickupLabel } from "@/lib/pickupLabel";
@@ -65,21 +65,8 @@ export default function ConfirmationView({ number }: { number: string | undefine
         </>
       )}
       <p className="text-ink-muted">Gardez ce numéro : avec votre téléphone, il permet de suivre la commande.</p>
-      {detail ? (
-        <section aria-labelledby="bon-title" className="space-y-3">
-          <h2 id="bon-title" className="text-xl">
-            Votre bon de commande
-          </h2>
-          <p className="no-print rounded-lg border border-line bg-surface-2 p-4 text-sm">
-            <strong>Gardez ce bon.</strong> Téléchargez-le en PDF avec le bouton ci-dessous, ou faites-en une capture d&apos;écran
-            avec votre téléphone : il suffit pour retrouver votre commande.
-          </p>
-          <OrderSlip order={detail} />
-          <button type="button" className="btn btn-secondary no-print" onClick={() => window.print()}>
-            Télécharger le bon (PDF)
-          </button>
-        </section>
-      ) : null}
+      {/* Le bon (lot 6) : à retélécharger aussi depuis la page « Suivi ». */}
+      {detail ? <OrderSlipSection order={detail} /> : null}
       <div className="no-print flex flex-wrap gap-3">
         <Link href={`/suivi?numero=${number ?? ""}`} className="btn btn-primary">
           Suivre ma commande

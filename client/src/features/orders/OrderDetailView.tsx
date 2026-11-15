@@ -3,6 +3,8 @@ import { warrantyLabel } from "@/config/warranty";
 import { formatDate, formatOptions, formatPrice } from "@/lib/format";
 import { pickupLabel } from "@/lib/pickupLabel";
 import type { OrderDetail } from "@/types/api";
+import OrderSlipSection from "./OrderSlipSection";
+import { slipAvailable } from "./slipRows";
 
 // Le détail d'une commande, partagé par le suivi invité et l'espace client.
 // Depuis le 14/11, une commande peut être un retrait au magasin : ses propres étapes
@@ -86,6 +88,10 @@ export default function OrderDetailView({ order }: { order: OrderDetail }) {
           </div>
         </dl>
       </section>
+
+      {/* Le bon de commande (lot 6), à retélécharger quand on veut : image sur téléphone, impression ou PDF
+          sur ordinateur. Pas pour une commande annulée, expirée ou retournée. */}
+      {slipAvailable(order) ? <OrderSlipSection order={order} /> : null}
     </div>
   );
 }
