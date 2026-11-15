@@ -25,6 +25,10 @@ export default function SaleDone({ sale, onNew }: { sale: Done; onNew: () => voi
         <button type="button" className="btn btn-primary" onClick={onNew}>
           Nouvelle vente
         </button>
+        {/* La vente est confirmée dès sa création : la facture est prête (lot 6). */}
+        <Link href={`/admin/facture/${sale.id}`} target="_blank" className="btn btn-secondary">
+          Imprimer la facture
+        </Link>
         <Link href={`/admin/commandes/${sale.id}`} className="btn btn-secondary">
           Voir la commande
         </Link>

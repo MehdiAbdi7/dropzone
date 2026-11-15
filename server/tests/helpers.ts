@@ -10,11 +10,14 @@ export const PASSWORD = "motdepasse123";
 export async function resetDb() {
   await prisma.$executeRaw`TRUNCATE order_items, orders, users, variant_gifts, product_images,
     product_variants, "_ProductCompatibleModels", "_VariantCompatibleModels", products, accessory_makers, series, brands, choices, device_models, categories, import_records,
-    daily_counters, cash_days, cash_reopenings, money_movements, order_events
+    daily_counters, cash_days, cash_reopenings, money_movements, order_events, invoice_counters
     RESTART IDENTITY CASCADE`;
   // Les réglages du magasin ont une seule ligne (id = 1), créée par la migration : on remet ses
   // valeurs de départ au lieu de la supprimer.
   await prisma.$executeRaw`UPDATE store_settings SET opening_time = '09:00', closing_time = '20:00', closed_days = '{}'`;
+  // Les réglages de la facture (lot 6) : une seule ligne aussi, remise à ses valeurs de départ.
+  await prisma.$executeRaw`DELETE FROM invoice_settings`;
+  await prisma.$executeRaw`INSERT INTO invoice_settings (id) VALUES (1)`;
   // Les listes fixes (Stockage, Couleurs…) viennent de la migration et restent ; les listes
   // personnalisées d'un test ne doivent pas fuiter dans le suivant.
   await prisma.$executeRaw`DELETE FROM choice_lists WHERE "group" IS NULL`;

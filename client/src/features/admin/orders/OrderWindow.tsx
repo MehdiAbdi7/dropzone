@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { CloseIcon } from "@/components/ui/icons";
 import { ORDER_TYPE_LABELS, STATUS_LABELS } from "@/config/catalog";
 import { useAdminOrderQuery, type AdminOrder } from "@/features/admin/api/ordersApi";
 import { acknowledge } from "@/features/admin/alerts/acknowledged";
+import { invoiceAvailable } from "@/features/admin/invoice/invoiceRules";
 import { formatDate } from "@/lib/format";
 import EditOrderForm from "./EditOrderForm";
 import OrderDetails from "./OrderDetails";
@@ -88,6 +90,13 @@ function OrderContent({ order, onClose }: { order: AdminOrder; onClose: () => vo
       </header>
 
       <div className="space-y-5 p-5">
+        {/* La facture (lot 6) : livraison à partir de « En préparation », retrait une fois récupéré, vente et
+            échange tout de suite. Préremplie avec toutes les infos de la commande. */}
+        {invoiceAvailable(order) ? (
+          <Link href={`/admin/facture/${order.id}`} target="_blank" className="btn btn-secondary btn-small">
+            Facture : imprimer ou PDF
+          </Link>
+        ) : null}
         {steps.length > 0 ? (
           <>
             <OrderStepper

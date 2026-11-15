@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { STORE_INFO } from "@/config/storeInfo";
-import type { PlacedOrder } from "@/features/orders/ordersApi";
+import OrderSlip from "@/features/orders/OrderSlip";
+import { useTrackOrderMutation, type PlacedOrder } from "@/features/orders/ordersApi";
 import { formatPrice } from "@/lib/format";
 import { pickupLabel } from "@/lib/pickupLabel";
 
@@ -27,6 +28,15 @@ export default function ConfirmationView({ number }: { number: string | undefine
   const mine = last && String(last.number) === number ? last : null;
   // Un retrait au magasin (14/11) : le créneau et le paiement au magasin.
   const pickup = mine?.type === "pickup" && mine.pickupDate && mine.pickupTime ? mine : null;
+
+  // Le bon de commande (lot 6) : le détail de la commande, relu avec son numéro et le téléphone gardés avec
+  // elle (comme le fait la page « Suivi »). Sans eux (page ouverte autrement), pas de bon.
+  const [track, { data: detail }] = useTrackOrderMutation();
+  const orderNumber = mine?.number;
+  const orderPhone = mine?.phone;
+  useEffect(() => {
+    if (orderNumber && orderPhone) void track({ number: orderNumber, phone: orderPhone });
+  }, [orderNumber, orderPhone, track]);
 
   return (
     <div className="card max-w-2xl space-y-5 p-6 sm:p-8">
@@ -55,7 +65,22 @@ export default function ConfirmationView({ number }: { number: string | undefine
         </>
       )}
       <p className="text-ink-muted">Gardez ce numéro : avec votre téléphone, il permet de suivre la commande.</p>
-      <div className="flex flex-wrap gap-3">
+      {detail ? (
+        <section aria-labelledby="bon-title" className="space-y-3">
+          <h2 id="bon-title" className="text-xl">
+            Votre bon de commande
+          </h2>
+          <p className="no-print rounded-lg border border-line bg-surface-2 p-4 text-sm">
+            <strong>Gardez ce bon.</strong> Téléchargez-le en PDF avec le bouton ci-dessous, ou faites-en une capture d&apos;écran
+            avec votre téléphone : il suffit pour retrouver votre commande.
+          </p>
+          <OrderSlip order={detail} />
+          <button type="button" className="btn btn-secondary no-print" onClick={() => window.print()}>
+            Télécharger le bon (PDF)
+          </button>
+        </section>
+      ) : null}
+      <div className="no-print flex flex-wrap gap-3">
         <Link href={`/suivi?numero=${number ?? ""}`} className="btn btn-primary">
           Suivre ma commande
         </Link>

@@ -1,0 +1,28 @@
+/* L'impression d'un document (lot 6) : la facture A4 du back-office et le bon de commande du site.
+   Une seule règle : à l'impression (ou « Enregistrer en PDF »), seule la zone `.print-area` est visible, quel
+   que soit le décor autour (barre du haut, menus, thème sombre). Le document a ses propres couleurs
+   (papier blanc, texte noir) : il ne suit pas le thème. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border: 0;
+    box-shadow: none;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

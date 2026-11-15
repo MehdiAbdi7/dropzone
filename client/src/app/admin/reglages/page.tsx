@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useSaveStoreHoursMutation } from "@/features/admin/api/storeApi";
+import InvoiceSettingsSection from "@/features/admin/invoice/InvoiceSettingsForm";
 import { useStoreHoursQuery } from "@/features/orders/ordersApi";
 import type { StoreHours } from "@/lib/algiersTime";
 import { errorMessage } from "@/lib/errors";
@@ -35,6 +36,8 @@ export default function SettingsPage() {
       {/* Monté une fois les horaires lus : il part des valeurs enregistrées, puis garde les
           siennes (après un enregistrement, ce sont les mêmes que celles de l'API). */}
       {data ? <HoursForm initial={data} /> : null}
+      {/* Ce qui s'imprime sur la facture (lot 6). */}
+      <InvoiceSettingsSection />
     </div>
   );
 }
