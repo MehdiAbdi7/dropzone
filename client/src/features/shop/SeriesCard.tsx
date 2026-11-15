@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import ProductImage from "@/components/ui/ProductImage";
 import type { Palette } from "@/config/colors";
-import { formatPrice } from "@/lib/format";
 import type { SeriesSummary } from "@/types/api";
 import { glowColor } from "./series";
 
@@ -21,6 +20,7 @@ export default function SeriesCard({
   palette: Palette;
   priority: boolean;
 }) {
+  const modelCount = series.models.length;
   const media = series.coverUrl ? (
     <Image
       src={series.coverUrl}
@@ -53,23 +53,18 @@ export default function SeriesCard({
   const body = (
     <>
       <div className="series-media">{media}</div>
-      <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2.5 p-2.5 md:gap-3 md:p-5">
-        {/* Le nom de la série au dégradé de la marque, comme dans le Catalogue du back-office.
-            Plus de pastilles de modèles : la série suffit, les modèles se voient sur son affiche. */}
-        <h2 className="text-gradient w-fit max-w-full truncate pb-0.5 text-2xl leading-tight font-extrabold drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] md:text-4xl">
+      {/* Même bandeau que SeriesTile du Catalogue (tailles comprises) : le nom au dégradé,
+          puis une pastille avec le nombre de modèles. Ni prix ni bouton « Voir » (choix de
+          Mehdi) : toute l'affiche est le lien. */}
+      <div className="absolute inset-x-0 bottom-0 z-10 space-y-1.5 p-2 sm:space-y-2 sm:p-3">
+        <h2 className="text-gradient w-fit max-w-full truncate text-base leading-tight font-extrabold drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] sm:text-xl">
           {series.name}
         </h2>
-        <div className="flex flex-row items-center justify-between gap-3">
-          {series.fromPrice !== null ? (
-            <p className="text-xs text-white/80 md:text-sm">
-              dès{" "}
-              <span className="font-display text-sm font-bold whitespace-nowrap text-white md:text-base">
-                {formatPrice(series.fromPrice)}
-              </span>
-            </p>
-          ) : null}
-          {/* Pas de bouton « Voir » (choix de Mehdi, 11/11) : toute l'affiche est le lien. */}
-          {series.soldOut ? <span className="badge badge-out">Épuisé</span> : null}
+        <div className="flex min-w-0 flex-wrap gap-1 text-[10px] font-bold sm:gap-1.5 sm:text-xs">
+          <span className="rounded-full bg-white/15 px-1.5 py-0.5 text-white sm:px-2">
+            {modelCount} modèle{modelCount > 1 ? "s" : ""}
+          </span>
+          {series.soldOut ? <span className="rounded-full bg-[#d61f45] px-1.5 py-0.5 text-white sm:px-2">Épuisé</span> : null}
         </div>
       </div>
     </>
