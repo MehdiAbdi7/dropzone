@@ -56,9 +56,22 @@ describe("les sections du back-office", () => {
     expect(sectionFor("/admin/inconnue")).toBeUndefined();
   });
 
-  it("la vente au magasin et la caisse n'ont pas de sous-onglets", () => {
-    expect(sectionFor("/admin/vente")?.tabs).toBeUndefined();
+  it("la caisse n'a pas de sous-onglets", () => {
     expect(sectionFor("/admin/caisse")?.tabs).toBeUndefined();
+  });
+
+  // Lot 5 : la vente et l'échange sont les deux gestes du comptoir, dans la même section.
+  it("la vente et l'échange partagent la section Ventes, avec un onglet chacun", () => {
+    expect(sectionFor("/admin/echange")?.key).toBe("vente");
+    const section = sectionFor("/admin/vente")!;
+    expect(section.tabs?.map((tab) => tab.label)).toEqual(["Vente", "Échange"]);
+    expect(activeTab(section, "/admin/vente", new URLSearchParams())?.label).toBe("Vente");
+    expect(activeTab(section, "/admin/echange", new URLSearchParams())?.label).toBe("Échange");
+  });
+
+  it("les reprises à mettre en vente sont un onglet du Catalogue", () => {
+    expect(sectionFor("/admin/reprises")?.key).toBe("catalogue");
+    expect(sectionFor("/admin/reprises")?.tabs?.map((tab) => tab.label)).toContain("Reprises");
   });
 });
 
@@ -120,6 +133,7 @@ describe("ordersListHref : le retour du détail d'une commande", () => {
     expect(ordersListHref("delivery")).toBe("/admin/livraisons");
     expect(ordersListHref("pickup")).toBe("/admin/commandes?type=pickup");
     expect(ordersListHref("in_store")).toBe("/admin/historique?type=in_store");
+    expect(ordersListHref("exchange")).toBe("/admin/historique?type=exchange");
   });
 });
 

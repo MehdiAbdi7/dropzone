@@ -65,6 +65,11 @@ export async function editOrder(id: number, input: EditOrderInput, userId: numbe
   return prisma.$transaction(async (tx) => {
     await lockOrder(tx, id);
     const order = await tx.order.findUniqueOrThrow({ where: { id }, include: { items: { orderBy: { id: "asc" } } } });
+    // Un échange lie un téléphone donné, un téléphone repris et une différence d'argent : modifier
+    // l'un fausserait les autres (lot 5). L'admin le supprime et le refait.
+    if (order.type === "exchange") {
+      throw new AppError(409, "Un échange ne se modifie pas : supprimez-le et refaites-le");
+    }
     // Annulée, expirée ou retournée : le stock est déjà rendu, modifier les lignes le fausserait.
     if (STOCK_ALREADY_RETURNED.includes(order.status)) {
       throw new AppError(409, "Une commande annulée, expirée ou retournée ne peut plus être modifiée");
@@ -283,6 +288,18 @@ export async function deleteOrder(id: number, userId: number, now: Date = new Da
   return prisma.$transaction(async (tx) => {
     await lockOrder(tx, id);
     const order = await tx.order.findUniqueOrThrow({ where: { id }, include: { items: true } });
+    // La reprise d'un échange disparaît avec lui (cascade), sauf si son affaire existe encore dans le
+    // catalogue (en vente, ou déjà vendue) : la supprimer à la place de l'admin serait une surprise.
+    // Une affaire retirée du catalogue ne bloque plus.
+    if (order.type === "exchange") {
+      const tradeIn = await tx.tradeIn.findUnique({ where: { orderId: id }, select: { listedVariantId: true } });
+      if (tradeIn?.listedVariantId && (await tx.productVariant.findUnique({ where: { id: tradeIn.listedVariantId }, select: { id: true } }))) {
+        throw new AppError(
+          409,
+          "La reprise de cet échange est déjà en vente : retirez l'affaire du catalogue avant de supprimer l'échange",
+        );
+      }
+    }
     const money = await paidByMethod(tx, id);
     const refunds = (Object.entries(money.paid) as [PaymentMethod, number][]).filter(([, amount]) => amount !== 0);
     if (refunds.length > 0 && order.type !== "delivery") {

@@ -8,7 +8,7 @@ import type { OrderType } from "@/types/api";
 export type HistoryView = { kind: PeriodKind; anchor: string; type: OrderType | undefined };
 
 const KINDS: PeriodKind[] = ["day", "month", "year"];
-const TYPES: OrderType[] = ["delivery", "pickup", "in_store"];
+const TYPES: OrderType[] = ["delivery", "pickup", "in_store", "exchange"];
 
 // Un vrai jour « AAAA-MM-JJ » : « 2026-02-30 » a le bon format mais n'existe pas.
 // « 2026-13-01 » a le bon format mais donne une date invalide, dont `toISOString()` lève une

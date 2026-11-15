@@ -79,6 +79,8 @@ enum OrderType {
   delivery
   pickup
   in_store
+  // Un échange (lot 5) : le client rend un téléphone (la reprise, voir TradeIn) et en prend un autre.
+  exchange
 }
 
 enum PaymentMethod {
@@ -214,6 +216,8 @@ model DeviceModel {
   compatibleProducts Product[]         @relation("ProductCompatibleModels")
   // Les variantes d'accessoires qui vont sur ce modèle (une taille de verre, 12/11).
   compatibleVariants ProductVariant[]  @relation("VariantCompatibleModels")
+  // Les téléphones repris en échange (lot 5) : un modèle repris ne se supprime pas.
+  tradeIns           TradeIn[]
   createdAt          DateTime          @default(now()) @map("created_at")
 
   @@unique([brand, name])
@@ -438,12 +442,41 @@ model Order {
   limitationsAccepted Boolean     @default(false) @map("limitations_accepted")
   createdAt           DateTime    @default(now()) @map("created_at")
   items               OrderItem[]
+  // Le téléphone que le client a rendu, pour un échange (lot 5).
+  tradeIn             TradeIn?
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@index([status, reservedUntil])
   @@index([businessDate])
   @@map("orders")
+}
+
+// Le téléphone repris dans un échange (lot 5). Il attend ici, hors du catalogue, tant que l'admin n'a
+// pas fixé son prix de revente : aucune lecture du site n'a donc à l'écarter. « Mettre en vente »
+// en fait une affaire dans la fiche de son modèle (`listedAt` et `listedVariantId` le disent).
+model TradeIn {
+  id              Int         @id @default(autoincrement())
+  orderId         Int         @unique @map("order_id")
+  // L'échange disparaît avec sa suppression (refusée par le service si la reprise est déjà en vente).
+  order           Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deviceModelId   Int         @map("device_model_id")
+  deviceModel     DeviceModel @relation(fields: [deviceModelId], references: [id], onDelete: Restrict)
+  color           String
+  // La fiche d'état saisie à l'échange (note, batterie, pièces, défauts, limitations, boîte, garantie,
+  // origine, détails, options), validée par l'API : recopiée telle quelle sur l'affiche à la mise en vente.
+  sheet           Json        @default("{}")
+  // Le prix de reprise, saisi à la main par le magasin : ce que le client reçoit pour son téléphone,
+  // et le prix d'achat de l'affaire une fois en vente.
+  price           Int
+  createdAt       DateTime    @default(now()) @map("created_at")
+  // Mise en vente : la date, et la variante créée (sans clé étrangère : la trace survit à sa suppression).
+  listedAt        DateTime?   @map("listed_at")
+  listedVariantId Int?        @map("listed_variant_id")
+
+  @@index([listedAt])
+  @@index([deviceModelId])
+  @@map("trade_ins")
 }
 
 model OrderItem {

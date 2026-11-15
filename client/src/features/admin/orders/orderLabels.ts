@@ -20,5 +20,6 @@ export function receptionLabel(order: {
     return `Retrait · ${pickupLabel(order.pickupDate.slice(0, 10), order.pickupTime)}`;
   }
   if (order.type === "in_store") return "Vente au magasin";
+  if (order.type === "exchange") return "Échange";
   return `Livraison · ${order.wilaya ?? "?"}`;
 }

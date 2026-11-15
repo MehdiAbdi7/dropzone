@@ -11,14 +11,16 @@ import type { HistoryQuery } from "./history.schema.js";
 //    où il est arrivé (son encaissement), pas celui de la commande ;
 //  - une VENTE (et son bénéfice) compte à la date de son premier paiement. Une réservation faite
 //    le 12 et payée le 14 est une vente du 14.
-// Trois canaux : le magasin (`in_store`), les livraisons (`delivery`), les réservations (`pickup`).
+// Quatre canaux : le magasin (`in_store`), les livraisons (`delivery`), les réservations (`pickup`) et,
+// depuis le lot 5, les échanges (`exchange`). L'argent d'un échange est la DIFFÉRENCE (négative quand
+// le magasin rend de l'argent) ; son bénéfice est celui des articles donnés, la reprise entrant en stock.
 // Le paramètre `type` choisit l'onglet ; sans lui, c'est le Total. `channels` donne toujours ce que
 // chaque canal rapporte sur la période, pour que le total se lise canal par canal.
 // Le SQL est écrit à la main (GROUP BY, bool_or) : c'est lui qu'on explique en entretien.
 
 const METHODS: PaymentMethod[] = ["cash", "baridimob", "ccp", "card", "transfer"];
 const KINDS: MovementKind[] = ["sale", "pickup", "delivery", "exchange", "correction", "return_fee"];
-const CHANNELS: OrderType[] = ["in_store", "delivery", "pickup"];
+const CHANNELS: OrderType[] = ["in_store", "delivery", "pickup", "exchange"];
 const MAX_ORDERS = 500;
 const HOUR = 60 * 60 * 1000;
 
@@ -85,7 +87,7 @@ export async function getHistory(query: HistoryQuery) {
     WITH sales AS (
       SELECT order_id, MIN(business_date) AS sale_date
       FROM money_movements
-      WHERE kind IN ('sale', 'pickup', 'delivery') AND order_id IS NOT NULL
+      WHERE kind IN ('sale', 'pickup', 'delivery', 'exchange') AND order_id IS NOT NULL
       GROUP BY order_id
     )
     SELECT s.order_id, o.type,
@@ -168,7 +170,7 @@ export async function getHistory(query: HistoryQuery) {
   const orders = rows.map((order) => {
     const own = orderMovements.filter((movement) => movement.orderId === order.id);
     const saleDates = own
-      .filter((movement) => movement.kind === "sale" || movement.kind === "pickup" || movement.kind === "delivery")
+      .filter((movement) => ["sale", "pickup", "delivery", "exchange"].includes(movement.kind))
       .map((movement) => isoDay(movement.businessDate))
       .sort();
     return {

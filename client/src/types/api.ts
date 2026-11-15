@@ -16,7 +16,7 @@ export type OrderStatus =
   // Une livraison dont l'argent est arrivé, ou dont le colis a été refusé (17/11, lot 4).
   | "collected"
   | "returned";
-export type OrderType = "delivery" | "pickup" | "in_store";
+export type OrderType = "delivery" | "pickup" | "in_store" | "exchange";
 export type PaymentMethod = "cash" | "baridimob" | "ccp" | "card" | "transfer";
 export type Role = "customer" | "admin";
 export type Options = Record<string, string>;

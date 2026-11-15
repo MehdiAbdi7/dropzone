@@ -26,7 +26,7 @@ export async function getStats(now: Date = new Date()) {
       SELECT o.total,
              COALESCE(
                (SELECT MIN(m.business_date) FROM money_movements m
-                 WHERE m.order_id = o.id AND m.kind IN ('sale', 'pickup', 'delivery')),
+                 WHERE m.order_id = o.id AND m.kind IN ('sale', 'pickup', 'delivery', 'exchange')),
                o.business_date) AS sale_date
       FROM orders o
       -- Une réservation n'est pas une vente tant que le client n'est pas venu payer (14/11) ; une

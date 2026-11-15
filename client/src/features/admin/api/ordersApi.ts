@@ -68,6 +68,14 @@ export type AdminOrder = OrderReception & {
   }[];
   // La réduction totale de la commande (lot 3), 0 sans prix catalogue connu.
   discount: number;
+  // Le téléphone repris d'un échange (lot 5) ; null pour toute autre commande. `listedAt` : mis en vente.
+  tradeIn: {
+    id: number;
+    price: number;
+    color: string;
+    listedAt: string | null;
+    deviceModel: { id: number; brand: string; name: string };
+  } | null;
 };
 
 // Un prix négocié : une ligne de la commande par son `id`, son nouveau prix accordé.

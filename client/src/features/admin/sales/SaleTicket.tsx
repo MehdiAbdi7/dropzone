@@ -1,9 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
+import { useMemo, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from "react";
 import { CONDITION_LABELS, PAYMENT_METHOD_LABELS } from "@/config/catalog";
+import { useCreateExchangeMutation, type ExchangeDone } from "@/features/admin/api/exchangeApi";
 import { useCreateSaleMutation, type SaleDone } from "@/features/admin/api/salesApi";
+import {
+  buildExchangeBody,
+  differenceText,
+  exchangeDifference,
+  tradeInPrice,
+  tradeInProblem,
+  type TradeInDraft,
+} from "@/features/admin/exchange/exchange";
 import QuantityStepper from "@/features/cart/QuantityStepper";
 import { useCartPreviewQuery } from "@/features/orders/ordersApi";
 import { errorMessage } from "@/lib/errors";
@@ -26,16 +35,19 @@ const toNumber = (text: string) => (text.trim() === "" ? Number.NaN : Number(tex
 // Le ticket de la vente au magasin (16/11, lot 3) : les lignes (quantité, prix accordé modifiable
 // avec la réduction), les cadeaux ajoutés par le serveur, le client, le moyen de paiement.
 // « Encaisser » crée la vente et la met dans la caisse du jour.
-export default function SaleTicket({
-  lines,
-  setLines,
-  onDone,
-}: {
-  lines: TicketLine[];
-  setLines: Dispatch<SetStateAction<TicketLine[]>>;
-  onDone: (sale: SaleDone) => void;
-}) {
-  const [createSale, { isLoading, error }] = useCreateSaleMutation();
+// Avec `exchange` (lot 5), le même ticket est celui de ce que le MAGASIN DONNE dans un échange : le
+// formulaire de la reprise du client s'insère sous les lignes, et le bouton valide l'échange (la
+// différence va dans la caisse du jour, positive si le client paie, négative si le magasin rend).
+type Props = { lines: TicketLine[]; setLines: Dispatch<SetStateAction<TicketLine[]>> } & (
+  | { exchange?: undefined; onDone: (sale: SaleDone) => void }
+  | { exchange: { tradeIn: TradeInDraft; form: ReactNode }; onDone: (done: ExchangeDone) => void }
+);
+
+export default function SaleTicket(props: Props) {
+  const { lines, setLines } = props;
+  const [createSale, saleState] = useCreateSaleMutation();
+  const [createExchange, exchangeState] = useCreateExchangeMutation();
+  const { isLoading, error } = props.exchange ? exchangeState : saleState;
   const [form, setForm] = useState<SaleForm>({ fullName: "", phone: "" });
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [note, setNote] = useState("");
@@ -66,7 +78,11 @@ export default function SaleTicket({
   const total = ticketTotal(shown);
   const problem =
     ticketProblem(shown, form) ??
+    (props.exchange ? tradeInProblem(props.exchange.tradeIn) : null) ??
     (limitations.length > 0 && !accepted ? "Le client doit accepter les limitations des appareils reconditionnés." : null);
+  // Ce que le client paie en plus (positif) ou ce que le magasin lui rend (négatif) ; NaN tant qu'un des
+  // deux prix manque.
+  const difference = props.exchange ? exchangeDifference(total, tradeInPrice(props.exchange.tradeIn)) : Number.NaN;
 
   const patch = (key: string, changes: Partial<TicketLine>) =>
     setLines((current) => current.map((line) => (line.key === key ? { ...line, ...changes } : line)));
@@ -75,8 +91,12 @@ export default function SaleTicket({
     event.preventDefault();
     if (problem) return;
     try {
-      const sale = await createSale(buildSaleBody({ lines: shown, form, method, note, acceptLimitations: accepted })).unwrap();
-      onDone(sale);
+      const ticket = { lines: shown, form, method, note, acceptLimitations: accepted };
+      if (props.exchange) {
+        props.onDone(await createExchange(buildExchangeBody({ ...ticket, tradeIn: props.exchange.tradeIn })).unwrap());
+      } else {
+        props.onDone(await createSale(buildSaleBody(ticket)).unwrap());
+      }
     } catch {
       // L'erreur RTK Query est affichée sous le bouton ; le ticket reste tel quel.
     }
@@ -86,7 +106,7 @@ export default function SaleTicket({
     <form
       onSubmit={submit}
       className="card space-y-5 p-4 sm:p-5"
-      aria-label="Ticket de vente"
+      aria-label={props.exchange ? "Ticket de l'échange" : "Ticket de vente"}
       // Entrée dans un champ (prix, remarque, ou une douchette) ne doit pas encaisser par mégarde :
       // on encaisse avec le bouton.
       onKeyDown={(event) => {
@@ -95,7 +115,7 @@ export default function SaleTicket({
         }
       }}
     >
-      <h2 className="text-xl">Ticket</h2>
+      <h2 className="text-xl">{props.exchange ? "Ce que le magasin donne" : "Ticket"}</h2>
 
       {synced.changed.length > 0 ? (
         <p role="status" className="rounded-md bg-surface-2 p-3 text-sm font-semibold">
@@ -177,6 +197,14 @@ export default function SaleTicket({
         </p>
       ) : null}
 
+      {/* Ce que le client donne (échange) : son téléphone, au prix de reprise saisi à la main. */}
+      {props.exchange ? (
+        <div className="space-y-3">
+          <h2 className="text-xl">Ce que le client donne</h2>
+          {props.exchange.form}
+        </div>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm font-semibold">
           <span className="label">Nom et prénom du client</span>
@@ -201,7 +229,7 @@ export default function SaleTicket({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm font-semibold">
-          <span className="label">Moyen de paiement</span>
+          <span className="label">{props.exchange ? "Moyen de paiement de la différence" : "Moyen de paiement"}</span>
           <select className="input" value={method} onChange={(event) => setMethod(event.target.value as PaymentMethod)}>
             {METHODS.map((value) => (
               <option key={value} value={value}>
@@ -257,8 +285,24 @@ export default function SaleTicket({
         </p>
       ) : null}
 
+      {/* Le bilan de l'échange : ce que le magasin donne, ce qu'il reprend, et qui paie la différence. */}
+      {props.exchange && !Number.isNaN(difference) ? (
+        <div className="space-y-1 rounded-lg border border-line bg-surface-2 p-4" aria-live="polite">
+          <p className="text-sm text-ink-muted">
+            Le magasin donne {formatPrice(total)} · il reprend le téléphone du client à {formatPrice(tradeInPrice(props.exchange.tradeIn))}
+          </p>
+          <p className="font-display text-lg font-bold">{differenceText(difference)}</p>
+        </div>
+      ) : null}
+
       <button type="submit" className="btn btn-primary w-full" disabled={isLoading || problem !== null} aria-describedby="sale-problem">
-        {isLoading ? "Encaissement…" : `Encaisser · ${Number.isNaN(total) ? "—" : formatPrice(total)}`}
+        {props.exchange
+          ? isLoading
+            ? "Enregistrement…"
+            : "Valider l'échange"
+          : isLoading
+            ? "Encaissement…"
+            : `Encaisser · ${Number.isNaN(total) ? "—" : formatPrice(total)}`}
       </button>
     </form>
   );

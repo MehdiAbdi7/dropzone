@@ -19,7 +19,7 @@ export const historyQuerySchema = z
   .object({
     from: day,
     to: day,
-    type: z.enum(["delivery", "pickup", "in_store"]).optional(),
+    type: z.enum(["delivery", "pickup", "in_store", "exchange"]).optional(),
     q: z.string().trim().min(1).max(80).optional(),
   })
   .superRefine((value, ctx) => {

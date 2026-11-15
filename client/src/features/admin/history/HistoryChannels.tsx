@@ -7,18 +7,19 @@ export const CHANNEL_LABELS: Record<OrderType, string> = {
   in_store: "Magasin",
   delivery: "Livraisons",
   pickup: "Réservations",
+  exchange: "Échanges",
 };
-export const CHANNEL_ORDER: OrderType[] = ["in_store", "delivery", "pickup"];
+export const CHANNEL_ORDER: OrderType[] = ["in_store", "delivery", "pickup", "exchange"];
 
 // Sous l'onglet Total : ce que chaque canal a rapporté sur la période (argent arrivé, ventes,
-// bénéfice). La somme des trois est le Total affiché au-dessus.
+// bénéfice). La somme des canaux est le Total affiché au-dessus.
 export default function HistoryChannels({ channels, onPick }: { channels: History["channels"]; onPick: (type: OrderType) => void }) {
   return (
     <section aria-labelledby="channels-title" className="space-y-3">
       <h2 id="channels-title" className="text-xl">
         Ce que rapporte chaque canal
       </h2>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {CHANNEL_ORDER.map((type) => {
           const channel = channels[type];
           return (

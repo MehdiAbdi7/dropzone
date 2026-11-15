@@ -70,7 +70,7 @@ export const variantSearchQuerySchema = z.object({
 export type VariantSearchQuery = z.infer<typeof variantSearchQuerySchema>;
 
 // { "Stockage": "256 Go", "Couleur": "Titane naturel" }
-const labelRecord = (valueMax: number) =>
+export const labelRecord = (valueMax: number) =>
   z
     .record(z.string().trim().min(1).max(40), z.string().trim().min(1).max(valueMax))
     .refine((record) => Object.keys(record).length <= 10, { error: "10 lignes au maximum" });
@@ -88,6 +88,46 @@ const optionalText = (max: number) =>
     .nullable()
     .default(null);
 
+// Les champs de la fiche d'état d'une affaire : ceux de la variante d'un appareil reconditionné et ceux
+// d'une reprise (lot 5, `tradeInSheetSchema`), qui deviendra cette variante. Une seule définition.
+export const sheetFields = {
+  grade: z.number().int().min(1).max(10).nullable().default(null),
+  batteryHealth: z.number().int().min(0).max(100).nullable().default(null),
+  replacedParts: labelList,
+  // Les pièces changées qui ne sont pas d'origine.
+  compatibleParts: labelList,
+  defects: labelList,
+  limitations: labelList,
+  // Avec ou sans sa boîte d'origine : obligatoire pour une affaire (voir checkRefurbishedSheet).
+  // « Non précisée » (null) n'existe que pour les annonces importées : le gérant choisit.
+  withBox: z.boolean().nullable().default(null),
+  // Les détails du gérant ; des détails vides sont rangés comme « pas de détails ».
+  details: optionalText(200),
+  // La garantie en mois : obligatoire pour un appareil (règle du service, qui connaît la catégorie).
+  warrantyMonths: z.number().int().min(1).max(36).nullable().default(null),
+  // Le pays d'origine, une valeur de la liste « Pays d'origine ».
+  origin: optionalText(40),
+};
+
+// Les règles d'une affaire : la boîte est dite, et une pièce compatible est une pièce changée.
+// La note et la batterie sont facultatives : les annonces de PC n'en donnent presque jamais, et la
+// boutique dit alors « non précisée » plutôt que d'inventer.
+export function checkRefurbishedSheet(
+  sheet: { withBox: boolean | null; compatibleParts: string[]; replacedParts: string[] },
+  ctx: z.RefinementCtx,
+) {
+  if (sheet.withBox === null) {
+    ctx.addIssue({ code: "custom", path: ["withBox"], message: "Dites si l'affaire a sa boîte d'origine" });
+  }
+  if (sheet.compatibleParts.some((part) => !sheet.replacedParts.includes(part))) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["compatibleParts"],
+      message: "Une pièce compatible doit être une pièce changée",
+    });
+  }
+}
+
 export const variantSchema = z
   .object({
     id: z.number().int().positive().optional(),
@@ -102,22 +142,7 @@ export const variantSchema = z
     purchasePrice: z.number().int().min(0).max(10_000_000).nullable().default(null),
     stock: z.number().int().min(0).max(10_000),
     condition: z.enum(["new", "refurbished"]).default("new"),
-    grade: z.number().int().min(1).max(10).nullable().default(null),
-    batteryHealth: z.number().int().min(0).max(100).nullable().default(null),
-    replacedParts: labelList,
-    // Les pièces changées qui ne sont pas d'origine.
-    compatibleParts: labelList,
-    defects: labelList,
-    limitations: labelList,
-    // Avec ou sans sa boîte d'origine : obligatoire pour une affaire (voir plus bas).
-    // « Non précisée » (null) n'existe que pour les annonces importées : le gérant choisit.
-    withBox: z.boolean().nullable().default(null),
-    // Les détails du gérant ; des détails vides sont rangés comme « pas de détails ».
-    details: optionalText(200),
-    // La garantie en mois : obligatoire pour un appareil (règle du service, qui connaît la catégorie).
-    warrantyMonths: z.number().int().min(1).max(36).nullable().default(null),
-    // Le pays d'origine, une valeur de la liste « Pays d'origine ».
-    origin: optionalText(40),
+    ...sheetFields,
     // La référence interne du magasin (« 51057 »), unique quand elle existe.
     reference: optionalText(20)
       .refine((reference) => reference === null || REFERENCE_PATTERN.test(reference), {
@@ -144,18 +169,7 @@ export const variantSchema = z
       }
       return;
     }
-    if (variant.withBox === null) {
-      ctx.addIssue({ code: "custom", path: ["withBox"], message: "Dites si l'affaire a sa boîte d'origine" });
-    }
-    if (variant.compatibleParts.some((part) => !variant.replacedParts.includes(part))) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["compatibleParts"],
-        message: "Une pièce compatible doit être une pièce changée",
-      });
-    }
-    // La note et la batterie sont facultatives : les annonces de PC n'en donnent
-    // presque jamais, et la boutique dit alors « non précisée » plutôt que d'inventer.
+    checkRefurbishedSheet(variant, ctx);
   });
 
 export const productBodySchema = z
