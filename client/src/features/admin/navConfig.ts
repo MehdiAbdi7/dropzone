@@ -105,6 +105,8 @@ export const SECTIONS: NavSection[] = [
 
 // Les entrées du menu ☰ de la barre du haut : ce qui n'est pas une section.
 export const SETTINGS_HREF = "/admin/reglages";
+// Mon compte (15/11) : nom, téléphone, email de connexion et mot de passe de celui qui est connecté.
+export const ACCOUNT_HREF = "/admin/compte";
 
 // Qui s'affiche où : le menu ☰ (Caisse, Personnalisation), la barre latérale (tout le reste), la barre
 // du bas du téléphone (Accueil, Ventes, Commandes au milieu, Catalogue) et son panneau « Plus » (ce qui

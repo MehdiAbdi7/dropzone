@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { getProfile, login, register, updateProfile } from "./auth.service.js";
+import { changeEmail, changePassword, getProfile, login, register, updateProfile } from "./auth.service.js";
 import { clearTokenCookie, setTokenCookie } from "./token.js";
 
 export async function postRegister(req: Request, res: Response) {
@@ -25,4 +25,15 @@ export async function getMe(_req: Request, res: Response) {
 
 export async function patchMe(req: Request, res: Response) {
   res.json({ data: await updateProfile(res.locals.user!.id, req.body) });
+}
+
+// Mon compte : le mot de passe et l'email, avec le mot de passe actuel. Pas de nouveau cookie : la session
+// ouverte reste valable (elle ne porte ni l'email ni le mot de passe).
+export async function patchPassword(req: Request, res: Response) {
+  await changePassword(res.locals.user!.id, req.body.currentPassword, req.body.newPassword);
+  res.json({ data: { changed: true } });
+}
+
+export async function patchEmail(req: Request, res: Response) {
+  res.json({ data: await changeEmail(res.locals.user!.id, req.body.currentPassword, req.body.email) });
 }

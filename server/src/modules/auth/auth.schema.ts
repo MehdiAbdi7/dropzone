@@ -31,3 +31,14 @@ export const updateMeSchema = z.object({
   addressCommune: z.string().trim().min(2).max(60).nullable().optional(),
   addressLine: z.string().trim().min(5).max(200).nullable().optional(),
 });
+
+// Mon compte (15/11) : l'email et le mot de passe se changent à part du profil, et TOUJOURS en redonnant le mot
+// de passe actuel. Même règle de force qu'à l'inscription (8 caractères, 72 au plus : bcrypt ignore la fin).
+const currentPassword = z.string().min(1, { error: "Saisissez votre mot de passe actuel" }).max(72);
+
+export const changePasswordSchema = z.object({
+  currentPassword,
+  newPassword: z.string().min(8, { error: "8 caractères au minimum" }).max(72),
+});
+
+export const changeEmailSchema = z.object({ currentPassword, email });
