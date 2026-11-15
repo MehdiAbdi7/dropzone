@@ -29,6 +29,10 @@ export default function ExchangeDone({ exchange, onNew }: { exchange: Done; onNe
         <button type="button" className="btn btn-primary" onClick={onNew}>
           Nouvel échange
         </button>
+        {/* L'échange est confirmé dès sa création : la facture est prête (lot 6). */}
+        <Link href={`/admin/facture/${exchange.id}`} target="_blank" className="btn btn-secondary">
+          Imprimer la facture
+        </Link>
         <Link href="/admin/reprises" className="btn btn-secondary">
           Fixer le prix de la reprise
         </Link>

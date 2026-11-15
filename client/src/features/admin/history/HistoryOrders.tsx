@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { STATUS_LABELS } from "@/config/catalog";
 import type { History, HistoryOrder } from "@/features/admin/api/historyApi";
+import { invoiceAvailable } from "@/features/admin/invoice/invoiceRules";
 import { dailyLabel } from "@/features/admin/orders/orderLabels";
 import { formatPrice } from "@/lib/format";
 import { ORDER_TYPE_LABELS } from "@/config/catalog";
@@ -31,8 +33,8 @@ export default function HistoryOrders({ orders, truncated, onOpen }: { orders: H
 
       <ul className="space-y-2 md:hidden">
         {orders.map((order) => (
-          <li key={order.id}>
-            <button type="button" onClick={() => onOpen(order.id)} className="card flex w-full items-center gap-3 p-3 text-left">
+          <li key={order.id} className="card">
+            <button type="button" onClick={() => onOpen(order.id)} className="flex w-full items-center gap-3 p-3 text-left">
               <span className="min-w-0 flex-1">
                 <span className="font-display font-bold text-blue-ink">{dailyLabel(order.dailyNumber, order.businessDate)}</span>
                 <span className="block truncate text-sm font-semibold">{order.fullName}</span>
@@ -51,6 +53,14 @@ export default function HistoryOrders({ orders, truncated, onOpen }: { orders: H
                 ) : null}
               </span>
             </button>
+            {/* Un lien ne se met pas dans un bouton : la facture (lot 6) est sous la ligne cliquable. */}
+            {invoiceAvailable(order) ? (
+              <div className="border-t border-line px-3 py-2">
+                <Link href={`/admin/facture/${order.id}`} target="_blank" className="text-sm font-semibold text-blue-ink underline">
+                  Facture : voir ou télécharger
+                </Link>
+              </div>
+            ) : null}
           </li>
         ))}
         {orders.length === 0 ? <li className="card p-6 text-ink-muted">Aucune commande sur cette période.</li> : null}
@@ -68,6 +78,7 @@ export default function HistoryOrders({ orders, truncated, onOpen }: { orders: H
               <th scope="col">Payé</th>
               <th scope="col">Bénéfice</th>
               <th scope="col">Réduction</th>
+              <th scope="col">Facture</th>
             </tr>
           </thead>
           <tbody>
@@ -91,6 +102,21 @@ export default function HistoryOrders({ orders, truncated, onOpen }: { orders: H
                 <td className="tabular-nums">{formatPrice(order.paid)}</td>
                 <td className="tabular-nums">{profitText(order)}</td>
                 <td className="tabular-nums">{order.discount === 0 ? "—" : discountText(order.discount)}</td>
+                <td>
+                  {/* Voir ou télécharger (impression ou PDF) : possible selon le type et l'étape de la commande. */}
+                  {invoiceAvailable(order) ? (
+                    <Link
+                      href={`/admin/facture/${order.id}`}
+                      target="_blank"
+                      aria-label={`Facture de ${order.fullName}, commande ${dailyLabel(order.dailyNumber, order.businessDate)}`}
+                      className="font-semibold text-blue-ink underline"
+                    >
+                      Facture
+                    </Link>
+                  ) : (
+                    <span className="text-ink-muted">—</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

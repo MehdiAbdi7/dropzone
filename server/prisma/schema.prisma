@@ -444,7 +444,13 @@ model Order {
   items               OrderItem[]
   // Le téléphone que le client a rendu, pour un échange (lot 5).
   tradeIn             TradeIn?
+  // La facture (lot 6) : son numéro est attribué à la PREMIÈRE ouverture et ne change plus. Une suite
+  // continue par année (F-2026-0001…), voir InvoiceCounter. null = pas encore de facture.
+  invoiceNumber       Int?        @map("invoice_number")
+  invoiceYear         Int?        @map("invoice_year")
+  invoiceIssuedAt     DateTime?   @map("invoice_issued_at")
 
+  @@unique([invoiceYear, invoiceNumber])
   @@index([userId, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@index([status, reservedUntil])
@@ -630,4 +636,39 @@ model StoreSettings {
   closedDays  Int[]  @default([]) @map("closed_days")
 
   @@map("store_settings")
+}
+
+// Ce qui s'imprime en tête et en bas d'une facture (lot 6) : une seule ligne (id = 1), remplie par l'admin
+// dans Réglages › Facture. Un champ vide n'apparaît pas sur la facture. À faire vérifier par le comptable
+// de DropZone avant usage réel (statut juridique inconnu).
+model InvoiceSettings {
+  id             Int     @id @default(1)
+  shopName       String  @default("DropZone") @map("shop_name")
+  legalForm      String  @default("") @map("legal_form")
+  address        String  @default("")
+  phones         String  @default("")
+  email          String  @default("")
+  instagram      String  @default("")
+  registerNumber String  @default("") @map("register_number")
+  nif            String  @default("")
+  nis            String  @default("")
+  taxArticle     String  @default("") @map("tax_article")
+  rib            String  @default("")
+  // Les conditions de garantie et de retour, et la note de bas de page.
+  warrantyTerms  String  @default("") @map("warranty_terms")
+  footerNote     String  @default("") @map("footer_note")
+  // La TVA, éteinte par défaut : tant que le statut du magasin n'est pas connu, aucun taux n'est inventé.
+  vatEnabled     Boolean @default(false) @map("vat_enabled")
+  vatRate        Int     @default(19) @map("vat_rate")
+
+  @@map("invoice_settings")
+}
+
+// Le compteur de la suite des factures : une ligne par année, comme `daily_counters` pour les numéros du
+// jour. Incrémenté en une seule requête atomique (voir invoiceNumber.ts).
+model InvoiceCounter {
+  year  Int @id
+  value Int
+
+  @@map("invoice_counters")
 }
