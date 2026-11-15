@@ -1,12 +1,13 @@
 "use client";
 
 import { Children, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { swipeHint } from "./series";
+import ModelPicker from "./ModelPicker";
 
 // Les modèles d'une affiche, qu'on fait glisser de gauche à droite sur téléphone (et sur
-// ordinateur à partir de 5 modèles). Pour qu'on ne rate pas qu'il y en a d'autres, six
-// indices : les noms en haut, les voisins qui dépassent, la flèche ronde, le texte « Glisse
-// pour voir… », une petite poussée à l'arrivée et le compteur.
+// ordinateur à partir de 5 modèles). Pour qu'on ne rate pas qu'il y en a d'autres, trois
+// indices : le sélecteur en haut (flèches ‹ ›, nom, liste de tous les modèles, compteur),
+// les voisins qui dépassent et une petite poussée à l'arrivée. Le nom du sélecteur suit le
+// défilement, et un clic dans le sélecteur fait défiler la piste (goTo).
 // Le modèle affiché est toujours au centre, du premier au dernier (06/11) : les marges de
 // chaque côté sont calculées en CSS (.poster-track dans styles/series-posters.css), sans JavaScript.
 // Avec 4 modèles ou moins, l'ordinateur les montre en colonnes et cache les contrôles.
@@ -70,26 +71,10 @@ export default function PosterSlider({
     track.scrollTo({ left: item.offsetLeft - first.offsetLeft, behavior: reduced ? "auto" : "smooth" });
   }
 
-  const hint = swipeHint(names, index);
-
   return (
     <div className="space-y-4">
       {many ? (
-        <div role="group" aria-label="Modèles de la série" className={`flex flex-wrap justify-center gap-2 px-4 ${desktop}`}>
-          {names.map((name, i) => (
-            <button
-              key={name}
-              type="button"
-              aria-current={i === index ? "true" : undefined}
-              aria-label={unavailable?.[i] ? `${name}, indisponible` : name}
-              data-unavailable={unavailable?.[i] ? "true" : undefined}
-              onClick={() => goTo(i)}
-              className="poster-chip"
-            >
-              {name}
-            </button>
-          ))}
-        </div>
+        <ModelPicker names={names} unavailable={unavailable} index={index} onSelect={goTo} className={desktop} />
       ) : null}
 
       <div className="poster-frame relative">
@@ -106,46 +91,7 @@ export default function PosterSlider({
           ))}
           {many ? <li aria-hidden="true" className="poster-spacer" /> : null}
         </ul>
-
-        {many && index > 0 ? (
-          <button
-            type="button"
-            aria-label={`Modèle précédent : ${names[index - 1]}`}
-            onClick={() => goTo(index - 1)}
-            className={`poster-arrow left-2 ${desktop}`}
-          >
-            <span aria-hidden="true">‹</span>
-          </button>
-        ) : null}
-        {many && index < count - 1 ? (
-          <button
-            type="button"
-            aria-label={`Modèle suivant : ${names[index + 1]}`}
-            onClick={() => goTo(index + 1)}
-            className={`poster-arrow right-2 ${desktop}`}
-          >
-            <span aria-hidden="true">›</span>
-          </button>
-        ) : null}
       </div>
-
-      {many ? (
-        <div className={`space-y-2 text-center ${desktop}`}>
-          <div aria-hidden="true" className="flex items-center justify-center gap-1.5">
-            {names.map((name, i) => (
-              <span key={name} className={`poster-dash ${i === index ? "poster-dash-on" : ""}`} />
-            ))}
-            <span className="ml-1.5 text-xs text-white/70">
-              {index + 1} / {count}
-            </span>
-          </div>
-          <p aria-live="polite" className="text-sm font-semibold text-white">
-            {hint?.back ? <span aria-hidden="true" className="poster-hint-arrow poster-hint-back">← </span> : null}
-            {hint?.text}
-            {hint && !hint.back ? <span aria-hidden="true" className="poster-hint-arrow"> →</span> : null}
-          </p>
-        </div>
-      ) : null}
     </div>
   );
 }

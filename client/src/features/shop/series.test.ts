@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   glowColor,
+  moveIndex,
   posterLayout,
   posterStatus,
   specIcon,
-  swipeHint,
-  withArticle,
 } from "./series";
 
 // Le mot sous une colonne grisée de l'affiche (règle de Mehdi du 05/11 : toute la série
@@ -26,46 +25,28 @@ describe("posterStatus", () => {
   });
 });
 
-describe("withArticle", () => {
-  it.each([
-    ["iPhone 18 Pro", "l'iPhone 18 Pro"],
-    ["iPad Air", "l'iPad Air"],
-    ["Galaxy S25", "le Galaxy S25"],
-    ["MacBook Pro", "le MacBook Pro"],
-    ["HP EliteBook", "le HP EliteBook"],
-  ])("%s → %s", (name, expected) => {
-    expect(withArticle(name)).toBe(expected);
-  });
-});
-
-describe("swipeHint", () => {
-  const iphones = ["iPhone 18 Pro", "iPhone 18 Pro Max"];
-
-  it("invite à glisser vers le modèle suivant", () => {
-    expect(swipeHint(iphones, 0)).toEqual({
-      text: "Glisse pour voir l'iPhone 18 Pro Max",
-      back: false,
-    });
+// Les flèches ‹ › du sélecteur de modèles et les flèches du clavier dans sa liste :
+// un pas en avant ou en arrière, jamais au-delà du premier ou du dernier modèle.
+describe("moveIndex", () => {
+  it("avance d'un modèle", () => {
+    expect(moveIndex(0, 16, 1)).toBe(1);
   });
 
-  it("propose de revenir au dernier modèle", () => {
-    expect(swipeHint(iphones, 1)).toEqual({
-      text: "Revenir à l'iPhone 18 Pro",
-      back: true,
-    });
+  it("recule d'un modèle", () => {
+    expect(moveIndex(5, 16, -1)).toBe(4);
   });
 
-  it("accorde l'article avec un nom qui commence par une consonne", () => {
-    expect(swipeHint(["Galaxy S25", "Galaxy S25 Ultra"], 0)?.text).toBe(
-      "Glisse pour voir le Galaxy S25 Ultra",
-    );
-    expect(swipeHint(["Galaxy S25", "Galaxy S25 Ultra"], 1)?.text).toBe(
-      "Revenir au Galaxy S25",
-    );
+  it("reste sur le dernier modèle quand on avance", () => {
+    expect(moveIndex(15, 16, 1)).toBe(15);
   });
 
-  it("ne dit rien pour un seul modèle", () => {
-    expect(swipeHint(["iPhone 13"], 0)).toBeNull();
+  it("reste sur le premier modèle quand on recule", () => {
+    expect(moveIndex(0, 16, -1)).toBe(0);
+  });
+
+  it("ne bouge pas pour un seul modèle", () => {
+    expect(moveIndex(0, 1, 1)).toBe(0);
+    expect(moveIndex(0, 1, -1)).toBe(0);
   });
 });
 

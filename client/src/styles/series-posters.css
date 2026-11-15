@@ -330,46 +330,6 @@
     }
   }
 
-  /* Les noms des modèles en haut ; celui affiché est blanc plein. */
-  .poster-chip {
-    min-height: 36px;
-    padding: 8px 12px;
-    border-radius: 999px;
-    border: 1px solid rgb(255 255 255 / 0.3);
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: rgb(255 255 255 / 0.9);
-  }
-  .poster-chip[aria-current="true"] {
-    background: #ffffff;
-    border-color: #ffffff;
-    color: #0b0c11;
-  }
-  .poster-chip[data-unavailable="true"] {
-    position: relative;
-    overflow: hidden;
-    border-style: dashed;
-    border-color: rgb(190 195 205 / 0.62);
-    color: rgb(255 255 255 / 0.68);
-  }
-  .poster-chip[data-unavailable="true"]::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    right: 8px;
-    left: 8px;
-    height: 1.5px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, transparent, #c0c4cc 18%, #c0c4cc 82%, transparent);
-    box-shadow: 0 0 6px rgb(190 195 205 / 0.28);
-    transform: rotate(-8deg);
-    pointer-events: none;
-  }
-  .poster-chip[aria-current="true"][data-unavailable="true"] {
-    border-color: rgb(190 195 205 / 0.72);
-    background: rgb(190 195 205 / 0.1);
-    color: rgb(255 255 255 / 0.8);
-  }
   .poster-column[data-unavailable="true"] .poster-glow {
     filter: grayscale(1);
     opacity: 0.22;
@@ -381,11 +341,11 @@
     text-decoration-thickness: 1.5px;
   }
 
-  /* La flèche ronde sur le bord, à mi-hauteur de la photo. */
-  .poster-arrow {
-    position: absolute;
-    top: 104px;
+  /* Le sélecteur de modèles (ModelPicker) : flèches rondes ‹ ›, le nom du modèle affiché
+     dans une pastille qui ouvre la liste. Une flèche au bout de la série est grisée. */
+  .poster-step {
     display: grid;
+    flex: none;
     place-items: center;
     width: 42px;
     height: 42px;
@@ -396,46 +356,120 @@
     font-size: 1.4rem;
     line-height: 1;
   }
-  .poster-arrow:focus-visible {
+  .poster-step:disabled {
+    opacity: 0.35;
+  }
+  .poster-step:focus-visible,
+  .poster-picker-name:focus-visible,
+  .picker-item:focus-visible {
     outline: 2px solid #a33bf0;
     outline-offset: 2px;
   }
+  .poster-picker-name {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.3);
+    background: rgb(255 255 255 / 0.06);
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
 
-  /* Les tirets sous l'affiche, et la flèche du texte qui bouge doucement. */
-  .poster-dash {
-    width: 6px;
-    height: 6px;
-    border-radius: 3px;
-    background: #6b7080;
-    transition:
-      width 0.3s,
-      background-color 0.3s;
+  /* La liste de tous les modèles : feuille du bas sur téléphone, fenêtre centrée au-dessus.
+     Posée dans le body, donc hors de .brand-dark : couleurs écrites en dur, toujours sombre. */
+  .picker-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
   }
-  .poster-dash-on {
-    width: 18px;
-    background: #ffffff;
+  .picker-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.6);
+    cursor: default;
   }
-  .poster-hint-arrow {
-    display: inline-block;
-    /* 4 allers-retours (4,8 s) : WCAG 2.2.2, pas de mouvement automatique au-delà de 5 s. */
-    animation: poster-go 1.2s ease-in-out 4;
+  .picker-panel {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    max-height: 70dvh;
+    flex-direction: column;
+    border: 1px solid rgb(255 255 255 / 0.14);
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0;
+    background: #12141d;
+    color: #f2f3fa;
+    box-shadow: 0 -16px 48px rgb(0 0 0 / 0.5);
   }
-  .poster-hint-back {
-    animation-direction: reverse;
-  }
-  @keyframes poster-go {
-    0%,
-    100% {
-      transform: translateX(0);
+  @media (min-width: 768px) {
+    .picker-panel {
+      top: 50%;
+      right: auto;
+      bottom: auto;
+      left: 50%;
+      width: min(28rem, calc(100vw - 32px));
+      max-height: 70dvh;
+      border-bottom: 1px solid rgb(255 255 255 / 0.14);
+      border-radius: 20px;
+      transform: translate(-50%, -50%);
     }
-    50% {
-      transform: translateX(5px);
-    }
+  }
+  .picker-head {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 12px 8px 20px;
+  }
+  .picker-list {
+    overflow-y: auto;
+    padding: 0 8px 12px;
+    overscroll-behavior: contain;
+  }
+  .picker-item {
+    display: flex;
+    width: 100%;
+    min-height: 48px;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    text-align: left;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: rgb(255 255 255 / 0.9);
+  }
+  .picker-item:hover {
+    background: rgb(255 255 255 / 0.07);
+  }
+  .picker-item[aria-current="true"] {
+    background: rgb(255 255 255 / 0.12);
+    color: #ffffff;
+  }
+  .picker-item[data-unavailable="true"] {
+    color: rgb(255 255 255 / 0.6);
+  }
+  .picker-tag {
+    flex: none;
+    border: 1px dashed rgb(190 195 205 / 0.62);
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: rgb(255 255 255 / 0.7);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .poster-nudge,
-    .poster-hint-arrow {
+    .poster-nudge {
       animation: none;
     }
     .poster-track {
