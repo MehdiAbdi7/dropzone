@@ -150,6 +150,11 @@
       linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
       linear-gradient(90deg, #3d4affc0, #a23bf0c0, #ff2e4dc2) border-box;
   }
+  @media (hover: none) {
+    .card {
+      backdrop-filter: none;
+    }
+  }
 
   /* Les puces à cocher : une valeur d'une liste (stockage, couleur, défaut…). */
   .chip {
