@@ -34,7 +34,12 @@ export function productCrumbs(
       : []),
     // La marque d'un accessoire, entre son type et lui : Boutique › Accessoires › Chargeurs › Anker › …
     ...(product.brand && product.maker
-      ? [{ label: product.maker.name, href: `${category}/${product.brand.slug}/${product.maker.slug}` }]
+      ? [
+          {
+            label: product.maker.name,
+            href: `${category}/${product.brand.slug}/${product.maker.slug}`,
+          },
+        ]
       : []),
     color || step
       ? { label: product.name, href: `/produits/${product.slug}` }
@@ -76,9 +81,9 @@ export default function ProductHeader({
       <Breadcrumb items={crumbs} />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-8">
         <div className="mx-auto w-full max-w-sm lg:sticky lg:top-24 lg:max-w-none">
-          <div className="card product-stage relative aspect-square overflow-hidden rounded-3xl bg-surface shadow-[0_24px_70px_-38px_rgba(61,75,255,0.32)] lg:aspect-[1/0.92]">
+          <div className="card product-stage relative aspect-square overflow-hidden rounded-3xl lg:aspect-[1/0.92]">
             <div aria-hidden="true" className="product-stage-glow" />
-            <div className="absolute left-4 top-4 z-20 grid size-11 place-items-center rounded-full border border-line bg-surface/80 p-2.5 shadow-sm backdrop-blur sm:left-5 sm:top-5 sm:size-12">
+            <div className="absolute left-4 top-4 z-20 grid size-11 place-items-center rounded-full border border-line bg-surface/80 p-2.5  sm:left-5 sm:top-5 sm:size-12">
               <Image
                 src={brandLogo ?? "/brands/unknown.svg"}
                 alt={product.brand?.name ?? "Marque inconnue"}
@@ -87,7 +92,7 @@ export default function ProductHeader({
                 className="object-contain p-2.5 brightness-0 opacity-75 dark:invert"
               />
             </div>
-            <div className="product-stage-image absolute inset-[8%] z-10 sm:inset-[10%]">
+            <div className="product-stage-image absolute inset-[14%] z-10 sm:inset-[16%]">
               <ProductImage
                 src={image ?? product.images[0]?.url ?? null}
                 alt={color ? `${product.name}, ${color}` : product.name}

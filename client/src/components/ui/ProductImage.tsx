@@ -14,7 +14,7 @@ export default function ProductImage({
   priority?: boolean;
 }) {
   if (!src) {
-    return <div className="h-full w-full bg-surface-2" aria-hidden="true" />;
+    return <div className="h-full w-full " aria-hidden="true" />;
   }
   return (
     <Image

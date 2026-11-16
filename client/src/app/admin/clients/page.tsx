@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useCustomersQuery } from "@/features/admin/api/ordersApi";
+import CustomerPasswordReset from "@/features/admin/customers/CustomerPasswordReset";
 import { formatDate } from "@/lib/format";
 
-// La liste des clients, en lecture seule.
+// La liste des clients. Seule action : donner un nouveau mot de passe à un client qui a oublié le sien.
 export default function CustomersPage() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
@@ -29,27 +30,30 @@ export default function CustomersPage() {
       {/* Sur téléphone, une carte par client (05/11) ; le tableau revient à partir de 768 px. */}
       <ul className="space-y-2 md:hidden">
         {data?.data.map((customer) => (
-          <li key={customer.id} className="card flex items-center gap-3 p-3">
-            <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold">
-                {customer.firstName} {customer.lastName}
+          <li key={customer.id} className="card space-y-3 p-3">
+            <div className="flex items-center gap-3">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold">
+                  {customer.firstName} {customer.lastName}
+                </span>
+                <span className="block truncate text-xs text-ink-muted">{customer.email}</span>
+                <span className="block text-xs text-ink-muted">
+                  {customer.phone} · {customer.addressWilaya ?? "—"} · inscrit le {formatDate(customer.createdAt)}
+                </span>
               </span>
-              <span className="block truncate text-xs text-ink-muted">{customer.email}</span>
-              <span className="block text-xs text-ink-muted">
-                {customer.phone} · {customer.addressWilaya ?? "—"} · inscrit le {formatDate(customer.createdAt)}
+              <span className="shrink-0 text-center">
+                <span className="block font-bold">{customer._count.orders}</span>
+                <span className="text-xs text-ink-muted">cmd.</span>
               </span>
-            </span>
-            <span className="shrink-0 text-center">
-              <span className="block font-bold">{customer._count.orders}</span>
-              <span className="text-xs text-ink-muted">cmd.</span>
-            </span>
+            </div>
+            <CustomerPasswordReset customer={customer} />
           </li>
         ))}
         {data && data.data.length === 0 ? <li className="card p-6 text-ink-muted">Aucun client.</li> : null}
       </ul>
 
       <div className="card hidden overflow-x-auto md:block">
-        <table className="table min-w-[640px]">
+        <table className="table min-w-[820px]">
           <thead>
             <tr>
               <th scope="col">Client</th>
@@ -57,6 +61,7 @@ export default function CustomersPage() {
               <th scope="col">Wilaya</th>
               <th scope="col">Inscrit le</th>
               <th scope="col">Commandes</th>
+              <th scope="col">Mot de passe</th>
             </tr>
           </thead>
           <tbody>
@@ -73,6 +78,9 @@ export default function CustomersPage() {
                 <td>{customer.addressWilaya ?? "—"}</td>
                 <td>{formatDate(customer.createdAt)}</td>
                 <td>{customer._count.orders}</td>
+                <td className="min-w-56">
+                  <CustomerPasswordReset customer={customer} />
+                </td>
               </tr>
             ))}
           </tbody>
