@@ -40,7 +40,7 @@ export default function SeriesTile({ series, palette }: { series: AdminSeriesTil
           {series.name}
         </h2>
         <div className="flex min-w-0 flex-wrap gap-1 text-[10px] font-bold sm:gap-1.5 sm:text-xs">
-          <span className="rounded-full bg-white/15 px-1.5 py-0.5 text-white sm:px-2">
+          <span className="rounded-full border border-white/25 bg-black/75 px-1.5 py-0.5 text-white sm:px-2">
             {series.modelCount} modèle{series.modelCount > 1 ? "s" : ""}
           </span>
           {series.newStock > 0 ? <span className="rounded-full bg-[#1f5fd6] px-1.5 py-0.5 text-white sm:px-2">{series.newStock} neufs</span> : null}
