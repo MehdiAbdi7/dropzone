@@ -57,11 +57,11 @@ export default function SeriesCard({
           puis une pastille avec le nombre de modèles. Ni prix ni bouton « Voir » (choix de
           Mehdi) : toute l'affiche est le lien. */}
       <div className="absolute inset-x-0 bottom-0 z-10 space-y-1.5 p-2 sm:space-y-2 sm:p-3">
-        <h2 className="text-gradient w-fit max-w-full truncate text-base leading-tight font-extrabold drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] sm:text-xl">
+        <h2 className="series-title w-fit max-w-full truncate text-base leading-tight font-extrabold sm:text-xl">
           {series.name}
         </h2>
         <div className="flex min-w-0 flex-wrap gap-1 text-[10px] font-bold sm:gap-1.5 sm:text-xs">
-          <span className="rounded-full bg-white/15 px-1.5 py-0.5 text-white sm:px-2">
+          <span className="rounded-full border border-white/25 bg-black/75 px-1.5 py-0.5 text-white sm:px-2">
             {modelCount} modèle{modelCount > 1 ? "s" : ""}
           </span>
           {series.soldOut ? <span className="rounded-full bg-[#d61f45] px-1.5 py-0.5 text-white sm:px-2">Épuisé</span> : null}

@@ -36,7 +36,7 @@ export default function SeriesTile({ series, palette }: { series: AdminSeriesTil
         )}
       </div>
       <div className="series-info absolute inset-x-0 bottom-0 z-10 space-y-1.5 p-2 sm:space-y-2 sm:p-3">
-        <h2 className="w-fit max-w-full truncate text-base font-extrabold leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] text-gradient sm:text-xl">
+        <h2 className="series-title w-fit max-w-full truncate text-base font-extrabold leading-tight sm:text-xl">
           {series.name}
         </h2>
         <div className="flex min-w-0 flex-wrap gap-1 text-[10px] font-bold sm:gap-1.5 sm:text-xs">

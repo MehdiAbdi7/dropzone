@@ -20,36 +20,17 @@
       box-shadow 0.25s,
       outline-color 0.25s;
   }
-  .series-card::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    background: linear-gradient(
-      to bottom,
-      transparent 0%,
-      transparent 48%,
-      rgb(4 5 8 / 0.3) 68%,
-      rgb(4 5 8 / 0.98) 100%
-    );
-    pointer-events: none;
-  }
-  @media (min-width: 768px) {
-    .series-card::after {
-      background: linear-gradient(
-        to top,
-        rgb(4 5 8 / 0.96) 0%,
-        rgb(4 5 8 / 0.78) 34%,
-        rgb(4 5 8 / 0.2) 64%,
-        transparent 84%
-      );
-    }
-  }
   .series-media {
     position: absolute;
     inset: 0;
     z-index: 0;
     transition: transform 0.5s;
+  }
+  .series-title {
+    color: #fff;
+    -webkit-text-stroke: 0.75px rgb(0 0 0 / 0.9);
+    paint-order: stroke fill;
+    text-shadow: 0 1px 3px rgb(0 0 0 / 0.85);
   }
   a.series-card:hover,
   a.series-card:focus-visible {
