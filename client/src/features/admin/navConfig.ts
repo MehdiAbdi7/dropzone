@@ -103,6 +103,8 @@ export const SECTIONS: NavSection[] = [
       { label: "Listes", href: "/admin/listes", match: (path) => under(path, "/admin/listes") },
     ],
   },
+  // Les comptes du personnel (lot 7) : qui se connecte au back-office, avec quel rôle. Admin seulement.
+  { key: "comptes", label: "Comptes", icon: UsersIcon, href: "/admin/comptes", inMenu: true, owns: (path) => under(path, "/admin/comptes") },
 ];
 
 // Les entrées du menu ☰ de la barre du haut : ce qui n'est pas une section.

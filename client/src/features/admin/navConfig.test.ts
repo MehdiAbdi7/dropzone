@@ -25,7 +25,7 @@ describe("visibleSections", () => {
 });
 
 describe("les sections du back-office", () => {
-  it("huit sections : la vente au magasin et la caisse sont des pages à part", () => {
+  it("neuf sections : la vente au magasin et la caisse sont des pages à part, les comptes sont au menu ☰", () => {
     expect(SECTIONS.map((section) => section.key)).toEqual([
       "accueil",
       "vente",
@@ -35,6 +35,7 @@ describe("les sections du back-office", () => {
       "historique",
       "clients",
       "personnalisation",
+      "comptes",
     ]);
   });
 
@@ -101,8 +102,8 @@ describe("les sections du back-office", () => {
 describe("où s'affiche chaque section", () => {
   const keys = (sections: { key: string }[]) => sections.map((section) => section.key);
 
-  it("le menu ☰ prend la Caisse et la Personnalisation", () => {
-    expect(keys(MENU_SECTIONS)).toEqual(["caisse", "personnalisation"]);
+  it("le menu ☰ prend la Caisse, la Personnalisation et les Comptes", () => {
+    expect(keys(MENU_SECTIONS)).toEqual(["caisse", "personnalisation", "comptes"]);
   });
 
   it("la barre latérale garde les six autres, dans l'ordre de travail", () => {
