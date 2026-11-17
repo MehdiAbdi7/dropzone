@@ -113,6 +113,6 @@ describe("les états d'un retrait", () => {
     const { agent } = await loginAs("admin");
     const response = await agent.patch(`/admin/orders/${order.id}/status`).send({ status: "picked_up" });
     expect(response.status).toBe(409);
-    expect(response.body.error.message).toBe("Validez le retrait avec son moyen de paiement");
+    expect(response.body.error.message).toBe("Validez la réservation avec son moyen de paiement");
   });
 });

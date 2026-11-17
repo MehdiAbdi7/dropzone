@@ -12,6 +12,8 @@ import {
   patchStatus,
   postCollect,
   postOrder,
+  postAdvanceReceived,
+  postBaridiNumber,
   postPickup,
   postPreview,
   postReturn,
@@ -77,3 +79,7 @@ orderAdminRouter.post(
   validate({ params: idParamsSchema, body: pickupBodySchema }),
   postPickup,
 );
+
+// La réservation illimitée (18/11) : envoyer le numéro BaridiMob au client, puis confirmer l'avance reçue.
+orderAdminRouter.post("/orders/:id/baridi-number", validate({ params: idParamsSchema }), postBaridiNumber);
+orderAdminRouter.post("/orders/:id/advance-received", validate({ params: idParamsSchema }), postAdvanceReceived);

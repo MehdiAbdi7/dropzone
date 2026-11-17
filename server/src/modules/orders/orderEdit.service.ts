@@ -172,7 +172,8 @@ export async function editOrder(id: number, input: EditOrderInput, userId: numbe
       throw new AppError(400, "Le total de la commande est trop élevé");
     }
     let corrections: { method: PaymentMethod; amount: number }[] = [];
-    if (money.hasPayment) {
+    // Une réservation qui n'a reçu que son avance (18/11) n'est pas payée en entier : rien à corriger vers le total.
+    if (money.hasPayment && order.status !== "reserved") {
       const method = input.method ?? mainMethod(money.paid);
       corrections = correctionMovements(money.paid, total, method);
       if (input.method && input.method !== mainMethod(money.paid)) {

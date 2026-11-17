@@ -19,14 +19,35 @@ export const tradeInSchema = z
     options: labelRecord(60).default({}),
     ...sheetFields,
   })
-  .superRefine((tradeIn, ctx) => {
-    // Une reprise est toujours une affaire : sa boîte est dite et ses pièces sont cohérentes.
-    checkRefurbishedSheet(tradeIn, ctx);
-    if (tradeIn.warrantyMonths === null) {
-      ctx.addIssue({ code: "custom", path: ["warrantyMonths"], message: "Indiquez la garantie de l'affaire, en mois" });
-    }
-  });
+  .superRefine((tradeIn, ctx) => checkTradeInSheet(tradeIn, ctx));
 export type TradeInInput = z.infer<typeof tradeInSchema>;
+
+// Une reprise est toujours une affaire : sa boîte est dite, ses pièces sont cohérentes, sa garantie est dite.
+// La même règle à l'échange et à la modification de la fiche avant la mise en vente.
+function checkTradeInSheet(tradeIn: Parameters<typeof checkRefurbishedSheet>[0] & { warrantyMonths: number | null }, ctx: z.RefinementCtx) {
+  checkRefurbishedSheet(tradeIn, ctx);
+  if (tradeIn.warrantyMonths === null) {
+    ctx.addIssue({ code: "custom", path: ["warrantyMonths"], message: "Indiquez la garantie de l'affaire, en mois" });
+  }
+}
+
+// Modifier la fiche d'une reprise avant sa mise en vente (18/11) : le téléphone a été remis en état (batterie
+// neuve), la fiche le dit, et les frais de remise en état s'ajoutent à son prix d'achat. Le modèle et le prix
+// de reprise ne changent pas.
+export const updateTradeInBodySchema = z
+  .object({
+    color: z.string().trim().min(1, { error: "Choisissez la couleur" }).max(60),
+    options: labelRecord(60).default({}),
+    repairCost: z
+      .number({ error: "Saisissez les frais de remise en état, en dinars (0 s'il n'y en a pas)" })
+      .int({ error: "Un montant en dinars, sans virgule" })
+      .min(0)
+      .max(10_000_000)
+      .default(0),
+    ...sheetFields,
+  })
+  .superRefine((tradeIn, ctx) => checkTradeInSheet(tradeIn, ctx));
+export type UpdateTradeInInput = z.infer<typeof updateTradeInBodySchema>;
 
 // Ce que le magasin donne : les lignes d'un ticket du comptoir (`unitPrice` = prix accordé, absent =
 // prix catalogue). Un seul téléphone repris par échange (un contre un), le client est obligatoire.

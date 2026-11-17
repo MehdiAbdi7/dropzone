@@ -14,7 +14,7 @@ const cartItemsSchema = z
   .max(30, { error: "30 articles au maximum" });
 export type CartItemInput = z.infer<typeof cartItemsSchema>[number];
 
-// Livraison ou retrait au magasin (14/11). Absent : une livraison, comme avant.
+// Livraison ou réservation au magasin (14/11). Absent : une livraison, comme avant.
 const fulfillmentSchema = z.enum(["delivery", "pickup"]).default("delivery");
 export type Fulfillment = z.infer<typeof fulfillmentSchema>;
 
@@ -49,15 +49,25 @@ const deliveryOrderSchema = z.object({
   address: z.string().trim().min(5).max(200),
 });
 
-// Le retrait au magasin (14/11) : l'un des deux jours proposés (13/11 : le jour exact, pas
+// La réservation au magasin (14/11) : l'un des deux jours proposés (13/11 : le jour exact, pas
 // « demain »), à une heure proposée par le formulaire. Le jour et l'heure sont revérifiés par le
 // serveur avec les horaires du magasin (createOrder).
-const pickupOrderSchema = z.object({
-  ...orderBase,
-  fulfillment: z.literal("pickup"),
-  pickupDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Choisissez le jour où vous passerez" }),
-  pickupTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, { error: "Choisissez une heure" }),
-});
+//
+// Depuis le 18/11, deux façons de réserver : `two_days` (par défaut, comme avant : un jour et une heure,
+// jusqu'à minuit) ou `unlimited` (sans date, contre une avance BaridiMob réglée par le magasin).
+const pickupOrderSchema = z
+  .object({
+    ...orderBase,
+    fulfillment: z.literal("pickup"),
+    reservationMode: z.enum(["two_days", "unlimited"]).default("two_days"),
+    pickupDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Choisissez le jour où vous passerez" }).optional(),
+    pickupTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, { error: "Choisissez une heure" }).optional(),
+  })
+  .superRefine((order, ctx) => {
+    if (order.reservationMode !== "two_days") return;
+    if (!order.pickupDate) ctx.addIssue({ code: "custom", path: ["pickupDate"], message: "Choisissez le jour où vous passerez" });
+    if (!order.pickupTime) ctx.addIssue({ code: "custom", path: ["pickupTime"], message: "Choisissez une heure" });
+  });
 
 // Sans `fulfillment`, la commande est une livraison : l'ancien formulaire continue de marcher.
 export const createOrderSchema = z.preprocess(

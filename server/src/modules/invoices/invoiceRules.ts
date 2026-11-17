@@ -18,7 +18,7 @@ export function invoiceBlocker(order: { type: OrderType; status: OrderStatus }):
       : "La facture d'une livraison est disponible une fois la commande confirmée (étape « En préparation »)";
   }
   if (order.type === "pickup") {
-    return order.status === "picked_up" ? null : "La facture d'un retrait est disponible une fois le téléphone récupéré";
+    return order.status === "picked_up" ? null : "La facture d'une réservation est disponible une fois le téléphone récupéré";
   }
   return order.status === "picked_up" ? null : "Cette vente n'est pas terminée : pas de facture";
 }

@@ -1,4 +1,4 @@
-// L'heure d'Alger et les créneaux de retrait au magasin (14/11).
+// L'heure d'Alger et les créneaux de réservation au magasin (14/11).
 //
 // L'Algérie est à UTC+1 toute l'année, sans heure d'été : un décalage constant suffit, pas
 // besoin d'une bibliothèque de fuseaux. Les jours sont manipulés en texte « AAAA-MM-JJ » : c'est

@@ -61,6 +61,12 @@ enum Role {
   order_manager
 }
 
+// Une réservation au magasin : deux jours au plus sans avance, ou illimitée contre une avance BaridiMob (18/11).
+enum ReservationMode {
+  two_days
+  unlimited
+}
+
 enum OrderStatus {
   pending
   confirmed
@@ -444,6 +450,16 @@ model Order {
   pickupTime          String?     @map("pickup_time")
   // Minuit à Alger le soir de pickupDate : après, la réservation expire.
   reservedUntil       DateTime?   @map("reserved_until")
+  // La réservation illimitée avec avance BaridiMob (18/11). `reservationMode` : null pour une livraison, une
+  // vente ou un échange ; « two_days » (la réservation de deux jours, sans avance) ou « unlimited » pour un
+  // retrait. `advanceAmount` : l'avance demandée, copiée des réglages à la commande (un fait passé).
+  // `baridiNumber` : le numéro BaridiMob copié des réglages au moment où le magasin l'envoie au client
+  // (`baridiSharedAt`) : le client ne le voit qu'à partir de là. `advancePaidAt` : l'avance est reçue.
+  reservationMode     ReservationMode? @map("reservation_mode")
+  advanceAmount       Int?        @map("advance_amount")
+  baridiNumber        String?     @map("baridi_number")
+  baridiSharedAt      DateTime?   @map("baridi_shared_at")
+  advancePaidAt       DateTime?   @map("advance_paid_at")
   subtotal            Int
   shippingFee         Int         @map("shipping_fee")
   total               Int
@@ -485,6 +501,9 @@ model TradeIn {
   // Le prix de reprise, saisi à la main par le magasin : ce que le client reçoit pour son téléphone,
   // et le prix d'achat de l'affaire une fois en vente.
   price           Int
+  // Ce que la remise en état a coûté (batterie neuve…), saisi avant la mise en vente (18/11) : il
+  // s'ajoute au prix d'achat de l'affaire, donc au bénéfice de sa revente.
+  repairCost      Int         @default(0) @map("repair_cost")
   createdAt       DateTime    @default(now()) @map("created_at")
   // Mise en vente : la date, et la variante créée (sans clé étrangère : la trace survit à sa suppression).
   listedAt        DateTime?   @map("listed_at")
@@ -644,6 +663,11 @@ model StoreSettings {
   openingTime String @default("09:00") @map("opening_time")
   closingTime String @default("20:00") @map("closing_time")
   closedDays  Int[]  @default([]) @map("closed_days")
+  // La réservation illimitée (18/11) : l'avance en dinars (0 = l'offre est coupée) et le numéro BaridiMob sur
+  // lequel le client l'envoie. Réglés par l'admin ; le numéro n'est jamais public, il est copié sur la
+  // commande quand le magasin l'envoie au client.
+  reservationAdvance Int    @default(0) @map("reservation_advance")
+  baridiNumber       String @default("") @map("baridi_number")
 
   @@map("store_settings")
 }
