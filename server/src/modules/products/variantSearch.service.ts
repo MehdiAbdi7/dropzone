@@ -1,6 +1,7 @@
 import { prisma } from "../../config/db.js";
 import { Prisma, type Condition } from "../../generated/prisma/client.js";
 import { buildConditionReport } from "./product.service.js";
+import { variantImage } from "./variantImage.js";
 
 // Le sélecteur de variantes du comptoir (16/11, lot 3) : le vendeur tape quelques mots ou un SKU
 // et choisit l'appareil exact. N'offre que ce qui se vend (produit publié, en stock) et ne
@@ -124,7 +125,15 @@ export async function searchVariants({
     LIMIT 3000`;
   const variants = await prisma.productVariant.findMany({
     where: { id: { in: matches.map((row) => row.id) } },
-    include: { product: { select: { name: true, images: { orderBy: { position: "asc" }, take: 1, select: { url: true } } } } },
+    include: {
+      product: {
+        select: {
+          name: true,
+          images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
+          deviceModel: { select: { colorPhotos: { select: { color: true, url: true } } } },
+        },
+      },
+    },
   });
 
   const hits = variants
@@ -136,7 +145,7 @@ export async function searchVariants({
       price: variant.price,
       stock: variant.stock,
       conditionReport: buildConditionReport(variant),
-      image: variant.product.images[0]?.url ?? null,
+      image: variantImage(variant.options, variant.product.deviceModel?.colorPhotos ?? [], variant.product.images[0]?.url ?? null),
     }))
     .sort((a, b) =>
       words.length === 0

@@ -20,6 +20,8 @@ const MANAGER_ROUTES = [
   "GET /orders/:id",
   "PATCH /orders/:id/status",
   "POST /orders/:id/pickup",
+  "POST /orders/:id/baridi-number",
+  "POST /orders/:id/advance-received",
   "POST /orders/:id/collect",
   "POST /orders/:id/return",
   "GET /deliveries/summary",

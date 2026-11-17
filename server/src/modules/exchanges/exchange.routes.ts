@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { validate } from "../../middlewares/validate.js";
 import { idParamsSchema } from "../../utils/idParams.js";
-import { getTradeIns, postExchange, postPublishTradeIn } from "./exchange.controller.js";
-import { exchangeBodySchema, publishTradeInBodySchema, tradeInListQuerySchema } from "./exchange.schema.js";
+import { getTradeIns, patchTradeIn, postExchange, postPublishTradeIn } from "./exchange.controller.js";
+import { exchangeBodySchema, publishTradeInBodySchema, tradeInListQuerySchema, updateTradeInBodySchema } from "./exchange.schema.js";
 
 // Monté sous /admin, déjà protégé.
 export const exchangeAdminRouter = Router();
@@ -11,6 +11,8 @@ export const exchangeAdminRouter = Router();
 exchangeAdminRouter.post("/exchanges", validate({ body: exchangeBodySchema }), postExchange);
 // Les reprises à mettre en vente, et leur mise en vente au prix que fixe l'admin.
 exchangeAdminRouter.get("/trade-ins", validate({ query: tradeInListQuerySchema }), getTradeIns);
+// Modifier la fiche d'une reprise (batterie remplacée…) avant de la mettre en vente (18/11).
+exchangeAdminRouter.patch("/trade-ins/:id", validate({ params: idParamsSchema, body: updateTradeInBodySchema }), patchTradeIn);
 exchangeAdminRouter.post(
   "/trade-ins/:id/publish",
   validate({ params: idParamsSchema, body: publishTradeInBodySchema }),

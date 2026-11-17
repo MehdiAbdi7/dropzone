@@ -8,7 +8,7 @@ import { buildConditionReport, refreshMinPrice } from "../products/product.servi
 import { sameColor } from "../models/modelColors.js";
 import { algiersDate, algiersMidnightAfter, pickupDays, pickupSlots } from "../../utils/algiersTime.js";
 import { requireOpenCashDay } from "../cash/cash.service.js";
-import { getStoreHours } from "../store/store.service.js";
+import { getReservationSettings, getStoreHours, getUnlimitedAdvance } from "../store/store.service.js";
 import { issueDailyNumber } from "./dailyNumber.js";
 import { priceReduction } from "./negotiation.js";
 import { negotiateOrderPrices } from "./negotiation.service.js";
@@ -55,7 +55,7 @@ export type CartLine = {
 // Le calcul du panier, partagé par l'aperçu (POST /orders/preview) et la commande :
 // les deux voient exactement les mêmes prix, cadeaux et problèmes.
 // `db` est le client normal ou celui d'une transaction.
-// `fulfillment` : un retrait au magasin n'a pas de frais de livraison (14/11).
+// `fulfillment` : un réservation au magasin n'a pas de frais de livraison (14/11).
 export async function priceCart(db: Tx, items: CartItemInput[], fulfillment: Fulfillment = "delivery") {
   // Le même SKU deux fois (deux onglets) : on additionne.
   const quantities = new Map<string, number>();
@@ -201,6 +201,10 @@ export async function previewCart(items: CartItemInput[], fulfillment: Fulfillme
 // Le jour et la fin de réservation d'un retrait, après vérification du créneau : le serveur fait
 // foi (un créneau passé entre l'affichage du formulaire et l'envoi est refusé).
 async function pickupSlot(tx: Tx, input: Extract<CreateOrderInput, { fulfillment: "pickup" }>, now: Date) {
+  // Le schéma exige déjà le jour et l'heure d'une réservation de deux jours ; ceci rassure TypeScript.
+  if (!input.pickupDate || !input.pickupTime) {
+    throw new AppError(400, "Choisissez le jour et l'heure de votre passage");
+  }
   const hours = await getStoreHours(tx);
   // Le jour doit être l'un des deux que le formulaire proposait, puis l'heure l'un de ses créneaux.
   if (!pickupDays(hours, now).includes(input.pickupDate) || !pickupSlots(hours, input.pickupDate, now).includes(input.pickupTime)) {
@@ -251,7 +255,18 @@ export async function variantCosts(tx: Tx, skus: string[]): Promise<Map<string, 
 export async function createOrder(input: CreateOrderInput, userId: number | undefined) {
   return prisma.$transaction(async (tx) => {
     const now = new Date();
-    const pickup = input.fulfillment === "pickup" ? await pickupSlot(tx, input, now) : null;
+    // Deux jours : un créneau vérifié. Illimitée : pas de date, mais l'avance doit être réglée (18/11).
+    const unlimited = input.fulfillment === "pickup" && input.reservationMode === "unlimited";
+    const advance = unlimited ? await getUnlimitedAdvance(tx) : null;
+    if (unlimited && advance === null) {
+      throw new AppError(400, "La réservation illimitée n'est pas disponible pour le moment");
+    }
+    const pickup =
+      input.fulfillment !== "pickup"
+        ? null
+        : unlimited
+          ? { pickupDate: null, pickupTime: null, reservedUntil: null, reservationMode: "unlimited" as const, advanceAmount: advance }
+          : { ...(await pickupSlot(tx, input, now)), reservationMode: "two_days" as const, advanceAmount: null };
     const cart = await priceCart(tx, input.items, input.fulfillment);
     if (!cart.canOrder) {
       throw new AppError(409, "Votre panier a changé, vérifiez-le avant de commander", {
@@ -315,6 +330,8 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
         type: true,
         pickupDate: true,
         pickupTime: true,
+        reservationMode: true,
+        advanceAmount: true,
       },
     });
 
@@ -339,6 +356,13 @@ const orderDetailSelect = {
   dailyNumber: true,
   pickupDate: true,
   pickupTime: true,
+  // La réservation illimitée (18/11) : l'avance, le numéro BaridiMob (null tant que le magasin ne l'a pas
+  // envoyé : il n'est écrit sur la commande qu'à ce moment) et l'avance reçue.
+  reservationMode: true,
+  advanceAmount: true,
+  baridiNumber: true,
+  baridiSharedAt: true,
+  advancePaidAt: true,
   subtotal: true,
   shippingFee: true,
   total: true,
@@ -453,6 +477,10 @@ export async function listAdminOrders(query: AdminOrderListQuery) {
         businessDate: true,
         pickupDate: true,
         pickupTime: true,
+        reservationMode: true,
+        advanceAmount: true,
+        baridiSharedAt: true,
+        advancePaidAt: true,
         fullName: true,
         phone: true,
         wilaya: true,
@@ -525,7 +553,7 @@ export async function changeOrderStatus(
     }
     // « Récupérée » encaisse de l'argent : jamais par un simple changement d'état.
     if (next === "picked_up") {
-      throw new AppError(409, "Validez le retrait avec son moyen de paiement");
+      throw new AppError(409, "Validez la réservation avec son moyen de paiement");
     }
     // « Encaissée » aussi : l'argent s'écrit avec son moyen de paiement (collectDelivery).
     if (next === "collected") {
@@ -578,14 +606,15 @@ export async function validatePickup(
     // Conditionnelle : un deuxième clic, ou l'expiration de minuit, a pu passer avant. Seul
     // l'appel qui fait passer la commande de « réservée » à « récupérée » encaisse.
     const { count } = await tx.order.updateMany({
-      where: { id, type: "pickup", status: "reserved", reservedUntil: { gt: now } },
+      // Une réservation illimitée n'a pas de date limite (reservedUntil null) : elle ne s'expire jamais.
+      where: { id, type: "pickup", status: "reserved", OR: [{ reservedUntil: { gt: now } }, { reservedUntil: null }] },
       data: { status: "picked_up" },
     });
     if (count !== 1) {
       const order = await tx.order.findUnique({ where: { id }, select: { type: true, status: true } });
       if (!order) throw new AppError(404, "Commande introuvable");
-      if (order.type !== "pickup") throw new AppError(409, "Cette commande n'est pas un retrait au magasin");
-      throw new AppError(409, `Ce retrait est déjà ${STATUS_LABELS[order.status]}`);
+      if (order.type !== "pickup") throw new AppError(409, "Cette commande n'est pas un réservation au magasin");
+      throw new AppError(409, `Cette réservation est déjà ${STATUS_LABELS[order.status]}`);
     }
     // Négocier AVANT de lire le total : l'argent encaissé est le prix accordé. La commande vient d'être
     // marquée « récupérée » mais rien n'est encore écrit dans le journal : c'est le seul moment où
@@ -593,11 +622,16 @@ export async function validatePickup(
     if (prices && prices.length > 0) {
       await negotiateOrderPrices(tx, id, prices, userId, ["reserved", "picked_up"]);
     }
-    const order = await tx.order.findUniqueOrThrow({ where: { id }, select: { total: true } });
+    const order = await tx.order.findUniqueOrThrow({
+      where: { id },
+      select: { total: true, advanceAmount: true, advancePaidAt: true },
+    });
+    // L'avance BaridiMob reçue plus tôt est déjà dans l'argent : le client ne paie que le reste.
+    const alreadyPaid = order.advancePaidAt ? (order.advanceAmount ?? 0) : 0;
     await tx.moneyMovement.create({
       data: {
         businessDate: new Date(`${algiersDate(now)}T00:00:00Z`),
-        amount: order.total,
+        amount: order.total - alreadyPaid,
         method,
         kind: "pickup",
         orderType: "pickup",
@@ -679,4 +713,75 @@ export async function collectDelivery(id: number, method: PaymentMethod, userId:
     });
     return { id, status: "collected" as const, allowedTransitions: TRANSITIONS.collected };
   });
+}
+
+// La réservation illimitée avec avance BaridiMob (18/11). Le client a commandé, le magasin l'a appelé : le
+// bouton « Envoyer le numéro BaridiMob » copie le numéro des réglages SUR la commande (si l'admin le change
+// ensuite, ce client garde celui qu'on lui a donné) et le rend visible dans son suivi. Conditionnelle : un
+// deuxième clic, ou un autre onglet, ne l'envoie pas deux fois.
+export async function shareBaridiNumber(id: number, now: Date = new Date()) {
+  return prisma.$transaction(async (tx) => {
+    const { baridiNumber } = await getReservationSettings(tx);
+    if (baridiNumber.trim() === "") {
+      throw new AppError(409, "Renseignez d'abord le numéro BaridiMob dans Réglages");
+    }
+    const { count } = await tx.order.updateMany({
+      where: { id, type: "pickup", status: "reserved", reservationMode: "unlimited", baridiSharedAt: null },
+      data: { baridiNumber, baridiSharedAt: now },
+    });
+    if (count !== 1) {
+      await explainNotUnlimited(tx, id, "Le numéro BaridiMob a déjà été envoyé à ce client");
+    }
+    return { id, baridiNumber, baridiSharedAt: now };
+  });
+}
+
+// L'avance reçue (18/11) : le magasin a vu le virement. La réservation reste « réservée » (elle passe « en cours »
+// dans la liste) et l'avance entre dans l'argent du jour en BaridiMob, hors du tiroir. Pas besoin de journée de
+// caisse ouverte : comme l'argent d'une livraison, ce n'est pas de l'argent liquide du tiroir. Une seule fois.
+export async function receiveAdvance(id: number, userId: number, now: Date = new Date()) {
+  return prisma.$transaction(async (tx) => {
+    const { count } = await tx.order.updateMany({
+      where: {
+        id,
+        type: "pickup",
+        status: "reserved",
+        reservationMode: "unlimited",
+        baridiSharedAt: { not: null },
+        advancePaidAt: null,
+      },
+      data: { advancePaidAt: now },
+    });
+    if (count !== 1) {
+      await explainNotUnlimited(tx, id, "L'avance de cette réservation est déjà reçue, ou le numéro BaridiMob n'a pas encore été envoyé");
+    }
+    const order = await tx.order.findUniqueOrThrow({ where: { id }, select: { advanceAmount: true } });
+    await tx.moneyMovement.create({
+      data: {
+        businessDate: new Date(`${algiersDate(now)}T00:00:00Z`),
+        amount: order.advanceAmount ?? 0,
+        method: "baridimob",
+        kind: "pickup",
+        orderType: "pickup",
+        orderId: id,
+        userId,
+        note: "Avance de la réservation",
+      },
+    });
+    return { id, advancePaidAt: now };
+  });
+}
+
+// Dit pourquoi la mise à jour conditionnelle n'a rien changé : commande inconnue, pas une réservation
+// illimitée, plus réservée, ou déjà faite (`already`).
+async function explainNotUnlimited(tx: Tx, id: number, already: string): Promise<never> {
+  const order = await tx.order.findUnique({ where: { id }, select: { type: true, status: true, reservationMode: true } });
+  if (!order) throw new AppError(404, "Commande introuvable");
+  if (order.type !== "pickup" || order.reservationMode !== "unlimited") {
+    throw new AppError(409, "Cette commande n'est pas une réservation illimitée");
+  }
+  if (order.status !== "reserved") {
+    throw new AppError(409, `Cette réservation est ${STATUS_LABELS[order.status]}`);
+  }
+  throw new AppError(409, already);
 }

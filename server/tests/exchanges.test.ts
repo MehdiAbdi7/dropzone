@@ -343,3 +343,54 @@ describe("L'échange dans l'historique", () => {
     expect(history.days[0].cashDay).toMatchObject({ gap: 0, closed: true });
   });
 });
+
+// Modifier une reprise avant sa mise en vente (18/11) : le téléphone a été remis en état (batterie neuve), la fiche
+// doit le dire, et ce que la remise en état a coûté s'ajoute au prix d'achat de l'affaire.
+describe("PATCH /admin/trade-ins/:id", () => {
+  const makeExchange = async () => {
+    const { agent } = await counter();
+    await agent.post("/admin/exchanges").send(exchange()).expect(201);
+    return agent;
+  };
+  const sheetOf = (over: Record<string, unknown> = {}) => {
+    const { deviceModelId: _model, price: _price, ...sheet } = tradeIn();
+    return { ...sheet, repairCost: 0, ...over };
+  };
+
+  it("change la fiche (batterie remplacée) et les frais, sans toucher au prix de reprise", async () => {
+    const agent = await makeExchange();
+    const [pending] = (await agent.get("/admin/trade-ins")).body.data;
+    const response = await agent
+      .patch(`/admin/trade-ins/${pending.id}`)
+      .send(sheetOf({ batteryHealth: 100, replacedParts: ["Batterie"], compatibleParts: ["Batterie"], repairCost: 8_000 }));
+    expect(response.status).toBe(200);
+    const saved = await prisma.tradeIn.findUniqueOrThrow({ where: { id: pending.id } });
+    expect(saved).toMatchObject({ price: 150_000, repairCost: 8_000 });
+    expect(saved.sheet).toMatchObject({ batteryHealth: 100, replacedParts: ["Batterie"], compatibleParts: ["Batterie"] });
+    const [after] = (await agent.get("/admin/trade-ins")).body.data;
+    expect(after).toMatchObject({ repairCost: 8_000, price: 150_000 });
+  });
+
+  it("la mise en vente prend la fiche modifiée, et le prix d'achat = reprise + remise en état", async () => {
+    const agent = await makeExchange();
+    const [pending] = (await agent.get("/admin/trade-ins")).body.data;
+    await agent
+      .patch(`/admin/trade-ins/${pending.id}`)
+      .send(sheetOf({ batteryHealth: 100, replacedParts: ["Batterie"], compatibleParts: [], repairCost: 8_000 }))
+      .expect(200);
+    await agent.post(`/admin/trade-ins/${pending.id}/publish`).send({ price: 175_000 }).expect(201);
+    const variant = await prisma.productVariant.findFirstOrThrow({ where: { sku: `REP-${pending.id}` } });
+    expect(variant).toMatchObject({ batteryHealth: 100, purchasePrice: 158_000, price: 175_000 });
+  });
+
+  it("refuse une reprise déjà en vente, une reprise inconnue et une fiche incohérente", async () => {
+    const agent = await makeExchange();
+    const [pending] = (await agent.get("/admin/trade-ins")).body.data;
+    expect((await agent.patch("/admin/trade-ins/99999").send(sheetOf())).status).toBe(404);
+    // Une pièce changée dont l'origine n'est pas dite : même règle qu'à l'échange.
+    expect((await agent.patch(`/admin/trade-ins/${pending.id}`).send(sheetOf({ replacedParts: ["Batterie"], compatibleParts: ["Écran"] }))).status).toBe(400);
+    expect((await agent.patch(`/admin/trade-ins/${pending.id}`).send(sheetOf({ repairCost: -5 }))).status).toBe(400);
+    await agent.post(`/admin/trade-ins/${pending.id}/publish`).send({ price: 175_000 }).expect(201);
+    expect((await agent.patch(`/admin/trade-ins/${pending.id}`).send(sheetOf())).status).toBe(409);
+  });
+});

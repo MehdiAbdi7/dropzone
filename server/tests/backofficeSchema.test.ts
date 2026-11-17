@@ -43,7 +43,9 @@ describe("reprise des commandes existantes", () => {
 describe("réglages du magasin", () => {
   it("a une seule ligne, avec les horaires de départ", async () => {
     const settings = await prisma.storeSettings.findMany();
-    expect(settings).toEqual([{ id: 1, openingTime: "09:00", closingTime: "20:00", closedDays: [] }]);
+    expect(settings).toEqual([
+      { id: 1, openingTime: "09:00", closingTime: "20:00", closedDays: [], reservationAdvance: 0, baridiNumber: "" },
+    ]);
   });
 });
 

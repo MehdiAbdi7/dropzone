@@ -11,6 +11,8 @@ import {
   listMyOrders,
   previewCart,
   trackOrder,
+  receiveAdvance,
+  shareBaridiNumber,
   validatePickup,
 } from "./order.service.js";
 import { deleteOrder, editOrder } from "./orderEdit.service.js";
@@ -75,4 +77,12 @@ export async function patchStatus(req: Request, res: Response) {
   res.json({
     data: await changeOrderStatus(Number(req.params.id), req.body.status, res.locals.user!.id, req.body.prices),
   });
+}
+
+export async function postBaridiNumber(req: Request, res: Response) {
+  res.json({ data: await shareBaridiNumber(Number(req.params.id)) });
+}
+
+export async function postAdvanceReceived(req: Request, res: Response) {
+  res.json({ data: await receiveAdvance(Number(req.params.id), res.locals.user!.id) });
 }

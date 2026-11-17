@@ -39,6 +39,8 @@ export const ACCESS_RULES: AccessRule[] = [
   { method: "GET", path: "/orders/:id", min: "order_manager" },
   { method: "PATCH", path: "/orders/:id/status", min: "order_manager" },
   { method: "POST", path: "/orders/:id/pickup", min: "order_manager" },
+  { method: "POST", path: "/orders/:id/baridi-number", min: "order_manager" },
+  { method: "POST", path: "/orders/:id/advance-received", min: "order_manager" },
   { method: "POST", path: "/orders/:id/collect", min: "order_manager" },
   { method: "POST", path: "/orders/:id/return", min: "order_manager" },
   { method: "GET", path: "/deliveries/summary", min: "order_manager" },

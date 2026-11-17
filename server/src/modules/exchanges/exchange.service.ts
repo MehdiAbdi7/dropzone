@@ -8,7 +8,7 @@ import { issueDailyNumber } from "../orders/dailyNumber.js";
 import { takeStock, variantCosts } from "../orders/order.service.js";
 import { MAX_TOTAL, priceTicket, ticketItems } from "../orders/ticket.service.js";
 import { refreshMinPrice } from "../products/product.service.js";
-import type { ExchangeInput } from "./exchange.schema.js";
+import type { ExchangeInput, UpdateTradeInInput } from "./exchange.schema.js";
 
 // Un échange (lot 5, 15/11) : le client rend un téléphone (la reprise, au prix que le magasin choisit
 // à la main) et en prend un autre. Tout se fait dans UNE transaction, sur le modèle de la vente au
@@ -91,7 +91,7 @@ export async function listTradeIns(status: "pending" | "listed") {
     where: { listedAt: status === "listed" ? { not: null } : null },
     orderBy: { id: status === "listed" ? "desc" : "asc" },
     include: {
-      deviceModel: { select: { id: true, brand: true, name: true } },
+      deviceModel: { select: { id: true, brand: true, name: true, kind: true } },
       order: { select: { number: true, dailyNumber: true, fullName: true, phone: true, businessDate: true } },
     },
   });
@@ -106,6 +106,7 @@ export async function listTradeIns(status: "pending" | "listed") {
     deviceModel: row.deviceModel,
     color: row.color,
     price: row.price,
+    repairCost: row.repairCost,
     sheet: row.sheet,
     createdAt: row.createdAt,
     listedAt: row.listedAt,
@@ -117,6 +118,22 @@ export async function listTradeIns(status: "pending" | "listed") {
 // la fiche de son modèle (même fonction que l'ajout d'un exemplaire depuis la page d'une couleur). Le
 // prix de reprise devient son prix d'achat : le bénéfice de sa revente en découle. Dans UNE
 // transaction, la ligne verrouillée : deux clics ne créent jamais deux affaires.
+export async function updateTradeIn(id: number, input: UpdateTradeInInput) {
+  return prisma.$transaction(async (tx) => {
+    const [row] = await tx.$queryRaw<{ listed_at: Date | null }[]>`SELECT listed_at FROM trade_ins WHERE id = ${id} FOR UPDATE`;
+    if (!row) {
+      throw new AppError(404, "Reprise introuvable");
+    }
+    // Une reprise déjà en vente est devenue une affaire du catalogue : on la modifie là-bas.
+    if (row.listed_at) {
+      throw new AppError(409, "Cette reprise est déjà en vente : modifiez l'affaire dans le Catalogue");
+    }
+    const { color, repairCost, ...sheet } = input;
+    await tx.tradeIn.update({ where: { id }, data: { color, repairCost, sheet } });
+    return { id };
+  });
+}
+
 export async function publishTradeIn(id: number, price: number, now: Date = new Date()) {
   return prisma.$transaction(async (tx) => {
     const [row] = await tx.$queryRaw<{ listed_at: Date | null }[]>`SELECT listed_at FROM trade_ins WHERE id = ${id} FOR UPDATE`;
@@ -136,7 +153,8 @@ export async function publishTradeIn(id: number, price: number, now: Date = new 
       color: tradeIn.color,
       condition: "refurbished",
       price,
-      purchasePrice: tradeIn.price,
+      // Reprise + remise en état : ce que l'affaire a réellement coûté au magasin.
+      purchasePrice: tradeIn.price + tradeIn.repairCost,
       stock: 1,
     });
     const { productId, variantId } = await addUnit(tradeIn.deviceModelId, unit, tx);

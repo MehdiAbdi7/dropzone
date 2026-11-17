@@ -47,6 +47,7 @@ describe("matrice des droits du back-office", () => {
     ["DELETE", "/orders/1"],
     ["POST", "/cash/reopen"],
     ["GET", "/trade-ins"],
+    ["PATCH", "/trade-ins/1"],
     ["GET", "/accounts"],
     ["GET", "/products"],
   ])("%s %s est réservée à l'admin", async (method, path) => {

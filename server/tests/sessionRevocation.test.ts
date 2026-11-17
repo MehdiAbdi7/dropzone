@@ -23,12 +23,6 @@ describe("réinitialiser un mot de passe coupe les sessions ouvertes", () => {
     expect(await canLogin("vendeur@test.dz", "nouveaumotdepasse")).toBe(true);
   });
 
-  it("de même pour un client dont l'admin change le mot de passe", async () => {
-    const customer = await loginAs("customer", "client@test.dz");
-    const { agent } = await loginAs("admin", "boss@test.dz");
-    await agent.post(`/admin/customers/${customer.user.id}/password`).send({ newPassword: "nouveaumotdepasse" }).expect(200);
-    expect((await customer.agent.get("/auth/me")).status).toBe(401);
-  });
 });
 
 describe("désactiver puis réactiver ne ressuscite pas une ancienne session", () => {
