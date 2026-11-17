@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import request from "supertest";
 import app from "../src/app.js";
 import { prisma } from "../src/config/db.js";
+import type { Role } from "../src/generated/prisma/client.js";
 
 export const PASSWORD = "motdepasse123";
 
@@ -169,7 +170,7 @@ export async function createCatalog() {
   };
 }
 
-export async function createUser(role: "customer" | "admin" = "customer", email = `${role}@test.dz`) {
+export async function createUser(role: Role = "customer", email = `${role}@test.dz`) {
   return prisma.user.create({
     data: {
       firstName: "Amine",
@@ -183,7 +184,7 @@ export async function createUser(role: "customer" | "admin" = "customer", email 
 }
 
 // Un « navigateur » Supertest qui garde le cookie de connexion entre les requêtes.
-export async function loginAs(role: "customer" | "admin" = "customer", email?: string) {
+export async function loginAs(role: Role = "customer", email?: string) {
   const user = await createUser(role, email);
   const agent = request.agent(app);
   await agent.post("/auth/login").send({ email: user.email, password: PASSWORD }).expect(200);

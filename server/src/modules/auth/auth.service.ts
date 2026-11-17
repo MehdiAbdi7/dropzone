@@ -79,7 +79,8 @@ export async function login(email: string, password: string) {
     omit: { passwordHash: false },
   });
   const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
-  if (!user || !valid) {
+  // Un compte désactivé répond comme un mauvais mot de passe : rien n'indique qu'il existe.
+  if (!user || !valid || user.disabled) {
     // Le même message que l'email ou le mot de passe soit faux.
     throw new AppError(401, WRONG_CREDENTIALS);
   }

@@ -15,10 +15,15 @@ async function readUser(req: Request) {
   if (!payload) {
     return null;
   }
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: payload.id },
-    select: { id: true, role: true },
+    select: { id: true, role: true, disabled: true },
   });
+  // Un compte désactivé (lot 7) est traité comme un compte supprimé : refusé dès la requête suivante.
+  if (!user || user.disabled) {
+    return null;
+  }
+  return { id: user.id, role: user.role };
 }
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
