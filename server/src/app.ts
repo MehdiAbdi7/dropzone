@@ -5,7 +5,9 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
 import { env } from "./config/env.js";
-import { requireAuth, requireRole } from "./middlewares/auth.js";
+import { adminAccess } from "./middlewares/access.js";
+import { requireAuth } from "./middlewares/auth.js";
+import { accountAdminRouter } from "./modules/accounts/account.routes.js";
 import { accessoryAdminRouter, accessoryRouter } from "./modules/accessories/accessory.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { brandAdminRouter } from "./modules/brands/brand.routes.js";
@@ -55,9 +57,10 @@ app.use("/auth", authRouter);
 app.use("/stage", stageRouter);
 app.use("/store", storeRouter);
 
-// Tout le back-office est protégé en une ligne : impossible d'oublier la
-// protection sur une nouvelle route admin.
-const adminRouter = express.Router();
+// Tout le back-office est protégé en une ligne : impossible d'oublier la protection sur une nouvelle
+// route. `adminAccess` lit la table de middlewares/access.ts : un rôle plus bas que celui d'une route est
+// refusé, et une route absente de la table est pour l'admin seulement (lot 7).
+export const adminRouter = express.Router();
 adminRouter.use(
   statsAdminRouter,
   productAdminRouter,
@@ -70,6 +73,7 @@ adminRouter.use(
   choiceAdminRouter,
   orderAdminRouter,
   userAdminRouter,
+  accountAdminRouter,
   stageAdminRouter,
   storeAdminRouter,
   cashAdminRouter,
@@ -78,7 +82,7 @@ adminRouter.use(
   exchangeAdminRouter,
   invoiceAdminRouter,
 );
-app.use("/admin", requireAuth, requireRole("admin"), adminRouter);
+app.use("/admin", requireAuth, adminAccess, adminRouter);
 
 app.use(notFound);
 app.use(errorHandler);

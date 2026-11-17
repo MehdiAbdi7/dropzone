@@ -1,4 +1,5 @@
 import { prisma } from "../../config/db.js";
+import type { Role } from "../../generated/prisma/client.js";
 import { AppError } from "../../utils/AppError.js";
 import { algiersDate } from "../../utils/algiersTime.js";
 import { priceReduction } from "../orders/negotiation.js";
@@ -26,7 +27,7 @@ const PAYMENT_KINDS = ["sale", "pickup", "delivery", "exchange"] as const;
 // rendent tel quel : c'est ce qui rend la suite continue et stable. Tout se fait dans une transaction, sur
 // la commande verrouillée : deux ouvertures simultanées ne consomment jamais deux numéros. La facture se
 // remplit seule d'après la commande ; elle ne montre jamais le prix d'achat ni le bénéfice.
-export async function issueInvoice(id: number, now: Date = new Date()) {
+export async function issueInvoice(id: number, now: Date = new Date(), role?: Role) {
   return prisma.$transaction(async (tx) => {
     await lockOrder(tx, id);
     const order = await tx.order.findUniqueOrThrow({
@@ -36,6 +37,11 @@ export async function issueInvoice(id: number, now: Date = new Date()) {
         tradeIn: { include: { deviceModel: { select: { brand: true, name: true } } } },
       },
     });
+    // Un vendeur n'ouvre que la facture d'une vente ou d'un échange du comptoir (lot 7) : la commande en
+    // ligne d'un client porte son nom et son adresse. Refusé avant de prendre un numéro.
+    if (role === "seller" && (order.type === "delivery" || order.type === "pickup")) {
+      throw new AppError(403, "Accès refusé");
+    }
     const blocker = invoiceBlocker(order);
     if (blocker) {
       throw new AppError(409, blocker);

@@ -2,15 +2,16 @@ import type { Request, Response } from "express";
 import { changeEmail, changePassword, getProfile, login, register, updateProfile } from "./auth.service.js";
 import { clearTokenCookie, setTokenCookie } from "./token.js";
 
+// Le numéro de version des sessions va dans le cookie, jamais dans la réponse.
 export async function postRegister(req: Request, res: Response) {
-  const user = await register(req.body);
-  setTokenCookie(res, user.id, user.role);
+  const { tokenVersion, ...user } = await register(req.body);
+  setTokenCookie(res, user.id, user.role, tokenVersion);
   res.status(201).json({ data: user });
 }
 
 export async function postLogin(req: Request, res: Response) {
-  const user = await login(req.body.email, req.body.password);
-  setTokenCookie(res, user.id, user.role);
+  const { tokenVersion, ...user } = await login(req.body.email, req.body.password);
+  setTokenCookie(res, user.id, user.role, tokenVersion);
   res.json({ data: user });
 }
 

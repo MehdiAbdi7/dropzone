@@ -48,5 +48,9 @@ export async function resetCustomerPassword(id: number, newPassword: string) {
   if (!customer) {
     throw new AppError(404, "Client introuvable");
   }
-  await prisma.user.update({ where: { id }, data: { passwordHash: await bcrypt.hash(newPassword, 10) } });
+  // Les sessions déjà ouvertes avec l'ancien mot de passe sont coupées (lot 7).
+  await prisma.user.update({
+    where: { id },
+    data: { passwordHash: await bcrypt.hash(newPassword, 10), tokenVersion: { increment: 1 } },
+  });
 }
