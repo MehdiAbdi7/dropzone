@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { STATUS_LABELS } from "@/config/catalog";
 import { useTradeInsQuery } from "@/features/admin/api/exchangeApi";
 import { useStatsQuery } from "@/features/admin/api/ordersApi";
+import EditDialog from "@/features/admin/products/EditDialog";
 import { ordersHref } from "@/features/admin/navConfig";
 import { formatPrice } from "@/lib/format";
 import type { OrderStatus } from "@/types/api";
@@ -14,6 +16,7 @@ const STATUSES: OrderStatus[] = ["pending", "confirmed", "shipped", "delivered",
 // attendus) au lieu du « stock faible » : avec les affaires, beaucoup d'articles sont toujours à
 // 0, la liste ne disait rien.
 export default function DashboardPage() {
+  const [open, setOpen] = useState<"pickups" | "status" | null>(null);
   const { data: stats, isError } = useStatsQuery(undefined, { pollingInterval: 60_000 });
   // Les téléphones repris en échange qui attendent un prix de revente (lot 5).
   const { data: tradeIns } = useTradeInsQuery("pending", { pollingInterval: 60_000 });
@@ -31,10 +34,10 @@ export default function DashboardPage() {
   // toutes les pages) et la pastille rouge de « Commandes » le font déjà. Le détail par statut reste
   // plus bas.
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl">Tableau de bord</h1>
+    <div className="space-y-4">
+      <h1 className="text-2xl sm:text-3xl">Tableau de bord</h1>
 
-      <section aria-labelledby="journee" className="card flex flex-wrap items-center justify-between gap-4 p-5">
+      <section aria-labelledby="journee" className="card flex flex-wrap items-center justify-between gap-3 p-4">
         <div>
           <h2 id="journee" className="text-lg">
             Journée de caisse
@@ -78,23 +81,41 @@ export default function DashboardPage() {
           { label: "Ventes du mois", value: formatPrice(stats.revenueMonth), hint: "hors annulations et réservations" },
           { label: "Affaires en stock", value: String(stats.refurbishedAvailable), hint: `${stats.refurbishedSold} vendues depuis le début` },
         ].map((item) => (
-          <div key={item.label} className="card p-5">
+          <div key={item.label} className="card p-3 sm:p-4">
             <dt className="text-sm text-ink-muted">{item.label}</dt>
-            <dd className="mt-1 font-display text-2xl font-bold">{item.value}</dd>
+            <dd className="mt-1 font-display text-xl font-bold sm:text-2xl">{item.value}</dd>
             <dd className="text-xs text-ink-muted">{item.hint}</dd>
           </div>
         ))}
       </dl>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <section aria-labelledby="retraits" className="card p-5">
-          <h2 id="retraits" className="text-lg">
-            Retraits attendus aujourd&apos;hui
-          </h2>
+      {/* Les listes sont derrière des boutons (refonte du 18/11) : la page tient sur un écran. */}
+      <div role="group" aria-label="Détails du jour" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => setOpen("pickups")}
+          className="card flex items-center justify-between gap-2 p-4 text-left font-display font-bold transition-[border-color] hover:border-blue-ink"
+        >
+          <span>Réservations attendues aujourd&apos;hui</span>
+          <span className="rounded-full bg-blue-soft px-2.5 py-0.5 text-sm tabular-nums">{stats.pickupsToday.length}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen("status")}
+          className="card flex items-center justify-between gap-2 p-4 text-left font-display font-bold transition-[border-color] hover:border-blue-ink"
+        >
+          <span>Commandes par statut</span>
+          <span aria-hidden="true" className="text-ink-muted">
+            ›
+          </span>
+        </button>
+      </div>
+
+      <EditDialog open={open === "pickups"} title="Réservations attendues aujourd'hui" onClose={() => setOpen(null)}>
           {stats.pickupsToday.length === 0 ? (
-            <p className="mt-3 text-sm text-ink-muted">Aucun client n&apos;a réservé pour aujourd&apos;hui.</p>
+            <p className="text-sm text-ink-muted">Aucun client n&apos;a réservé pour aujourd&apos;hui.</p>
           ) : (
-            <ul className="mt-3 divide-y divide-line text-sm">
+            <ul className="card divide-y divide-line text-sm">
               {stats.pickupsToday.map((pickup) => (
                 <li key={pickup.id}>
                   <Link
@@ -111,13 +132,9 @@ export default function DashboardPage() {
               ))}
             </ul>
           )}
-        </section>
-
-        <section aria-labelledby="by-status" className="card p-5">
-          <h2 id="by-status" className="text-lg">
-            Commandes par statut
-          </h2>
-          <ul className="mt-3 divide-y divide-line text-sm">
+      </EditDialog>
+      <EditDialog open={open === "status"} title="Commandes par statut" size="sm" onClose={() => setOpen(null)}>
+          <ul className="card divide-y divide-line text-sm">
             {STATUSES.map((status) => (
               <li key={status}>
                 <Link href={ordersHref(status)} className="flex justify-between py-2 hover:text-blue-ink">
@@ -127,8 +144,7 @@ export default function DashboardPage() {
               </li>
             ))}
           </ul>
-        </section>
-      </div>
+      </EditDialog>
     </div>
   );
 }

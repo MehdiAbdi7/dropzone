@@ -16,7 +16,13 @@ describe("receptionLabel", () => {
   it("un retrait dit son créneau", () => {
     expect(
       receptionLabel({ type: "pickup", wilaya: null, pickupDate: "2026-11-15T00:00:00.000Z", pickupTime: "15:30" }),
-    ).toBe("Retrait · dimanche 15 novembre à 15h30");
+    ).toBe("Réservation · dimanche 15 novembre à 15h30");
+  });
+
+  it("une réservation illimitée dit son avance, sans date", () => {
+    expect(
+      receptionLabel({ type: "pickup", wilaya: null, pickupDate: null, pickupTime: null, reservationMode: "unlimited", advanceAmount: 20_000 }),
+    ).toMatch(/^Réservation illimitée · avance 20.000/);
   });
 
   it("une vente au magasin le dit simplement", () => {

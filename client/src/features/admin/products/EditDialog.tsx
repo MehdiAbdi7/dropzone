@@ -12,6 +12,7 @@ export default function EditDialog({
   onClose,
   toolbar,
   closeLabel = "Terminé",
+  size = "lg",
   children,
 }: {
   open: boolean;
@@ -21,6 +22,8 @@ export default function EditDialog({
   toolbar?: ReactNode;
   // « Annuler » quand la fenêtre a son propre bouton d'envoi (ajout d'un exemplaire).
   closeLabel?: string;
+  // « sm » : un petit formulaire (client) ; « lg » : une liste ou une fiche large (recherche, reprise).
+  size?: "sm" | "lg";
   children: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -46,7 +49,7 @@ export default function EditDialog({
       onClose={onClose}
       onKeyDown={onKeyDown}
       aria-label={title}
-      className="m-auto max-h-[calc(100dvh-2rem)] w-[min(64rem,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-line bg-surface p-0 text-ink backdrop:bg-black/70"
+      className={`m-auto max-h-[calc(100dvh-2rem)] ${size === "sm" ? "w-[min(34rem,calc(100vw-1.5rem))]" : "w-[min(64rem,calc(100vw-1.5rem))]"} overflow-y-auto rounded-xl border border-line bg-surface p-0 text-ink backdrop:bg-black/70`}
     >
       <div className="sticky top-0 z-10 border-b border-line border-l-4 border-l-blue bg-surface">
         <div className="flex items-center justify-between gap-3 px-5 py-3">

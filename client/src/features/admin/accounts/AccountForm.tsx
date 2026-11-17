@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import EditDialog from "@/features/admin/products/EditDialog";
 import { useCreateAccountMutation } from "@/features/admin/api/accountsApi";
 import { generatePassword } from "@/features/admin/customers/resetPassword";
 import { errorMessage } from "@/lib/errors";
@@ -45,16 +46,8 @@ export default function AccountForm() {
     }
   }
 
-  if (!open) {
-    return (
-      <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
-        Nouveau compte
-      </button>
-    );
-  }
-
-  if (created) {
-    return (
+  // Le formulaire est dans une fenêtre (refonte du 18/11) : la page ne montre que le bouton.
+  const body = created ? (
       <div role="status" className="card space-y-3 border-blue-ink p-5">
         <h2 className="text-xl">Compte créé</h2>
         <p>
@@ -69,12 +62,8 @@ export default function AccountForm() {
           Fermer
         </button>
       </div>
-    );
-  }
-
-  return (
-    <form onSubmit={submit} noValidate className="card space-y-4 p-5" aria-label="Nouveau compte">
-      <h2 className="text-xl">Nouveau compte</h2>
+  ) : (
+    <form onSubmit={submit} noValidate className="space-y-4" aria-label="Nouveau compte">
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm font-semibold">
           <span className="label">Prénom</span>
@@ -135,5 +124,16 @@ export default function AccountForm() {
         </button>
       </div>
     </form>
+  );
+
+  return (
+    <>
+      <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
+        Nouveau compte
+      </button>
+      <EditDialog open={open} title={created ? "Compte créé" : "Nouveau compte"} size="sm" onClose={close} closeLabel="Fermer">
+        {body}
+      </EditDialog>
+    </>
   );
 }

@@ -4,7 +4,7 @@ import { formatDate, formatPrice } from "@/lib/format";
 
 const KIND_LABELS: Record<string, string> = {
   sale: "Vente au magasin",
-  pickup: "Retrait payé",
+  pickup: "Réservation payée",
   delivery: "Livraison encaissée",
   exchange: "Échange",
   correction: "Correction",

@@ -10,7 +10,7 @@ import { linesConfirmed, selectCartRequest } from "./cartSlice";
 //
 // À chaque réponse, les descriptions des lignes sont recopiées dans le panier du navigateur
 // (sans les prix), pour que la prochaine visite affiche le panier sans attendre le serveur.
-// `fulfillment` : un retrait au magasin n'a pas de frais de livraison (14/11).
+// `fulfillment` : une réservation au magasin n'a pas de frais de livraison (14/11).
 export function useCartPreview({ skip, fulfillment = "delivery" }: { skip: boolean; fulfillment?: Fulfillment }) {
   const dispatch = useAppDispatch();
   const request = useAppSelector(selectCartRequest);

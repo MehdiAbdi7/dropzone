@@ -3,6 +3,7 @@ import { formatPrice } from "@/lib/format";
 import {
   addToTicket,
   buildSaleBody,
+  clientReady,
   pricesToSend,
   reductionText,
   syncCatalogPrices,
@@ -195,5 +196,16 @@ describe("pricesToSend", () => {
   it("n'envoie rien quand rien n'a changé, ni un prix encore vide", () => {
     expect(pricesToSend([{ id: 1, unitPrice: 245_000, originalPrice: 245_000 }])).toEqual([]);
     expect(pricesToSend([{ id: 1, unitPrice: Number.NaN, originalPrice: 245_000 }])).toEqual([]);
+  });
+});
+
+describe("clientReady", () => {
+  it("est vrai avec un nom d'au moins 3 caractères et un vrai numéro", () => {
+    expect(clientReady({ fullName: "Sami Benali", phone: "0555 12 34 56" })).toBe(true);
+  });
+  it("est faux si le nom est trop court ou le numéro invalide", () => {
+    expect(clientReady({ fullName: "Sa", phone: "0555123456" })).toBe(false);
+    expect(clientReady({ fullName: "Sami Benali", phone: "12345" })).toBe(false);
+    expect(clientReady({ fullName: "", phone: "" })).toBe(false);
   });
 });

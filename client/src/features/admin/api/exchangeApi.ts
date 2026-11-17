@@ -1,7 +1,8 @@
 import { api } from "@/lib/api";
-import type { OrderStatus } from "@/types/api";
+import type { OrderStatus, ProductKind } from "@/types/api";
 import { data } from "./shared";
 import type { buildExchangeBody } from "../exchange/exchange";
+import type { buildTradeInUpdateBody } from "../exchange/tradeInView";
 
 // Les échanges (lot 5) : valider un échange au comptoir, lister les reprises, les mettre en vente.
 
@@ -28,9 +29,11 @@ export type TradeInRow = {
   businessDate: string;
   customerName: string;
   customerPhone: string;
-  deviceModel: { id: number; brand: string; name: string };
+  deviceModel: { id: number; brand: string; name: string; kind: ProductKind };
   color: string;
   price: number;
+  // Ce que la remise en état a coûté (batterie neuve…) : il s'ajoute au prix d'achat de l'affaire (18/11).
+  repairCost: number;
   // La fiche d'état saisie à l'échange (note, batterie, pièces, défauts, boîte, garantie, origine…).
   sheet: {
     options?: Record<string, string>;
@@ -66,6 +69,12 @@ const exchangeApi = api.injectEndpoints({
       transformResponse: data<TradeInRow[]>,
       providesTags: ["TradeIns"],
     }),
+    // Modifier la fiche d'une reprise avant sa mise en vente : batterie remplacée, pièces, défauts, frais.
+    updateTradeIn: build.mutation<{ id: number }, { id: number; body: ReturnType<typeof buildTradeInUpdateBody> }>({
+      query: ({ id, body }) => ({ url: `/admin/trade-ins/${id}`, method: "PATCH", body }),
+      transformResponse: data<{ id: number }>,
+      invalidatesTags: ["TradeIns"],
+    }),
     // Mettre en vente : le prix de revente, fixé par l'admin. L'affaire entre dans la fiche du modèle.
     publishTradeIn: build.mutation<{ id: number; productId: number; variantId: number; sku: string }, { id: number; price: number }>({
       query: ({ id, price }) => ({ url: `/admin/trade-ins/${id}/publish`, method: "POST", body: { price } }),
@@ -75,4 +84,4 @@ const exchangeApi = api.injectEndpoints({
   }),
 });
 
-export const { useCreateExchangeMutation, useTradeInsQuery, usePublishTradeInMutation } = exchangeApi;
+export const { useCreateExchangeMutation, useTradeInsQuery, usePublishTradeInMutation, useUpdateTradeInMutation } = exchangeApi;

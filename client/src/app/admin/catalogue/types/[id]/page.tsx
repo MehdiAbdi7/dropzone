@@ -9,6 +9,7 @@ import ProductImage from "@/components/ui/ProductImage";
 import { useAdminProductsQuery, useDeleteProductMutation } from "@/features/admin/api/productsApi";
 import { useBrandsQuery, useCatalogQuery, useMakersQuery } from "@/features/admin/api/catalogApi";
 import MakersEditor from "@/features/admin/MakersEditor";
+import EditDialog from "@/features/admin/products/EditDialog";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import { kindIcon } from "@/features/shop/colors";
 import { errorMessage } from "@/lib/errors";
@@ -28,6 +29,7 @@ export default function CatalogAccessoryTypePage() {
   const { data: page, isLoading, error } = useAdminProductsQuery({ brand: id, limit: 50, page: 1 });
   const [remove, removeState] = useDeleteProductMutation();
   const [removedName, setRemovedName] = useState<string | null>(null);
+  const [makersOpen, setMakersOpen] = useState(false);
 
   const type = brands?.find((brand) => brand.id === id);
   const category = categories?.find((item) => item.id === type?.categoryId);
@@ -175,16 +177,19 @@ export default function CatalogAccessoryTypePage() {
         </div>
       )}
 
-      <section id="marques" aria-labelledby="makers-title" className="card scroll-mt-6 space-y-3 p-5">
-        <h2 id="makers-title" className="text-xl">
+      {/* Créer et modifier les marques du type : un bouton, une fenêtre (refonte du 18/11). */}
+      <div id="marques" className="scroll-mt-6">
+        <button type="button" className="btn btn-secondary" onClick={() => setMakersOpen(true)}>
           Créer et modifier les marques
-        </h2>
+        </button>
+      </div>
+      <EditDialog open={makersOpen} title="Créer et modifier les marques" onClose={() => setMakersOpen(false)}>
         <p className="text-sm text-ink-muted">
           La Boutique montre d&apos;abord les marques du type (Apple, Samsung, Anker…), puis les affiches de leurs produits. Une marque
           sans produit publié n&apos;apparaît pas.
         </p>
         <MakersEditor typeId={type.id} typeName={type.name} />
-      </section>
+      </EditDialog>
     </div>
   );
 }

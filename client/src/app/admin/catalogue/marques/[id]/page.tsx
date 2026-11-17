@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { useCatalogBrandQuery, useCreateSeriesMutation, useSetSeriesModelsMutation, type AdminCatalogBrandPage } from "@/features/admin/api/catalogApi";
-import { AddTile } from "@/features/admin/catalog/CatalogTile";
+import EditDialog from "@/features/admin/products/EditDialog";
 import SeriesTile from "@/features/admin/catalog/SeriesTile";
 import { usePalette } from "@/features/admin/usePalette";
 import Breadcrumb from "@/features/shop/Breadcrumb";
@@ -30,6 +30,7 @@ function BrandView({ data }: { data: AdminCatalogBrandPage }) {
   const router = useRouter();
   const [create, createState] = useCreateSeriesMutation();
   const [name, setName] = useState("");
+  const [creating, setCreating] = useState(false);
   const palette = usePalette();
 
   async function onCreate(event: FormEvent) {
@@ -43,7 +44,7 @@ function BrandView({ data }: { data: AdminCatalogBrandPage }) {
   }
 
   return (
-    <div className="max-w-6xl space-y-6">
+    <div className="max-w-6xl space-y-4">
       <Breadcrumb
         items={[
           { label: "Catalogue", href: "/admin/catalogue" },
@@ -53,12 +54,17 @@ function BrandView({ data }: { data: AdminCatalogBrandPage }) {
       />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-3xl">{brand.name}</h1>
+          <h1 className="text-2xl sm:text-3xl">{brand.name}</h1>
           <p className="text-ink-muted">Les séries, de la plus récente à la plus ancienne, comme dans la Boutique.</p>
         </div>
-        <Link href={`/admin/catalogue/${brand.category.id}#marques`} className="btn btn-secondary btn-small">
-          Modifier la marque
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn btn-primary btn-small" onClick={() => setCreating(true)}>
+            Nouvelle série
+          </button>
+          <Link href={`/admin/catalogue/${brand.category.id}#marques`} className="btn btn-secondary btn-small">
+            Modifier la marque
+          </Link>
+        </div>
       </div>
 
       {unassigned.length > 0 ? <UnassignedAlert data={data} /> : null}
@@ -69,27 +75,26 @@ function BrandView({ data }: { data: AdminCatalogBrandPage }) {
             <SeriesTile series={one} palette={palette} />
           </li>
         ))}
-        <li>
-          <AddTile>
-            <form onSubmit={onCreate} className="space-y-3">
-              <label htmlFor="series-name" className="label">
-                + Nouvelle série
-              </label>
-              <input
-                id="series-name"
-                className="input"
-                placeholder="iPhone 19"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-              <button type="submit" className="btn btn-primary btn-small" disabled={createState.isLoading || name.trim().length < 1}>
-                Créer la série
-              </button>
-              {createState.error ? <p className="field-error">{errorMessage(createState.error)}</p> : null}
-            </form>
-          </AddTile>
-        </li>
       </ul>
+      {/* Créer une série : une fenêtre, pas une tuile dans la grille (refonte du 18/11). */}
+      <EditDialog open={creating} title="Nouvelle série" size="sm" onClose={() => setCreating(false)} closeLabel="Annuler">
+      <form onSubmit={onCreate} className="space-y-3">
+        <label htmlFor="series-name" className="label">
+          + Nouvelle série
+        </label>
+        <input
+          id="series-name"
+          className="input"
+          placeholder="iPhone 19"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+        <button type="submit" className="btn btn-primary btn-small" disabled={createState.isLoading || name.trim().length < 1}>
+          Créer la série
+        </button>
+        {createState.error ? <p className="field-error">{errorMessage(createState.error)}</p> : null}
+      </form>
+      </EditDialog>
     </div>
   );
 }

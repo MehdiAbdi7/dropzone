@@ -14,6 +14,7 @@ const values = {
   acceptLimitations: false,
   pickupDate: "2026-11-15",
   pickupTime: "15:30",
+  reservationMode: "two_days" as const,
 };
 const cart = { items: [{ sku: "IP-NEW-256", quantity: 1 }], cartHash: "a".repeat(64) };
 
@@ -34,5 +35,17 @@ describe("checkoutBody", () => {
   it("n'envoie pas une remarque vide", () => {
     expect(checkoutBody("pickup", values, cart)).not.toHaveProperty("note");
     expect(checkoutBody("pickup", { ...values, note: "Je passe vers 15h" }, cart).note).toBe("Je passe vers 15h");
+  });
+
+  // La réservation illimitée avec avance BaridiMob (18/11) : pas de jour ni d'heure.
+  it("une réservation illimitée n'envoie ni jour ni heure", () => {
+    const body = checkoutBody("pickup", { ...values, reservationMode: "unlimited" }, cart);
+    expect(body).toMatchObject({ fulfillment: "pickup", reservationMode: "unlimited" });
+    expect(body).not.toHaveProperty("pickupDate");
+    expect(body).not.toHaveProperty("pickupTime");
+  });
+
+  it("une réservation de deux jours le dit aussi", () => {
+    expect(checkoutBody("pickup", values, cart)).toMatchObject({ reservationMode: "two_days", pickupDate: "2026-11-15" });
   });
 });

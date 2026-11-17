@@ -1,3 +1,4 @@
+import { formatPrice } from "@/lib/format";
 import { pickupLabel } from "@/lib/pickupLabel";
 import type { OrderType } from "@/types/api";
 
@@ -15,9 +16,14 @@ export function receptionLabel(order: {
   wilaya: string | null;
   pickupDate: string | null;
   pickupTime: string | null;
+  reservationMode?: "two_days" | "unlimited" | null;
+  advanceAmount?: number | null;
 }): string {
+  if (order.type === "pickup" && order.reservationMode === "unlimited") {
+    return `Réservation illimitée · avance ${formatPrice(order.advanceAmount ?? 0)}`;
+  }
   if (order.type === "pickup" && order.pickupDate && order.pickupTime) {
-    return `Retrait · ${pickupLabel(order.pickupDate.slice(0, 10), order.pickupTime)}`;
+    return `Réservation · ${pickupLabel(order.pickupDate.slice(0, 10), order.pickupTime)}`;
   }
   if (order.type === "in_store") return "Vente au magasin";
   if (order.type === "exchange") return "Échange";

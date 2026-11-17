@@ -26,8 +26,9 @@ export default function ConfirmationView({ number }: { number: string | undefine
   );
   const last = raw ? (JSON.parse(raw) as Partial<PlacedOrder>) : null;
   const mine = last && String(last.number) === number ? last : null;
-  // Un retrait au magasin (14/11) : le créneau et le paiement au magasin.
-  const pickup = mine?.type === "pickup" && mine.pickupDate && mine.pickupTime ? mine : null;
+  // Un réservation au magasin (14/11) : le créneau et le paiement au magasin.
+  const pickup = mine?.type === "pickup" && ((mine.pickupDate && mine.pickupTime) || mine.reservationMode === "unlimited") ? mine : null;
+  const unlimited = pickup?.reservationMode === "unlimited";
 
   // Le bon de commande (lot 6) : le détail de la commande, relu avec son numéro et le téléphone gardés avec
   // elle (comme le fait la page « Suivi »). Sans eux (page ouverte autrement), pas de bon.
@@ -44,13 +45,30 @@ export default function ConfirmationView({ number }: { number: string | undefine
       <h1 className="text-3xl">Merci, votre commande n° {number ?? "?"} est reçue.</h1>
       {pickup ? (
         <>
-          <p>
-            Retrait au magasin <strong>{pickupLabel(pickup.pickupDate!, pickup.pickupTime!)}</strong>. Votre appareil est réservé
-            jusqu&apos;à minuit ce jour-là.
-          </p>
+          {unlimited ? (
+            <div className="space-y-2">
+              <p>
+                <strong>Réservation illimitée</strong> : votre appareil est gardé pour vous, sans date limite.
+              </p>
+              <p>
+                Le magasin vous appelle pour confirmer. Vous recevrez ensuite le <strong>numéro BaridiMob</strong> sur la page{" "}
+                <Link href={`/suivi?numero=${number ?? ""}`} className="text-blue-ink underline">
+                  Suivi
+                </Link>{" "}
+                de votre commande, pour envoyer l&apos;avance de{" "}
+                <strong className="font-display text-xl">{formatPrice(pickup.advanceAmount ?? 0)}</strong>. Votre réservation est
+                confirmée dès que le magasin la reçoit.
+              </p>
+            </div>
+          ) : (
+            <p>
+              Réservation au magasin <strong>{pickupLabel(pickup.pickupDate!, pickup.pickupTime!)}</strong>. Votre appareil est réservé
+              jusqu&apos;à minuit ce jour-là.
+            </p>
+          )}
           {mine?.total !== undefined ? (
             <p>
-              Montant à payer au magasin : <strong className="font-display text-xl">{formatPrice(mine.total)}</strong>
+              Montant à payer au magasin{unlimited ? " (avance déduite)" : ""} : <strong className="font-display text-xl">{formatPrice(mine.total)}</strong>
             </p>
           ) : null}
         </>

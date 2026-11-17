@@ -4,7 +4,7 @@ import { CONDITION_LABELS } from "@/config/catalog";
 import { STORE_INFO } from "@/config/storeInfo";
 import { warrantyLabel } from "@/config/warranty";
 import { formatDate, formatOptions, formatPrice } from "@/lib/format";
-import { pickupLabel } from "@/lib/pickupLabel";
+import { reservationWhere } from "@/lib/pickupLabel";
 import type { OrderDetail } from "@/types/api";
 
 // Le bon de commande du site (lot 6, 15/11) : ce que le client garde après avoir commandé en livraison ou en
@@ -14,10 +14,9 @@ import type { OrderDetail } from "@/types/api";
 // Il est posé deux fois : à l'écran (`captureRef` en sert à faire l'image), et dans une copie réservée à
 // l'impression (voir PrintCopy et styles/print.css).
 function Slip({ order, innerRef }: { order: OrderDetail; innerRef?: Ref<HTMLElement> }) {
-  const pickup = order.type === "pickup" && order.pickupDate && order.pickupTime;
-  const where = pickup
-    ? `Retrait au magasin ${pickupLabel(order.pickupDate!, order.pickupTime!)}`
-    : `Livraison${order.commune || order.wilaya ? ` à ${[order.commune, order.wilaya].filter(Boolean).join(", ")}` : ""}`;
+  const where =
+    reservationWhere(order) ??
+    `Livraison${order.commune || order.wilaya ? ` à ${[order.commune, order.wilaya].filter(Boolean).join(", ")}` : ""}`;
 
   return (
     <article
@@ -69,7 +68,7 @@ function Slip({ order, innerRef }: { order: OrderDetail; innerRef?: Ref<HTMLElem
           <span>Total</span>
           <span className="text-right tabular-nums whitespace-nowrap">{formatPrice(order.total)}</span>
         </p>
-        <p className="text-xs text-neutral-700">{pickup ? "À payer au magasin" : "À payer à la livraison"}</p>
+        <p className="text-xs text-neutral-700">{order.type === "pickup" ? `À payer au magasin${order.reservationMode === "unlimited" ? " (avance BaridiMob déduite)" : ""}` : "À payer à la livraison"}</p>
       </div>
 
       <p className="border-t border-neutral-300 pt-3 text-xs text-neutral-700">

@@ -5,6 +5,7 @@ import { useState } from "react";
 import ProductImage from "@/components/ui/ProductImage";
 import { useAdminProductsQuery } from "@/features/admin/api/productsApi";
 import { useBrandsQuery, useCategoriesQuery } from "@/features/admin/api/catalogApi";
+import EditDialog from "@/features/admin/products/EditDialog";
 import { formatPrice } from "@/lib/format";
 
 const SORT_OPTIONS = [
@@ -34,17 +35,21 @@ export default function AdminProductsPage() {
   const { data: categories, error: categoriesError } = useCategoriesQuery();
   const { data: brands, error: brandsError } = useBrandsQuery();
   const selectedCategory = categories?.find((item) => item.slug === category);
+  // La fenêtre des filtres : le nombre de filtres actifs s'affiche sur le bouton.
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilters = [status, category, brand !== null, sort !== "recent"].filter(Boolean).length;
   const categoryBrands = brands?.filter((item) => item.categoryId === selectedCategory?.id) ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl">Produits</h1>
+        <h1 className="text-2xl sm:text-3xl">Produits</h1>
         <Link href="/admin/produits/nouveau" className="btn btn-primary">
           Nouveau produit
         </Link>
       </div>
 
+      {/* Un champ de recherche et un bouton « Filtres » : tout le reste est dans une fenêtre (refonte du 18/11). */}
       <div className="flex flex-wrap gap-3">
         <label className="min-w-60 flex-1">
           <span className="sr-only">Chercher un produit</span>
@@ -59,107 +64,136 @@ export default function AdminProductsPage() {
             }}
           />
         </label>
-        <label>
-          <span className="sr-only">Statut</span>
-          <select
-            className="input"
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Tous les statuts</option>
-            <option value="published">Publiés</option>
-            <option value="draft">Brouillons</option>
-          </select>
-        </label>
-        <label>
-          <span className="sr-only">Trier les produits</span>
-          <select
-            className="input"
-            value={sort}
-            onChange={(event) => {
-              setSort(SORT_OPTIONS.find(([value]) => value === event.target.value)?.[0] ?? "recent");
-              setPage(1);
-            }}
-          >
-            {SORT_OPTIONS.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <button type="button" className="btn btn-secondary" onClick={() => setFiltersOpen(true)}>
+          Filtres{activeFilters > 0 ? ` (${activeFilters})` : ""}
+        </button>
       </div>
 
-      <div className="space-y-2">
-        <p className="text-sm font-semibold">Filtrer par catégorie</p>
-        {categoriesError ? <p className="field-error">Impossible de charger les catégories.</p> : null}
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          <button
-            type="button"
-            className={`btn btn-small shrink-0 ${category ? "btn-outline" : "btn-primary"}`}
-            aria-pressed={!category}
-            onClick={() => {
-              setCategory("");
-              setBrand(null);
-              setPage(1);
-            }}
-          >
-            Toutes
-          </button>
-          {categories?.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`btn btn-small shrink-0 ${category === item.slug ? "btn-primary" : "btn-outline"}`}
-              aria-pressed={category === item.slug}
-              onClick={() => {
-                setCategory(category === item.slug ? "" : item.slug);
-                setBrand(null);
-                setPage(1);
-              }}
-            >
-              {item.name}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {selectedCategory ? (
-        <div className="space-y-2">
-          <p className="text-sm font-semibold">Filtrer par marque</p>
-          {brandsError ? <p className="field-error">Impossible de charger les marques.</p> : null}
-          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-            <button
-              type="button"
-              className={`btn btn-small shrink-0 ${brand === null ? "btn-primary" : "btn-outline"}`}
-              aria-pressed={brand === null}
-              onClick={() => {
-                setBrand(null);
-                setPage(1);
-              }}
-            >
-              Toutes les marques
-            </button>
-            {categoryBrands.map((item) => (
+      <EditDialog open={filtersOpen} title="Filtres et affichage" size="sm" onClose={() => setFiltersOpen(false)}>
+        <div className="space-y-5">
+          <div className="grid gap-3 sm:grid-cols-2">
+              <label>
+                <span className="sr-only">Statut</span>
+                <select
+                  className="input"
+                  value={status}
+                  onChange={(event) => {
+                    setStatus(event.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="">Tous les statuts</option>
+                  <option value="published">Publiés</option>
+                  <option value="draft">Brouillons</option>
+                </select>
+              </label>
+              <label>
+                <span className="sr-only">Trier les produits</span>
+                <select
+                  className="input"
+                  value={sort}
+                  onChange={(event) => {
+                    setSort(SORT_OPTIONS.find(([value]) => value === event.target.value)?.[0] ?? "recent");
+                    setPage(1);
+                  }}
+                >
+                  {SORT_OPTIONS.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Filtrer par catégorie</p>
+            {categoriesError ? <p className="field-error">Impossible de charger les catégories.</p> : null}
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
               <button
-                key={item.id}
                 type="button"
-                className={`btn btn-small shrink-0 ${brand === item.id ? "btn-primary" : "btn-outline"}`}
-                aria-pressed={brand === item.id}
+                className={`btn btn-small shrink-0 ${category ? "btn-outline" : "btn-primary"}`}
+                aria-pressed={!category}
                 onClick={() => {
-                  setBrand((current) => (current === item.id ? null : item.id));
+                  setCategory("");
+                  setBrand(null);
                   setPage(1);
                 }}
               >
-                {item.name}
+                Toutes
               </button>
-            ))}
+              {categories?.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`btn btn-small shrink-0 ${category === item.slug ? "btn-primary" : "btn-outline"}`}
+                  aria-pressed={category === item.slug}
+                  onClick={() => {
+                    setCategory(category === item.slug ? "" : item.slug);
+                    setBrand(null);
+                    setPage(1);
+                  }}
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          {selectedCategory ? (
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Filtrer par marque</p>
+              {brandsError ? <p className="field-error">Impossible de charger les marques.</p> : null}
+              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+                <button
+                  type="button"
+                  className={`btn btn-small shrink-0 ${brand === null ? "btn-primary" : "btn-outline"}`}
+                  aria-pressed={brand === null}
+                  onClick={() => {
+                    setBrand(null);
+                    setPage(1);
+                  }}
+                >
+                  Toutes les marques
+                </button>
+                {categoryBrands.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`btn btn-small shrink-0 ${brand === item.id ? "btn-primary" : "btn-outline"}`}
+                    aria-pressed={brand === item.id}
+                    onClick={() => {
+                      setBrand((current) => (current === item.id ? null : item.id));
+                      setPage(1);
+                    }}
+                  >
+                    {item.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-semibold">Affichage</p>
+            <div className="flex gap-2" role="group" aria-label="Mode d’affichage des produits">
+              <button
+                type="button"
+                className={`btn btn-small ${view === "table" ? "btn-primary" : "btn-outline"}`}
+                aria-pressed={view === "table"}
+                onClick={() => setView("table")}
+              >
+                Tableau
+              </button>
+              <button
+                type="button"
+                className={`btn btn-small ${view === "cards" ? "btn-primary" : "btn-outline"}`}
+                aria-pressed={view === "cards"}
+                onClick={() => setView("cards")}
+              >
+                Cartes
+              </button>
+            </div>
           </div>
         </div>
-      ) : null}
+      </EditDialog>
 
       {error ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm">
@@ -169,28 +203,6 @@ export default function AdminProductsPage() {
           </button>
         </div>
       ) : null}
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm font-semibold">Affichage</p>
-        <div className="flex gap-2" role="group" aria-label="Mode d’affichage des produits">
-          <button
-            type="button"
-            className={`btn btn-small ${view === "table" ? "btn-primary" : "btn-outline"}`}
-            aria-pressed={view === "table"}
-            onClick={() => setView("table")}
-          >
-            Tableau
-          </button>
-          <button
-            type="button"
-            className={`btn btn-small ${view === "cards" ? "btn-primary" : "btn-outline"}`}
-            aria-pressed={view === "cards"}
-            onClick={() => setView("cards")}
-          >
-            Cartes
-          </button>
-        </div>
-      </div>
 
       {view === "cards" ? (
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-busy={isFetching}>

@@ -12,6 +12,13 @@ type OrderReception = {
   businessDate: string;
   pickupDate: string | null;
   pickupTime: string | null;
+  // La réservation illimitée avec avance BaridiMob (18/11) : mode, avance demandée, numéro envoyé (et quand),
+  // avance reçue (et quand). Vides pour une réservation de deux jours, une livraison ou une vente.
+  reservationMode?: "two_days" | "unlimited" | null;
+  advanceAmount?: number | null;
+  baridiNumber?: string | null;
+  baridiSharedAt?: string | null;
+  advancePaidAt?: string | null;
   // null pour un retrait ou une vente au magasin.
   wilaya: string | null;
 };
@@ -150,6 +157,16 @@ const ordersApi = api.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { id }) => ["Orders", { type: "Orders", id }, "Stats", "Cash", "History"],
     }),
+    // Réservation illimitée (18/11) : « Envoyer le numéro BaridiMob » (le client le voit dans son suivi), puis
+    // « Avance reçue » (l'avance entre dans l'argent du jour, la réservation passe « en cours »).
+    shareBaridiNumber: build.mutation<unknown, number>({
+      query: (id) => ({ url: `/admin/orders/${id}/baridi-number`, method: "POST", body: {} }),
+      invalidatesTags: (_result, _error, id) => ["Orders", { type: "Orders", id }],
+    }),
+    receiveAdvance: build.mutation<unknown, number>({
+      query: (id) => ({ url: `/admin/orders/${id}/advance-received`, method: "POST", body: {} }),
+      invalidatesTags: (_result, _error, id) => ["Orders", { type: "Orders", id }, "Stats", "Cash", "History"],
+    }),
     // Encaisser une livraison livrée (17/11, lot 4) : l'argent est arrivé, hors caisse.
     collectDelivery: build.mutation<unknown, { id: number; method: PaymentMethod }>({
       query: ({ id, method }) => ({ url: `/admin/orders/${id}/collect`, method: "POST", body: { method } }),
@@ -183,6 +200,8 @@ export const {
   useAdminOrderQuery,
   useChangeStatusMutation,
   useValidatePickupMutation,
+  useShareBaridiNumberMutation,
+  useReceiveAdvanceMutation,
   useCollectDeliveryMutation,
   useReturnDeliveryMutation,
   useEditOrderMutation,

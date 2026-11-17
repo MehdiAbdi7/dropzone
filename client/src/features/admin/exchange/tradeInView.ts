@@ -1,6 +1,8 @@
 import { formatPrice } from "@/lib/format";
 import type { TradeInRow } from "@/features/admin/api/exchangeApi";
+import { emptyVariant } from "@/features/admin/products/productDraft";
 import { MAX_UNIT_PRICE } from "@/features/admin/sales/ticket";
+import { buildTradeInBody, type TradeInDraft } from "./exchange";
 
 // La liste « Reprises à mettre en vente » (lot 5) : ce qui s'affiche et ce que la page refuse, sans React.
 
@@ -37,4 +39,50 @@ export function sheetSummary(sheet: TradeInRow["sheet"]): string {
   if (sheet.withBox === true) parts.push("avec sa boîte");
   if (sheet.withBox === false) parts.push("sans boîte");
   return parts.join(" · ");
+}
+
+// La reprise enregistrée, remise dans le formulaire de la fiche d'état (modifier avant la mise en vente, 18/11).
+// Une pièce changée est dite « compatible » si la fiche l'a rangée dans les pièces compatibles, sinon d'origine.
+export function tradeInToDraft(row: TradeInRow): TradeInDraft {
+  const { sheet } = row;
+  const kind = row.deviceModel.kind;
+  const base = emptyVariant("refurbished", kind);
+  const replacedParts = sheet.replacedParts ?? [];
+  const compatibleParts = sheet.compatibleParts ?? [];
+  return {
+    kind,
+    // Les couleurs du modèle ne sont pas dans la liste des reprises : toutes les couleurs restent proposées.
+    model: { id: row.deviceModel.id, brand: row.deviceModel.brand, name: row.deviceModel.name, colors: [] },
+    variant: {
+      ...base,
+      options: { ...(sheet.options ?? {}), Couleur: row.color },
+      grade: sheet.grade == null ? "" : String(sheet.grade),
+      batteryHealth: sheet.batteryHealth == null ? "" : String(sheet.batteryHealth),
+      replacedParts,
+      partOrigins: Object.fromEntries(replacedParts.map((part) => [part, compatibleParts.includes(part) ? "compatible" : "origine"])),
+      defects: sheet.defects ?? [],
+      limitations: sheet.limitations ?? [],
+      withBox: sheet.withBox ?? null,
+      details: sheet.details ?? "",
+      warrantyMonths: sheet.warrantyMonths == null ? "" : String(sheet.warrantyMonths),
+      origin: sheet.origin ?? "",
+    },
+    price: String(row.price),
+    repairCost: row.repairCost > 0 ? String(row.repairCost) : "",
+  };
+}
+
+// Les frais de remise en état tapés, en nombre ; 0 quand le champ est vide ; NaN si ce n'est pas un entier.
+export function repairCostOf(text: string): number {
+  const trimmed = text.trim();
+  if (trimmed === "") return 0;
+  return /^\d+$/.test(trimmed) ? Number(trimmed) : Number.NaN;
+}
+
+// Le corps de PATCH /admin/trade-ins/:id : la fiche et les frais, jamais le modèle ni le prix de reprise.
+export function buildTradeInUpdateBody(draft: TradeInDraft) {
+  // Le modèle et le prix de reprise sont retirés du corps : ils ne changent pas.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { deviceModelId, price, ...sheet } = buildTradeInBody(draft);
+  return { ...sheet, repairCost: repairCostOf(draft.repairCost) };
 }

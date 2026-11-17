@@ -1,4 +1,4 @@
-// L'heure d'Alger et les créneaux de retrait au magasin (14/11). COPIE de
+// L'heure d'Alger et les créneaux de réservation au magasin (14/11). COPIE de
 // server/src/utils/algiersTime.ts : le formulaire propose exactement ce que l'API acceptera.
 // Le test server/tests/copiesDuFront.test.ts échoue si les deux copies se contredisent.
 //

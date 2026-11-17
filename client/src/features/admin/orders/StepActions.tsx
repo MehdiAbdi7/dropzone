@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import { useChangeStatusMutation, type AdminOrder } from "@/features/admin/api/ordersApi";
+import { useChangeStatusMutation, useReceiveAdvanceMutation, useShareBaridiNumberMutation, type AdminOrder } from "@/features/admin/api/ordersApi";
 import CollectDelivery from "@/features/admin/deliveries/CollectDelivery";
 import ReturnDelivery from "@/features/admin/deliveries/ReturnDelivery";
 import { errorMessage } from "@/lib/errors";
+import { formatPrice } from "@/lib/format";
 import NegotiatePrices from "./NegotiatePrices";
 import ValidatePickup from "./ValidatePickup";
 import { negotiationState } from "./negotiation";
+import { unlimitedStage, unlimitedStageLabel } from "./reservationStage";
 
 // Ce que le bouton d'une étape fait passer à l'état suivant. Les boutons ne proposent que les
 // transitions autorisées, renvoyées par l'API (`allowedTransitions`).
@@ -23,7 +25,7 @@ const FORWARD_LABELS = {
 // paiement), l'autre remet le stock et demande confirmation.
 export default function StepActions({ order }: { order: AdminOrder }) {
   const [changeStatus, { isLoading, error }] = useChangeStatusMutation();
-  // Les prix négociés, saisis par ligne : envoyés avec « Confirmer » ou « Valider le retrait ».
+  // Les prix négociés, saisis par ligne : envoyés avec « Confirmer » ou « Valider la réservation ».
   const [prices, setPrices] = useState<Record<number, number>>({});
   const allowed = order.allowedTransitions;
   const forward = allowed.filter((status): status is keyof typeof FORWARD_LABELS => status in FORWARD_LABELS);
@@ -41,6 +43,8 @@ export default function StepActions({ order }: { order: AdminOrder }) {
     <div className="space-y-4">
       {order.status === "delivered" ? <CollectDelivery orderId={order.id} total={order.total} /> : null}
 
+      {pickup && order.status === "reserved" && order.reservationMode === "unlimited" ? <BaridiActions order={order} /> : null}
+
       {pickup && order.status === "reserved" ? (
         <ValidatePickup
           orderId={order.id}
@@ -49,6 +53,7 @@ export default function StepActions({ order }: { order: AdminOrder }) {
           prices={prices}
           onPrice={setPrice}
           shippingFee={order.shippingFee}
+          alreadyPaid={order.advancePaidAt ? (order.advanceAmount ?? 0) : 0}
         />
       ) : null}
 
@@ -96,5 +101,63 @@ export default function StepActions({ order }: { order: AdminOrder }) {
         </p>
       ) : null}
     </div>
+  );
+}
+
+// La réservation illimitée avec avance BaridiMob (18/11), côté magasin. 1) On appelle le client ; « Envoyer le
+// numéro BaridiMob » le rend visible dans son suivi. 2) Quand le virement est arrivé, « Avance reçue » écrit
+// l'avance dans l'argent du jour (BaridiMob) et la réservation passe « en cours ». 3) Au retrait, « Valider la
+// réservation » n'encaisse que le reste.
+function BaridiActions({ order }: { order: AdminOrder }) {
+  const [share, shareState] = useShareBaridiNumberMutation();
+  const [receive, receiveState] = useReceiveAdvanceMutation();
+  const stage = unlimitedStage(order) ?? "call";
+  const error = shareState.error ?? receiveState.error;
+  const advance = formatPrice(order.advanceAmount ?? 0);
+
+  return (
+    <section aria-label="Avance BaridiMob" className="space-y-3 rounded-lg border border-line bg-surface-2 p-4">
+      <p className="font-display font-bold">
+        Réservation illimitée · avance {advance} · <span className={stage === "confirmed" ? "text-blue-ink" : "text-red"}>{unlimitedStageLabel(stage)}</span>
+      </p>
+      {stage === "call" ? (
+        <>
+          <p className="text-sm text-ink-muted">
+            Appelez le client pour confirmer, puis envoyez-lui le numéro BaridiMob : il le verra dans le suivi de sa commande.
+          </p>
+          <button type="button" className="btn btn-primary" disabled={shareState.isLoading} onClick={() => share(order.id)}>
+            Envoyer le numéro BaridiMob
+          </button>
+        </>
+      ) : null}
+      {stage === "advance" ? (
+        <>
+          <p className="text-sm text-ink-muted">
+            Numéro envoyé au client ({order.baridiNumber}). Quand le virement de {advance} est arrivé, confirmez-le : il entre dans
+            l&apos;argent du jour en BaridiMob.
+          </p>
+          <ConfirmDialog
+            trigger="Avance reçue"
+            title={`Avance reçue pour la commande n° ${order.number} ?`}
+            confirmLabel="Oui, l'avance est reçue"
+            onConfirm={() => receive(order.id)}
+          >
+            {advance} sont écrits dans l&apos;argent d&apos;aujourd&apos;hui (BaridiMob) et la réservation est confirmée. Ce clic ne se
+            défait pas.
+          </ConfirmDialog>
+        </>
+      ) : null}
+      {stage === "confirmed" ? (
+        <p className="text-sm text-ink-muted">
+          Avance reçue : la réservation est confirmée. Le client ne paiera que {formatPrice(order.total - (order.advanceAmount ?? 0))} à son
+          passage.
+        </p>
+      ) : null}
+      {error ? (
+        <p role="alert" className="field-error">
+          {errorMessage(error)}
+        </p>
+      ) : null}
+    </section>
   );
 }

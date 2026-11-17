@@ -19,11 +19,11 @@ import { useHydrated } from "@/lib/useHydrated";
 import type { User } from "@/types/api";
 import { useCartPreview } from "@/features/cart/useCartPreview";
 import { checkoutBody } from "./checkoutBody";
-import { useCreateOrderMutation, useStoreHoursQuery } from "./ordersApi";
+import { useCreateOrderMutation, useReservationOfferQuery, useStoreHoursQuery } from "./ordersApi";
 
 // Les mêmes règles que le serveur (createOrderSchema), pour prévenir avant l'envoi.
 // Le serveur revérifie tout : le front ne fait que rendre l'erreur plus rapide.
-// Depuis le 14/11, le client choisit la livraison ou le retrait au magasin : l'adresse n'est
+// Depuis le 14/11, le client choisit la livraison ou la réservation au magasin : l'adresse n'est
 // exigée que pour une livraison, le créneau que pour un retrait.
 const schema = z
   .object({
@@ -36,6 +36,7 @@ const schema = z
     wilaya: z.string(),
     commune: z.string().trim(),
     address: z.string().trim(),
+    reservationMode: z.enum(["two_days", "unlimited"]),
     pickupDate: z.string(),
     pickupTime: z.string(),
     note: z.string().trim().max(500).optional(),
@@ -48,6 +49,8 @@ const schema = z
       if (!values.wilaya) issue("wilaya", "Choisissez votre wilaya");
       if (values.commune.length < 2) issue("commune", "Votre commune");
       if (values.address.length < 5) issue("address", "L'adresse de livraison (rue, numéro, repère)");
+    } else if (values.reservationMode === "unlimited") {
+      // Sans date : l'avance BaridiMob tient lieu de réservation.
     } else if (!values.pickupDate) {
       issue("pickupDate", "Choisissez le jour où vous passerez");
     } else if (!values.pickupTime) {
@@ -74,6 +77,8 @@ export default function CheckoutForm({ user }: { user: User | null }) {
   const hydrated = useHydrated() && loaded;
   const [createOrder, { isLoading, error }] = useCreateOrderMutation();
   const { data: hours } = useStoreHoursQuery();
+  const { data: offer } = useReservationOfferQuery();
+  const unlimitedAdvance = offer?.unlimitedAdvance ?? null;
   const now = useNow();
 
   // Loi 18-05, art. 12 : aucune case cochée d'avance, aucune wilaya choisie d'avance.
@@ -94,6 +99,7 @@ export default function CheckoutForm({ user }: { user: User | null }) {
       wilaya: user?.addressWilaya ?? "",
       commune: user?.addressCommune ?? "",
       address: user?.addressLine ?? "",
+      reservationMode: "two_days",
       pickupDate: "",
       pickupTime: "",
       note: "",
@@ -103,6 +109,9 @@ export default function CheckoutForm({ user }: { user: User | null }) {
   });
   const fulfillment = useWatch({ control, name: "fulfillment" });
   const chosenDate = useWatch({ control, name: "pickupDate" });
+  // La réservation illimitée n'est choisie que si le magasin la propose (avance et numéro réglés).
+  const chosenMode = useWatch({ control, name: "reservationMode" });
+  const unlimited = fulfillment === "pickup" && chosenMode === "unlimited" && unlimitedAdvance !== null;
 
   // `request` : SKU et quantités seulement (les descriptions gardées ne partent pas au serveur).
   // L'aperçu suit le mode de réception : un retrait n'a pas de frais de livraison.
@@ -172,14 +181,14 @@ export default function CheckoutForm({ user }: { user: User | null }) {
     }
     // Le créneau a pu passer depuis l'affichage (le formulaire est resté ouvert) : le serveur le
     // refuserait, on prévient tout de suite.
-    if (values.fulfillment === "pickup" && !daySlots.includes(values.pickupTime)) {
+    if (values.fulfillment === "pickup" && !unlimited && !daySlots.includes(values.pickupTime)) {
       setError("pickupTime", { message: "Ce créneau n'est plus disponible, choisissez-en un autre" });
       return;
     }
     const parsed = schema.parse(values);
     try {
       const order = await createOrder(
-        checkoutBody(parsed.fulfillment, parsed, { items: request, cartHash: preview!.cartHash }),
+        checkoutBody(parsed.fulfillment, { ...parsed, reservationMode: unlimited ? "unlimited" : "two_days" }, { items: request, cartHash: preview!.cartHash }),
       ).unwrap();
       try {
         sessionStorage.setItem("dropzone-last-order", JSON.stringify(order));
@@ -221,7 +230,7 @@ export default function CheckoutForm({ user }: { user: User | null }) {
             <label className={choiceClass(fulfillment === "pickup")}>
               <input type="radio" value="pickup" {...register("fulfillment")} className="mt-1 size-5 accent-[var(--blue)]" />
               <span>
-                <span className="block font-semibold">Retrait au magasin</span>
+                <span className="block font-semibold">Réservation au magasin</span>
                 <span className="text-sm text-ink-muted">Sans frais, payé au magasin.</span>
               </span>
             </label>
@@ -267,10 +276,48 @@ export default function CheckoutForm({ user }: { user: User | null }) {
             </>
           ) : (
             <div className="space-y-4">
-              {!hours ? (
+              {/* Deux façons de réserver (18/11) : deux jours sans avance, ou illimitée contre une avance
+                  BaridiMob dont le magasin règle le montant. Le choix n'apparaît que si l'offre est réglée. */}
+              {unlimitedAdvance !== null ? (
+                <fieldset>
+                  <legend className="mb-2 text-sm font-semibold">Comment réserver ?</legend>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className={choiceClass(!unlimited, false)}>
+                      <input type="radio" value="two_days" {...register("reservationMode")} className="mt-1 size-5 accent-[var(--blue)]" />
+                      <span>
+                        <span className="block font-semibold">Réservation de 2 jours</span>
+                        <span className="text-sm text-ink-muted">Sans avance : vous passez le jour choisi.</span>
+                      </span>
+                    </label>
+                    <label className={choiceClass(unlimited, false)}>
+                      <input type="radio" value="unlimited" {...register("reservationMode")} className="mt-1 size-5 accent-[var(--blue)]" />
+                      <span>
+                        <span className="block font-semibold">Réservation illimitée</span>
+                        <span className="text-sm text-ink-muted">
+                          Avance BaridiMob de {formatPrice(unlimitedAdvance)}, sans date limite.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </fieldset>
+              ) : null}
+              {unlimited ? (
+                <div className="space-y-2 rounded-lg border border-line bg-surface-2 p-3 text-sm">
+                  <p className="font-semibold">Comment ça se passe</p>
+                  <ol className="list-decimal space-y-1 pl-5">
+                    <li>Vous confirmez votre commande. L&apos;appareil est gardé pour vous, sans date limite.</li>
+                    <li>Le magasin vous appelle pour confirmer.</li>
+                    <li>
+                      Vous recevez le numéro BaridiMob dans le suivi de votre commande, et vous envoyez l&apos;avance de{" "}
+                      <strong>{formatPrice(unlimitedAdvance ?? 0)}</strong>.
+                    </li>
+                    <li>Dès que le magasin la reçoit, votre réservation est confirmée. Vous payez le reste en venant chercher l&apos;appareil.</li>
+                  </ol>
+                </div>
+              ) : !hours ? (
                 <p className="text-sm text-ink-muted">Chargement des horaires du magasin…</p>
               ) : days.length === 0 ? (
-                <p className="text-sm text-ink-muted">Le retrait au magasin n&apos;est pas disponible pour le moment.</p>
+                <p className="text-sm text-ink-muted">La réservation au magasin n&apos;est pas disponible pour le moment.</p>
               ) : (
                 <>
                   <fieldset>

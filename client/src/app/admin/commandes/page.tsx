@@ -8,6 +8,7 @@ import { ordersHref } from "@/features/admin/navConfig";
 import OrderWindow from "@/features/admin/orders/OrderWindow";
 import OrdersTable from "@/features/admin/orders/OrdersTable";
 import OrdersTabs, { type OrdersTab } from "@/features/admin/orders/OrdersTabs";
+import { isOngoingReservation } from "@/features/admin/orders/reservationStage";
 import { useOrderWindow } from "@/features/admin/orders/useOrderWindow";
 import type { OrderType } from "@/types/api";
 
@@ -52,12 +53,13 @@ function OrdersList() {
 
   if (!type) return <p className="text-ink-muted">Chargement…</p>;
 
-  const fresh = data?.data.filter((order) => !acknowledged.includes(order.id));
-  const ongoing = data?.data.filter((order) => acknowledged.includes(order.id));
+  // Une réservation de deux jours passe « en cours » une fois vue ; une illimitée quand son avance est reçue (18/11).
+  const fresh = data?.data.filter((order) => !isOngoingReservation(order, acknowledged));
+  const ongoing = data?.data.filter((order) => isOngoingReservation(order, acknowledged));
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl">Retraits au magasin</h1>
+    <div className="space-y-4">
+      <h1 className="text-2xl sm:text-3xl">Réservations au magasin</h1>
       <OrdersTabs tab={tab} onChange={setTab} newCount={fresh?.length} ongoingCount={ongoing?.length} />
       <label className="block max-w-md">
         <span className="sr-only">Chercher une commande</span>
@@ -73,7 +75,7 @@ function OrdersList() {
       <OrdersTable
         orders={tab === "new" ? fresh : ongoing}
         busy={isFetching}
-        empty={tab === "new" ? "Aucune nouvelle réservation." : "Aucun retrait en cours."}
+        empty={tab === "new" ? "Aucune nouvelle réservation." : "Aucune réservation en cours."}
         onOpen={orderWindow.open}
       />
 

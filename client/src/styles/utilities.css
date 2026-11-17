@@ -56,6 +56,19 @@
       var(--bg);
   }
 
+  /* Le fond du back-office (18/11) : les mêmes halos bleu et rouge que le hero de la boutique, aux
+     quatre coins (bleu à droite en haut, rouge à gauche, et l'inverse en bas), fixes pendant le
+     défilement pour que le décor ne s'étire pas sur une longue page. */
+  .admin-glow {
+    background:
+      radial-gradient(50% 45% at 100% 0%, var(--glow-blue), transparent 70%),
+      radial-gradient(40% 40% at 0% 0%, var(--glow-red), transparent 70%),
+      radial-gradient(50% 45% at 90% 100%, var(--glow-red), transparent 75%),
+      radial-gradient(50% 45% at 8% 100%, var(--glow-blue), transparent 75%),
+      var(--bg);
+    background-attachment: fixed;
+  }
+
   .shop-loading {
     display: grid;
     min-height: 100svh;

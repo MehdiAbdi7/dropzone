@@ -13,6 +13,7 @@ import {
   tradeInProblem,
   type TradeInDraft,
 } from "@/features/admin/exchange/exchange";
+import EditDialog from "@/features/admin/products/EditDialog";
 import QuantityStepper from "@/features/cart/QuantityStepper";
 import { useCartPreviewQuery } from "@/features/orders/ordersApi";
 import { errorMessage } from "@/lib/errors";
@@ -20,6 +21,7 @@ import { formatOptions, formatPrice } from "@/lib/format";
 import type { CartLine, PaymentMethod } from "@/types/api";
 import {
   buildSaleBody,
+  clientReady,
   reductionText,
   syncCatalogPrices,
   ticketProblem,
@@ -38,7 +40,9 @@ const toNumber = (text: string) => (text.trim() === "" ? Number.NaN : Number(tex
 // Avec `exchange` (lot 5), le même ticket est celui de ce que le MAGASIN DONNE dans un échange : le
 // formulaire de la reprise du client s'insère sous les lignes, et le bouton valide l'échange (la
 // différence va dans la caisse du jour, positive si le client paie, négative si le magasin rend).
-type Props = { lines: TicketLine[]; setLines: Dispatch<SetStateAction<TicketLine[]>> } & (
+// `picker` : la fenêtre de recherche de produit (ShopPicker), ouverte par « Ajouter un produit » (vente)
+// ou « Téléphone proposé » (échange).
+type Props = { lines: TicketLine[]; setLines: Dispatch<SetStateAction<TicketLine[]>>; picker: ReactNode } & (
   | { exchange?: undefined; onDone: (sale: SaleDone) => void }
   | { exchange: { tradeIn: TradeInDraft; form: ReactNode }; onDone: (done: ExchangeDone) => void }
 );
@@ -51,6 +55,10 @@ export default function SaleTicket(props: Props) {
   const [form, setForm] = useState<SaleForm>({ fullName: "", phone: "" });
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [note, setNote] = useState("");
+  // Les trois formulaires vivent dans des fenêtres (refonte du 18/11) : la page reste courte, le
+  // vendeur ouvre seulement ce dont il a besoin. Les valeurs restent ici, la fermeture ne les perd pas.
+  const [open, setOpen] = useState<"client" | "tradeIn" | "picker" | null>(null);
+  const close = () => setOpen(null);
 
   // Le récapitulatif du serveur : cadeaux d'une affaire, limitations, problèmes de stock. Le même
   // calcul que la commande du site (retrait : pas de frais de livraison).
@@ -105,7 +113,8 @@ export default function SaleTicket(props: Props) {
   return (
     <form
       onSubmit={submit}
-      className="card space-y-5 p-4 sm:p-5"
+      id="ticket"
+      className="card scroll-mt-20 space-y-4 p-4 sm:p-5"
       aria-label={props.exchange ? "Ticket de l'échange" : "Ticket de vente"}
       // Entrée dans un champ (prix, remarque, ou une douchette) ne doit pas encaisser par mégarde :
       // on encaisse avec le bouton.
@@ -115,7 +124,23 @@ export default function SaleTicket(props: Props) {
         }
       }}
     >
-      <h2 className="text-xl">{props.exchange ? "Ce que le magasin donne" : "Ticket"}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-xl">{props.exchange ? "Échange" : "Ticket"}</h2>
+        <div className="flex flex-wrap gap-2">
+          <WindowButton onClick={() => setOpen("picker")} done={lines.length > 0}>
+            {props.exchange ? "Téléphone proposé" : "Ajouter un produit"}
+            {lines.length > 0 ? ` (${lines.length})` : ""}
+          </WindowButton>
+          {props.exchange ? (
+            <WindowButton onClick={() => setOpen("tradeIn")} done={tradeInProblem(props.exchange.tradeIn) === null}>
+              Téléphone repris
+            </WindowButton>
+          ) : null}
+          <WindowButton onClick={() => setOpen("client")} done={clientReady(form)}>
+            Formulaire client
+          </WindowButton>
+        </div>
+      </div>
 
       {synced.changed.length > 0 ? (
         <p role="status" className="rounded-md bg-surface-2 p-3 text-sm font-semibold">
@@ -125,7 +150,11 @@ export default function SaleTicket(props: Props) {
       ) : null}
 
       {shown.length === 0 ? (
-        <p className="text-ink-muted">Cherchez un appareil et choisissez-le pour l&apos;ajouter au ticket.</p>
+        <p className="text-ink-muted">
+          {props.exchange
+            ? "Ouvrez « Téléphone proposé » pour choisir ce que le magasin donne."
+            : "Appuyez sur « Ajouter un produit » pour choisir un appareil."}
+        </p>
       ) : (
         <ul className="space-y-3">
           {shown.map((line) => {
@@ -197,14 +226,20 @@ export default function SaleTicket(props: Props) {
         </p>
       ) : null}
 
+      {/* La recherche de produit : le parcours de la boutique, dans une fenêtre. */}
+      <EditDialog open={open === "picker"} title={props.exchange ? "Téléphone proposé par le magasin" : "Ajouter un produit"} onClose={close}>
+        {props.picker}
+      </EditDialog>
+
       {/* Ce que le client donne (échange) : son téléphone, au prix de reprise saisi à la main. */}
       {props.exchange ? (
-        <div className="space-y-3">
-          <h2 className="text-xl">Ce que le client donne</h2>
+        <EditDialog open={open === "tradeIn"} title="Téléphone repris au client" onClose={close}>
           {props.exchange.form}
-        </div>
+        </EditDialog>
       ) : null}
 
+      <EditDialog open={open === "client"} title="Formulaire client" size="sm" onClose={close}>
+      <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm font-semibold">
           <span className="label">Nom et prénom du client</span>
@@ -243,6 +278,8 @@ export default function SaleTicket(props: Props) {
           <input className="input" value={note} onChange={(event) => setNote(event.target.value)} />
         </label>
       </div>
+      </div>
+      </EditDialog>
 
       {limitations.length > 0 ? (
         <div className="space-y-2 rounded-md border border-line p-3 text-sm">
@@ -305,5 +342,20 @@ export default function SaleTicket(props: Props) {
             : `Encaisser · ${Number.isNaN(total) ? "—" : formatPrice(total)}`}
       </button>
     </form>
+  );
+}
+
+// Un bouton qui ouvre une fenêtre, avec une pastille : verte et cochée quand la partie est remplie,
+// rouge sinon (le vendeur voit ce qui manque sans ouvrir).
+function WindowButton({ onClick, done, children }: { onClick: () => void; done: boolean; children: ReactNode }) {
+  return (
+    <button type="button" className="btn btn-secondary btn-small gap-2" onClick={onClick}>
+      <span
+        aria-hidden="true"
+        className={`inline-block size-2.5 rounded-full ${done ? "bg-emerald-500" : "bg-red"}`}
+      />
+      {children}
+      <span className="sr-only">{done ? " (rempli)" : " (à remplir)"}</span>
+    </button>
   );
 }

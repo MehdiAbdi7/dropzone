@@ -5,7 +5,7 @@ import { formatPrice } from "@/lib/format";
 import type { CartPreview } from "@/types/api";
 
 // Le total, recalculé par le serveur. Le front ne fait aucun calcul de prix.
-// `fulfillment` (14/11) : un retrait au magasin n'a pas de livraison, il se paie au magasin.
+// `fulfillment` (14/11) : une réservation au magasin n'a pas de livraison, il se paie au magasin.
 export default function CartSummary({
   preview,
   fulfillment = "delivery",
@@ -24,7 +24,7 @@ export default function CartSummary({
           <dd>{formatPrice(preview.subtotal)}</dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-ink-muted">{pickup ? "Retrait au magasin" : "Livraison"}</dt>
+          <dt className="text-ink-muted">{pickup ? "Réservation au magasin" : "Livraison"}</dt>
           <dd>{pickup ? "Gratuit" : preview.shippingFee === 0 ? "Offerte" : formatPrice(preview.shippingFee)}</dd>
         </div>
         <div className="flex justify-between gap-3 border-t border-line pt-3 text-base">

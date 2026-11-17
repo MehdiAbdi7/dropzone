@@ -79,6 +79,19 @@ export type SaleForm = { fullName: string; phone: string };
 // Un numéro algérien : 10 chiffres commençant par 0, comme le serveur (espaces, points, tirets permis).
 const isPhone = (value: string) => /^0[2-7]\d{8}$/.test(value.replace(/[\s.-]/g, ""));
 
+// Les variantes d'UN modèle parmi ce que la recherche par mots a trouvé (chercher « iPhone 15 Pro »
+// renvoie aussi « iPhone 15 Pro Max »). Aucun nom identique (nom de modèle de la série différent du
+// nom du produit) : on garde tout, mieux vaut trop que rien.
+export function hitsOfModel(hits: VariantHit[], modelName: string): VariantHit[] {
+  const wanted = modelName.trim().toLowerCase();
+  const exact = hits.filter((hit) => hit.productName.trim().toLowerCase() === wanted);
+  return exact.length > 0 ? exact : hits;
+}
+
+// La fiche client est-elle complète ? Sert au badge du bouton « Formulaire client » : le formulaire est
+// dans une fenêtre, le vendeur voit d'un coup d'œil s'il a encore quelque chose à remplir.
+export const clientReady = (form: SaleForm): boolean => form.fullName.trim().length >= 3 && isPhone(form.phone.trim());
+
 // Ce que l'API refuserait de toute façon, dit tout de suite en français.
 export function ticketProblem(lines: TicketLine[], form: SaleForm): string | null {
   if (lines.length === 0) return "Le ticket est vide : ajoutez un appareil.";

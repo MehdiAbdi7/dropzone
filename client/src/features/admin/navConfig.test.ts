@@ -182,7 +182,7 @@ describe("l'onglet actif d'une section", () => {
   };
 
   it("Commandes : seulement Livraisons et Retraits (une vente au magasin n'a pas d'étapes)", () => {
-    expect(sectionFor("/admin/livraisons")?.tabs?.map((tab) => tab.label)).toEqual(["Livraisons", "Retraits"]);
+    expect(sectionFor("/admin/livraisons")?.tabs?.map((tab) => tab.label)).toEqual(["Livraisons", "Réservations"]);
     expect(tabHref("/admin/livraisons")).toBe("/admin/livraisons");
     expect(tabHref("/admin/commandes", "type=pickup")).toBe("/admin/commandes?type=pickup");
     expect(tabHref("/admin/commandes", "type=pickup&status=reserved")).toBe("/admin/commandes?type=pickup");

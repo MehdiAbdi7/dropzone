@@ -15,10 +15,12 @@ export type TradeInDraft = {
   model: { id: number; brand: string; name: string; colors: string[] } | null;
   variant: VariantDraft;
   price: string;
+  // Les frais de remise en état (batterie neuve…), seulement quand on modifie une reprise avant sa mise en vente (18/11).
+  repairCost: string;
 };
 
 export function emptyTradeIn(kind: ProductKind = "phone"): TradeInDraft {
-  return { kind, model: null, variant: emptyVariant("refurbished", kind), price: "" };
+  return { kind, model: null, variant: emptyVariant("refurbished", kind), price: "", repairCost: "" };
 }
 
 // Ce que le client paie en plus (positif) ou ce que le magasin lui rend (négatif) : le prix de ce que le

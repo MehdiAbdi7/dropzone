@@ -38,7 +38,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
             <AdminNav />
           </aside>
           {/* pb-24 sous lg : la barre du bas ne cache pas la fin de la page. */}
-          <main id="contenu" className="min-w-0 flex-1 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 hero-glow">
+          <main id="contenu" className="min-w-0 flex-1 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 admin-glow">
             {/* L'alerte des nouvelles commandes (son et bannière), sur toutes les pages du back-office. Dans
                 le contenu, collée sous la barre du haut quand on défile : à l'ouverture de la page, la
                 barre du haut est plus bas que 0 (le bandeau « démo » est au-dessus), donc une alerte

@@ -6,7 +6,7 @@ import ExchangeDone from "@/features/admin/exchange/ExchangeDone";
 import { emptyTradeIn, type TradeInDraft } from "@/features/admin/exchange/exchange";
 import TradeInForm from "@/features/admin/exchange/TradeInForm";
 import SaleTicket from "@/features/admin/sales/SaleTicket";
-import VariantPicker from "@/features/admin/sales/VariantPicker";
+import ShopPicker from "@/features/admin/sales/ShopPicker";
 import { addToTicket, type TicketLine } from "@/features/admin/sales/ticket";
 
 // L'échange (lot 5, 15/11) : le client rend un téléphone et en prend un autre. Le vendeur choisit ce que le
@@ -30,23 +30,19 @@ export default function ExchangePage() {
   }
 
   return (
-    <div className="max-w-6xl space-y-6">
-      <h1 className="text-3xl">Échange</h1>
+    <div className="max-w-3xl space-y-4">
+      <h1 className="text-2xl sm:text-3xl">Échange</h1>
       {done ? (
         <ExchangeDone exchange={done} onNew={startAgain} />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-          <section aria-label="Choisir ce que le magasin donne">
-            <VariantPicker onPick={(hit) => setLines((current) => addToTicket(current, hit))} />
-          </section>
-          <SaleTicket
-            key={round}
-            lines={lines}
-            setLines={setLines}
-            exchange={{ tradeIn, form: <TradeInForm draft={tradeIn} onChange={setTradeIn} /> }}
-            onDone={finish}
-          />
-        </div>
+        <SaleTicket
+          key={round}
+          lines={lines}
+          setLines={setLines}
+          picker={<ShopPicker onPick={(hit) => setLines((current) => addToTicket(current, hit))} />}
+          exchange={{ tradeIn, form: <TradeInForm draft={tradeIn} onChange={setTradeIn} /> }}
+          onDone={finish}
+        />
       )}
     </div>
   );

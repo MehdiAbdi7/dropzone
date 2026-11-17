@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { negotiationState } from "./negotiation";
 
 // La négociation des prix d'une commande pas encore payée (16/11, lot 3) : ce que la page montre et
-// ce qu'elle envoie avec « Valider le retrait » ou « Confirmer ».
+// ce qu'elle envoie avec « Valider la réservation » ou « Confirmer ».
 const items = [
   { id: 1, name: "iPhone 15", quantity: 1, unitPrice: 245_000, listPrice: 245_000, isGift: false },
   { id: 2, name: "Coque", quantity: 2, unitPrice: 1_800, listPrice: 1_800, isGift: false },

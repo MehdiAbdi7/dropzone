@@ -2,7 +2,7 @@ import { CONDITION_LABELS } from "@/config/catalog";
 import { STORE_INFO } from "@/config/storeInfo";
 import { warrantyLabel } from "@/config/warranty";
 import { formatDate, formatOptions, formatPrice } from "@/lib/format";
-import { pickupLabel } from "@/lib/pickupLabel";
+import { reservationWhere } from "@/lib/pickupLabel";
 import type { OrderDetail } from "@/types/api";
 
 // Ce que dit le bon de commande du site (lot 6), sans React ni dessin : testé à part. Le même texte sert à
@@ -23,7 +23,7 @@ export type SlipRows = {
 };
 
 export function slipRows(order: OrderDetail): SlipRows {
-  const pickup = order.type === "pickup" && order.pickupDate && order.pickupTime;
+  const reservation = reservationWhere(order);
   const place = [order.commune, order.wilaya].filter(Boolean).join(", ");
   return {
     shop: STORE_INFO.name,
@@ -31,7 +31,7 @@ export function slipRows(order: OrderDetail): SlipRows {
     title: "BON DE COMMANDE",
     number: `n° ${order.number}`,
     date: formatDate(order.createdAt),
-    where: pickup ? `Retrait au magasin ${pickupLabel(order.pickupDate!, order.pickupTime!)}` : `Livraison${place ? ` à ${place}` : ""}`,
+    where: reservation ?? `Livraison${place ? ` à ${place}` : ""}`,
     items: order.items.map((item) => ({
       title: `${item.quantity} × ${item.name}`,
       detail: [
@@ -45,7 +45,8 @@ export function slipRows(order: OrderDetail): SlipRows {
     })),
     shipping: order.type === "delivery" ? (order.shippingFee === 0 ? "Offerte" : formatPrice(order.shippingFee)) : null,
     total: formatPrice(order.total),
-    payNote: pickup ? "À payer au magasin" : "À payer à la livraison",
+    payNote:
+      order.type === "pickup" ? `À payer au magasin${order.reservationMode === "unlimited" ? " (avance BaridiMob déduite)" : ""}` : "À payer à la livraison",
     footer:
       "Ce bon n'est pas une facture : la facture est remise par le magasin. Pour suivre la commande, indiquez ce numéro et votre téléphone sur la page « Suivi ».",
   };

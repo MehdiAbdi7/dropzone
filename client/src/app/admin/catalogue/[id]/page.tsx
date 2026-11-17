@@ -8,6 +8,7 @@ import { DEVICE_KINDS, KIND_LABELS } from "@/config/catalog";
 import BrandsEditor from "@/features/admin/BrandsEditor";
 import { useCatalogCategoryQuery, useDeleteCategoryMutation, useUpdateCategoryMutation, type AdminCatalogCategoryPage } from "@/features/admin/api/catalogApi";
 import CatalogTile from "@/features/admin/catalog/CatalogTile";
+import EditDialog from "@/features/admin/products/EditDialog";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import { errorMessage } from "@/lib/errors";
 
@@ -34,6 +35,7 @@ function CategoryView({ data }: { data: AdminCatalogCategoryPage }) {
   const [remove, removeState] = useDeleteCategoryMutation();
   const [name, setName] = useState(category.name);
   const actionError = updateState.error ?? removeState.error;
+  const [open, setOpen] = useState<"brands" | "category" | null>(null);
 
   async function onDelete() {
     try {
@@ -45,10 +47,10 @@ function CategoryView({ data }: { data: AdminCatalogCategoryPage }) {
   }
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-5xl space-y-4">
       <Breadcrumb items={[{ label: "Catalogue", href: "/admin/catalogue" }, { label: category.name }]} />
       <div className="space-y-1">
-        <h1 className="text-3xl">{category.name}</h1>
+        <h1 className="text-2xl sm:text-3xl">{category.name}</h1>
         <p className="text-ink-muted">
           {KIND_LABELS[category.kind]}.{" "}
           {isDevice
@@ -77,17 +79,20 @@ function CategoryView({ data }: { data: AdminCatalogCategoryPage }) {
         ))}
       </ul>
 
-      <section id="marques" aria-labelledby="brands-title" className="card scroll-mt-6 space-y-3 p-5">
-        <h2 id="brands-title" className="text-xl">
+      {/* Modifier les marques et la catégorie : deux boutons, deux fenêtres (refonte du 18/11). */}
+      <div id="marques" role="group" aria-label="Modifier" className="flex scroll-mt-6 flex-wrap gap-3">
+        <button type="button" className="btn btn-secondary" onClick={() => setOpen("brands")}>
           {isDevice ? "Modifier les marques" : "Créer et modifier les types"}
-        </h2>
-        <BrandsEditor categoryId={category.id} isDevice={isDevice} />
-      </section>
+        </button>
+        <button type="button" className="btn btn-secondary" onClick={() => setOpen("category")}>
+          Modifier la catégorie
+        </button>
+      </div>
 
-      <section aria-labelledby="category-title" className="card space-y-3 p-5">
-        <h2 id="category-title" className="text-xl">
-          La catégorie
-        </h2>
+      <EditDialog open={open === "brands"} title={isDevice ? "Modifier les marques" : "Créer et modifier les types"} onClose={() => setOpen(null)}>
+        <BrandsEditor categoryId={category.id} isDevice={isDevice} />
+      </EditDialog>
+      <EditDialog open={open === "category"} title="La catégorie" size="sm" onClose={() => setOpen(null)}>
         <div className="flex flex-wrap items-end gap-3">
           <label className="min-w-48 flex-1 space-y-1">
             <span className="label">Nom</span>
@@ -106,7 +111,7 @@ function CategoryView({ data }: { data: AdminCatalogCategoryPage }) {
           </ConfirmDialog>
         </div>
         {actionError ? <p className="field-error">{errorMessage(actionError)}</p> : null}
-      </section>
+      </EditDialog>
     </div>
   );
 }
