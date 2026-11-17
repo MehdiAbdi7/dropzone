@@ -52,9 +52,13 @@ enum ChoiceGroup {
   origin
 }
 
+// customer : le client du site. seller (vendeur) < order_manager (responsable commande) < admin : le
+// personnel du back-office, en escalier (lot 7). Les droits de chacun sont dans middlewares/access.ts.
 enum Role {
   customer
   admin
+  seller
+  order_manager
 }
 
 enum OrderStatus {
@@ -400,6 +404,9 @@ model User {
   passwordHash   String   @map("password_hash")
   phone          String
   role           Role     @default(customer)
+  // Un compte désactivé est refusé à la requête suivante, sans être supprimé : les ventes et les traces
+  // gardent son nom (lot 7).
+  disabled       Boolean  @default(false)
   addressWilaya  String?  @map("address_wilaya")
   addressCommune String?  @map("address_commune")
   addressLine    String?  @map("address_line")
