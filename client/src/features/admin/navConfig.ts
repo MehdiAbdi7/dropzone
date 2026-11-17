@@ -9,6 +9,8 @@ import {
   SwapIcon,
   UsersIcon,
 } from "@/components/ui/icons";
+import type { Role } from "@/types/api";
+import { canAccess } from "./access";
 
 // Le plan du back-office (14/11) : huit sections, chacune avec ses sous-onglets. Un seul fichier le
 // décrit ; la barre latérale, la barre du bas, le menu ☰ et les sous-onglets le lisent. Les pages
@@ -115,6 +117,14 @@ export const MENU_SECTIONS = SECTIONS.filter((section) => section.inMenu);
 export const NAV_SECTIONS = SECTIONS.filter((section) => !section.inMenu);
 export const BOTTOM_PRIMARY = NAV_SECTIONS.filter((section) => section.primary);
 export const BOTTOM_MORE = NAV_SECTIONS.filter((section) => !section.primary);
+
+// Les sections qu'un rôle peut ouvrir (lot 7) : celles dont la page d'entrée lui est permise (access.ts).
+// Un seul endroit décide des droits ; le menu ne les redit pas.
+export const isVisibleTo = (role: Role) => (section: NavSection) => canAccess(role, section.href);
+
+export function visibleSections(role: Role): NavSection[] {
+  return SECTIONS.filter(isVisibleTo(role));
+}
 
 export function sectionFor(path: string): NavSection | undefined {
   return SECTIONS.find((section) => section.owns(path));

@@ -6,7 +6,8 @@ import { useState } from "react";
 import { CloseIcon, DotsIcon } from "@/components/ui/icons";
 import PendingBadge from "./alerts/PendingBadge";
 import { usePendingDeliveries } from "./alerts/usePendingDeliveries";
-import { BOTTOM_MORE, BOTTOM_PRIMARY, NAV_SECTIONS, sectionFor } from "./navConfig";
+import { useAdminRole } from "./AdminRoleContext";
+import { BOTTOM_MORE, BOTTOM_PRIMARY, NAV_SECTIONS, isVisibleTo, sectionFor } from "./navConfig";
 
 // La section de la page affichée : la barre latérale et la barre du bas l'allument.
 function useActiveKey() {
@@ -18,13 +19,14 @@ function useActiveKey() {
 // Réglages, le thème et la déconnexion sont dans la barre du haut (AdminTopbar).
 export default function AdminNav() {
   const activeKey = useActiveKey();
+  const role = useAdminRole();
   // Les livraisons à confirmer : la pastille rouge de « Commandes », comme sur Niwa Food.
   const { count: pending } = usePendingDeliveries();
 
   return (
     <nav aria-label="Back-office" className="hidden px-2 py-3 lg:block">
       <ul className="flex flex-col gap-1">
-        {NAV_SECTIONS.map(({ key, href, label, icon: SectionIcon }) => (
+        {NAV_SECTIONS.filter(isVisibleTo(role)).map(({ key, href, label, icon: SectionIcon }) => (
           <li key={key}>
             <Link
               href={href}
@@ -50,9 +52,13 @@ export default function AdminNav() {
 // dans le menu ☰ de la barre du haut : jamais deux fois au même endroit.
 export function AdminBottomNav() {
   const activeKey = useActiveKey();
+  const role = useAdminRole();
   const { count: pending } = usePendingDeliveries();
   const [moreOpen, setMoreOpen] = useState(false);
-  const moreActive = BOTTOM_MORE.some((section) => section.key === activeKey);
+  // Ce que le rôle ne peut pas ouvrir n'apparaît pas ; « Plus » disparaît quand il n'a plus rien à ranger.
+  const primary = BOTTOM_PRIMARY.filter(isVisibleTo(role));
+  const more = BOTTOM_MORE.filter(isVisibleTo(role));
+  const moreActive = more.some((section) => section.key === activeKey);
 
   return (
     <>
@@ -80,7 +86,7 @@ export function AdminBottomNav() {
           </button>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          {BOTTOM_MORE.map(({ key, href, label, short, icon: SectionIcon }) => (
+          {more.map(({ key, href, label, short, icon: SectionIcon }) => (
             <Link
               key={key}
               href={href}
@@ -102,7 +108,7 @@ export function AdminBottomNav() {
         aria-label="Back-office"
         className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
-        {BOTTOM_PRIMARY.map(({ key, href, label, short, icon: SectionIcon }) =>
+        {primary.map(({ key, href, label, short, icon: SectionIcon }) =>
           key === "commandes" ? (
             // Le bouton du milieu, bien démarqué : un rond en relief au-dessus de la barre.
             <Link
@@ -136,17 +142,19 @@ export function AdminBottomNav() {
             </Link>
           ),
         )}
-        <button
-          type="button"
-          aria-expanded={moreOpen}
-          onClick={() => setMoreOpen(true)}
-          className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold ${
-            moreActive ? "text-blue-ink" : "text-ink-muted"
-          }`}
-        >
-          <DotsIcon size={22} />
-          Plus
-        </button>
+        {more.length > 0 ? (
+          <button
+            type="button"
+            aria-expanded={moreOpen}
+            onClick={() => setMoreOpen(true)}
+            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold ${
+              moreActive ? "text-blue-ink" : "text-ink-muted"
+            }`}
+          >
+            <DotsIcon size={22} />
+            Plus
+          </button>
+        ) : null}
       </nav>
     </>
   );

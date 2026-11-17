@@ -9,7 +9,9 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useCashTodayQuery } from "@/features/admin/api/cashApi";
 import { useLogoutMutation } from "@/features/auth/authApi";
 import { playTestChime } from "@/lib/orderAlertSound";
-import { ACCOUNT_HREF, MENU_SECTIONS, SETTINGS_HREF, sectionFor } from "./navConfig";
+import { canAccess, homeFor } from "./access";
+import { useAdminRole } from "./AdminRoleContext";
+import { ACCOUNT_HREF, MENU_SECTIONS, SETTINGS_HREF, isVisibleTo, sectionFor } from "./navConfig";
 
 // La barre du haut du back-office (14/11), comme sur Niwa Food : le logo, « Voir la boutique », et un
 // menu ☰ avec ce qui n'est pas une page de travail : le thème, l'état de la caisse (avec un lien pour
@@ -17,6 +19,7 @@ import { ACCOUNT_HREF, MENU_SECTIONS, SETTINGS_HREF, sectionFor } from "./navCon
 export default function AdminTopbar() {
   const router = useRouter();
   const pathname = usePathname();
+  const role = useAdminRole();
   const [logout] = useLogoutMutation();
   const [open, setOpen] = useState(false);
   const [soundTest, setSoundTest] = useState<"ok" | "bloqué" | null>(null);
@@ -55,7 +58,7 @@ export default function AdminTopbar() {
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-3 border-b border-line bg-surface px-4">
       <div className="flex items-baseline gap-3">
-        <Logo href="/admin" size="text-xl" />
+        <Logo href={homeFor(role)} size="text-xl" />
         <span className="hidden text-xs text-ink-muted sm:inline">Back-office</span>
       </div>
       <div className="flex items-center gap-2">
@@ -98,7 +101,7 @@ export default function AdminTopbar() {
                 </span>
                 <span className="text-xs font-semibold text-blue-ink underline">{cash ? cashAction : ""}</span>
               </Link>
-              {MENU_SECTIONS.filter((section) => section.key !== "caisse").map(({ key, href, label, icon: SectionIcon }) => (
+              {MENU_SECTIONS.filter((section) => section.key !== "caisse" && isVisibleTo(role)(section)).map(({ key, href, label, icon: SectionIcon }) => (
                 <Link
                   key={key}
                   role="menuitem"
@@ -115,18 +118,21 @@ export default function AdminTopbar() {
                 Thème
                 <ThemeToggle />
               </div>
-              {/* Le navigateur n'autorise le son qu'après un geste : ce bouton le débloque et le fait entendre. */}
-              <button
-                type="button"
-                role="menuitem"
-                onClick={async () => setSoundTest((await playTestChime()) ? "ok" : "bloqué")}
-                className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-surface-2"
-              >
-                Tester le son des alertes
-                <span className="text-xs font-normal text-ink-muted">
-                  {soundTest === "ok" ? "Entendu ?" : soundTest === "bloqué" ? "Son bloqué" : ""}
-                </span>
-              </button>
+              {/* Le navigateur n'autorise le son qu'après un geste : ce bouton le débloque et le fait entendre.
+                  Les alertes sont celles des commandes : le vendeur n'en reçoit pas. */}
+              {canAccess(role, "/admin/commandes") ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={async () => setSoundTest((await playTestChime()) ? "ok" : "bloqué")}
+                  className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-surface-2"
+                >
+                  Tester le son des alertes
+                  <span className="text-xs font-normal text-ink-muted">
+                    {soundTest === "ok" ? "Entendu ?" : soundTest === "bloqué" ? "Son bloqué" : ""}
+                  </span>
+                </button>
+              ) : null}
               <Link
                 role="menuitem"
                 href={SETTINGS_HREF}

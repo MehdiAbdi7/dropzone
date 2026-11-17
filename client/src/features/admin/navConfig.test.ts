@@ -1,7 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { BOTTOM_MORE, BOTTOM_PRIMARY, MENU_SECTIONS, NAV_SECTIONS, SECTIONS, activeTab, ordersHref, ordersListHref, sectionFor } from "./navConfig";
+import { BOTTOM_MORE, BOTTOM_PRIMARY, MENU_SECTIONS, NAV_SECTIONS, SECTIONS, activeTab, ordersHref, ordersListHref, sectionFor, visibleSections } from "./navConfig";
 
 const params = (query = "") => new URLSearchParams(query);
+
+// Lot 7 : chaque rôle ne voit que les sections qu'il peut ouvrir (la règle vient de access.ts).
+describe("visibleSections", () => {
+  const keys = (role: Parameters<typeof visibleSections>[0]) => visibleSections(role).map((section) => section.key);
+
+  it("le vendeur : la vente (avec l'échange) et la caisse", () => {
+    expect(keys("seller")).toEqual(["vente", "caisse"]);
+  });
+
+  it("le responsable commande : le vendeur, plus les commandes", () => {
+    expect(keys("order_manager")).toEqual(["vente", "caisse", "commandes"]);
+  });
+
+  it("l'admin : toutes les sections", () => {
+    expect(keys("admin")).toEqual(SECTIONS.map((section) => section.key));
+  });
+
+  it("un client : aucune", () => {
+    expect(keys("customer")).toEqual([]);
+  });
+});
 
 describe("les sections du back-office", () => {
   it("huit sections : la vente au magasin et la caisse sont des pages à part", () => {

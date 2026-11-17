@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import Field from "@/components/ui/Field";
 import { STATUS_LABELS } from "@/config/catalog";
 import { WILAYAS } from "@/config/wilayas";
+import { homeFor, isBackOffice } from "@/features/admin/access";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatPrice } from "@/lib/format";
 import type { User } from "@/types/api";
@@ -32,8 +33,8 @@ export default function AccountView() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl">Bonjour {user.firstName}</h1>
         <div className="flex gap-2">
-          {user.role === "admin" ? (
-            <Link href="/admin" className="btn btn-secondary">
+          {isBackOffice(user.role) ? (
+            <Link href={homeFor(user.role)} className="btn btn-secondary">
               Back-office
             </Link>
           ) : null}

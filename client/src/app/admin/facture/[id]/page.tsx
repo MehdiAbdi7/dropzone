@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { use } from "react";
+import { canAccess, homeFor } from "@/features/admin/access";
 import { useInvoiceQuery } from "@/features/admin/api/invoiceApi";
+import { useAdminRole } from "@/features/admin/AdminRoleContext";
 import InvoiceSheet from "@/features/admin/invoice/InvoiceSheet";
 import { errorMessage } from "@/lib/errors";
 
@@ -12,13 +14,15 @@ import { errorMessage } from "@/lib/errors";
 // Quand la facture n'est pas encore possible (livraison pas confirmée, retrait pas récupéré…), l'API le dit.
 export default function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const role = useAdminRole();
   const orderId = Number(id);
   const { data, error, isLoading } = useInvoiceQuery(orderId, { skip: !Number.isInteger(orderId) || orderId < 1 });
 
   return (
     <div className="space-y-5">
       <div className="no-print flex flex-wrap items-center gap-3">
-        <Link href="/admin/historique" className="btn btn-secondary">
+        {/* L'Historique est à l'admin : les autres rôles reviennent sur leur première page. */}
+        <Link href={canAccess(role, "/admin/historique") ? "/admin/historique" : homeFor(role)} className="btn btn-secondary">
           ← Retour
         </Link>
         <button type="button" className="btn btn-primary" disabled={!data} onClick={() => window.print()}>
