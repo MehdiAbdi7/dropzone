@@ -23,6 +23,7 @@ export default function ValidatePickup({
   prices,
   onPrice,
   shippingFee,
+  alreadyPaid = 0,
 }: {
   orderId: number;
   negotiation: ReturnType<typeof negotiationState>;
@@ -30,12 +31,17 @@ export default function ValidatePickup({
   prices: Record<number, number>;
   onPrice: (id: number, value: number) => void;
   shippingFee: number;
+  // L'avance BaridiMob déjà reçue (18/11) : le client ne paie que le reste.
+  alreadyPaid?: number;
 }) {
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [validate, { isLoading, error }] = useValidatePickupMutation();
   return (
     <div className="space-y-3">
       <p className="font-semibold">Le client est venu ?</p>
+      {alreadyPaid > 0 ? (
+        <p className="text-sm text-ink-muted">Avance BaridiMob déjà reçue : {formatPrice(alreadyPaid)}. Le client paie seulement le reste.</p>
+      ) : null}
       <NegotiatePrices items={items} prices={prices} onPrice={onPrice} shippingFee={shippingFee} />
       <div className="flex flex-wrap items-end gap-3">
         <label className="space-y-1 text-sm font-semibold">
@@ -54,7 +60,7 @@ export default function ValidatePickup({
           disabled={isLoading || negotiation.problem !== null}
           onClick={() => validate({ id: orderId, method, prices: negotiation.toSend })}
         >
-          Valider le retrait · {Number.isNaN(negotiation.total) ? "—" : formatPrice(negotiation.total)}
+          Valider la réservation · {alreadyPaid > 0 ? "reste " : ""}{Number.isNaN(negotiation.total) ? "—" : formatPrice(negotiation.total - alreadyPaid)}
         </button>
       </div>
       {error ? (

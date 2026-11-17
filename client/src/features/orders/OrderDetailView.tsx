@@ -7,7 +7,7 @@ import OrderSlipSection from "./OrderSlipSection";
 import { slipAvailable } from "./slipRows";
 
 // Le détail d'une commande, partagé par le suivi invité et l'espace client.
-// Depuis le 14/11, une commande peut être un retrait au magasin : ses propres étapes
+// Depuis le 14/11, une commande peut être une réservation au magasin : ses propres étapes
 // (réservée, récupérée), son créneau, et un message clair si la réservation a expiré.
 export default function OrderDetailView({ order }: { order: OrderDetail }) {
   const pickup = order.type === "pickup";
@@ -23,8 +23,12 @@ export default function OrderDetailView({ order }: { order: OrderDetail }) {
 
       {pickup && order.pickupDate && order.pickupTime ? (
         <p className="rounded-lg border border-line bg-surface-2 p-4">
-          Retrait au magasin <strong>{pickupLabel(order.pickupDate, order.pickupTime)}</strong>.
+          Réservation au magasin <strong>{pickupLabel(order.pickupDate, order.pickupTime)}</strong>.
         </p>
+      ) : null}
+
+      {order.type === "pickup" && order.reservationMode === "unlimited" && order.status === "reserved" ? (
+        <BaridiBlock order={order} />
       ) : null}
 
       {order.status === "cancelled" ? (
@@ -93,5 +97,46 @@ export default function OrderDetailView({ order }: { order: OrderDetail }) {
           sur ordinateur. Pas pour une commande annulée, expirée ou retournée. */}
       {slipAvailable(order) ? <OrderSlipSection order={order} /> : null}
     </div>
+  );
+}
+
+// La réservation illimitée vue par le client (18/11) : trois états. 1) le magasin n'a pas encore envoyé le
+// numéro : il va appeler ; 2) le numéro est là : le client envoie l'avance ; 3) l'avance est reçue : confirmée.
+function BaridiBlock({ order }: { order: OrderDetail }) {
+  const advance = formatPrice(order.advanceAmount ?? 0);
+  if (order.advancePaidAt) {
+    return (
+      <section aria-label="Réservation illimitée" className="rounded-lg border border-blue-ink bg-blue-soft p-4">
+        <p className="font-display font-bold">Réservation confirmée</p>
+        <p className="text-sm">
+          Nous avons bien reçu votre avance de {advance}. Votre appareil est gardé pour vous : passez le chercher quand vous
+          voulez, vous payerez seulement le reste ({formatPrice(order.total - (order.advanceAmount ?? 0))}).
+        </p>
+      </section>
+    );
+  }
+  if (order.baridiNumber) {
+    return (
+      <section aria-label="Avance BaridiMob" className="space-y-2 rounded-lg border border-blue-ink bg-blue-soft p-4">
+        <p className="font-display font-bold">Envoyez votre avance par BaridiMob</p>
+        <p className="text-sm">
+          Montant de l&apos;avance : <strong className="font-display text-lg">{advance}</strong>
+        </p>
+        <p className="text-sm">Numéro BaridiMob du magasin :</p>
+        <p className="font-mono text-lg font-bold tracking-wide select-all">{order.baridiNumber}</p>
+        <p className="text-sm text-ink-muted">
+          Votre réservation est confirmée dès que le magasin reçoit l&apos;avance. Cette page se mettra à jour : rechargez-la
+          pour voir l&apos;état.
+        </p>
+      </section>
+    );
+  }
+  return (
+    <section aria-label="Réservation illimitée" className="space-y-1 rounded-lg border border-line bg-surface-2 p-4">
+      <p className="font-display font-bold">Réservation illimitée : en attente de l&apos;appel du magasin</p>
+      <p className="text-sm">
+        Le magasin vous appelle pour confirmer. Le numéro BaridiMob pour envoyer l&apos;avance de {advance} apparaîtra ici ensuite.
+      </p>
+    </section>
   );
 }

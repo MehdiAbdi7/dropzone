@@ -156,7 +156,7 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
 
 export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   delivery: "Livraison",
-  pickup: "Retrait au magasin",
+  pickup: "Réservation au magasin",
   in_store: "Vente au magasin",
   exchange: "Échange",
 };
@@ -178,7 +178,7 @@ export const STATUS_STEPS: { status: OrderStatus; text: string }[] = [
   { status: "delivered", text: "Colis livré et payé à la livraison." },
 ];
 
-// Les étapes d'un retrait au magasin (14/11).
+// Les étapes d'une réservation au magasin (14/11).
 export const PICKUP_STEPS: { status: OrderStatus; text: string }[] = [
   { status: "reserved", text: "Appareil réservé à votre nom jusqu'à minuit le jour choisi." },
   { status: "picked_up", text: "Récupéré et payé au magasin." },

@@ -18,7 +18,18 @@ const KINDS: ProductKind[] = ["phone", "tablet", "laptop"];
 // Ce que le client donne (lot 5) : son téléphone. Le modèle est celui de NOTRE catalogue (obligatoire :
 // l'affaire sera mise en vente sous lui), sa couleur, ses options, la fiche d'état complète d'une affaire,
 // et le prix de reprise, SAISI À LA MAIN : c'est le magasin qui décide ce qu'il donne pour ce téléphone.
-export default function TradeInForm({ draft, onChange }: { draft: TradeInDraft; onChange: (draft: TradeInDraft) => void }) {
+// `editing` (18/11) : on modifie une reprise déjà enregistrée, avant sa mise en vente. Le modèle et le prix de reprise
+// ne changent plus (ils sont affichés), et une section « Remise en état » dit ce que la batterie neuve ou l'écran a
+// coûté : ces frais s'ajoutent au prix d'achat de l'affaire.
+export default function TradeInForm({
+  draft,
+  onChange,
+  editing = false,
+}: {
+  draft: TradeInDraft;
+  onChange: (draft: TradeInDraft) => void;
+  editing?: boolean;
+}) {
   const { data: choiceData } = useChoicesQuery();
   const { variant, kind } = draft;
   const id = (name: string) => `tradein-${name}`;
@@ -53,18 +64,24 @@ export default function TradeInForm({ draft, onChange }: { draft: TradeInDraft; 
               ))}
             </div>
           </fieldset>
-          <ModelPicker
-            kind={kind}
-            value={draft.model?.id ?? null}
-            onChange={(model) =>
-              onChange({
-                ...draft,
-                model: { id: model.id, brand: model.brand, name: model.name, colors: model.colors },
-                // La couleur d'un autre modèle n'a plus de sens : elle est à rechoisir.
-                variant: { ...variant, options: { ...variant.options, Couleur: "" } },
-              })
-            }
-          />
+          {editing ? (
+            <p className="font-semibold">
+              {draft.model?.brand} {draft.model?.name}
+            </p>
+          ) : (
+            <ModelPicker
+              kind={kind}
+              value={draft.model?.id ?? null}
+              onChange={(model) =>
+                onChange({
+                  ...draft,
+                  model: { id: model.id, brand: model.brand, name: model.name, colors: model.colors },
+                  // La couleur d'un autre modèle n'a plus de sens : elle est à rechoisir.
+                  variant: { ...variant, options: { ...variant.options, Couleur: "" } },
+                })
+              }
+            />
+          )}
           <div className="grid gap-5 md:grid-cols-2">
             <ChoicePicker
               group="color"
@@ -96,23 +113,43 @@ export default function TradeInForm({ draft, onChange }: { draft: TradeInDraft; 
           </div>
         </section>
 
-        <section className="space-y-4 bg-blue-soft/30 p-4 sm:p-5">
-          <SectionHeading
-            number="02"
-            title="Prix de reprise"
-            description="Saisi à la main : c'est le prix que le magasin donne au client pour son téléphone."
-          />
-          <Field id={id("price")} label="Prix de reprise (DA)" hint="Il devient le prix d'achat de l'affaire quand elle sera mise en vente.">
-            <input
-              id={id("price")}
-              className="input w-full sm:w-64"
-              inputMode="numeric"
-              value={draft.price}
-              onChange={(event) => onChange({ ...draft, price: event.target.value.replace(/\D/g, "") })}
+        {editing ? (
+          <section className="space-y-4 bg-blue-soft/30 p-4 sm:p-5">
+            <SectionHeading
+              number="02"
+              title="Remise en état"
+              description="Batterie neuve, écran changé… : ce que cela a coûté s'ajoute au prix d'achat de l'affaire."
             />
-          </Field>
-          {!Number.isNaN(price) ? <p className="text-sm font-semibold">{formatPrice(price)} pour son téléphone</p> : null}
-        </section>
+            <p className="text-sm">Repris à {formatPrice(price)} (ce prix ne change pas).</p>
+            <Field id={id("repair")} label="Frais de remise en état (DA)" hint="Laissez vide s'il n'y en a pas.">
+              <input
+                id={id("repair")}
+                className="input w-full sm:w-64"
+                inputMode="numeric"
+                value={draft.repairCost}
+                onChange={(event) => onChange({ ...draft, repairCost: event.target.value.replace(/\D/g, "") })}
+              />
+            </Field>
+          </section>
+        ) : (
+          <section className="space-y-4 bg-blue-soft/30 p-4 sm:p-5">
+            <SectionHeading
+              number="02"
+              title="Prix de reprise"
+              description="Saisi à la main : c'est le prix que le magasin donne au client pour son téléphone."
+            />
+            <Field id={id("price")} label="Prix de reprise (DA)" hint="Il devient le prix d'achat de l'affaire quand elle sera mise en vente.">
+              <input
+                id={id("price")}
+                className="input w-full sm:w-64"
+                inputMode="numeric"
+                value={draft.price}
+                onChange={(event) => onChange({ ...draft, price: event.target.value.replace(/\D/g, "") })}
+              />
+            </Field>
+            {!Number.isNaN(price) ? <p className="text-sm font-semibold">{formatPrice(price)} pour son téléphone</p> : null}
+          </section>
+        )}
 
         <section className="space-y-4 p-4 sm:p-5">
           <SectionHeading number="03" title="Garantie et origine" description="Ce que le magasin annoncera quand il revendra cette affaire." />

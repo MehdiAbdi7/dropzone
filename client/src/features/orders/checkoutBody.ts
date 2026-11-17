@@ -14,6 +14,8 @@ export type CheckoutValues = {
   acceptLimitations: boolean;
   pickupDate: string;
   pickupTime: string;
+  // « two_days » : un jour et une heure, jusqu'à minuit ; « unlimited » : sans date, contre une avance BaridiMob (18/11).
+  reservationMode: "two_days" | "unlimited";
 };
 
 // Le corps de POST /orders (14/11) : une livraison avec son adresse, un retrait avec son jour
@@ -34,5 +36,13 @@ export function checkoutBody(
   };
   return fulfillment === "delivery"
     ? { ...base, fulfillment, wilaya: values.wilaya, commune: values.commune, address: values.address }
-    : { ...base, fulfillment, pickupDate: values.pickupDate, pickupTime: values.pickupTime };
+    : values.reservationMode === "unlimited"
+      ? { ...base, fulfillment, reservationMode: "unlimited" as const }
+      : {
+          ...base,
+          fulfillment,
+          reservationMode: "two_days" as const,
+          pickupDate: values.pickupDate,
+          pickupTime: values.pickupTime,
+        };
 }

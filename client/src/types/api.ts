@@ -3,7 +3,7 @@
 export type ProductKind = "phone" | "tablet" | "laptop" | "watch" | "accessory" | "audiovisual";
 export type Condition = "new" | "refurbished";
 export type ProductStatus = "draft" | "published";
-// reserved, picked_up, expired : les états d'un retrait au magasin (14/11).
+// reserved, picked_up, expired : les états d'une réservation au magasin (14/11).
 export type OrderStatus =
   | "pending"
   | "confirmed"
@@ -289,6 +289,13 @@ export type OrderDetail = {
   dailyNumber: number;
   pickupDate: string | null;
   pickupTime: string | null;
+  // La réservation illimitée avec avance BaridiMob (18/11) : l'avance demandée, le numéro (null tant que le magasin
+  // ne l'a pas envoyé : il n'est visible qu'à partir de là), quand il a été envoyé et quand l'avance a été reçue.
+  reservationMode?: "two_days" | "unlimited" | null;
+  advanceAmount?: number | null;
+  baridiNumber?: string | null;
+  baridiSharedAt?: string | null;
+  advancePaidAt?: string | null;
   subtotal: number;
   shippingFee: number;
   total: number;

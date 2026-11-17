@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Field from "@/components/ui/Field";
+import EditDialog from "@/features/admin/products/EditDialog";
 import {
   useChangeEmailMutation,
   useChangePasswordMutation,
@@ -19,11 +20,42 @@ export default function AccountSettings() {
   const { data: me, isError } = useMeQuery();
   if (isError) return <p role="alert">Le compte ne répond pas.</p>;
   if (!me) return <p className="text-ink-muted">Chargement…</p>;
+  return <AccountButtons me={me} />;
+}
+
+// Trois boutons, trois fenêtres (refonte du 18/11) : la page tient sur un écran.
+function AccountButtons({ me }: { me: User }) {
+  const [open, setOpen] = useState<"profile" | "email" | "password" | null>(null);
+  const close = () => setOpen(null);
+  const items = [
+    { key: "profile" as const, title: "Mes informations", text: `${me.firstName} ${me.lastName} · ${me.phone ?? "pas de téléphone"}` },
+    { key: "email" as const, title: "Email de connexion", text: me.email },
+    { key: "password" as const, title: "Mot de passe", text: "Demande le mot de passe actuel" },
+  ];
   return (
-    <div className="space-y-6">
-      <ProfileForm me={me} />
-      <EmailForm me={me} />
-      <PasswordForm />
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {items.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => setOpen(item.key)}
+            className="card space-y-1 p-4 text-left transition-[border-color] hover:border-blue-ink"
+          >
+            <span className="block font-display font-bold">{item.title}</span>
+            <span className="block truncate text-sm text-ink-muted">{item.text}</span>
+          </button>
+        ))}
+      </div>
+      <EditDialog open={open === "profile"} title="Mes informations" size="sm" onClose={close}>
+        <ProfileForm me={me} />
+      </EditDialog>
+      <EditDialog open={open === "email"} title="Email de connexion" size="sm" onClose={close}>
+        <EmailForm me={me} />
+      </EditDialog>
+      <EditDialog open={open === "password"} title="Mot de passe" size="sm" onClose={close}>
+        <PasswordForm />
+      </EditDialog>
     </div>
   );
 }

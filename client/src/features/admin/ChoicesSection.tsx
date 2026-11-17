@@ -6,6 +6,7 @@ import type { ProductKind } from "@/types/api";
 import { useChoicesQuery, useCreateChoiceListMutation } from "@/features/admin/api/choicesApi";
 import { errorMessage } from "@/lib/errors";
 import ChoiceListDialog, { listKey } from "./ChoiceListDialog";
+import EditDialog from "./products/EditDialog";
 import KindPicker from "./KindPicker";
 
 // La page Listes : une carte par liste, le formulaire d'une nouvelle liste, et la fenêtre
@@ -18,6 +19,7 @@ export default function ChoicesSection() {
   const [kinds, setKinds] = useState<ProductKind[]>([]);
   const [multiple, setMultiple] = useState(false);
   const [group, setGroup] = useState<ChoiceGroup | "">("");
+  const [creating, setCreating] = useState(false);
   const lists = data?.lists ?? [];
   const usedGroups = new Set(lists.flatMap((list) => (list.group ? [list.group] : [])));
   const missingGroups = (Object.keys(CHOICE_GROUP_LABELS) as ChoiceGroup[]).filter((value) => !usedGroups.has(value));
@@ -33,6 +35,7 @@ export default function ChoicesSection() {
       setKinds([]);
       setMultiple(false);
       setGroup("");
+      setCreating(false);
     } catch {
       // L'erreur RTK Query est affichée sous le formulaire.
     }
@@ -40,12 +43,17 @@ export default function ChoicesSection() {
 
   return (
     <section aria-labelledby="choices" className="space-y-4">
-      <div className="space-y-1">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
         <h2 id="choices" className="text-2xl">Listes d&apos;options</h2>
         <p className="max-w-3xl text-ink-muted">
           Crée et organise les listes utilisées dans les fiches produit. Renommer une valeur la renomme aussi sur les
           produits qui l&apos;utilisent ; la supprimer ne change aucun produit.
         </p>
+        </div>
+        <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
+          Nouvelle liste
+        </button>
       </div>
       {error ? <p className="field-error">{errorMessage(error)}</p> : null}
       {isLoading ? <p className="text-ink-muted">Chargement des listes…</p> : null}
@@ -75,7 +83,8 @@ export default function ChoicesSection() {
         })}
       </ul>
 
-      <form onSubmit={addList} className="card grid gap-4 p-4 sm:grid-cols-[minmax(12rem,1fr)_minmax(12rem,1.3fr)]">
+      <EditDialog open={creating} title="Nouvelle liste" onClose={() => setCreating(false)} closeLabel="Annuler">
+      <form onSubmit={addList} className="grid gap-4 sm:grid-cols-[minmax(12rem,1fr)_minmax(12rem,1.3fr)]">
         <div className="space-y-3">
           <label className="block">
             <span className="label">Nouvelle liste</span>
@@ -109,6 +118,7 @@ export default function ChoicesSection() {
         </div>
         <KindPicker value={kinds} onChange={setKinds} label="Visible dans les catégories" />
       </form>
+      </EditDialog>
 
       {active ? (
         <ChoiceListDialog key={active.id} list={active} values={data?.values[listKey(active)] ?? []} onClose={() => setSelectedId(null)} />

@@ -73,7 +73,7 @@ export const SECTIONS: NavSection[] = [
     owns: (path) => anyUnder(path, ["/admin/commandes", "/admin/livraisons"]),
     tabs: [
       { label: "Livraisons", href: "/admin/livraisons", match: (path) => under(path, "/admin/livraisons") },
-      { label: "Retraits", href: "/admin/commandes?type=pickup", match: (path, params) => path === "/admin/commandes" && params.get("type") === "pickup" },
+      { label: "Réservations", href: "/admin/commandes?type=pickup", match: (path, params) => path === "/admin/commandes" && params.get("type") === "pickup" },
     ],
   },
   {

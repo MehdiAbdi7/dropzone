@@ -16,9 +16,9 @@ export default function TradeInsPage() {
   const pending = useTradeInsQuery("pending");
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-4">
       <div className="space-y-1">
-        <h1 className="text-3xl">Reprises</h1>
+        <h1 className="text-2xl sm:text-3xl">Reprises</h1>
         <p className="text-ink-muted">
           Les téléphones rendus par les clients lors d&apos;un échange. Ils ne sont pas sur le site tant que tu n&apos;as pas fixé
           leur prix de revente.

@@ -2,7 +2,7 @@ import { api } from "@/lib/api";
 import type { StoreHours } from "@/lib/algiersTime";
 import type { CartItem, CartPreview, OrderDetail, OrderType } from "@/types/api";
 
-// Livraison ou retrait au magasin (14/11).
+// Livraison ou réservation au magasin (14/11).
 export type Fulfillment = "delivery" | "pickup";
 
 type CheckoutBase = {
@@ -17,7 +17,8 @@ type CheckoutBase = {
 
 type CheckoutInput =
   | (CheckoutBase & { fulfillment: "delivery"; wilaya: string; commune: string; address: string })
-  | (CheckoutBase & { fulfillment: "pickup"; pickupDate: string; pickupTime: string });
+  | (CheckoutBase & { fulfillment: "pickup"; reservationMode: "two_days"; pickupDate: string; pickupTime: string })
+  | (CheckoutBase & { fulfillment: "pickup"; reservationMode: "unlimited" });
 
 export type PlacedOrder = {
   number: number;
@@ -28,6 +29,9 @@ export type PlacedOrder = {
   // « 2026-11-15 » pour un retrait, null pour une livraison.
   pickupDate: string | null;
   pickupTime: string | null;
+  // La réservation illimitée (18/11) : l'avance demandée ; null pour une réservation de deux jours.
+  reservationMode?: "two_days" | "unlimited" | null;
+  advanceAmount?: number | null;
 };
 
 const ordersApi = api.injectEndpoints({
@@ -48,6 +52,12 @@ const ordersApi = api.injectEndpoints({
       query: (body) => ({ url: "/orders/track", method: "POST", body }),
       transformResponse: (body: { data: OrderDetail }) => body.data,
     }),
+    // L'avance de la réservation illimitée (18/11) : null quand le magasin ne la propose pas. Le numéro BaridiMob
+    // n'est jamais ici : le client ne le reçoit que dans le suivi de sa commande, après l'appel du magasin.
+    reservationOffer: build.query<{ unlimitedAdvance: number | null }, void>({
+      query: () => "/store/reservation",
+      transformResponse: (body: { data: { unlimitedAdvance: number | null } }) => body.data,
+    }),
     // Les horaires du magasin : ils décident des créneaux de retrait proposés.
     storeHours: build.query<StoreHours, void>({
       query: () => "/store/hours",
@@ -57,4 +67,4 @@ const ordersApi = api.injectEndpoints({
   }),
 });
 
-export const { useCartPreviewQuery, useCreateOrderMutation, useTrackOrderMutation, useStoreHoursQuery } = ordersApi;
+export const { useCartPreviewQuery, useCreateOrderMutation, useTrackOrderMutation, useStoreHoursQuery, useReservationOfferQuery } = ordersApi;

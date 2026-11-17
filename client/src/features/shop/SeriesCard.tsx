@@ -12,11 +12,14 @@ import { glowColor } from "./series";
 export default function SeriesCard({
   series,
   href,
+  onSelect,
   palette,
   priority,
 }: {
   series: SeriesSummary;
-  href: string;
+  href?: string;
+  // Le comptoir (fenêtre de vente) : un bouton à la place du lien, la page ne change pas.
+  onSelect?: () => void;
   palette: Palette;
   priority: boolean;
 }) {
@@ -75,6 +78,13 @@ export default function SeriesCard({
       <div aria-disabled="true" className="series-card">
         {body}
       </div>
+    );
+  }
+  if (onSelect || !href) {
+    return (
+      <button type="button" onClick={onSelect} className="series-card w-full text-left">
+        {body}
+      </button>
     );
   }
   return (

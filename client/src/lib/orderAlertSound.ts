@@ -109,7 +109,7 @@ export function playNewOrderChime(): void {
   CONFIRM_NOTES.forEach(([freq, offset]) => ring(ctx, freq, now + offset, 1));
 }
 
-// Une nouvelle réservation (retrait au magasin) : une seule note, plus douce, qui n'exige aucune action.
+// Une nouvelle réservation (réservation au magasin) : une seule note, plus douce, qui n'exige aucune action.
 export function playReservationChime(): void {
   const ctx = getContext();
   if (!ctx || ctx.state !== "running") return;

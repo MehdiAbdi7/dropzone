@@ -3,6 +3,7 @@ import { formatDate, formatPrice } from "@/lib/format";
 import type { OrderStatus, OrderType } from "@/types/api";
 import { dailyLabel, receptionLabel } from "./orderLabels";
 import { stepBadge } from "./orderSteps";
+import { unlimitedStage, unlimitedStageLabel } from "./reservationStage";
 
 // Le tableau des commandes, partagé par Livraisons et Retraits. Un clic sur une ligne ouvre la fenêtre
 // de la commande. À partir de 768 px : un vrai tableau ; en dessous : une carte par commande, comme
@@ -12,7 +13,21 @@ import { stepBadge } from "./orderSteps";
 const NEEDS_ACTION: OrderStatus[] = ["pending", "reserved", "delivered"];
 const FINISHED: OrderStatus[] = ["collected", "picked_up"];
 
-export function StatusBadge({ type, status }: { type: OrderType; status: OrderStatus }) {
+export function StatusBadge({
+  type,
+  status,
+  reservation,
+}: {
+  type: OrderType;
+  status: OrderStatus;
+  // La réservation illimitée (18/11) : son badge dit où en est l'avance, pas « Réservée ».
+  reservation?: Parameters<typeof unlimitedStage>[0];
+}) {
+  const stage = type === "pickup" && status === "reserved" && reservation ? unlimitedStage(reservation) : null;
+  if (stage) {
+    const tone = stage === "confirmed" ? "bg-blue-soft text-blue-ink" : "bg-red-soft text-red";
+    return <span className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${tone}`}>{unlimitedStageLabel(stage)}</span>;
+  }
   const tone = NEEDS_ACTION.includes(status)
     ? "bg-red-soft text-red"
     : FINISHED.includes(status)
@@ -39,7 +54,7 @@ export default function OrdersTable({
           <li key={order.id}>
             <button type="button" onClick={() => onOpen(order.id)} className="card flex w-full items-center gap-3 p-3 text-left">
               <span className="min-w-0 flex-1 space-y-0.5">
-                <StatusBadge type={order.type} status={order.status} />
+                <StatusBadge type={order.type} status={order.status} reservation={order} />
                 <span className="block font-display font-bold text-blue-ink">{dailyLabel(order.dailyNumber, order.businessDate)}</span>
                 <span className="block truncate text-sm font-semibold">{order.fullName}</span>
                 <span className="block truncate text-xs text-ink-muted">{receptionLabel(order)}</span>
@@ -70,7 +85,7 @@ export default function OrdersTable({
               // La ligne entière se clique à la souris ; le bouton du numéro sert au clavier.
               <tr key={order.id} onClick={() => onOpen(order.id)} className="cursor-pointer hover:bg-surface-2/60">
                 <td>
-                  <StatusBadge type={order.type} status={order.status} />
+                  <StatusBadge type={order.type} status={order.status} reservation={order} />
                 </td>
                 <td>
                   <button

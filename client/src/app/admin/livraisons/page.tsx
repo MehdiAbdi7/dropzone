@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useAdminOrdersQuery } from "@/features/admin/api/ordersApi";
 import { useDeliverySummaryQuery } from "@/features/admin/api/deliveriesApi";
+import EditDialog from "@/features/admin/products/EditDialog";
 import OrderWindow from "@/features/admin/orders/OrderWindow";
 import OrdersTable from "@/features/admin/orders/OrdersTable";
 import OrdersTabs, { type OrdersTab } from "@/features/admin/orders/OrdersTabs";
@@ -46,10 +47,19 @@ function Deliveries() {
   const newCount = useAdminOrdersQuery({ type: "delivery", stage: "new", limit: 1, page: 1 }, { pollingInterval: 30_000 });
   const ongoingCount = useAdminOrdersQuery({ type: "delivery", stage: "ongoing", limit: 1, page: 1 }, { pollingInterval: 30_000 });
   const data = summary.data;
+  const [daysOpen, setDaysOpen] = useState(false);
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <h1 className="text-3xl">Livraisons</h1>
+    <div className="max-w-4xl space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl sm:text-3xl">Livraisons</h1>
+        {/* L'argent arrivé jour par jour est derrière un bouton (refonte du 18/11). */}
+        {data && data.collectedByDay.length > 0 ? (
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => setDaysOpen(true)}>
+            Argent arrivé, jour par jour
+          </button>
+        ) : null}
+      </div>
 
       {summary.isError ? (
         <p role="alert" className="field-error">
@@ -58,7 +68,7 @@ function Deliveries() {
       ) : null}
 
       {data ? (
-        <section aria-label="Chiffres des livraisons" className="grid gap-4 md:grid-cols-4">
+        <section aria-label="Chiffres des livraisons" className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Card title="En cours" value={formatPrice(data.inProgress.total)} note={`${data.inProgress.count} livraison${data.inProgress.count > 1 ? "s" : ""} à venir`} />
           <Card title="À encaisser" value={formatPrice(data.toCollect.total)} note={`${data.toCollect.count} livrée${data.toCollect.count > 1 ? "s" : ""}, argent pas encore arrivé`} />
           <Card title="Encaissé en tout" value={formatPrice(data.collectedTotal)} note="Hors caisse du magasin" />
@@ -72,38 +82,7 @@ function Deliveries() {
         <p className="text-ink-muted">Chargement…</p>
       )}
 
-      {data && data.collectedByDay.length > 0 ? (
-        <section aria-labelledby="by-day" className="space-y-3">
-          <h2 id="by-day" className="text-xl">
-            Argent arrivé, jour par jour
-          </h2>
-          <div className="card overflow-x-auto">
-            <table className="table min-w-[320px]">
-              <thead>
-                <tr>
-                  <th scope="col">Jour</th>
-                  <th scope="col">Encaissé</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.collectedByDay.map((day) => (
-                  <tr key={day.date}>
-                    <th scope="row" className="font-semibold">
-                      {dayLabel(day.date)}
-                    </th>
-                    <td className="tabular-nums">{formatPrice(day.total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
-
-      <section aria-labelledby="list-title" className="space-y-3">
-        <h2 id="list-title" className="text-xl">
-          Les livraisons
-        </h2>
+      <section aria-label="Les livraisons" className="space-y-3">
         <OrdersTabs
           tab={tab}
           onChange={(next) => {
@@ -158,6 +137,31 @@ function Deliveries() {
         ) : null}
       </section>
 
+      {data ? (
+        <EditDialog open={daysOpen} title="Argent arrivé, jour par jour" size="sm" onClose={() => setDaysOpen(false)}>
+          <div className="card overflow-x-auto">
+            <table className="table min-w-[320px]">
+              <thead>
+                <tr>
+                  <th scope="col">Jour</th>
+                  <th scope="col">Encaissé</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.collectedByDay.map((day) => (
+                  <tr key={day.date}>
+                    <th scope="row" className="font-semibold">
+                      {dayLabel(day.date)}
+                    </th>
+                    <td className="tabular-nums">{formatPrice(day.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </EditDialog>
+      ) : null}
+
       <OrderWindow id={orderWindow.id} onClose={orderWindow.close} />
     </div>
   );
@@ -165,10 +169,10 @@ function Deliveries() {
 
 function Card({ title, value, note }: { title: string; value: string; note: string }) {
   return (
-    <div className="card space-y-2 p-5">
-      <h2 className="text-sm font-semibold text-ink-muted">{title}</h2>
-      <p className="font-display text-2xl font-bold tabular-nums">{value}</p>
-      <p className="text-sm text-ink-muted">{note}</p>
+    <div className="card space-y-1 p-3 sm:p-4">
+      <h2 className="text-xs font-semibold text-ink-muted sm:text-sm">{title}</h2>
+      <p className="font-display text-xl font-bold tabular-nums sm:text-2xl">{value}</p>
+      <p className="text-xs text-ink-muted sm:text-sm">{note}</p>
     </div>
   );
 }

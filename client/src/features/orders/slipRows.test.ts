@@ -43,7 +43,7 @@ describe("slipRows", () => {
 
   it("un retrait : le créneau, pas de ligne de livraison, à payer au magasin", () => {
     const rows = slipRows(order({ type: "pickup", pickupDate: "2026-11-16", pickupTime: "15:30", wilaya: null, commune: null }));
-    expect(rows.where).toMatch(/^Retrait au magasin /);
+    expect(rows.where).toMatch(/^Réservation au magasin /);
     expect(rows.shipping).toBeNull();
     expect(rows.payNote).toBe("À payer au magasin");
   });

@@ -9,6 +9,7 @@ import { useCatalogSeriesQuery, useCreateModelMutation, useDeleteSeriesMutation,
 import SeriesModelRow from "@/features/admin/catalog/SeriesModelRow";
 import { moveItem } from "@/features/admin/catalog/reorder";
 import { usePalette } from "@/features/admin/usePalette";
+import EditDialog from "@/features/admin/products/EditDialog";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import { glowColor } from "@/features/shop/series";
 import { errorMessage } from "@/lib/errors";
@@ -218,6 +219,12 @@ function AddModel({
   const [name, setName] = useState("");
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const maker = series.brand.makerName;
+  const [open, setOpen] = useState(false);
+  // Ajouter un modèle ferme la fenêtre : on revoit la liste des modèles de la série.
+  const addAndClose = (modelId: number) => {
+    onAdd(modelId);
+    setOpen(false);
+  };
 
   async function onCreate(event: FormEvent) {
     event.preventDefault();
@@ -226,7 +233,7 @@ function AddModel({
     }
     try {
       const created = await createModel({ brand: maker, name, kind: series.category.kind, releaseYear: Number(year) }).unwrap();
-      onAdd(created.id);
+      addAndClose(created.id);
       setName("");
     } catch {
       // Affiché sous le formulaire.
@@ -234,6 +241,11 @@ function AddModel({
   }
 
   return (
+    <>
+      <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
+        Ajouter un modèle à la série
+      </button>
+      <EditDialog open={open} title="Ajouter à la série" onClose={() => setOpen(false)} closeLabel="Annuler">
     <section aria-labelledby="add-model-title" className="space-y-3">
       <div>
         <h3 id="add-model-title" className="text-lg font-bold">Ajouter à la série</h3>
@@ -262,7 +274,7 @@ function AddModel({
               className="btn btn-secondary min-h-10 w-full justify-center"
               disabled={!picked}
               onClick={() => {
-                onAdd(Number(picked));
+                addAndClose(Number(picked));
                 setPicked("");
               }}
             >
@@ -302,5 +314,7 @@ function AddModel({
         )}
       </div>
     </section>
+      </EditDialog>
+    </>
   );
 }

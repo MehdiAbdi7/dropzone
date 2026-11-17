@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { CONDITION_LABELS } from "@/config/catalog";
+import ProductImage from "@/components/ui/ProductImage";
 import { useCategoriesQuery } from "@/features/admin/api/catalogApi";
 import { useSearchVariantsQuery } from "@/features/admin/api/salesApi";
 import { formatOptions, formatPrice } from "@/lib/format";
@@ -27,14 +28,20 @@ export default function VariantPicker({
   onPick,
   disabledSkus = [],
   label = "Chercher un appareil",
+  grid = false,
+  initialCategory,
 }: {
   onPick: (hit: VariantHit) => void;
+  // Des cartes avec photo, comme la boutique en ligne (page Vente et Échange), au lieu d'une liste.
+  grid?: boolean;
+  // Une catégorie déjà choisie à l'ouverture (les accessoires, dans le parcours de la fenêtre).
+  initialCategory?: string;
   // Les SKU qu'on ne peut pas (re)choisir ici : leur bouton est grisé avec la raison.
   disabledSkus?: string[];
   label?: string;
 }) {
   const [text, setText] = useState("");
-  const [category, setCategory] = useState<string | undefined>(undefined);
+  const [category, setCategory] = useState<string | undefined>(initialCategory);
   const [condition, setCondition] = useState<ConditionFilter>(undefined);
   const [limit, setLimit] = useState(PAGE);
   // La recherche attend une pause dans la saisie : chaque touche relancerait la requête.
@@ -111,9 +118,22 @@ export default function VariantPicker({
           </p>
         ) : null}
         {/* La liste défile dans sa boîte : la page reste en place, le ticket reste visible. */}
-        <ul className="mt-2 max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+        <ul
+          className={
+            grid
+              ? "mt-2 grid max-h-[calc(100dvh-22rem)] min-h-64 grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 xl:grid-cols-4"
+              : "mt-2 max-h-[60vh] space-y-2 overflow-y-auto pr-1"
+          }
+        >
           {data?.hits.map((hit) => {
             const disabled = disabledSkus.includes(hit.sku);
+            if (grid) {
+              return (
+                <li key={hit.sku}>
+                  <VariantCard hit={hit} disabled={disabled} onPick={onPick} />
+                </li>
+              );
+            }
             return (
               <li key={hit.sku}>
                 <button
@@ -169,6 +189,41 @@ function Chip({ selected, onClick, children }: { selected: boolean; onClick: () 
       onClick={onClick}
     >
       {children}
+    </button>
+  );
+}
+
+// La carte d'une variante, comme une carte de la boutique : photo, nom, état et options, prix, stock.
+export function VariantCard({
+  hit,
+  disabled = false,
+  onPick,
+}: {
+  hit: VariantHit;
+  disabled?: boolean;
+  onPick: (hit: VariantHit) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="card flex h-full w-full flex-col overflow-hidden text-left transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+      disabled={disabled}
+      onClick={() => onPick(hit)}
+    >
+      <span className="relative block aspect-[4/3] w-full bg-surface-2">
+        <ProductImage src={hit.image} alt="" sizes="(min-width: 1280px) 15vw, 30vw" />
+      </span>
+      <span className="flex flex-1 flex-col gap-0.5 p-3">
+        <span className="line-clamp-2 font-semibold leading-tight">{hit.productName}</span>
+        <span className="text-xs text-ink-muted">
+          {CONDITION_LABELS[hit.condition]}
+          {Object.keys(hit.options).length ? ` · ${formatOptions(hit.options)}` : ""}
+        </span>
+        <span className="mt-auto flex items-baseline justify-between gap-2 pt-2">
+          <span className="font-display font-bold tabular-nums">{formatPrice(hit.price)}</span>
+          <span className="text-xs text-ink-muted">{disabled ? "déjà ajouté" : `${hit.stock} en stock`}</span>
+        </span>
+      </span>
     </button>
   );
 }

@@ -5,7 +5,8 @@ import { useState, type FormEvent } from "react";
 import Field from "@/components/ui/Field";
 import { DEVICE_KINDS, KIND_LABELS } from "@/config/catalog";
 import { useCatalogQuery, useCreateCategoryMutation } from "@/features/admin/api/catalogApi";
-import CatalogTile, { AddTile } from "@/features/admin/catalog/CatalogTile";
+import CatalogTile from "@/features/admin/catalog/CatalogTile";
+import EditDialog from "@/features/admin/products/EditDialog";
 import { errorMessage } from "@/lib/errors";
 import type { ProductKind } from "@/types/api";
 
@@ -19,27 +20,34 @@ export default function CatalogPage() {
   const [create, createState] = useCreateCategoryMutation();
   const [name, setName] = useState("");
   const [kind, setKind] = useState<ProductKind>("accessory");
+  const [creating, setCreating] = useState(false);
 
   async function onCreate(event: FormEvent) {
     event.preventDefault();
     try {
       await create({ name, kind }).unwrap();
       setName("");
+      setCreating(false);
     } catch {
       // Affiché sous le formulaire.
     }
   }
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-5xl space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-3xl">Catalogue</h1>
+          <h1 className="text-2xl sm:text-3xl">Catalogue</h1>
           <p className="text-ink-muted">Choisis une catégorie. Le stock est compté à chaque étape, brouillons compris.</p>
         </div>
-        <Link href="/admin/catalogue/modeles" className="btn btn-secondary btn-small">
-          Tous les modèles
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => setCreating(true)}>
+            Nouvelle catégorie
+          </button>
+          <Link href="/admin/catalogue/modeles" className="btn btn-secondary btn-small">
+            Tous les modèles
+          </Link>
+        </div>
       </div>
 
       {error ? <p className="field-error">{errorMessage(error)}</p> : null}
@@ -61,29 +69,28 @@ export default function CatalogPage() {
             />
           </li>
         ))}
-        <li>
-          <AddTile>
-            <form onSubmit={onCreate} className="space-y-3">
-              <Field id="category-name" label="+ Nouvelle catégorie">
-                <input id="category-name" className="input" value={name} onChange={(event) => setName(event.target.value)} />
-              </Field>
-              <Field id="category-kind" label="Sorte">
-                <select id="category-kind" className="input" value={kind} onChange={(event) => setKind(event.target.value as ProductKind)}>
-                  {KINDS.map((value) => (
-                    <option key={value} value={value}>
-                      {KIND_LABELS[value]}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <button type="submit" className="btn btn-primary btn-small" disabled={createState.isLoading || name.trim().length < 2}>
-                Créer
-              </button>
-              {createState.error ? <p className="field-error">{errorMessage(createState.error)}</p> : null}
-            </form>
-          </AddTile>
-        </li>
       </ul>
+      {/* Créer une catégorie : une fenêtre, pas une tuile dans la grille (refonte du 18/11). */}
+      <EditDialog open={creating} title="Nouvelle catégorie" size="sm" onClose={() => setCreating(false)} closeLabel="Annuler">
+      <form onSubmit={onCreate} className="space-y-3">
+        <Field id="category-name" label="+ Nouvelle catégorie">
+          <input id="category-name" className="input" value={name} onChange={(event) => setName(event.target.value)} />
+        </Field>
+        <Field id="category-kind" label="Sorte">
+          <select id="category-kind" className="input" value={kind} onChange={(event) => setKind(event.target.value as ProductKind)}>
+            {KINDS.map((value) => (
+              <option key={value} value={value}>
+                {KIND_LABELS[value]}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <button type="submit" className="btn btn-primary btn-small" disabled={createState.isLoading || name.trim().length < 2}>
+          Créer
+        </button>
+        {createState.error ? <p className="field-error">{errorMessage(createState.error)}</p> : null}
+      </form>
+      </EditDialog>
     </div>
   );
 }
