@@ -118,6 +118,25 @@ describe("PATCH /admin/accounts/:id", () => {
     expect((await agent.patch(`/admin/accounts/${other.id}`).send({ role: "seller" })).status).toBe(200);
   });
 
+  // Revue de sécurité : sans cette règle, un admin pouvait rétrograder un autre admin, lui donner un mot de
+  // passe, puis le re-promouvoir : il aurait connu le mot de passe d'un autre admin.
+  it("on devient admin à la création du compte seulement : jamais par un changement de rôle", async () => {
+    const seller = await createUser("seller", "vendeur@test.dz");
+    const { agent } = await loginAs("admin", "boss@test.dz");
+    const response = await agent.patch(`/admin/accounts/${seller.id}`).send({ role: "admin" });
+    expect(response.status).toBe(400);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: seller.id } })).role).toBe("seller");
+  });
+
+  it("l'aller-retour rétrograder, réinitialiser le mot de passe, re-promouvoir est impossible", async () => {
+    const victim = await createUser("admin", "victime@test.dz");
+    const { agent } = await loginAs("admin", "boss@test.dz");
+    await agent.patch(`/admin/accounts/${victim.id}`).send({ role: "seller" }).expect(200);
+    await agent.post(`/admin/accounts/${victim.id}/password`).send({ newPassword: "motdepasse-connu-de-lui" }).expect(200);
+    expect((await agent.patch(`/admin/accounts/${victim.id}`).send({ role: "admin" })).status).toBe(400);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: victim.id } })).role).toBe("seller");
+  });
+
   it("deux admins qui se désactivent en même temps : un seul y arrive, il reste toujours un admin actif", async () => {
     const a = await loginAs("admin", "a@test.dz");
     const b = await loginAs("admin", "b@test.dz");

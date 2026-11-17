@@ -17,10 +17,12 @@ async function readUser(req: Request) {
   }
   const user = await prisma.user.findUnique({
     where: { id: payload.id },
-    select: { id: true, role: true, disabled: true },
+    select: { id: true, role: true, disabled: true, tokenVersion: true },
   });
-  // Un compte désactivé (lot 7) est traité comme un compte supprimé : refusé dès la requête suivante.
-  if (!user || user.disabled) {
+  // Un compte désactivé (lot 7) est traité comme un compte supprimé : refusé dès la requête suivante. Une
+  // session ouverte avant un changement de mot de passe ou une désactivation porte un ancien numéro de
+  // version : refusée aussi, même si le compte est réactivé depuis.
+  if (!user || user.disabled || user.tokenVersion !== payload.tokenVersion) {
     return null;
   }
   return { id: user.id, role: user.role };

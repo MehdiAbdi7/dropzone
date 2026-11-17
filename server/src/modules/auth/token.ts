@@ -15,23 +15,25 @@ const cookieOptions: CookieOptions = {
   path: "/",
 };
 
-type TokenPayload = { sub: string; role: Role };
+// `tv` : le numéro de version des sessions du compte au moment de la connexion. Absent des jetons émis avant
+// le lot 7 : il vaut alors 0, comme la colonne `users.token_version` de départ.
+type TokenPayload = { sub: string; role: Role; tv?: number };
 
-function signToken(userId: number, role: Role): string {
-  return jwt.sign({ role }, env.JWT_SECRET, { subject: String(userId), expiresIn: "7d" });
+function signToken(userId: number, role: Role, tokenVersion: number): string {
+  return jwt.sign({ role, tv: tokenVersion }, env.JWT_SECRET, { subject: String(userId), expiresIn: "7d" });
 }
 
-export function verifyToken(token: string): { id: number; role: Role } | null {
+export function verifyToken(token: string): { id: number; role: Role; tokenVersion: number } | null {
   try {
     const payload = jwt.verify(token, env.JWT_SECRET) as TokenPayload;
-    return { id: Number(payload.sub), role: payload.role };
+    return { id: Number(payload.sub), role: payload.role, tokenVersion: payload.tv ?? 0 };
   } catch {
     return null;
   }
 }
 
-export function setTokenCookie(res: Response, userId: number, role: Role) {
-  res.cookie(TOKEN_COOKIE, signToken(userId, role), { ...cookieOptions, maxAge: SEVEN_DAYS });
+export function setTokenCookie(res: Response, userId: number, role: Role, tokenVersion: number) {
+  res.cookie(TOKEN_COOKIE, signToken(userId, role, tokenVersion), { ...cookieOptions, maxAge: SEVEN_DAYS });
 }
 
 export function clearTokenCookie(res: Response) {

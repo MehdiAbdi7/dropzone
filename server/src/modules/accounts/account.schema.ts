@@ -19,8 +19,11 @@ export const createAccountSchema = z.object({
 });
 export type CreateAccountInput = z.infer<typeof createAccountSchema>;
 
+// On devient administrateur à la création du compte, jamais par un changement de rôle : sinon un admin
+// pourrait rétrograder un autre admin, lui donner un mot de passe, puis le re-promouvoir et connaître le
+// mot de passe d'un autre administrateur (revue de sécurité du 17/11). On peut en revanche rétrograder.
 export const updateAccountSchema = z
-  .object({ role: staffRole.optional(), disabled: z.boolean().optional() })
+  .object({ role: z.enum(["order_manager", "seller"]).optional(), disabled: z.boolean().optional() })
   .refine((body) => body.role !== undefined || body.disabled !== undefined, { error: "Rien à modifier" });
 export type UpdateAccountInput = z.infer<typeof updateAccountSchema>;
 

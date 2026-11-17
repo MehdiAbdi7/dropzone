@@ -15,7 +15,7 @@ export async function register(input: RegisterInput) {
   const { password, ...data } = input;
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   try {
-    return await prisma.user.create({ data: { ...data, passwordHash } });
+    return await prisma.user.create({ data: { ...data, passwordHash }, omit: { tokenVersion: false } });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       throw new AppError(409, "Un compte existe déjà avec cet email");
@@ -76,7 +76,7 @@ export async function changeEmail(id: number, currentPassword: string, email: st
 export async function login(email: string, password: string) {
   const user = await prisma.user.findUnique({
     where: { email },
-    omit: { passwordHash: false },
+    omit: { passwordHash: false, tokenVersion: false },
   });
   const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
   // Un compte désactivé répond comme un mauvais mot de passe : rien n'indique qu'il existe.

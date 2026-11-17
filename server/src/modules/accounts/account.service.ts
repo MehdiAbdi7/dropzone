@@ -48,7 +48,8 @@ export async function createAccount(input: CreateAccountInput) {
 // il reste toujours un administrateur actif. La seconde est lue sous verrou : deux admins qui se désactivent
 // l'un l'autre au même instant ne peuvent pas réussir tous les deux.
 export async function updateAccount(actorId: number, id: number, input: UpdateAccountInput) {
-  const losesAdmin = (input.role !== undefined && input.role !== "admin") || input.disabled === true;
+  // Un changement de rôle ne mène jamais à « admin » (voir le schéma) : pour un admin, c'est toujours une perte.
+  const losesAdmin = input.role !== undefined || input.disabled === true;
   if (id === actorId && losesAdmin) {
     throw new AppError(409, "Vous ne pouvez pas retirer vos propres droits ni désactiver votre propre compte");
   }
@@ -64,7 +65,10 @@ export async function updateAccount(actorId: number, id: number, input: UpdateAc
     if (wasActiveAdmin && losesAdmin && !activeAdmins.some((admin) => admin.id !== target.id)) {
       throw new AppError(409, "Il doit rester au moins un administrateur actif");
     }
-    return tx.user.update({ where: { id }, data: input, select: accountSelect });
+    // Désactiver coupe aussi les sessions ouvertes : sans cela, réactiver le compte ferait revivre un ancien
+    // cookie. Un simple changement de rôle les garde : le rôle est relu en base à chaque requête.
+    const revoke = input.disabled === true ? { tokenVersion: { increment: 1 } } : {};
+    return tx.user.update({ where: { id }, data: { ...input, ...revoke }, select: accountSelect });
   });
 }
 
@@ -76,5 +80,9 @@ export async function resetStaffPassword(id: number, newPassword: string) {
   if (!account) {
     throw new AppError(404, "Compte introuvable");
   }
-  await prisma.user.update({ where: { id }, data: { passwordHash: await bcrypt.hash(newPassword, SALT_ROUNDS) } });
+  // Les sessions déjà ouvertes avec l'ancien mot de passe sont coupées.
+  await prisma.user.update({
+    where: { id },
+    data: { passwordHash: await bcrypt.hash(newPassword, SALT_ROUNDS), tokenVersion: { increment: 1 } },
+  });
 }

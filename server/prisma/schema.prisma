@@ -407,6 +407,9 @@ model User {
   // Un compte désactivé est refusé à la requête suivante, sans être supprimé : les ventes et les traces
   // gardent son nom (lot 7).
   disabled       Boolean  @default(false)
+  // Monte quand les sessions ouvertes doivent être coupées (mot de passe réinitialisé, compte désactivé).
+  // Le jeton de connexion le porte ; jamais renvoyé par l'API (voir `omit` dans config/db.ts).
+  tokenVersion   Int      @default(0) @map("token_version")
   addressWilaya  String?  @map("address_wilaya")
   addressCommune String?  @map("address_commune")
   addressLine    String?  @map("address_line")
