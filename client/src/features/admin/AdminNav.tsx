@@ -7,7 +7,7 @@ import { CloseIcon, DotsIcon } from "@/components/ui/icons";
 import PendingBadge from "./alerts/PendingBadge";
 import { usePendingDeliveries } from "./alerts/usePendingDeliveries";
 import { useAdminRole } from "./AdminRoleContext";
-import { BOTTOM_MORE, BOTTOM_PRIMARY, NAV_SECTIONS, isVisibleTo, sectionFor } from "./navConfig";
+import { NAV_SECTIONS, activeBottomKey, bottomBarFor, isVisibleTo, sectionFor } from "./navConfig";
 
 // La section de la page affichée : la barre latérale et la barre du bas l'allument.
 function useActiveKey() {
@@ -46,18 +46,18 @@ export default function AdminNav() {
   );
 }
 
-// La barre du bas, sur téléphone et tablette (sous lg), comme une application : Accueil, Ventes,
-// Commandes au milieu (le bouton le plus utilisé, en relief), Catalogue, puis « Plus » avec ce qui
-// reste (Historique, Clients). La Caisse, la Personnalisation, les Réglages et « Voir la boutique » sont
-// dans le menu ☰ de la barre du haut : jamais deux fois au même endroit.
+// La barre du bas, sur téléphone et tablette (sous lg), comme une application. Elle dépend du rôle
+// (bottomBarFor, navConfig.ts) : l'admin a Accueil, Ventes, Commandes au milieu (en relief), Catalogue, puis
+// « Plus » avec Historique et Clients ; le responsable a Ventes, Commandes au milieu, Caisse ; le vendeur a
+// Caisse, Ventes au milieu, Réglages. Pour l'admin, la Caisse, la Personnalisation, les Réglages et « Voir la
+// boutique » restent dans le menu ☰ de la barre du haut ; pour les deux autres rôles, la barre porte déjà
+// ce dont ils se servent toute la journée.
 export function AdminBottomNav() {
-  const activeKey = useActiveKey();
+  const activeKey = activeBottomKey(usePathname());
   const role = useAdminRole();
   const { count: pending } = usePendingDeliveries();
   const [moreOpen, setMoreOpen] = useState(false);
-  // Ce que le rôle ne peut pas ouvrir n'apparaît pas ; « Plus » disparaît quand il n'a plus rien à ranger.
-  const primary = BOTTOM_PRIMARY.filter(isVisibleTo(role));
-  const more = BOTTOM_MORE.filter(isVisibleTo(role));
+  const { items, featured, more } = bottomBarFor(role);
   const moreActive = more.some((section) => section.key === activeKey);
 
   return (
@@ -108,8 +108,8 @@ export function AdminBottomNav() {
         aria-label="Back-office"
         className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
-        {primary.map(({ key, href, label, short, icon: SectionIcon }) =>
-          key === "commandes" ? (
+        {items.map(({ key, href, label, icon: ItemIcon }) =>
+          key === featured ? (
             // Le bouton du milieu, bien démarqué : un rond en relief au-dessus de la barre.
             <Link
               key={key}
@@ -122,11 +122,12 @@ export function AdminBottomNav() {
                   activeKey === key ? "ring-2 ring-blue-ink" : ""
                 }`}
               >
-                <SectionIcon size={26} />
-                {/* La pastille rouge : des livraisons attendent d'être confirmées par téléphone. */}
-                <PendingBadge count={pending} className="absolute -right-1 -top-1 border-2 border-surface" />
+                <ItemIcon size={26} />
+                {/* La pastille rouge : des livraisons attendent d'être confirmées par téléphone. Seulement
+                    sur Commandes, et seulement pour ceux qui ont cette page. */}
+                {key === "commandes" ? <PendingBadge count={pending} className="absolute -right-1 -top-1 border-2 border-surface" /> : null}
               </span>
-              <span className={activeKey === key ? "text-blue-ink" : "text-ink"}>{short ?? label}</span>
+              <span className={activeKey === key ? "text-blue-ink" : "text-ink"}>{label}</span>
             </Link>
           ) : (
             <Link
@@ -137,8 +138,8 @@ export function AdminBottomNav() {
                 activeKey === key ? "text-blue-ink" : "text-ink-muted"
               }`}
             >
-              <SectionIcon size={22} />
-              {short ?? label}
+              <ItemIcon size={22} />
+              {label}
             </Link>
           ),
         )}

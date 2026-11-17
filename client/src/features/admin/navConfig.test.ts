@@ -1,7 +1,60 @@
 import { describe, expect, it } from "vitest";
-import { BOTTOM_MORE, BOTTOM_PRIMARY, MENU_SECTIONS, NAV_SECTIONS, SECTIONS, activeTab, ordersHref, ordersListHref, sectionFor, visibleSections } from "./navConfig";
+import { canAccess } from "./access";
+import { BOTTOM_MORE, BOTTOM_PRIMARY, MENU_SECTIONS, NAV_SECTIONS, SECTIONS, activeBottomKey, activeTab, bottomBarFor, ordersHref, ordersListHref, sectionFor, visibleSections } from "./navConfig";
 
 const params = (query = "") => new URLSearchParams(query);
+
+// Lot 7 : la barre du bas du téléphone est propre à chaque rôle. Toujours de quoi remplir la barre, et le geste
+// principal du rôle au milieu, en relief : le vendeur vend, le responsable suit les commandes.
+describe("bottomBarFor", () => {
+  const keys = (role: Parameters<typeof bottomBarFor>[0]) => bottomBarFor(role).items.map((item) => item.key);
+
+  it("le vendeur : Caisse, Ventes au milieu, Réglages", () => {
+    expect(keys("seller")).toEqual(["caisse", "vente", "reglages"]);
+    expect(bottomBarFor("seller").featured).toBe("vente");
+    expect(bottomBarFor("seller").more).toEqual([]);
+  });
+
+  it("le responsable commande : Ventes, Commandes au milieu, Caisse", () => {
+    expect(keys("order_manager")).toEqual(["vente", "commandes", "caisse"]);
+    expect(bottomBarFor("order_manager").featured).toBe("commandes");
+    expect(bottomBarFor("order_manager").more).toEqual([]);
+  });
+
+  it("l'admin : la barre d'avant, avec Plus pour Historique et Clients", () => {
+    expect(keys("admin")).toEqual(["accueil", "vente", "commandes", "catalogue"]);
+    expect(bottomBarFor("admin").featured).toBe("commandes");
+    expect(bottomBarFor("admin").more.map((section) => section.key)).toEqual(["historique", "clients"]);
+  });
+
+  it("l'entrée en relief est au milieu de la barre (Plus compris pour l'admin)", () => {
+    for (const role of ["seller", "order_manager"] as const) {
+      const bar = bottomBarFor(role);
+      expect(bar.items.findIndex((item) => item.key === bar.featured), role).toBe(Math.floor(bar.items.length / 2));
+    }
+    const admin = bottomBarFor("admin");
+    expect(admin.items.findIndex((item) => item.key === admin.featured)).toBe(Math.floor((admin.items.length + 1) / 2));
+  });
+
+  it("chaque entrée de la barre est une page permise au rôle", () => {
+    for (const role of ["seller", "order_manager", "admin"] as const) {
+      for (const item of bottomBarFor(role).items) expect(canAccess(role, item.href), `${role} ${item.key}`).toBe(true);
+    }
+  });
+});
+
+describe("activeBottomKey", () => {
+  it("allume l'entrée de la section affichée, et Réglages pour la page des réglages", () => {
+    expect(activeBottomKey("/admin/vente")).toBe("vente");
+    expect(activeBottomKey("/admin/echange")).toBe("vente");
+    expect(activeBottomKey("/admin/caisse")).toBe("caisse");
+    expect(activeBottomKey("/admin/reglages")).toBe("reglages");
+  });
+
+  it("n'allume rien pour une page sans entrée (la facture)", () => {
+    expect(activeBottomKey("/admin/facture/12")).toBeUndefined();
+  });
+});
 
 // Lot 7 : chaque rôle ne voit que les sections qu'il peut ouvrir (la règle vient de access.ts).
 describe("visibleSections", () => {

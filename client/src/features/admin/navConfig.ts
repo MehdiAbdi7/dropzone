@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import {
   CashIcon,
+  ClipboardCheckIcon,
   DocumentIcon,
   GridIcon,
   HomeIcon,
@@ -119,6 +120,32 @@ export const MENU_SECTIONS = SECTIONS.filter((section) => section.inMenu);
 export const NAV_SECTIONS = SECTIONS.filter((section) => !section.inMenu);
 export const BOTTOM_PRIMARY = NAV_SECTIONS.filter((section) => section.primary);
 export const BOTTOM_MORE = NAV_SECTIONS.filter((section) => !section.primary);
+
+// La barre du bas du téléphone (lot 7) est propre à chaque rôle. Avec les seules sections permises, le vendeur
+// n'aurait eu qu'un bouton et le responsable deux : une barre presque vide, la Caisse et les Réglages cachés
+// dans le menu ☰ tout en haut. Chacun a donc trois entrées, celles qu'il utilise toute la journée, avec son
+// geste principal au milieu, en relief : le vendeur vend, le responsable suit les commandes.
+export type BottomItem = { key: string; label: string; href: string; icon: NavSection["icon"] };
+
+const itemOf = (key: string): BottomItem => {
+  const section = SECTIONS.find((candidate) => candidate.key === key);
+  if (!section) throw new Error(`Section inconnue : ${key}`);
+  return { key, label: section.short ?? section.label, href: section.href, icon: section.icon };
+};
+// Les Réglages ne sont pas une section (ils vivent dans le menu ☰) : une entrée à part, pour le vendeur.
+const SETTINGS_ITEM: BottomItem = { key: "reglages", label: "Réglages", href: SETTINGS_HREF, icon: ClipboardCheckIcon };
+
+export function bottomBarFor(role: Role): { items: BottomItem[]; featured: string; more: NavSection[] } {
+  if (role === "seller") return { items: [itemOf("caisse"), itemOf("vente"), SETTINGS_ITEM], featured: "vente", more: [] };
+  if (role === "order_manager") return { items: [itemOf("vente"), itemOf("commandes"), itemOf("caisse")], featured: "commandes", more: [] };
+  // L'admin garde la barre d'avant : quatre entrées, « Plus » pour le reste.
+  return { items: BOTTOM_PRIMARY.map((section) => itemOf(section.key)), featured: "commandes", more: BOTTOM_MORE };
+}
+
+// L'entrée de la barre du bas à allumer pour la page affichée : sa section, ou Réglages.
+export function activeBottomKey(path: string): string | undefined {
+  return sectionFor(path)?.key ?? (under(path, SETTINGS_HREF) ? "reglages" : undefined);
+}
 
 // Les sections qu'un rôle peut ouvrir (lot 7) : celles dont la page d'entrée lui est permise (access.ts).
 // Un seul endroit décide des droits ; le menu ne les redit pas.
