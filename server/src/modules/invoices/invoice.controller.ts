@@ -11,5 +11,5 @@ export async function putSettings(req: Request, res: Response) {
 
 // POST : la première ouverture attribue le numéro (un effet de bord), les suivantes sont sans effet.
 export async function postInvoice(req: Request, res: Response) {
-  res.json({ data: await issueInvoice(Number(req.params.id)) });
+  res.json({ data: await issueInvoice(Number(req.params.id), new Date(), res.locals.user!.role) });
 }

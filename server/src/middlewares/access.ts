@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import type { Role } from "../generated/prisma/client.js";
 import { AppError } from "../utils/AppError.js";
+import { withoutCosts } from "../utils/withoutCosts.js";
 
 // Les droits du back-office (lot 7, 17/11). Trois rôles en escalier : chacun a tout ce que le précédent a.
 // Une seule table dit à partir de quel rôle chaque route est ouverte ; tout ce qui n'y figure pas est pour
@@ -63,6 +64,12 @@ export function adminAccess(req: Request, res: Response, next: NextFunction) {
   }
   if (ROLE_RANK[role] < ROLE_RANK[minRoleFor(req.method, req.path)]) {
     throw new AppError(403, "Accès refusé");
+  }
+  // Tout ce qui sort vers un non-admin est nettoyé des coûts et des bénéfices, ici, une seule fois : une
+  // route ouverte demain au vendeur ne peut pas les laisser passer par oubli.
+  if (role !== "admin") {
+    const send = res.json.bind(res);
+    res.json = (body) => send(withoutCosts(body));
   }
   next();
 }
