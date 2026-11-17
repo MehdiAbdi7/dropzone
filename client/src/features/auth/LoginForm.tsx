@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import Field from "@/components/ui/Field";
+import { homeFor } from "@/features/admin/access";
 import { errorMessage } from "@/lib/errors";
 import { useLoginMutation } from "./authApi";
 import { safeNext } from "./safeNext";
@@ -32,7 +33,7 @@ export default function LoginForm({ suite }: { suite?: string }) {
       // Le cookie vient de changer : toute l'application se recharge avec lui (le panier
       // est gardé dans localStorage, il ne se perd pas).
       // `suite` est vérifié par safeNext.ts : jamais une adresse d'un autre site.
-      window.location.assign(safeNext(suite, user.role === "admin", window.location.origin));
+      window.location.assign(safeNext(suite, homeFor(user.role), window.location.origin));
     } catch {
       // Le message de l'API s'affiche sous le formulaire.
     }

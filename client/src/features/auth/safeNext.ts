@@ -6,8 +6,9 @@
 // comme le navigateur (06/11) : il change « \ » en « / » et retire les tabulations, donc
 // « /\pirate.example » devient « //pirate.example », un autre site. Ce qui ne reste pas sur
 // la même origine (protocole, domaine, port) est refusé.
-export function safeNext(suite: string | undefined, isAdmin: boolean, origin: string): string {
-  const fallback = isAdmin ? "/admin" : "/compte";
+// `fallback` : la page où l'on arrive quand aucune page n'est demandée ou que celle demandée est refusée.
+// Elle dépend du rôle (homeFor, access.ts) : le vendeur arrive sur la vente, le client sur son compte.
+export function safeNext(suite: string | undefined, fallback: string, origin: string): string {
   if (!suite?.startsWith("/")) {
     return fallback;
   }

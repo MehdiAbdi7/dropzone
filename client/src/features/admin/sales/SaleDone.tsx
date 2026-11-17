@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { canAccess } from "@/features/admin/access";
 import type { SaleDone as Done } from "@/features/admin/api/salesApi";
+import { useAdminRole } from "@/features/admin/AdminRoleContext";
 import { formatPrice } from "@/lib/format";
 
 // La vente est encaissée : le numéro du jour, le total, et la suite (voir la commande, nouvelle vente).
 export default function SaleDone({ sale, onNew }: { sale: Done; onNew: () => void }) {
+  const role = useAdminRole();
   return (
     <section role="status" className="card space-y-4 border-blue-ink p-6" aria-labelledby="sale-done-title">
       <h2 id="sale-done-title" className="text-2xl">
@@ -29,9 +32,12 @@ export default function SaleDone({ sale, onNew }: { sale: Done; onNew: () => voi
         <Link href={`/admin/facture/${sale.id}`} target="_blank" className="btn btn-secondary">
           Imprimer la facture
         </Link>
-        <Link href={`/admin/commandes/${sale.id}`} className="btn btn-secondary">
-          Voir la commande
-        </Link>
+        {/* La page Commandes n'est pas pour le vendeur (lot 7). */}
+        {canAccess(role, "/admin/commandes") ? (
+          <Link href={`/admin/commandes/${sale.id}`} className="btn btn-secondary">
+            Voir la commande
+          </Link>
+        ) : null}
       </div>
     </section>
   );

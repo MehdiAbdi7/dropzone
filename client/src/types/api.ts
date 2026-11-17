@@ -18,7 +18,9 @@ export type OrderStatus =
   | "returned";
 export type OrderType = "delivery" | "pickup" | "in_store" | "exchange";
 export type PaymentMethod = "cash" | "baridimob" | "ccp" | "card" | "transfer";
-export type Role = "customer" | "admin";
+// customer : le client du site. Les trois autres sont le personnel du back-office, en escalier :
+// vendeur (seller) < responsable commande (order_manager) < admin.
+export type Role = "customer" | "seller" | "order_manager" | "admin";
 export type Options = Record<string, string>;
 
 type Pagination = { page: number; limit: number; total: number; pages: number };

@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import {
   CashIcon,
+  ClipboardCheckIcon,
   DocumentIcon,
   GridIcon,
   HomeIcon,
@@ -9,6 +10,8 @@ import {
   SwapIcon,
   UsersIcon,
 } from "@/components/ui/icons";
+import type { Role } from "@/types/api";
+import { canAccess } from "./access";
 
 // Le plan du back-office (14/11) : huit sections, chacune avec ses sous-onglets. Un seul fichier le
 // décrit ; la barre latérale, la barre du bas, le menu ☰ et les sous-onglets le lisent. Les pages
@@ -101,6 +104,8 @@ export const SECTIONS: NavSection[] = [
       { label: "Listes", href: "/admin/listes", match: (path) => under(path, "/admin/listes") },
     ],
   },
+  // Les comptes du personnel (lot 7) : qui se connecte au back-office, avec quel rôle. Admin seulement.
+  { key: "comptes", label: "Comptes", icon: UsersIcon, href: "/admin/comptes", inMenu: true, owns: (path) => under(path, "/admin/comptes") },
 ];
 
 // Les entrées du menu ☰ de la barre du haut : ce qui n'est pas une section.
@@ -115,6 +120,40 @@ export const MENU_SECTIONS = SECTIONS.filter((section) => section.inMenu);
 export const NAV_SECTIONS = SECTIONS.filter((section) => !section.inMenu);
 export const BOTTOM_PRIMARY = NAV_SECTIONS.filter((section) => section.primary);
 export const BOTTOM_MORE = NAV_SECTIONS.filter((section) => !section.primary);
+
+// La barre du bas du téléphone (lot 7) est propre à chaque rôle. Avec les seules sections permises, le vendeur
+// n'aurait eu qu'un bouton et le responsable deux : une barre presque vide, la Caisse et les Réglages cachés
+// dans le menu ☰ tout en haut. Chacun a donc trois entrées, celles qu'il utilise toute la journée, avec son
+// geste principal au milieu, en relief : le vendeur vend, le responsable suit les commandes.
+export type BottomItem = { key: string; label: string; href: string; icon: NavSection["icon"] };
+
+const itemOf = (key: string): BottomItem => {
+  const section = SECTIONS.find((candidate) => candidate.key === key);
+  if (!section) throw new Error(`Section inconnue : ${key}`);
+  return { key, label: section.short ?? section.label, href: section.href, icon: section.icon };
+};
+// Les Réglages ne sont pas une section (ils vivent dans le menu ☰) : une entrée à part, pour le vendeur.
+const SETTINGS_ITEM: BottomItem = { key: "reglages", label: "Réglages", href: SETTINGS_HREF, icon: ClipboardCheckIcon };
+
+export function bottomBarFor(role: Role): { items: BottomItem[]; featured: string; more: NavSection[] } {
+  if (role === "seller") return { items: [itemOf("caisse"), itemOf("vente"), SETTINGS_ITEM], featured: "vente", more: [] };
+  if (role === "order_manager") return { items: [itemOf("vente"), itemOf("commandes"), itemOf("caisse")], featured: "commandes", more: [] };
+  // L'admin garde la barre d'avant : quatre entrées, « Plus » pour le reste.
+  return { items: BOTTOM_PRIMARY.map((section) => itemOf(section.key)), featured: "commandes", more: BOTTOM_MORE };
+}
+
+// L'entrée de la barre du bas à allumer pour la page affichée : sa section, ou Réglages.
+export function activeBottomKey(path: string): string | undefined {
+  return sectionFor(path)?.key ?? (under(path, SETTINGS_HREF) ? "reglages" : undefined);
+}
+
+// Les sections qu'un rôle peut ouvrir (lot 7) : celles dont la page d'entrée lui est permise (access.ts).
+// Un seul endroit décide des droits ; le menu ne les redit pas.
+export const isVisibleTo = (role: Role) => (section: NavSection) => canAccess(role, section.href);
+
+export function visibleSections(role: Role): NavSection[] {
+  return SECTIONS.filter(isVisibleTo(role));
+}
 
 export function sectionFor(path: string): NavSection | undefined {
   return SECTIONS.find((section) => section.owns(path));
