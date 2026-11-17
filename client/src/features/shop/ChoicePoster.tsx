@@ -22,7 +22,10 @@ export default function ChoicePoster({
   const first = columns[0];
   const last = columns[columns.length - 1];
   return (
-    <section aria-labelledby="choice-title" className="brand-dark poster">
+    <section
+      aria-labelledby="choice-title"
+      className="brand-dark poster pt-8 pb-14 sm:pb-12 sm:pt-8 "
+    >
       <div
         aria-hidden="true"
         className="poster-backdrop"
@@ -31,7 +34,9 @@ export default function ChoicePoster({
         }}
       />
       <header className="relative space-y-2 px-4 pt-5 text-center md:pt-6">
-        <p className="text-gradient text-xs font-extrabold tracking-[0.32em]">{kicker}</p>
+        <p className="text-gradient text-xs font-extrabold tracking-[0.32em]">
+          {kicker}
+        </p>
         <h1 id="choice-title" className="poster-title text-3xl md:text-5xl">
           {title}
         </h1>
@@ -39,12 +44,21 @@ export default function ChoicePoster({
       <div className="relative pt-2 pb-3">
         {/* Les onglets du glissement : le nom court (« Neuf scellé », « Affaire »), pas le sous-titre. */}
         <PosterSlider
-          names={columns.map((column) => (column.badge ? CONDITION_LABELS[column.badge === "new" ? "new" : "refurbished"] : column.title))}
+          names={columns.map((column) =>
+            column.badge
+              ? CONDITION_LABELS[column.badge === "new" ? "new" : "refurbished"]
+              : column.title,
+          )}
           unavailable={columns.map((column) => column.href === null)}
           layout={posterLayout(columns.length)}
         >
           {columns.map((column, index) => (
-            <ChoiceColumn key={column.key} column={column} palette={palette} priority={index === 0} />
+            <ChoiceColumn
+              key={column.key}
+              column={column}
+              palette={palette}
+              priority={index === 0}
+            />
           ))}
         </PosterSlider>
       </div>

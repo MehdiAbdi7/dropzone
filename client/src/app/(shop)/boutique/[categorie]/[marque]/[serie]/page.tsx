@@ -12,8 +12,11 @@ import type { Category, SeriesPoster as Poster } from "@/types/api";
 // (12/11) : la refonte du 12/11 l'a remplacée par la page à filtres, l'adresse y mène.
 async function getPage(categorie: string, marque: string, serie: string) {
   const categories = await publicFetch<Category[]>("/categories");
-  const accessory = categories?.find((item) => item.slug === categorie)?.kind === "accessory";
-  const poster = accessory ? null : await publicFetch<Poster>(`/series/${categorie}/${marque}/${serie}`);
+  const accessory =
+    categories?.find((item) => item.slug === categorie)?.kind === "accessory";
+  const poster = accessory
+    ? null
+    : await publicFetch<Poster>(`/series/${categorie}/${marque}/${serie}`);
   return { categories, accessory, poster };
 }
 
@@ -30,7 +33,8 @@ export async function generateMetadata({
 const UNAVAILABLE = (
   <div className="container-page py-8">
     <p role="alert" className="card p-6">
-      La boutique ne répond pas pour le moment. Rechargez la page dans quelques secondes.
+      La boutique ne répond pas pour le moment. Rechargez la page dans quelques
+      secondes.
     </p>
   </div>
 );
@@ -41,7 +45,11 @@ export default async function ShopSeriesPage({
   params,
 }: PageProps<"/boutique/[categorie]/[marque]/[serie]">) {
   const { categorie, marque, serie } = await params;
-  const { categories, accessory, poster } = await getPage(categorie, marque, serie);
+  const { categories, accessory, poster } = await getPage(
+    categorie,
+    marque,
+    serie,
+  );
   if (accessory) {
     redirect(accessoryRedirect(categorie, marque, serie));
   }
@@ -56,7 +64,7 @@ export default async function ShopSeriesPage({
 
   const brandHref = `/boutique/${poster.category.slug}/${poster.brand.slug}`;
   return (
-    <div className="container-page space-y-4 py-4">
+    <div className="container-page space-y-4 py-12 sm:py-8">
       <Breadcrumb
         items={[
           { label: "Boutique", href: "/boutique" },
