@@ -7,6 +7,7 @@ import helmet from "helmet";
 import { env } from "./config/env.js";
 import { adminAccess } from "./middlewares/access.js";
 import { requireAuth } from "./middlewares/auth.js";
+import { accountAdminRouter } from "./modules/accounts/account.routes.js";
 import { accessoryAdminRouter, accessoryRouter } from "./modules/accessories/accessory.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { brandAdminRouter } from "./modules/brands/brand.routes.js";
@@ -72,6 +73,7 @@ adminRouter.use(
   choiceAdminRouter,
   orderAdminRouter,
   userAdminRouter,
+  accountAdminRouter,
   stageAdminRouter,
   storeAdminRouter,
   cashAdminRouter,
