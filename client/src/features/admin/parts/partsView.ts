@@ -20,6 +20,27 @@ export function partDraftProblem(draft: PartDraft): string | null {
   return null;
 }
 
+// En modification, le stock n'est pas un champ de la fenêtre : il ne doit pas empêcher d'enregistrer. On valide
+// seulement le nom et les prix (le stock passe en « 0 », une valeur qui n'est jamais fautive).
+export function partEditProblem(draft: { name: string; purchasePrice: number; salePrice: number }): string | null {
+  return partDraftProblem({ ...draft, stock: 0 });
+}
+
+// Ce que « Modifier » envoie : SEULEMENT ce qui a changé. Le prix d'achat est une moyenne que chaque arrivage
+// recalcule ; l'envoyer à chaque enregistrement écraserait un arrivage fait pendant que la fenêtre était ouverte,
+// sans aucune trace dans le journal. `{}` : rien n'a changé.
+export function partPatchBody(
+  part: { name: string; purchasePrice: number; salePrice: number },
+  draft: { name: string; purchasePrice: number; salePrice: number },
+): { name?: string; purchasePrice?: number; salePrice?: number } {
+  const name = draft.name.trim();
+  return {
+    ...(name !== part.name ? { name } : {}),
+    ...(draft.purchasePrice !== part.purchasePrice ? { purchasePrice: draft.purchasePrice } : {}),
+    ...(draft.salePrice !== part.salePrice ? { salePrice: draft.salePrice } : {}),
+  };
+}
+
 export function arrivalProblem(draft: { quantity: number; unitCost: number }): string | null {
   if (!isInt(draft.quantity, 1, MAX_QUANTITY)) return "La quantité : un nombre entier, de 1 à 10 000.";
   // 0 DA est permis : les pièces récupérées sur un appareil démonté n'ont rien coûté.

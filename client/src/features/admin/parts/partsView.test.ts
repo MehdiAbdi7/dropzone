@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { arrivalProblem, averageAfterArrival, isOutOfStock, movementLabel, partDraftProblem, stockProblem } from "./partsView";
+import { arrivalProblem, averageAfterArrival, isOutOfStock, movementLabel, partDraftProblem, partEditProblem, partPatchBody, stockProblem } from "./partsView";
 
 // Les règles de saisie de la page Pièces (18/11) : les mêmes bornes que l'API, dites en français avant l'envoi.
 const draft = { name: "Batterie iPhone 13", purchasePrice: 3_500, salePrice: 6_000, stock: 2 };
@@ -91,5 +91,37 @@ describe("averageAfterArrival", () => {
   it("rien tant que la saisie est incomplète", () => {
     expect(averageAfterArrival({ stock: 2, purchasePrice: 3_500 }, { quantity: Number.NaN, unitCost: 0 })).toBeNull();
     expect(averageAfterArrival({ stock: 2, purchasePrice: 3_500 }, { quantity: 0, unitCost: 100 })).toBeNull();
+  });
+});
+
+// « Modifier » n'envoie que ce qui a changé : le prix d'achat est une moyenne recalculée à chaque arrivage, un
+// renommage ne doit jamais la remettre à la valeur vue à l'ouverture de la fenêtre.
+describe("partPatchBody", () => {
+  const part = { name: "Batterie iPhone 13", purchasePrice: 3_500, salePrice: 6_000 };
+
+  it("un renommage n'envoie que le nom, jamais le prix d'achat", () => {
+    expect(partPatchBody(part, { ...part, name: "Batterie iPhone 13 Pro" })).toEqual({ name: "Batterie iPhone 13 Pro" });
+  });
+
+  it("n'envoie que le prix changé", () => {
+    expect(partPatchBody(part, { ...part, salePrice: 6_500 })).toEqual({ salePrice: 6_500 });
+    expect(partPatchBody(part, { ...part, purchasePrice: 3_000 })).toEqual({ purchasePrice: 3_000 });
+  });
+
+  it("compare le nom sans les espaces autour, et rien n'est envoyé quand rien n'a changé", () => {
+    expect(partPatchBody(part, { ...part, name: "  Batterie iPhone 13 " })).toEqual({});
+  });
+});
+
+// En modification, le stock n'est pas un champ de la fenêtre : il ne doit pas empêcher d'enregistrer.
+describe("partEditProblem", () => {
+  it("accepte un nom et des prix valides", () => {
+    expect(partEditProblem({ name: "Batterie", purchasePrice: 0, salePrice: 0 })).toBeNull();
+  });
+
+  it("dit le nom ou le prix fautif", () => {
+    expect(partEditProblem({ name: "a", purchasePrice: 1, salePrice: 1 })).toMatch(/nom/i);
+    expect(partEditProblem({ name: "Batterie", purchasePrice: Number.NaN, salePrice: 1 })).toMatch(/prix d'achat/i);
+    expect(partEditProblem({ name: "Batterie", purchasePrice: 1, salePrice: -1 })).toMatch(/prix de vente/i);
   });
 });

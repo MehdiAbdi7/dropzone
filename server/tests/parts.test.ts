@@ -49,6 +49,25 @@ describe("POST /admin/parts", () => {
   });
 });
 
+// Deux espaces au milieu ou une espace insécable collée depuis un site fournisseur donneraient deux cartes au même
+// titre à l'écran (le HTML fusionne les espaces) : le nom est rangé avec des espaces simples.
+describe("les espaces d'un nom", () => {
+  it("un nom aux espaces multiples ou insécables est le même qu'avec des espaces simples", async () => {
+    const agent = await admin();
+    await createPart(agent);
+    const response = await agent.post("/admin/parts").send({ ...battery, name: "Batterie   iPhone 13" });
+    expect(response.status).toBe(409);
+  });
+
+  it("range le nom avec des espaces simples", async () => {
+    const agent = await admin();
+    const part = await createPart(agent, { name: "  Écran   iPhone 13 " });
+    expect(part.name).toBe("Écran iPhone 13");
+    const renamed = await agent.patch(`/admin/parts/${part.id}`).send({ name: "Écran  iPhone  14" }).expect(200);
+    expect(renamed.body.data.name).toBe("Écran iPhone 14");
+  });
+});
+
 describe("PATCH /admin/parts/:id", () => {
   it("change le nom et les prix sans toucher au stock ni au journal", async () => {
     const agent = await admin();

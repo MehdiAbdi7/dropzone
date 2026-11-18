@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useCreatePartMutation, useUpdatePartMutation, type PartRow } from "@/features/admin/api/partsApi";
 import EditDialog from "@/features/admin/products/EditDialog";
 import { errorMessage } from "@/lib/errors";
-import { partDraftProblem } from "./partsView";
+import { partDraftProblem, partEditProblem, partPatchBody } from "./partsView";
 
 // Un nombre vide reste vide (NaN) : on ne l'envoie jamais comme 0.
 const toNumber = (text: string) => (text.trim() === "" ? Number.NaN : Number(text));
@@ -31,15 +31,17 @@ function PartForm({ part, onDone }: { part: PartRow | null; onDone: () => void }
   const [update, updating] = useUpdatePartMutation();
   const { isLoading, error } = part ? updating : creating;
 
-  const draft = { name, purchasePrice: toNumber(purchase), salePrice: toNumber(sale), stock: part ? part.stock : toNumber(stock) };
-  const problem = partDraftProblem(draft);
+  const draft = { name, purchasePrice: toNumber(purchase), salePrice: toNumber(sale), stock: toNumber(stock) };
+  // En modification, on n'envoie que ce qui a changé (partPatchBody) : rien n'a changé, rien à enregistrer.
+  const patch = part ? partPatchBody(part, draft) : null;
+  const problem = part ? (partEditProblem(draft) ?? (Object.keys(patch ?? {}).length === 0 ? "Rien n'a changé." : null)) : partDraftProblem(draft);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (problem) return;
     try {
       if (part) {
-        await update({ id: part.id, body: { name: name.trim(), purchasePrice: draft.purchasePrice, salePrice: draft.salePrice } }).unwrap();
+        await update({ id: part.id, body: patch! }).unwrap();
       } else {
         await create({ name: name.trim(), purchasePrice: draft.purchasePrice, salePrice: draft.salePrice, stock: draft.stock }).unwrap();
       }

@@ -2,7 +2,10 @@ import { z } from "zod";
 
 // Les pièces de l'atelier (18/11, étape 1). Les bornes protègent le calcul du prix d'achat moyen : un prix
 // de 10 000 000 DA au plus, 10 000 pièces par arrivage, donc aucun dépassement d'entier.
-const name = z.string().trim().min(1).max(80);
+// Le nom est rangé avec des espaces simples : « Batterie  iPhone 13 » ou une espace insécable collée depuis un site
+// fournisseur donneraient sinon une seconde pièce au même titre à l'écran (le HTML fusionne les espaces), que
+// l'index unique de la base (qui ne retire que les espaces autour) ne verrait pas.
+const name = z.string().trim().min(1).max(80).transform((text) => text.replace(/\s+/g, " "));
 const price = z.number().int().min(0).max(10_000_000);
 const stock = z.number().int().min(0).max(1_000_000);
 
