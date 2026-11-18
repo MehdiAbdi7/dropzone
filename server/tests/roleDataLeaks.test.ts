@@ -87,16 +87,26 @@ describe("l'admin garde ses coûts (rien ne change pour lui)", () => {
 });
 
 describe("aucune donnée de coût vers le vendeur", () => {
-  it("ni dans la recherche de variantes, ni dans la vente, l'échange, la caisse ou la facture", async () => {
+  it("ni dans la vente, l'échange, la caisse ou la facture", async () => {
     const { seller, soldId, soldBySeller, exchanged } = await shop();
     const responses = [
-      (await seller.agent.get("/admin/variants").expect(200)).body,
       soldBySeller.body,
       exchanged.body,
       (await seller.agent.get("/admin/cash/today").expect(200)).body,
       (await seller.agent.post(`/admin/orders/${soldId}/invoice`).expect(200)).body,
     ];
     responses.forEach((body, index) => expect(costKeysIn(body), `réponse n° ${index + 1}`).toEqual([]));
+  });
+});
+
+// 18/11 : le vendeur négocie, il doit connaître sa limite. Le prix d'achat sort par la recherche de variantes
+// et par elle seule ; le bénéfice, la marge et le prix d'achat figé d'une vente restent à l'admin.
+describe("le prix d'achat dans la recherche de variantes", () => {
+  it.each(["seller", "manager"] as const)("le %s le voit, et ne voit aucune autre clé de coût", async (who) => {
+    const accounts = await shop();
+    const body = (await accounts[who].agent.get("/admin/variants?q=ip-new-256").expect(200)).body;
+    expect(body.data[0].purchasePrice).toBe(200_000);
+    expect(costKeysIn(body)).toEqual(["purchasePrice"]);
   });
 });
 
