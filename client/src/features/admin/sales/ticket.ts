@@ -17,6 +17,20 @@ export type VariantHit = {
   stock: number;
   conditionReport: string | null;
   image: string | null;
+  // La fiche complète (18/11), pour le bouton « Détail », et le prix d'achat, pour la limite de la négociation.
+  grade: number | null;
+  batteryHealth: number | null;
+  replacedParts: string[];
+  compatibleParts: string[];
+  defects: string[];
+  limitations: string[];
+  withBox: boolean | null;
+  details: string | null;
+  warrantyMonths: number | null;
+  origin: string | null;
+  reference: string | null;
+  purchasePrice: number | null;
+  gifts: { name: string; quantity: number }[];
 };
 
 // Une ligne du ticket. `listPrice` : le prix catalogue ; `unitPrice` : le prix accordé (modifiable,
@@ -31,7 +45,15 @@ export type TicketLine = {
   unitPrice: number;
   quantity: number;
   maxQuantity: number;
+  // La variante telle que la recherche l'a trouvée : le bouton « Détail » du ticket l'affiche sans autre appel.
+  hit: VariantHit;
 };
+
+// Le prix accordé est-il sous le prix d'achat ? Faux quand l'un des deux manque : un champ vide (NaN) ou un
+// prix d'achat inconnu ne doit rien annoncer.
+export function belowPurchasePrice(unitPrice: number, purchasePrice: number | null): boolean {
+  return purchasePrice !== null && !Number.isNaN(unitPrice) && unitPrice < purchasePrice;
+}
 
 export function addToTicket(lines: TicketLine[], hit: VariantHit): TicketLine[] {
   const maxQuantity = Math.min(hit.stock, MAX_PER_LINE);
@@ -53,6 +75,7 @@ export function addToTicket(lines: TicketLine[], hit: VariantHit): TicketLine[] 
       unitPrice: hit.price,
       quantity: 1,
       maxQuantity,
+      hit,
     },
   ];
 }

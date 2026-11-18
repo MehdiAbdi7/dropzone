@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { formatPrice } from "@/lib/format";
+import { makeHit } from "@/features/admin/sales/variantHit.fixture";
 import { buildExchangeBody, buildTradeInBody, differenceText, emptyTradeIn, exchangeDifference, settledText, tradeInProblem, type TradeInDraft } from "./exchange";
 
 // L'échange du comptoir (lot 5) : ce que le client doit payer ou ce que le magasin rend, ce que la
@@ -131,7 +132,7 @@ describe("buildTradeInBody", () => {
 describe("buildExchangeBody", () => {
   it("réunit le ticket de ce que le magasin donne et la reprise du client", () => {
     const body = buildExchangeBody({
-      lines: [{ key: "a", sku: "IP-NEW-256", name: "iPhone", options: {}, condition: "new", listPrice: 245_000, unitPrice: 240_000, quantity: 1, maxQuantity: 3 }],
+      lines: [{ key: "a", sku: "IP-NEW-256", name: "iPhone", options: {}, condition: "new", listPrice: 245_000, unitPrice: 240_000, quantity: 1, maxQuantity: 3, hit: makeHit() }],
       form: { fullName: " Amine Test ", phone: "0555 12 34 56" },
       method: "cash",
       note: "",
