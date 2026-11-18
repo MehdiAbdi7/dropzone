@@ -1,6 +1,9 @@
 "use client";
 
+import { useMemo } from "react";
 import { canAccess } from "@/features/admin/access";
+import { needsAttention } from "@/features/admin/orders/reservationStage";
+import { useAcknowledged } from "./acknowledged";
 import { useAdminOrdersQuery, type AdminOrderRow } from "@/features/admin/api/ordersApi";
 import { useAdminRole } from "@/features/admin/AdminRoleContext";
 
@@ -25,13 +28,18 @@ export function usePendingDeliveries() {
   return { orders: data?.data ?? NO_ORDERS, count: data?.pagination.total ?? 0, isSuccess };
 }
 
-// Les retraits réservés (nouveaux ou non) : sert seulement à repérer une réservation qui vient d'arriver.
+// Les réservations en cours de route (statut reserved), avec celles qui attendent le magasin (`todo`) : ce
+// sont elles que compte la pastille de Commandes et de l'onglet Réservations, et que l'alerte fait sonner.
+// Mêmes arguments partout, donc une seule requête pour tous.
 export function useReservedPickups() {
   const skip = !canAccess(useAdminRole(), "/admin/commandes");
+  const acknowledged = useAcknowledged();
   const { data, isSuccess } = useAdminOrdersQuery(
     { type: "pickup", status: "reserved", page: 1 },
     { pollingInterval: POLL_INTERVAL_MS, skip },
   );
-  return { orders: data?.data ?? NO_ORDERS, isSuccess };
+  const orders = data?.data ?? NO_ORDERS;
+  const todo = useMemo(() => orders.filter((order) => needsAttention(order, acknowledged)), [orders, acknowledged]);
+  return { orders, todo, isSuccess };
 }
 

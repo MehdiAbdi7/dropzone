@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isOngoingReservation, unlimitedStage, unlimitedStageLabel } from "./reservationStage";
+import { isOngoingReservation, needsAttention, unlimitedStage, unlimitedStageLabel } from "./reservationStage";
 
 // Où en est une réservation illimitée avec avance BaridiMob (18/11) : le magasin doit encore appeler le client
 // (« à appeler »), il attend l'avance (numéro envoyé), ou l'avance est reçue (confirmée, « en cours »).
@@ -33,5 +33,21 @@ describe("isOngoingReservation", () => {
   it("une réservation de deux jours est « en cours » une fois vue", () => {
     expect(isOngoingReservation({ id: 2, reservationMode: "two_days" }, [2])).toBe(true);
     expect(isOngoingReservation({ id: 2, reservationMode: "two_days" }, [])).toBe(false);
+  });
+});
+
+// Ce qui fait sonner et compter la pastille : seulement ce qui attend une action du magasin.
+describe("needsAttention", () => {
+  it("une réservation de deux jours attend d'être vue", () => {
+    expect(needsAttention({ id: 3, reservationMode: "two_days" }, [])).toBe(true);
+    expect(needsAttention({ id: 3, reservationMode: "two_days" }, [3])).toBe(false);
+  });
+  it("une illimitée attend un appel tant que le numéro n'est pas envoyé, même si elle a été vue", () => {
+    expect(needsAttention({ id: 4, ...unlimited }, [])).toBe(true);
+    expect(needsAttention({ id: 4, ...unlimited }, [4])).toBe(true);
+  });
+  it("une illimitée dont le numéro est envoyé n'attend que le client : plus d'alerte", () => {
+    expect(needsAttention({ id: 5, ...unlimited, baridiSharedAt: "x" }, [])).toBe(false);
+    expect(needsAttention({ id: 5, ...unlimited, baridiSharedAt: "x", advancePaidAt: "y" }, [])).toBe(false);
   });
 });

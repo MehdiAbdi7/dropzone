@@ -26,6 +26,15 @@ export const unlimitedStageLabel = (stage: UnlimitedStage): string => LABELS[sta
 
 // Dans la liste des réservations : « nouvelle » ou « en cours ». Une réservation de deux jours passe en cours quand
 // elle est vue (le « Vu » de l'alerte) ; une illimitée quand son avance est reçue.
+// Ce qui attend une action du magasin : c'est ce que compte la pastille et ce qui fait sonner. Une réservation
+// de deux jours attend qu'on la voie ; une illimitée attend l'appel (numéro BaridiMob pas encore envoyé), qu'elle
+// ait été « Vue » ou non, car « Vu » fait seulement taire le son. Une fois le numéro envoyé, c'est au client de
+// jouer : plus d'alerte.
+export function needsAttention(order: ReservationInfo & { id: number }, acknowledged: number[]): boolean {
+  const stage = unlimitedStage(order);
+  return stage === null ? !acknowledged.includes(order.id) : stage === "call";
+}
+
 export function isOngoingReservation(order: ReservationInfo & { id: number }, acknowledged: number[]): boolean {
   const stage = unlimitedStage(order);
   return stage === null ? acknowledged.includes(order.id) : stage === "confirmed";
