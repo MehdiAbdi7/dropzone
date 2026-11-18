@@ -9,6 +9,7 @@ import {
   StoreIcon,
   SwapIcon,
   UsersIcon,
+  WrenchIcon,
 } from "@/components/ui/icons";
 import type { Role } from "@/types/api";
 import { canAccess } from "./access";
@@ -90,6 +91,9 @@ export const SECTIONS: NavSection[] = [
       { label: "Reprises", href: "/admin/reprises", match: (path) => under(path, "/admin/reprises") },
     ],
   },
+  // L'atelier (18/11) : les pièces d'abord ; l'étape 2 y ajoutera l'onglet « Réparations ». Admin seulement
+  // pour l'instant (aucune route dans la table des droits).
+  { key: "atelier", label: "Atelier", icon: WrenchIcon, href: "/admin/pieces", owns: (path) => under(path, "/admin/pieces") },
   { key: "historique", label: "Historique", icon: DocumentIcon, href: "/admin/historique", owns: (path) => under(path, "/admin/historique") },
   { key: "clients", label: "Clients", icon: UsersIcon, href: "/admin/clients", owns: (path) => under(path, "/admin/clients") },
   {
