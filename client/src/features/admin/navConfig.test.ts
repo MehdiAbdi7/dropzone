@@ -21,10 +21,10 @@ describe("bottomBarFor", () => {
     expect(bottomBarFor("order_manager").more).toEqual([]);
   });
 
-  it("l'admin : la barre d'avant, avec Plus pour Historique et Clients", () => {
+  it("l'admin : la barre d'avant, avec Plus pour l'Atelier, l'Historique et les Clients", () => {
     expect(keys("admin")).toEqual(["accueil", "vente", "commandes", "catalogue"]);
     expect(bottomBarFor("admin").featured).toBe("commandes");
-    expect(bottomBarFor("admin").more.map((section) => section.key)).toEqual(["historique", "clients"]);
+    expect(bottomBarFor("admin").more.map((section) => section.key)).toEqual(["atelier", "historique", "clients"]);
   });
 
   it("l'entrée en relief est au milieu de la barre (Plus compris pour l'admin)", () => {
@@ -78,13 +78,14 @@ describe("visibleSections", () => {
 });
 
 describe("les sections du back-office", () => {
-  it("neuf sections : la vente au magasin et la caisse sont des pages à part, les comptes sont au menu ☰", () => {
+  it("dix sections : la vente au magasin et la caisse sont des pages à part, l'atelier suit le catalogue, les comptes sont au menu ☰", () => {
     expect(SECTIONS.map((section) => section.key)).toEqual([
       "accueil",
       "vente",
       "caisse",
       "commandes",
       "catalogue",
+      "atelier",
       "historique",
       "clients",
       "personnalisation",
@@ -115,6 +116,8 @@ describe("les sections du back-office", () => {
       ["/admin/produits", "catalogue"],
       ["/admin/produits/nouveau", "catalogue"],
       ["/admin/produits/7", "catalogue"],
+      ["/admin/pieces", "atelier"],
+      ["/admin/pieces/12", "atelier"],
       ["/admin/historique", "historique"],
       ["/admin/clients", "clients"],
       ["/admin/accueil", "personnalisation"],
@@ -159,13 +162,13 @@ describe("où s'affiche chaque section", () => {
     expect(keys(MENU_SECTIONS)).toEqual(["caisse", "personnalisation", "comptes"]);
   });
 
-  it("la barre latérale garde les six autres, dans l'ordre de travail", () => {
-    expect(keys(NAV_SECTIONS)).toEqual(["accueil", "vente", "commandes", "catalogue", "historique", "clients"]);
+  it("la barre latérale garde les sept autres, dans l'ordre de travail", () => {
+    expect(keys(NAV_SECTIONS)).toEqual(["accueil", "vente", "commandes", "catalogue", "atelier", "historique", "clients"]);
   });
 
   it("sur téléphone : Accueil, Ventes, Commandes au milieu, Catalogue, puis Plus avec le reste", () => {
     expect(keys(BOTTOM_PRIMARY)).toEqual(["accueil", "vente", "commandes", "catalogue"]);
-    expect(keys(BOTTOM_MORE)).toEqual(["historique", "clients"]);
+    expect(keys(BOTTOM_MORE)).toEqual(["atelier", "historique", "clients"]);
   });
 
   it("aucune section n'apparaît à deux endroits", () => {

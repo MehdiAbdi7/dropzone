@@ -706,3 +706,51 @@ model InvoiceCounter {
 
   @@map("invoice_counters")
 }
+
+// ---------- L'atelier : les pièces (18/11, étape 1) ----------
+
+// Ce qui a fait bouger le stock d'une pièce. D'autres valeurs viendront avec l'étape qui s'en sert (la sortie
+// d'une réparation, le démontage d'un appareil).
+enum PartMovementKind {
+  // Des pièces reçues : le prix d'achat unitaire est dans le mouvement, et le prix d'achat de la pièce devient
+  // la moyenne pondérée (partMath.ts).
+  arrival
+  // Le stock compté par l'admin : le mouvement porte l'écart.
+  correction
+}
+
+// Une pièce de l'atelier (batterie, écran…) : ce qu'elle a coûté, à quel prix on la vend, combien il en reste.
+// Les CHECK (stock et prix jamais négatifs) et l'unicité du nom sans casse ni espaces
+// (`lower(btrim(name))`) sont dans la migration : Prisma ne sait pas les décrire. Aucune suppression : le
+// journal doit garder la trace de chaque pièce.
+model Part {
+  id            Int            @id @default(autoincrement())
+  name          String
+  purchasePrice Int            @map("purchase_price")
+  salePrice     Int            @map("sale_price")
+  stock         Int            @default(0)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @default(now()) @updatedAt @map("updated_at")
+  movements     PartMovement[]
+
+  @@map("parts")
+}
+
+// Le journal du stock d'une pièce : une ligne par arrivage ou correction, jamais modifiée ni supprimée.
+// `stockAfter` : le stock juste après, pour relire l'histoire sans la recalculer.
+model PartMovement {
+  id         Int              @id @default(autoincrement())
+  createdAt  DateTime         @default(now()) @map("created_at")
+  partId     Int              @map("part_id")
+  part       Part             @relation(fields: [partId], references: [id], onDelete: Restrict)
+  kind       PartMovementKind
+  delta      Int
+  unitCost   Int?             @map("unit_cost")
+  stockAfter Int              @map("stock_after")
+  // Pas de clé étrangère : la trace survit à un compte supprimé, comme `userId` des mouvements d'argent.
+  userId     Int?             @map("user_id")
+  note       String?
+
+  @@index([partId])
+  @@map("part_movements")
+}

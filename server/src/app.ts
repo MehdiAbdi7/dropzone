@@ -27,6 +27,7 @@ import { deliveriesAdminRouter } from "./modules/deliveries/deliveries.routes.js
 import { exchangeAdminRouter } from "./modules/exchanges/exchange.routes.js";
 import { historyAdminRouter } from "./modules/history/history.routes.js";
 import { invoiceAdminRouter } from "./modules/invoices/invoice.routes.js";
+import { partAdminRouter } from "./modules/parts/part.routes.js";
 import { statsAdminRouter } from "./modules/stats/stats.routes.js";
 import { storeAdminRouter, storeRouter } from "./modules/store/store.routes.js";
 import { userAdminRouter } from "./modules/users/user.routes.js";
@@ -81,6 +82,7 @@ adminRouter.use(
   deliveriesAdminRouter,
   exchangeAdminRouter,
   invoiceAdminRouter,
+  partAdminRouter,
 );
 app.use("/admin", requireAuth, adminAccess, adminRouter);
 

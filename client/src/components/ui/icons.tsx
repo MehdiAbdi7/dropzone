@@ -115,6 +115,14 @@ export const StoreIcon = (props: IconProps) => (
   </Icon>
 );
 
+// Une clé à molette : l'atelier de réparation.
+export const WrenchIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M14.7 6.3a4 4 0 0 0 5 5L21 12.6A6 6 0 0 1 12.6 21L4 12.4a6 6 0 0 1 8.4-8.4z" />
+    <path d="M7.5 16.5h.01" />
+  </Icon>
+);
+
 export const PackageIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z" />
