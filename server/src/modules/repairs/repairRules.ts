@@ -37,6 +37,24 @@ export function quoteTotal(laborPrice: number | null, lines: { quantity: number;
   return (laborPrice ?? 0) + lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0);
 }
 
+// Ce que le client paie au Rendu (étape 3). Sous garantie, rien. Un devis refusé : seulement les frais de diagnostic
+// saisis à la main (la main-d'œuvre du devis refusé est remise à zéro au refus, les pièces ne comptent jamais).
+// Sinon : la main-d'œuvre plus les pièces au prix de vente figé.
+export function repairAmount(input: {
+  underWarranty: boolean;
+  refused: boolean;
+  laborPrice: number | null;
+  lines: { quantity: number; unitPrice: number }[];
+}): number {
+  if (input.underWarranty) return 0;
+  if (input.refused) return input.laborPrice ?? 0;
+  return quoteTotal(input.laborPrice, input.lines);
+}
+
+// Le bénéfice d'une réparation rendue : ce que le client a payé moins ce que les pièces ont coûté. Négatif sous
+// garantie : le magasin a payé les pièces sans rien encaisser.
+export const repairProfit = (paid: number, partsCost: number): number => paid - partsCost;
+
 // Le devis est fixé dès qu'il y a une main-d'œuvre (même 0 : « la réparation est gratuite ») ou une pièce.
 export function hasQuote(laborPrice: number | null, lineCount: number): boolean {
   return laborPrice !== null || lineCount > 0;

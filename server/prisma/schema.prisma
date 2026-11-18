@@ -111,6 +111,8 @@ enum MovementKind {
   // Les frais de retour d'une livraison (17/11) : DropZone paie la société de livraison quand le
   // client refuse le colis ou ne répond pas. Toujours négatif, hors caisse (type de commande livraison).
   return_fee
+  // L'argent d'une réparation rendue (étape 3 de l'atelier) : un seul mouvement par fiche, lié par `repairId`.
+  repair
 }
 
 // ---------- Le catalogue ----------
@@ -625,9 +627,13 @@ model MoneyMovement {
   // suppression de la commande. Il décide de la caisse (l'argent d'une livraison n'entre jamais
   // dans le tiroir) et de l'onglet de l'historique (Magasin, Livraisons, Réservations).
   orderType    OrderType?    @map("order_type")
+  // La fiche de réparation d'un mouvement `repair` (ou de sa correction) : sans clé étrangère, la trace survit à
+  // la suppression de la fiche. `orderType` reste vide : l'argent d'une réparation entre dans le tiroir.
+  repairId     Int?          @map("repair_id")
 
   @@index([businessDate])
   @@index([orderId])
+  @@index([repairId])
   @@map("money_movements")
 }
 
@@ -653,6 +659,8 @@ model OrderEvent {
   // choisi (Magasin, Livraisons, Réservations). null = trace d'avant, dont la commande a disparu :
   // elle ne se voit que dans le Total.
   orderType   OrderType?     @map("order_type")
+  // Une réparation rendue supprimée (étape 3) : son numéro R-…, `orderId` vide.
+  repairNumber Int?          @map("repair_number")
 
   @@index([createdAt])
   @@index([orderId])
@@ -808,6 +816,13 @@ model Repair {
   originItemId      Int?          @map("origin_item_id")
   originItem        OrderItem?    @relation(fields: [originItemId], references: [id], onDelete: SetNull)
   originOrderNumber Int?          @map("origin_order_number")
+  // Le Rendu (étape 3), figé : le jour (Alger), ce que le client a payé et avec quel moyen (0 DA sous garantie),
+  // et ce que les pièces sorties ont coûté. Le bénéfice est `paidAmount - partsCost` ; un changement de prix de
+  // pièce ensuite n'y touche jamais.
+  returnedOn        DateTime?     @map("returned_on") @db.Date
+  paidAmount        Int?          @map("paid_amount")
+  partsCost         Int?          @map("parts_cost")
+  payMethod         PaymentMethod? @map("pay_method")
   // Pas de clé étrangère : la trace survit à un compte supprimé.
   createdById       Int?          @map("created_by_id")
   createdAt         DateTime      @default(now()) @map("created_at")
