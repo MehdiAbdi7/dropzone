@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import PendingBadge from "./alerts/PendingBadge";
-import { usePendingDeliveries } from "./alerts/usePendingDeliveries";
+import { usePendingDeliveries, useReservedPickups } from "./alerts/usePendingDeliveries";
 import { activeTab, sectionFor } from "./navConfig";
 
 // Les sous-onglets de la section affichée (Commandes : Livraisons, Retraits, Magasin…), en haut de
@@ -13,6 +13,7 @@ export default function AdminSubNav() {
   const path = usePathname();
   const params = useSearchParams();
   const { count: pending } = usePendingDeliveries();
+  const reservations = useReservedPickups().todo.length;
   const section = sectionFor(path);
   if (!section?.tabs) return null;
   const current = activeTab(section, path, params);
@@ -31,6 +32,7 @@ export default function AdminSubNav() {
         >
           {tab.label}
           {tab.href === "/admin/livraisons" ? <PendingBadge count={pending} /> : null}
+          {tab.href === "/admin/commandes?type=pickup" ? <PendingBadge count={reservations} /> : null}
         </Link>
       ))}
     </nav>

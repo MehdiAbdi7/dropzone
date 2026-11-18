@@ -4,15 +4,9 @@ import Link from "next/link";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { AlertIcon } from "@/components/ui/icons";
 import { dailyLabel } from "@/features/admin/orders/orderLabels";
-import {
-  isAudioBlocked,
-  playNewOrderChime,
-  playReservationChime,
-  subscribeAudioState,
-  unlockAudio,
-} from "@/lib/orderAlertSound";
+import { isAudioBlocked, playNewOrderChime, subscribeAudioState, unlockAudio } from "@/lib/orderAlertSound";
 import { acknowledge, keepOnly, useAcknowledged } from "./acknowledged";
-import { newArrivals, pruneAcknowledged, shouldRingNow, unseenIds } from "./alertLogic";
+import { pruneAcknowledged, shouldRingNow, unseenIds } from "./alertLogic";
 import { usePendingDeliveries, useReservedPickups } from "./usePendingDeliveries";
 
 // Un rappel tant qu'une commande n'a pas été vue : assez espacé pour ne pas couvrir le comptoir, assez
@@ -27,7 +21,7 @@ const UNLOCK_EVENTS = ["click", "touchend", "keydown"] as const;
 // et s'affiche sur toutes les pages, comme sur Niwa Food. Deux sortes :
 //  - une livraison « À confirmer » (le client attend un appel) : deux notes, répétées toutes les 30 s
 //    jusqu'à ce qu'on la marque « Vu » ou qu'on ouvre la commande ;
-//  - une réservation de retrait qui vient d'arriver : une seule note douce, une fois, sans rappel.
+//  - une réservation qui attend le magasin (« à voir » ou « à appeler ») : même carillon, même rappel.
 export default function NewOrderAlert() {
   const acknowledged = useAcknowledged();
   const deliveries = usePendingDeliveries();
@@ -40,7 +34,10 @@ export default function NewOrderAlert() {
   // Des chaînes plutôt que des tableaux dans les dépendances des effets : un nouveau tableau à chaque
   // rendu relancerait l'effet, donc le minuteur de 30 s, en permanence.
   const pendingKey = pendingIds.join(",");
-  const unseenKey = unseenDeliveries.map((order) => order.id).join(",");
+  // Les réservations qui attendent le magasin ET qu'on n'a pas fait taire avec « Vu » : elles sonnent comme
+  // une livraison à confirmer (même carillon, même rappel de 30 s), car le client attend aussi un appel.
+  const newReservations = reservations.todo.filter((order) => unseenIds([order.id], acknowledged).length > 0);
+  const unseenKey = [...unseenDeliveries, ...newReservations].map((order) => order.id).join(",");
   const reservedKey = reservations.orders.map((order) => order.id).join(",");
 
   // Le navigateur n'ouvre le son que pendant un geste : on écoute les gestes, n'importe où. Toujours
@@ -62,8 +59,8 @@ export default function NewOrderAlert() {
   // simple nouveau rendu.
   const lastRun = useRef<{ ids: Set<number>; audioBlocked: boolean } | null>(null);
   useEffect(() => {
-    // Rien avant d'avoir reçu la liste : sinon une page sans données sonnerait à tort.
-    if (!deliveries.isSuccess) return;
+    // Rien avant d'avoir reçu les deux listes : sinon une page sans données sonnerait à tort, ou deux fois.
+    if (!deliveries.isSuccess || !reservations.isSuccess) return;
     const ids = unseenKey ? unseenKey.split(",").map(Number) : [];
     const previous = lastRun.current;
     lastRun.current = { ids: new Set(ids), audioBlocked };
@@ -74,22 +71,7 @@ export default function NewOrderAlert() {
     }
     const timer = window.setInterval(playNewOrderChime, REPEAT_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [deliveries.isSuccess, unseenKey, audioBlocked]);
-
-  // Les réservations : une note à chaque arrivée, jamais au premier chargement. Ce qui existait déjà à
-  // l'ouverture de la page est marqué « Vu » d'office : seules les suivantes sont nouvelles.
-  const reservedSeen = useRef<Set<number> | null>(null);
-  useEffect(() => {
-    if (!reservations.isSuccess) return;
-    const ids = reservedKey ? reservedKey.split(",").map(Number) : [];
-    const first = reservedSeen.current === null;
-    const fresh = newArrivals(reservedSeen.current, ids);
-    reservedSeen.current = new Set(ids);
-    if (first) acknowledge(ids);
-    else if (fresh.length > 0) playReservationChime();
-  }, [reservations.isSuccess, reservedKey]);
-
-  const newReservations = reservations.orders.filter((order) => !acknowledged.includes(order.id));
+  }, [deliveries.isSuccess, reservations.isSuccess, unseenKey, audioBlocked]);
 
   if (!audioBlocked && unseenDeliveries.length === 0 && newReservations.length === 0) return null;
 

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { CloseIcon, DotsIcon } from "@/components/ui/icons";
 import PendingBadge from "./alerts/PendingBadge";
-import { usePendingDeliveries } from "./alerts/usePendingDeliveries";
+import { usePendingDeliveries, useReservedPickups } from "./alerts/usePendingDeliveries";
 import { useAdminRole } from "./AdminRoleContext";
 import { NAV_SECTIONS, activeBottomKey, bottomBarFor, isVisibleTo, sectionFor } from "./navConfig";
 
@@ -21,7 +21,8 @@ export default function AdminNav() {
   const activeKey = useActiveKey();
   const role = useAdminRole();
   // Les livraisons à confirmer : la pastille rouge de « Commandes », comme sur Niwa Food.
-  const { count: pending } = usePendingDeliveries();
+  // Livraisons à confirmer + réservations qui attendent le magasin : une seule pastille sur Commandes.
+  const pending = usePendingDeliveries().count + useReservedPickups().todo.length;
 
   return (
     <nav aria-label="Back-office" className="hidden px-2 py-3 lg:block">
@@ -55,7 +56,8 @@ export default function AdminNav() {
 export function AdminBottomNav() {
   const activeKey = activeBottomKey(usePathname());
   const role = useAdminRole();
-  const { count: pending } = usePendingDeliveries();
+  // Livraisons à confirmer + réservations qui attendent le magasin : une seule pastille sur Commandes.
+  const pending = usePendingDeliveries().count + useReservedPickups().todo.length;
   const [moreOpen, setMoreOpen] = useState(false);
   const { items, featured, more } = bottomBarFor(role);
   const moreActive = more.some((section) => section.key === activeKey);
