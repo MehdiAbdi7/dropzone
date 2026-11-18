@@ -19,7 +19,8 @@ export const historyQuerySchema = z
   .object({
     from: day,
     to: day,
-    type: z.enum(["delivery", "pickup", "in_store", "exchange"]).optional(),
+    // `repair` (atelier, étape 3) : l'onglet des réparations rendues, qui n'est pas un type de commande.
+    type: z.enum(["delivery", "pickup", "in_store", "exchange", "repair"]).optional(),
     q: z.string().trim().min(1).max(80).optional(),
   })
   .superRefine((value, ctx) => {
