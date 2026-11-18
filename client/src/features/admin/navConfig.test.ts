@@ -118,6 +118,8 @@ describe("les sections du back-office", () => {
       ["/admin/produits/7", "catalogue"],
       ["/admin/pieces", "atelier"],
       ["/admin/pieces/12", "atelier"],
+      ["/admin/reparations", "atelier"],
+      ["/admin/reparations/12", "atelier"],
       ["/admin/historique", "historique"],
       ["/admin/clients", "clients"],
       ["/admin/accueil", "personnalisation"],
@@ -145,6 +147,22 @@ describe("les sections du back-office", () => {
     expect(section.tabs?.map((tab) => tab.label)).toEqual(["Vente", "Échange"]);
     expect(activeTab(section, "/admin/vente", new URLSearchParams())?.label).toBe("Vente");
     expect(activeTab(section, "/admin/echange", new URLSearchParams())?.label).toBe("Échange");
+  });
+
+  // L'atelier (18/11, étape 2) : les réparations d'abord, les pièces ensuite, dans la même section.
+  it("l'Atelier a deux onglets, Réparations et Pièces, et s'ouvre sur les réparations", () => {
+    const section = sectionFor("/admin/pieces")!;
+    expect(section.href).toBe("/admin/reparations");
+    expect(section.tabs?.map((tab) => tab.label)).toEqual(["Réparations", "Pièces"]);
+    expect(activeTab(section, "/admin/reparations", new URLSearchParams())?.label).toBe("Réparations");
+    expect(activeTab(section, "/admin/pieces", new URLSearchParams())?.label).toBe("Pièces");
+  });
+
+  it("seul l'admin voit l'Atelier", () => {
+    const visible = (role: Parameters<typeof visibleSections>[0]) => visibleSections(role).map((section) => section.key);
+    expect(visible("admin")).toContain("atelier");
+    expect(visible("seller")).not.toContain("atelier");
+    expect(visible("order_manager")).not.toContain("atelier");
   });
 
   it("les reprises à mettre en vente sont un onglet du Catalogue", () => {
