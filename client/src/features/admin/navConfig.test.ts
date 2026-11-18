@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canAccess } from "./access";
-import { BOTTOM_MORE, BOTTOM_PRIMARY, MENU_SECTIONS, NAV_SECTIONS, SECTIONS, activeBottomKey, activeTab, bottomBarFor, ordersHref, ordersListHref, sectionFor, visibleSections } from "./navConfig";
+import { BOTTOM_MORE, BOTTOM_PRIMARY, MENU_SECTIONS, NAV_SECTIONS, SECTIONS, activeBottomKey, activeTab, bottomBarFor, ordersHref, ordersListHref, sectionFor, visibleSections, visibleTabs } from "./navConfig";
 
 const params = (query = "") => new URLSearchParams(query);
 
@@ -60,12 +60,12 @@ describe("activeBottomKey", () => {
 describe("visibleSections", () => {
   const keys = (role: Parameters<typeof visibleSections>[0]) => visibleSections(role).map((section) => section.key);
 
-  it("le vendeur : la vente (avec l'échange) et la caisse", () => {
-    expect(keys("seller")).toEqual(["vente", "caisse"]);
+  it("le vendeur : la vente (avec l'échange), la caisse et les réparations", () => {
+    expect(keys("seller")).toEqual(["vente", "caisse", "atelier"]);
   });
 
   it("le responsable commande : le vendeur, plus les commandes", () => {
-    expect(keys("order_manager")).toEqual(["vente", "caisse", "commandes"]);
+    expect(keys("order_manager")).toEqual(["vente", "caisse", "commandes", "atelier"]);
   });
 
   it("l'admin : toutes les sections", () => {
@@ -158,11 +158,29 @@ describe("les sections du back-office", () => {
     expect(activeTab(section, "/admin/pieces", new URLSearchParams())?.label).toBe("Pièces");
   });
 
-  it("seul l'admin voit l'Atelier", () => {
+  it("l'Atelier est vu par le technicien, le vendeur, le responsable et l'admin, jamais par un client", () => {
     const visible = (role: Parameters<typeof visibleSections>[0]) => visibleSections(role).map((section) => section.key);
-    expect(visible("admin")).toContain("atelier");
-    expect(visible("seller")).not.toContain("atelier");
-    expect(visible("order_manager")).not.toContain("atelier");
+    for (const role of ["admin", "technician", "seller", "order_manager"] as const) expect(visible(role), role).toContain("atelier");
+    expect(visible("customer")).not.toContain("atelier");
+  });
+
+  it("le technicien ne voit que l'Atelier", () => {
+    expect(visibleSections("technician").map((section) => section.key)).toEqual(["atelier"]);
+  });
+
+  it("les onglets de l'Atelier suivent les droits : le vendeur n'a que Réparations, le technicien et l'admin les deux", () => {
+    const section = sectionFor("/admin/reparations")!;
+    expect(visibleTabs(section, "seller").map((tab) => tab.label)).toEqual(["Réparations"]);
+    expect(visibleTabs(section, "order_manager").map((tab) => tab.label)).toEqual(["Réparations"]);
+    expect(visibleTabs(section, "technician").map((tab) => tab.label)).toEqual(["Réparations", "Pièces"]);
+    expect(visibleTabs(section, "admin").map((tab) => tab.label)).toEqual(["Réparations", "Pièces"]);
+  });
+
+  it("la barre du bas du technicien : l'Atelier seul, sans « Plus »", () => {
+    const bar = bottomBarFor("technician");
+    expect(bar.items.map((item) => item.key)).toEqual(["atelier"]);
+    expect(bar.featured).toBe("atelier");
+    expect(bar.more).toEqual([]);
   });
 
   it("les reprises à mettre en vente sont un onglet du Catalogue", () => {

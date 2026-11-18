@@ -1,11 +1,12 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { useAdminRole } from "@/features/admin/AdminRoleContext";
 import { useRepairCountsQuery, useRepairsQuery, type RepairStage } from "@/features/admin/api/repairsApi";
 import RepairCreateForm from "@/features/admin/repairs/RepairCreateForm";
 import RepairWindow from "@/features/admin/repairs/RepairWindow";
 import RepairsTable from "@/features/admin/repairs/RepairsTable";
-import { REPAIR_STATUS_LABELS, parseRepairSearch } from "@/features/admin/repairs/repairsView";
+import { REPAIR_STATUS_LABELS, parseRepairSearch, repairCapabilities } from "@/features/admin/repairs/repairsView";
 import { useRepairWindow } from "@/features/admin/repairs/useRepairWindow";
 import { errorMessage } from "@/lib/errors";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
@@ -34,6 +35,7 @@ function RepairsList() {
   const [stage, setStage] = useState<RepairStage>("open");
   const [text, setText] = useState("");
   const [creating, setCreating] = useState(false);
+  const caps = repairCapabilities(useAdminRole());
   const repairWindow = useRepairWindow();
   // La recherche attend une pause dans la saisie : chaque touche relancerait la requête.
   const search = useDebouncedValue(parseRepairSearch(text));
@@ -47,9 +49,11 @@ function RepairsList() {
           <h1 className="text-2xl sm:text-3xl">Réparations</h1>
           <p className="text-ink-muted">Les appareils confiés au magasin, de leur arrivée à leur retour au client.</p>
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
-          Nouvelle réparation
-        </button>
+        {caps.createsRepair ? (
+          <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
+            Nouvelle réparation
+          </button>
+        ) : null}
       </div>
 
       <div role="group" aria-label="Étape des réparations" className="flex flex-wrap gap-2">
@@ -82,6 +86,7 @@ function RepairsList() {
         <RepairsTable
           repairs={data}
           busy={isFetching}
+          showMoney={caps.seesClientMoney}
           empty={search ? "Aucune réparation ne correspond à cette recherche." : "Aucune réparation à cette étape."}
           onOpen={repairWindow.open}
         />

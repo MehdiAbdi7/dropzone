@@ -152,6 +152,8 @@ const SETTINGS_ITEM: BottomItem = { key: "reglages", label: "Réglages", href: S
 export function bottomBarFor(role: Role): { items: BottomItem[]; featured: string; more: NavSection[] } {
   if (role === "seller") return { items: [itemOf("caisse"), itemOf("vente"), SETTINGS_ITEM], featured: "vente", more: [] };
   if (role === "order_manager") return { items: [itemOf("vente"), itemOf("commandes"), itemOf("caisse")], featured: "commandes", more: [] };
+  // Le technicien (étape 5) ne voit que l'atelier : une seule entrée, qui s'ouvre sur les réparations.
+  if (role === "technician") return { items: [itemOf("atelier")], featured: "atelier", more: [] };
   // L'admin garde la barre d'avant : quatre entrées, « Plus » pour le reste.
   return { items: BOTTOM_PRIMARY.map((section) => itemOf(section.key)), featured: "commandes", more: BOTTOM_MORE };
 }
@@ -167,6 +169,12 @@ export const isVisibleTo = (role: Role) => (section: NavSection) => canAccess(ro
 
 export function visibleSections(role: Role): NavSection[] {
   return SECTIONS.filter(isVisibleTo(role));
+}
+
+// Les onglets d'une section qu'un rôle peut ouvrir : le vendeur n'a que Réparations dans l'Atelier, le technicien et
+// l'admin ont aussi Pièces. Un onglet peut porter des paramètres (`?type=pickup`) : seule l'adresse compte.
+export function visibleTabs(section: NavSection, role: Role): NavTab[] {
+  return (section.tabs ?? []).filter((tab) => canAccess(role, tab.href.split("?")[0]));
 }
 
 export function sectionFor(path: string): NavSection | undefined {

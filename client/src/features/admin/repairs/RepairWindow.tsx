@@ -12,13 +12,14 @@ import {
 import { isOwnCloseEvent } from "@/features/admin/products/dialogEvents";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatPrice } from "@/lib/format";
+import { useAdminRole } from "@/features/admin/AdminRoleContext";
 import RepairEditDialog from "./RepairEditDialog";
 import RepairParts from "./RepairParts";
 import RepairReturnDialog from "./RepairReturnDialog";
 import RepairReceipt from "./RepairReceipt";
 import RepairStepper from "./RepairStepper";
 import { RepairBadge } from "./RepairsTable";
-import { REPAIR_STATUS_LABELS, actionLabel, confirmText, paidText, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
+import { REPAIR_STATUS_LABELS, actionLabel, confirmText, allowedTargets, paidText, repairCapabilities, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
 
 // La fenêtre d'une fiche, ouverte au clic sur une ligne de la liste (ou juste après la création). Au centre sur
 // ordinateur, une feuille qui monte du bas sur téléphone (`.order-window`, la même que les commandes). `id` vient
@@ -74,12 +75,16 @@ const Row = ({ label, value }: { label: string; value: string | null }) => (
 );
 
 function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => void }) {
+  // Ce que ce rôle voit et fait (étape 5) : l'API refuse le reste et retire l'argent du client pour le technicien.
+  const role = useAdminRole();
+  const caps = repairCapabilities(role);
+  const targets = allowedTargets(role, repair.nextStatuses);
   const [editing, setEditing] = useState(false);
   const [returning, setReturning] = useState(false);
   const [change, changing] = useChangeRepairStatusMutation();
   const [remove, removing] = useDeleteRepairMutation();
   const steps = repairSteps(repair.status, repair.underWarranty, repair.events.map((event) => event.status));
-  const total = repairTotal(repair);
+  const total = caps.seesClientMoney ? repairTotal(repair) : 0;
 
   return (
     <div className="space-y-5 p-4 sm:p-6">
@@ -91,7 +96,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
           </div>
           <p className="font-semibold">{repair.deviceName}</p>
           <p className="text-sm text-ink-muted">{warrantyLabel(repair)}</p>
-          {paidText(repair) ? <p className="text-sm font-semibold">{paidText(repair)}</p> : null}
+          {caps.seesClientMoney && paidText(repair) ? <p className="text-sm font-semibold">{paidText(repair)}</p> : null}
         </div>
         <button type="button" className="btn btn-secondary btn-small" onClick={onClose} aria-label="Fermer la fiche">
           <CloseIcon />
@@ -100,10 +105,10 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
 
       <RepairStepper steps={steps} />
 
-      {repair.nextStatuses.length > 0 ? (
+      {targets.length > 0 ? (
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
-            {repair.nextStatuses.map((status, index) => {
+            {targets.map((status, index) => {
               const label = actionLabel(repair.status, status, repair.underWarranty);
               const className = `btn ${index === 0 ? "btn-primary" : "btn-secondary"}`;
               // « Rendre l'appareil » a sa propre fenêtre (le paiement) ; « Devis refusé » une confirmation d'abord.
@@ -147,11 +152,13 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
 
       <RepairParts repair={repair} />
 
+      {caps.seesClientMoney ? (
       <section className="space-y-1" aria-label="Prix">
         <h3 className="text-lg">Prix</h3>
         <p className="text-sm">Main-d&apos;œuvre : {repair.laborPrice === null ? <span className="text-ink-muted">à fixer</span> : formatPrice(repair.laborPrice)}</p>
         <p className="font-bold">{repair.underWarranty ? "Sous garantie, gratuit" : `Total pour le client : ${formatPrice(total)}`}</p>
       </section>
+      ) : null}
 
       <section className="space-y-1" aria-label="Étapes de la fiche">
         <h3 className="text-lg">Historique</h3>
@@ -167,11 +174,12 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
 
       <div className="flex flex-wrap gap-2 border-t border-line pt-4">
         <RepairReceipt repair={repair} />
-        {repair.status !== "returned" ? (
+        {repair.status !== "returned" && (caps.editsRepair || role === "technician") ? (
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setEditing(true)}>
             Modifier
           </button>
         ) : null}
+        {caps.deletesRepair ? (
         <ConfirmDialog
           trigger="Supprimer la fiche"
           triggerClassName="btn btn-danger btn-small"
@@ -190,6 +198,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
             ? "La réparation est rendue : l'argent encaissé est rendu par une correction de la caisse du jour (elle doit être ouverte), les pièces sorties reviennent au stock et une trace reste dans l'Historique."
             : "Les pièces déjà sorties du stock y reviennent. Le journal des pièces garde la trace."}
         </ConfirmDialog>
+        ) : null}
       </div>
       {removing.error ? (
         <p role="alert" className="field-error">
@@ -198,7 +207,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
       ) : null}
 
       <RepairReturnDialog open={returning} repair={repair} onClose={() => setReturning(false)} />
-      <RepairEditDialog open={editing} repair={repair} onClose={() => setEditing(false)} />
+      <RepairEditDialog open={editing} noteOnly={!caps.editsRepair} repair={repair} onClose={() => setEditing(false)} />
     </div>
   );
 }

@@ -6,7 +6,10 @@ import type { Role } from "@/types/api";
 //
 // Trois rôles en escalier : le vendeur ouvre le comptoir, le responsable commande y ajoute les commandes,
 // l'admin ouvre tout.
-const SELLER_PAGES = ["/admin/vente", "/admin/echange", "/admin/caisse", "/admin/reglages", "/admin/facture", "/admin/compte"];
+// L'atelier (étape 5) : le vendeur et le responsable ouvrent les réparations (devis, Rendu), pas la page Pièces (stock).
+const SELLER_PAGES = ["/admin/vente", "/admin/echange", "/admin/caisse", "/admin/reglages", "/admin/facture", "/admin/compte", "/admin/reparations"];
+// Le technicien n'est pas dans l'escalier : l'atelier et son compte, rien d'autre.
+const TECHNICIAN_PAGES = ["/admin/reparations", "/admin/pieces", "/admin/compte"];
 const ORDER_MANAGER_PAGES = ["/admin/livraisons", "/admin/commandes"];
 
 // Un chemin est sous une page si c'est elle ou l'un de ses sous-chemins : « /admin/vente-x » n'est pas
@@ -17,7 +20,8 @@ export const isBackOffice = (role: Role) => role !== "customer";
 
 export function canAccess(role: Role, path: string): boolean {
   if (role === "admin") return path === "/admin" || path.startsWith("/admin/");
-  const pages = role === "order_manager" ? [...SELLER_PAGES, ...ORDER_MANAGER_PAGES] : role === "seller" ? SELLER_PAGES : [];
+  const pages =
+    role === "order_manager" ? [...SELLER_PAGES, ...ORDER_MANAGER_PAGES] : role === "seller" ? SELLER_PAGES : role === "technician" ? TECHNICIAN_PAGES : [];
   return pages.some((page) => under(path, page));
 }
 
@@ -29,6 +33,8 @@ export function homeFor(role: Role): string {
       return "/admin/vente";
     case "order_manager":
       return "/admin/livraisons";
+    case "technician":
+      return "/admin/reparations";
     case "admin":
       return "/admin";
     default:

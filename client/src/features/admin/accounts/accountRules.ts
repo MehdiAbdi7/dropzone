@@ -7,11 +7,12 @@ import type { Role } from "@/types/api";
 export type StaffRole = Exclude<Role, "customer">;
 
 // Du plus haut au plus bas. Le libellé est ce que l'écran affiche ; la valeur est celle de la base.
-export const STAFF_ROLES: StaffRole[] = ["admin", "order_manager", "seller"];
+export const STAFF_ROLES: StaffRole[] = ["admin", "order_manager", "seller", "technician"];
 export const ROLE_LABELS: Record<StaffRole, string> = {
   admin: "Administrateur",
   order_manager: "Responsable commande",
   seller: "Vendeur",
+  technician: "Technicien",
 };
 
 // Vers quel rôle on peut changer un compte déjà créé : jamais vers « admin ». On devient administrateur à la
@@ -19,7 +20,7 @@ export const ROLE_LABELS: Record<StaffRole, string> = {
 // puis le re-promouvoir : il connaîtrait le mot de passe d'un autre administrateur). Pour faire d'un compte
 // un administrateur, on en crée un nouveau.
 export function roleChoices(current: StaffRole): Exclude<StaffRole, "admin">[] {
-  return (["order_manager", "seller"] as const).filter((role) => role !== current);
+  return (["order_manager", "seller", "technician"] as const).filter((role) => role !== current);
 }
 
 export type AccountInput = {

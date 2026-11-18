@@ -6,6 +6,8 @@ import { formatPrice } from "@/lib/format";
 import ArrivalDialog from "./ArrivalDialog";
 import PartFormDialog from "./PartFormDialog";
 import PartJournalDialog from "./PartJournalDialog";
+import { useAdminRole } from "@/features/admin/AdminRoleContext";
+import { repairCapabilities } from "@/features/admin/repairs/repairsView";
 import { isOutOfStock } from "./partsView";
 
 // Une pièce de l'atelier : son stock bien visible (« Épuisée » en rouge à 0, la pièce reste dans la liste pour
@@ -14,6 +16,8 @@ export default function PartCard({ part }: { part: PartRow }) {
   const [open, setOpen] = useState<"arrival" | "edit" | "journal" | null>(null);
   const close = () => setOpen(null);
   const out = isOutOfStock(part);
+  // Le technicien crée des pièces et enregistre des arrivages ; modifier une pièce (prix) est à l'admin.
+  const caps = repairCapabilities(useAdminRole());
 
   return (
     <li className="card space-y-3 p-4 sm:p-5">
@@ -32,9 +36,11 @@ export default function PartCard({ part }: { part: PartRow }) {
         <button type="button" className="btn btn-primary btn-small" onClick={() => setOpen("arrival")}>
           + Arrivage
         </button>
-        <button type="button" className="btn btn-secondary btn-small" onClick={() => setOpen("edit")}>
-          Modifier
-        </button>
+        {caps.editsPart ? (
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => setOpen("edit")}>
+            Modifier
+          </button>
+        ) : null}
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setOpen("journal")}>
           Journal
         </button>

@@ -3,7 +3,7 @@
 
 import { PAYMENT_METHOD_LABELS } from "@/config/catalog";
 import { formatPrice } from "@/lib/format";
-import type { PaymentMethod } from "@/types/api";
+import type { PaymentMethod, Role } from "@/types/api";
 
 export type RepairStatus = "received" | "quote" | "in_repair" | "ready" | "to_return" | "returned";
 
@@ -137,4 +137,46 @@ export function paidText(repair: { paidAmount: number | null; payMethod: Payment
   const day = dayMonthYear(repair.returnedOn);
   if (repair.paidAmount === 0 || repair.payMethod === null) return `Rendu sans paiement le ${day}`;
   return `Payé ${formatPrice(repair.paidAmount)} par ${PAYMENT_METHOD_LABELS[repair.payMethod]} le ${day}`;
+}
+
+// Ce que chaque rôle voit et fait dans l'atelier (étape 5, cahier §11 et §14). C'est un choix d'AFFICHAGE : l'API
+// refuse (403) tout ce que le rôle n'a pas, et retire de ses réponses l'argent du client (technicien) ou le prix
+// d'achat (vendeur, responsable).
+// - Le technicien avance la réparation et gère les pièces ; il voit leur prix d'achat, jamais l'argent du client.
+// - Le vendeur et le responsable font la vente : fiche, devis, Rendu ; ils ne gèrent pas le stock.
+// - L'admin fait tout.
+export type RepairCapabilities = {
+  createsRepair: boolean;
+  editsRepair: boolean;
+  seesClientMoney: boolean;
+  deletesRepair: boolean;
+  createsPart: boolean;
+  editsPart: boolean;
+  seesPartCost: boolean;
+  seesPartJournal: boolean;
+};
+
+export function repairCapabilities(role: Role): RepairCapabilities {
+  const none: RepairCapabilities = {
+    createsRepair: false,
+    editsRepair: false,
+    seesClientMoney: false,
+    deletesRepair: false,
+    createsPart: false,
+    editsPart: false,
+    seesPartCost: false,
+    seesPartJournal: false,
+  };
+  if (role === "admin") return Object.fromEntries(Object.keys(none).map((key) => [key, true])) as RepairCapabilities;
+  if (role === "technician") return { ...none, createsPart: true, seesPartCost: true, seesPartJournal: true };
+  if (role === "seller" || role === "order_manager") return { ...none, createsRepair: true, editsRepair: true, seesClientMoney: true };
+  return none;
+}
+
+// Les passages d'étape proposés à ce rôle : le technicien n'a que En réparation et Prêt (proposer le devis, le
+// refuser et rendre l'appareil sont à la vente).
+const TECHNICIAN_TARGETS: RepairStatus[] = ["in_repair", "ready"];
+
+export function allowedTargets(role: Role, targets: RepairStatus[]): RepairStatus[] {
+  return role === "technician" ? targets.filter((target) => TECHNICIAN_TARGETS.includes(target)) : targets;
 }
