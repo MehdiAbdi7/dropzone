@@ -20,6 +20,7 @@ import { errorMessage } from "@/lib/errors";
 import { formatOptions, formatPrice } from "@/lib/format";
 import type { CartLine, PaymentMethod } from "@/types/api";
 import {
+  belowPurchasePrice,
   buildSaleBody,
   clientReady,
   reductionText,
@@ -28,7 +29,9 @@ import {
   ticketTotal,
   type SaleForm,
   type TicketLine,
+  type VariantHit,
 } from "./ticket";
+import VariantDetailDialog from "./VariantDetailDialog";
 
 const METHODS = Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[];
 // Un nombre vide reste vide (NaN) : le ticket le refuse au lieu de l'envoyer comme 0.
@@ -59,6 +62,8 @@ export default function SaleTicket(props: Props) {
   // vendeur ouvre seulement ce dont il a besoin. Les valeurs restent ici, la fermeture ne les perd pas.
   const [open, setOpen] = useState<"client" | "tradeIn" | "picker" | null>(null);
   const close = () => setOpen(null);
+  // L'appareil dont on regarde la fiche (bouton « Détail » d'une ligne).
+  const [detail, setDetail] = useState<VariantHit | null>(null);
 
   // Le récapitulatif du serveur : cadeaux d'une affaire, limitations, problèmes de stock. Le même
   // calcul que la commande du site (retrait : pas de frais de livraison).
@@ -169,13 +174,18 @@ export default function SaleTicket(props: Props) {
                       {Object.keys(line.options).length ? ` · ${formatOptions(line.options)}` : ""} · {line.sku}
                     </span>
                   </p>
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-small shrink-0"
-                    onClick={() => setLines((current) => current.filter((candidate) => candidate.key !== line.key))}
-                  >
-                    Retirer
-                  </button>
+                  <div className="flex shrink-0 gap-2">
+                    <button type="button" className="btn btn-secondary btn-small" onClick={() => setDetail(line.hit)}>
+                      Détail
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-small"
+                      onClick={() => setLines((current) => current.filter((candidate) => candidate.key !== line.key))}
+                    >
+                      Retirer
+                    </button>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-end gap-3">
                   <QuantityStepper
@@ -195,7 +205,16 @@ export default function SaleTicket(props: Props) {
                     />
                   </label>
                   <p className="pb-2 text-sm text-ink-muted">Catalogue : {formatPrice(line.listPrice)}</p>
+                  {/* La limite de la négociation : ce que l'appareil a coûté au magasin. */}
+                  <p className="pb-2 text-sm text-ink-muted">
+                    {line.hit.purchasePrice === null ? "Prix d'achat non renseigné" : `Prix d'achat : ${formatPrice(line.hit.purchasePrice)}`}
+                  </p>
                 </div>
+                {belowPurchasePrice(line.unitPrice, line.hit.purchasePrice) ? (
+                  <p role="status" className="text-sm font-semibold text-red">
+                    Sous le prix d&apos;achat
+                  </p>
+                ) : null}
                 {reduction ? (
                   <p className="text-sm font-semibold" aria-live="polite">
                     Réduction : {reduction}
@@ -225,6 +244,9 @@ export default function SaleTicket(props: Props) {
           {problems.map((line) => `« ${line.name} » : ${line.problem}`).join(" ; ")}
         </p>
       ) : null}
+
+      {/* La fiche de l'appareil d'une ligne du ticket (bouton « Détail »). */}
+      <VariantDetailDialog hit={detail} onClose={() => setDetail(null)} />
 
       {/* La recherche de produit : le parcours de la boutique, dans une fenêtre. */}
       <EditDialog open={open === "picker"} title={props.exchange ? "Téléphone proposé par le magasin" : "Ajouter un produit"} onClose={close}>

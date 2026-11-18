@@ -8,6 +8,7 @@ import { useSearchVariantsQuery } from "@/features/admin/api/salesApi";
 import { formatOptions, formatPrice } from "@/lib/format";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import type { VariantHit } from "./ticket";
+import VariantDetailDialog from "./VariantDetailDialog";
 
 // Le sélecteur de variantes du comptoir (16/11, lot 3, refait le 17/11) : on trouve l'appareil exact
 // de trois façons qui se combinent. Taper des mots (« coque iphone », « samsung 256 », un SKU : tous
@@ -44,6 +45,8 @@ export default function VariantPicker({
   const [category, setCategory] = useState<string | undefined>(initialCategory);
   const [condition, setCondition] = useState<ConditionFilter>(undefined);
   const [limit, setLimit] = useState(PAGE);
+  // L'appareil dont on regarde la fiche (bouton « Détail » des cartes).
+  const [detail, setDetail] = useState<VariantHit | null>(null);
   // La recherche attend une pause dans la saisie : chaque touche relancerait la requête.
   const search = useDebouncedValue(text.trim());
   // Un seul caractère ne cherche rien de précis (l'API le refuse) : on garde la liste sans mot.
@@ -130,7 +133,7 @@ export default function VariantPicker({
             if (grid) {
               return (
                 <li key={hit.sku}>
-                  <VariantCard hit={hit} disabled={disabled} onPick={onPick} />
+                  <VariantCard hit={hit} disabled={disabled} onPick={onPick} onDetail={setDetail} />
                 </li>
               );
             }
@@ -176,6 +179,7 @@ export default function VariantPicker({
           )
         ) : null}
       </div>
+      <VariantDetailDialog hit={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }
@@ -194,36 +198,46 @@ function Chip({ selected, onClick, children }: { selected: boolean; onClick: () 
 }
 
 // La carte d'une variante, comme une carte de la boutique : photo, nom, état et options, prix, stock.
+// Un bouton « Détail » (18/11) s'ajoute SOUS la carte quand `onDetail` est donné : la carte est un conteneur
+// avec deux boutons côte à côte, car un bouton dans un bouton n'est pas permis en HTML.
 export function VariantCard({
   hit,
   disabled = false,
   onPick,
+  onDetail,
 }: {
   hit: VariantHit;
   disabled?: boolean;
   onPick: (hit: VariantHit) => void;
+  onDetail?: (hit: VariantHit) => void;
 }) {
   return (
-    <button
-      type="button"
-      className="card flex h-full w-full flex-col overflow-hidden text-left transition-transform hover:-translate-y-0.5 disabled:opacity-50"
-      disabled={disabled}
-      onClick={() => onPick(hit)}
-    >
-      <span className="relative block aspect-[4/3] w-full bg-surface-2">
-        <ProductImage src={hit.image} alt="" sizes="(min-width: 1280px) 15vw, 30vw" />
-      </span>
-      <span className="flex flex-1 flex-col gap-0.5 p-3">
-        <span className="line-clamp-2 font-semibold leading-tight">{hit.productName}</span>
-        <span className="text-xs text-ink-muted">
-          {CONDITION_LABELS[hit.condition]}
-          {Object.keys(hit.options).length ? ` · ${formatOptions(hit.options)}` : ""}
+    <div className="card flex h-full w-full flex-col overflow-hidden transition-transform hover:-translate-y-0.5">
+      <button type="button" className="flex flex-1 flex-col text-left disabled:opacity-50" disabled={disabled} onClick={() => onPick(hit)}>
+        <span className="relative block aspect-[4/3] w-full bg-surface-2">
+          <ProductImage src={hit.image} alt="" sizes="(min-width: 1280px) 15vw, 30vw" />
         </span>
-        <span className="mt-auto flex items-baseline justify-between gap-2 pt-2">
-          <span className="font-display font-bold tabular-nums">{formatPrice(hit.price)}</span>
-          <span className="text-xs text-ink-muted">{disabled ? "déjà ajouté" : `${hit.stock} en stock`}</span>
+        <span className="flex w-full flex-1 flex-col gap-0.5 p-3">
+          <span className="line-clamp-2 font-semibold leading-tight">{hit.productName}</span>
+          <span className="text-xs text-ink-muted">
+            {CONDITION_LABELS[hit.condition]}
+            {Object.keys(hit.options).length ? ` · ${formatOptions(hit.options)}` : ""}
+          </span>
+          <span className="mt-auto flex items-baseline justify-between gap-2 pt-2">
+            <span className="font-display font-bold tabular-nums">{formatPrice(hit.price)}</span>
+            <span className="text-xs text-ink-muted">{disabled ? "déjà ajouté" : `${hit.stock} en stock`}</span>
+          </span>
+          {/* La limite de la négociation : visible au vendeur, jamais sur le site. */}
+          {hit.purchasePrice !== null ? (
+            <span className="text-xs text-ink-muted">Achat : {formatPrice(hit.purchasePrice)}</span>
+          ) : null}
         </span>
-      </span>
-    </button>
+      </button>
+      {onDetail ? (
+        <button type="button" className="btn btn-secondary btn-small m-3 mt-0" onClick={() => onDetail(hit)}>
+          Détail
+        </button>
+      ) : null}
+    </div>
   );
 }

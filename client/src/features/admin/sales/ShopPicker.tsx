@@ -16,6 +16,7 @@ import {
 } from "../api/shopPickerApi";
 import { useSearchVariantsQuery } from "../api/salesApi";
 import { hitsOfModel, type VariantHit } from "./ticket";
+import VariantDetailDialog from "./VariantDetailDialog";
 import VariantPicker, { VariantCard } from "./VariantPicker";
 
 type Condition = "new" | "refurbished" | undefined;
@@ -272,6 +273,8 @@ function Models({
 // L'étape 4 : les variantes en stock du modèle (neuf scellé, affaires), à ajouter au ticket.
 function Variants({ category, model, onPick }: { category: Category; model: PosterModel; onPick: (hit: VariantHit) => void }) {
   const [condition, setCondition] = useState<Condition>(undefined);
+  // L'appareil dont on regarde la fiche (bouton « Détail » des cartes).
+  const [detail, setDetail] = useState<VariantHit | null>(null);
   const { data, isError, isFetching } = useSearchVariantsQuery({ q: model.name, category: category.slug, condition, limit: 200 });
   const hits = data ? hitsOfModel(data.hits, model.name) : [];
   const states: { value: Condition; label: string }[] = [
@@ -305,11 +308,12 @@ function Variants({ category, model, onPick }: { category: Category; model: Post
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4" aria-busy={isFetching}>
           {hits.map((hit) => (
             <li key={hit.sku}>
-              <VariantCard hit={hit} onPick={onPick} />
+              <VariantCard hit={hit} onPick={onPick} onDetail={setDetail} />
             </li>
           ))}
         </ul>
       )}
+      <VariantDetailDialog hit={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }
