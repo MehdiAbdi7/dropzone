@@ -141,7 +141,7 @@ describe("PATCH et DELETE /admin/repairs/:id/parts/:lineId", () => {
     for (const status of ["ready", "to_return", "returned"] as const) {
       const repair = await makeRepair(agent);
       const line = (await addLineOk(agent, repair.id, part.id)).parts[0];
-      await prisma.repair.update({ where: { id: repair.id }, data: { status } });
+      await prisma.repair.update({ where: { id: repair.id }, data: { status, ...(status === "returned" ? { returnedOn: new Date("2026-11-18T00:00:00Z") } : {}) } });
       expect((await addLine(agent, repair.id, part.id)).status, status).toBe(409);
       expect((await agent.patch(`/admin/repairs/${repair.id}/parts/${line.id}`).send({ quantity: 2 })).status, status).toBe(409);
       expect((await agent.delete(`/admin/repairs/${repair.id}/parts/${line.id}`)).status, status).toBe(409);

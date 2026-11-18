@@ -45,7 +45,7 @@ export async function deleteRepairLine(req: Request, res: Response) {
 }
 
 export async function postRepairStatus(req: Request, res: Response) {
-  res.json({ data: await changeStatus(Number(req.params.id), req.body.status, userId(res)) });
+  res.json({ data: await changeStatus(Number(req.params.id), req.body.status, userId(res), req.body.method) });
 }
 
 export async function removeRepair(req: Request, res: Response) {

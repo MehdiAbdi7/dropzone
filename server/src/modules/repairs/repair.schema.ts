@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { phoneSchema } from "../orders/order.schema.js";
+import { paymentMethodSchema, phoneSchema } from "../orders/order.schema.js";
 
 // Les fiches de réparation (18/11, étape 2). Tous les textes sont bornés : la fiche est saisie au comptoir, mais
 // un texte énorme ne doit jamais atteindre la base. Aucun champ pour un code de déverrouillage : Zod ignore ce
@@ -51,7 +51,11 @@ export const repairLineBodySchema = z.object({ partId: z.number().int().positive
 export const repairLinePatchSchema = z.object({ quantity: lineQuantity });
 export const repairLineParamsSchema = z.object({ id: z.coerce.number().int().positive(), lineId: z.coerce.number().int().positive() });
 
-export const repairStatusBodySchema = z.object({ status: z.enum(["received", "quote", "in_repair", "ready", "to_return", "returned"]) });
+// Le moyen de paiement ne sert qu'au Rendu, et seulement s'il y a de l'argent à encaisser (le service tranche).
+export const repairStatusBodySchema = z.object({
+  status: z.enum(["received", "quote", "in_repair", "ready", "to_return", "returned"]),
+  method: paymentMethodSchema.optional(),
+});
 
 export const REPAIR_STAGES = ["open", "received", "quote", "in_repair", "ready", "to_return", "returned"] as const;
 

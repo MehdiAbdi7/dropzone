@@ -31,8 +31,8 @@ export function nextStatuses(from: Status, underWarranty: boolean): Status[] {
   }
 }
 
-// Ce que le client paie pour la réparation : les pièces au prix de vente plus la main-d'œuvre. Le prix d'une
-// fiche sous garantie est ignoré par l'affichage ; l'argent viendra à l'étape 3.
+// Ce que coûte la réparation au client : les pièces au prix de vente plus la main-d'œuvre. Ce qu'il paie vraiment
+// au Rendu est `repairAmount` (rien sous garantie).
 export function quoteTotal(laborPrice: number | null, lines: { quantity: number; unitPrice: number }[]): number {
   return (laborPrice ?? 0) + lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0);
 }

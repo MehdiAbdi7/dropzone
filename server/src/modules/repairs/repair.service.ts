@@ -1,10 +1,10 @@
 import { prisma } from "../../config/db.js";
-import type { Prisma } from "../../generated/prisma/client.js";
+import type { PaymentMethod, Prisma } from "../../generated/prisma/client.js";
 import { AppError } from "../../utils/AppError.js";
 import { algiersDate } from "../../utils/algiersTime.js";
 import { normalizeText } from "../../utils/normalizeText.js";
 import type { RepairInput, RepairListQuery, RepairPatch } from "./repair.schema.js";
-import { nextStatuses, quoteTotal, type Status } from "./repairRules.js";
+import { nextStatuses, quoteTotal, repairAmount, type Status } from "./repairRules.js";
 import { afterQuoteChange, lockRepair } from "./repairStock.js";
 import { findWarrantyItem, warrantyOf } from "./warranty.service.js";
 
@@ -37,6 +37,10 @@ export const DETAIL_SELECT = {
   warrantyEndsAt: true,
   warrantyForcedOff: true,
   originOrderNumber: true,
+  returnedOn: true,
+  paidAmount: true,
+  partsCost: true,
+  payMethod: true,
   parts: { orderBy: { id: "asc" }, select: { id: true, partId: true, name: true, quantity: true, unitCost: true, unitPrice: true, consumed: true } },
   events: { orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: { status: true, createdAt: true, userId: true } },
 } satisfies Prisma.RepairSelect;
@@ -85,6 +89,10 @@ type DetailSource = RowSource & {
   warrantyEndsAt: Date | null;
   warrantyForcedOff: boolean;
   originOrderNumber: number | null;
+  returnedOn: Date | null;
+  paidAmount: number | null;
+  partsCost: number | null;
+  payMethod: PaymentMethod | null;
   parts: { id: number; partId: number; name: string; quantity: number; unitCost: number; unitPrice: number; consumed: boolean }[];
   events: { status: Status; createdAt: Date; userId: number | null }[];
 };
@@ -101,6 +109,14 @@ function toDetail(repair: DetailSource) {
     warrantyEndsAt: day(repair.warrantyEndsAt),
     warrantyForcedOff: repair.warrantyForcedOff,
     originOrderNumber: repair.originOrderNumber,
+    // Ce que le client doit encore au Rendu (0 une fois rendu) ; après le Rendu, ce qu'il a payé, avec quel moyen,
+    // le jour, et ce que les pièces ont coûté (admin seulement : `partsCost` est retiré pour les autres rôles).
+    amountDue:
+      repair.status === "returned" ? 0 : repairAmount({ underWarranty: repair.underWarranty, refused: toRow(repair).refused, laborPrice: repair.laborPrice, lines: repair.parts }),
+    paidAmount: repair.paidAmount,
+    payMethod: repair.payMethod,
+    returnedOn: day(repair.returnedOn),
+    partsCost: repair.partsCost,
     parts: repair.parts,
     events: repair.events,
     nextStatuses: nextStatuses(repair.status, repair.underWarranty),
