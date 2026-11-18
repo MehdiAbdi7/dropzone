@@ -175,7 +175,8 @@
     border-color: var(--blue-ink);
   }
   .chip[aria-pressed="true"],
-  .chip[aria-checked="true"] {
+  .chip[aria-checked="true"],
+  .chip[aria-current="page"] {
     background: var(--blue);
     border-color: var(--blue);
     color: var(--on-brand);

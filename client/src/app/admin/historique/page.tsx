@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useHistoryQuery } from "@/features/admin/api/historyApi";
@@ -15,7 +16,6 @@ import OrderWindow from "@/features/admin/orders/OrderWindow";
 import { useOrderWindow } from "@/features/admin/orders/useOrderWindow";
 import { algiersDate } from "@/lib/algiersTime";
 import { errorMessage } from "@/lib/errors";
-import { formatPrice } from "@/lib/format";
 import { periodRange } from "@/lib/period";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import type { OrderType } from "@/types/api";
@@ -60,7 +60,6 @@ function History() {
     { key: "days", label: "Par jour", count: data ? String(data.days.length) : undefined },
     ...(showChannels ? [{ key: "channels" as const, label: "Par canal" }] : []),
     { key: "changes", label: "Modifications", count: data ? String(data.changes.length) : undefined },
-    { key: "money", label: "Détail de l'argent" },
   ];
 
   return (
@@ -71,15 +70,17 @@ function History() {
       {/* Total, Magasin, Livraisons, Réservations : chaque onglet change tous les chiffres de la page. */}
       <div role="group" aria-label="Canal de vente" className="flex flex-wrap gap-2">
         {TABS.map((tab) => (
-          <button
+          // Un lien et non un bouton : l'animation de page se prépare au clic sur un lien (ShopPageTransition).
+          <Link
             key={tab.type ?? "total"}
-            type="button"
+            replace
+            scroll={false}
+            href={historyHref({ ...view, type: tab.type })}
             className="chip"
-            aria-pressed={view.type === tab.type}
-            onClick={() => go({ type: tab.type })}
+            aria-current={view.type === tab.type ? "page" : undefined}
           >
             {tab.label}
-          </button>
+          </Link>
         ))}
       </div>
 
@@ -90,13 +91,10 @@ function History() {
       ) : null}
 
       <div className={isFetching ? "space-y-4 opacity-70" : "space-y-4"} aria-busy={isFetching}>
-        {/* Les trois chiffres qui comptent restent en vue ; tout le reste est derrière un bouton. */}
+        {/* L'argent, les ventes et le bénéfice restent en vue, avec leur détail (moyens de paiement, frais,
+            corrections) : plus de bouton « Détail de l'argent » qui répétait les mêmes chiffres. */}
         {data ? (
-          <section aria-label="Chiffres de la période" className="grid grid-cols-3 gap-3">
-            <Kpi label="Encaissé" value={formatPrice(data.totals.collected)} />
-            <Kpi label="Ventes" value={String(data.totals.salesCount)} />
-            <Kpi label="Bénéfice" value={formatPrice(data.totals.profit)} />
-          </section>
+          <HistorySummary totals={data.totals} />
         ) : (
           <p className="text-ink-muted">Chargement…</p>
         )}
@@ -153,9 +151,6 @@ function History() {
           <EditDialog open={open === "changes"} title="Modifications et suppressions" onClose={close}>
             {data.changes.length === 0 ? <p className="text-ink-muted">Aucune modification sur cette période.</p> : <HistoryChanges changes={data.changes} />}
           </EditDialog>
-          <EditDialog open={open === "money"} title="Détail de l'argent" onClose={close}>
-            <HistorySummary totals={data.totals} />
-          </EditDialog>
         </>
       ) : null}
 
@@ -164,13 +159,4 @@ function History() {
   );
 }
 
-type Panel = "orders" | "days" | "channels" | "changes" | "money";
-
-function Kpi({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="card p-3 sm:p-5">
-      <h2 className="text-xs font-semibold text-ink-muted sm:text-sm">{label}</h2>
-      <p className="font-display text-lg font-bold tabular-nums sm:text-3xl">{value}</p>
-    </div>
-  );
-}
+type Panel = "orders" | "days" | "channels" | "changes";
