@@ -540,6 +540,8 @@ model OrderItem {
   // sur `grantedById`, comme `userId` des mouvements : la trace survit à un compte supprimé.
   listPrice       Int?      @map("list_price")
   grantedById     Int?      @map("granted_by_id")
+  // Les réparations ouvertes pour cet article (garantie, étape 2 de l'atelier).
+  repairs         Repair[]
 
   @@index([orderId])
   @@index([productId])
@@ -717,6 +719,11 @@ enum PartMovementKind {
   arrival
   // Le stock compté par l'admin : le mouvement porte l'écart.
   correction
+  // Une pièce sortie du stock quand la réparation passe « En réparation » (étape 2) : delta négatif, `repairId`
+  // et `note` (« R-1001 ») disent laquelle.
+  repair
+  // Une pièce remise au stock : devis refusé, fiche supprimée, ligne retirée ou diminuée après sa sortie.
+  repair_return
 }
 
 // Une pièce de l'atelier (batterie, écran…) : ce qu'elle a coûté, à quel prix on la vend, combien il en reste.
@@ -732,6 +739,7 @@ model Part {
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @default(now()) @updatedAt @map("updated_at")
   movements     PartMovement[]
+  repairParts   RepairPart[]
 
   @@map("parts")
 }
@@ -750,7 +758,96 @@ model PartMovement {
   // Pas de clé étrangère : la trace survit à un compte supprimé, comme `userId` des mouvements d'argent.
   userId     Int?             @map("user_id")
   note       String?
+  // La fiche d'un mouvement `repair` ou `repair_return` : sans clé étrangère, la trace survit à la suppression
+  // de la fiche.
+  repairId   Int?             @map("repair_id")
 
   @@index([partId])
   @@map("part_movements")
+}
+
+// ---------- L'atelier : les fiches de réparation (18/11, étape 2) ----------
+
+// Où en est un appareil confié au magasin. Reçu : au magasin. Devis à valider : le prix est fixé, le client doit
+// répondre. En réparation : accepté, les pièces sont sorties du stock. Prêt : il attend le client. À rendre sans
+// réparation : le client a refusé le devis. Rendu : le client l'a récupéré.
+enum RepairStatus {
+  received
+  quote
+  in_repair
+  ready
+  to_return
+  returned
+}
+
+// Un appareil confié à l'atelier. Les CHECK (main-d'œuvre jamais négative, garantie toujours datée) sont dans la
+// migration. Aucun code de déverrouillage n'est stocké : c'est une donnée sensible du client.
+model Repair {
+  id                Int           @id @default(autoincrement())
+  // Le numéro montré au client (R-1001…) : une séquence à part de celle des commandes, réglée à 1001 dans la
+  // migration.
+  number            Int           @unique @default(autoincrement())
+  status            RepairStatus  @default(received)
+  fullName          String        @map("full_name")
+  phone             String
+  deviceName        String        @map("device_name")
+  deviceColor       String?       @map("device_color")
+  deviceState       String?       @map("device_state")
+  issue             String
+  accessories       String?
+  // La main-d'œuvre, saisie à la main ; null tant que le technicien n'a pas regardé la panne.
+  laborPrice        Int?          @map("labor_price")
+  // La note du technicien : jamais montrée au client.
+  note              String?
+  // La garantie est un fait écrit à la création : `underWarranty` est vrai seulement avec un article d'origine
+  // dans les délais et sans « forcer hors garantie ».
+  underWarranty     Boolean       @map("under_warranty")
+  warrantyEndsAt    DateTime?     @map("warranty_ends_at") @db.Date
+  warrantyForcedOff Boolean       @default(false) @map("warranty_forced_off")
+  // L'article de la vente d'origine ; si la commande est supprimée, la fiche reste (le numéro copié aussi).
+  originItemId      Int?          @map("origin_item_id")
+  originItem        OrderItem?    @relation(fields: [originItemId], references: [id], onDelete: SetNull)
+  originOrderNumber Int?          @map("origin_order_number")
+  // Pas de clé étrangère : la trace survit à un compte supprimé.
+  createdById       Int?          @map("created_by_id")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @default(now()) @updatedAt @map("updated_at")
+  parts             RepairPart[]
+  events            RepairEvent[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([phone])
+  @@map("repairs")
+}
+
+// Une pièce d'une fiche. Nom et prix sont COPIÉS de la pièce au moment de l'ajout (cahier §4) : changer la pièce
+// ensuite ne change jamais une réparation passée. `consumed` : la pièce est déjà sortie du stock.
+model RepairPart {
+  id        Int     @id @default(autoincrement())
+  repairId  Int     @map("repair_id")
+  repair    Repair  @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  partId    Int     @map("part_id")
+  part      Part    @relation(fields: [partId], references: [id], onDelete: Restrict)
+  name      String
+  quantity  Int
+  unitCost  Int     @map("unit_cost")
+  unitPrice Int     @map("unit_price")
+  consumed  Boolean @default(false)
+
+  @@unique([repairId, partId])
+  @@index([repairId])
+  @@map("repair_parts")
+}
+
+// Chaque changement d'étape : qui, quand. Ces dates alimenteront le suivi du client (étape 4).
+model RepairEvent {
+  id        Int          @id @default(autoincrement())
+  repairId  Int          @map("repair_id")
+  repair    Repair       @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  status    RepairStatus
+  userId    Int?         @map("user_id")
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@index([repairId])
+  @@map("repair_events")
 }
