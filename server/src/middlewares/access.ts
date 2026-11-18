@@ -18,6 +18,9 @@ export type AccessRule = {
   // L'adresse telle que la route la déclare, sans le préfixe `/admin` ; `:id` vaut un numéro.
   path: string;
   min: Role;
+  // Cette route garde le prix d'achat dans sa réponse même pour un non-admin (18/11). Une seule : la recherche
+  // de variantes, pour que le vendeur connaisse sa limite en négociant. Bénéfice et marge restent nettoyés.
+  showsCost?: true;
 };
 
 export const ACCESS_RULES: AccessRule[] = [
@@ -27,7 +30,7 @@ export const ACCESS_RULES: AccessRule[] = [
   { method: "POST", path: "/cash/close", min: "seller" },
   { method: "POST", path: "/sales", min: "seller" },
   { method: "POST", path: "/exchanges", min: "seller" },
-  { method: "GET", path: "/variants", min: "seller" },
+  { method: "GET", path: "/variants", min: "seller", showsCost: true },
   { method: "GET", path: "/invoice-settings", min: "seller" },
   { method: "PUT", path: "/invoice-settings", min: "seller" },
   { method: "PUT", path: "/store/hours", min: "seller" },
@@ -53,9 +56,13 @@ const COMPILED = ACCESS_RULES.map((rule) => ({
   pattern: new RegExp(`^${rule.path.replace(/:[^/]+/g, "[^/]+")}/?$`),
 }));
 
+// La règle de la table qui couvre cette route, ou rien (alors la route est pour l'admin).
+export function ruleFor(method: string, path: string): AccessRule | undefined {
+  return COMPILED.find(({ rule, pattern }) => rule.method === method.toUpperCase() && pattern.test(path))?.rule;
+}
+
 export function minRoleFor(method: string, path: string): Role {
-  const found = COMPILED.find(({ rule, pattern }) => rule.method === method.toUpperCase() && pattern.test(path));
-  return found ? found.rule.min : "admin";
+  return ruleFor(method, path)?.min ?? "admin";
 }
 
 // Monté sous `/admin`, après requireAuth : `req.path` est l'adresse sans le préfixe.
@@ -69,7 +76,7 @@ export function adminAccess(req: Request, res: Response, next: NextFunction) {
   }
   // Tout ce qui sort vers un non-admin est nettoyé des coûts et des bénéfices, ici, une seule fois : une
   // route ouverte demain au vendeur ne peut pas les laisser passer par oubli.
-  if (role !== "admin") {
+  if (role !== "admin" && !ruleFor(req.method, req.path)?.showsCost) {
     const send = res.json.bind(res);
     res.json = (body) => send(withoutCosts(body));
   }

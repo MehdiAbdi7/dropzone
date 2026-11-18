@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ACCESS_RULES, ROLE_RANK, minRoleFor } from "../src/middlewares/access.js";
+import { ACCESS_RULES, ROLE_RANK, minRoleFor, ruleFor } from "../src/middlewares/access.js";
 
 // Les droits du cahier §4.13, écrits en dur : toute modification de la table doit changer ce test aussi,
 // donc passer par une décision. La matrice, elle, vérifie que le middleware applique la table.
@@ -48,6 +48,16 @@ describe("ROLE_RANK", () => {
     expect(ROLE_RANK.customer).toBeLessThan(ROLE_RANK.seller);
     expect(ROLE_RANK.seller).toBeLessThan(ROLE_RANK.order_manager);
     expect(ROLE_RANK.order_manager).toBeLessThan(ROLE_RANK.admin);
+  });
+});
+
+// L'exception au nettoyage des coûts (18/11) : le vendeur voit le prix d'achat dans la recherche de produit,
+// pour savoir jusqu'où négocier, et nulle part ailleurs.
+describe("showsCost", () => {
+  it("n'est posé que sur la recherche de variantes", () => {
+    expect(ACCESS_RULES.filter((rule) => rule.showsCost).map((rule) => `${rule.method} ${rule.path}`)).toEqual(["GET /variants"]);
+    expect(ruleFor("GET", "/variants")?.showsCost).toBe(true);
+    expect(ruleFor("GET", "/orders/5")?.showsCost).toBeUndefined();
   });
 });
 

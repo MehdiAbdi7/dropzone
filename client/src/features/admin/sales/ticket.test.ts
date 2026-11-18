@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { formatPrice } from "@/lib/format";
+import { makeHit } from "./variantHit.fixture";
 import {
   addToTicket,
+  belowPurchasePrice,
   buildSaleBody,
   clientReady,
   pricesToSend,
@@ -14,17 +16,9 @@ import {
 } from "./ticket";
 
 // Le ticket de la vente au magasin (16/11, lot 3) : ce qui s'affiche et ce qui part vers l'API.
-const hit = {
-  sku: "IP-NEW-256",
-  productName: "iPhone 15 Pro Max",
-  options: { Stockage: "256 Go" },
-  condition: "new" as const,
-  price: 245_000,
-  stock: 3,
-  conditionReport: null,
-  image: null,
-};
+const hit = makeHit();
 const line = (over: Partial<TicketLine> = {}): TicketLine => ({
+  hit,
   key: "IP-NEW-256",
   sku: "IP-NEW-256",
   name: "iPhone 15 Pro Max",
@@ -207,5 +201,25 @@ describe("clientReady", () => {
     expect(clientReady({ fullName: "Sa", phone: "0555123456" })).toBe(false);
     expect(clientReady({ fullName: "Sami Benali", phone: "12345" })).toBe(false);
     expect(clientReady({ fullName: "", phone: "" })).toBe(false);
+  });
+});
+
+// La limite de la négociation (18/11) : le vendeur voit le prix d'achat et un avertissement quand il descend dessous.
+describe("belowPurchasePrice", () => {
+  it("dit vrai seulement quand le prix accordé est sous le prix d'achat", () => {
+    expect(belowPurchasePrice(180_000, 200_000)).toBe(true);
+    expect(belowPurchasePrice(200_000, 200_000)).toBe(false);
+    expect(belowPurchasePrice(250_000, 200_000)).toBe(false);
+  });
+
+  it("ne dit rien quand le prix est vide ou que le prix d'achat est inconnu", () => {
+    expect(belowPurchasePrice(Number.NaN, 200_000)).toBe(false);
+    expect(belowPurchasePrice(100, null)).toBe(false);
+  });
+});
+
+describe("addToTicket : la fiche suit la ligne", () => {
+  it("garde la variante trouvée, pour le bouton Détail du ticket", () => {
+    expect(addToTicket([], hit)[0].hit).toBe(hit);
   });
 });

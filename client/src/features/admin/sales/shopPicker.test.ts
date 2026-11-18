@@ -1,16 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { hitsOfModel, type VariantHit } from "./ticket";
+import { makeHit } from "./variantHit.fixture";
 
-const hit = (sku: string, productName: string): VariantHit => ({
-  sku,
-  productName,
-  options: {},
-  condition: "new",
-  price: 1000,
-  stock: 1,
-  conditionReport: null,
-  image: null,
-});
+const hit = (sku: string, productName: string): VariantHit => makeHit({ sku, productName, options: {}, price: 1000, stock: 1 });
 
 // La recherche par mots de l'API renvoie aussi « iPhone 15 Pro Max » quand on cherche « iPhone 15 Pro » :
 // le parcours par modèle ne doit montrer que les variantes du modèle choisi.

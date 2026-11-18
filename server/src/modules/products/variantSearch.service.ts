@@ -5,7 +5,7 @@ import { variantImage } from "./variantImage.js";
 
 // Le sélecteur de variantes du comptoir (16/11, lot 3) : le vendeur tape quelques mots ou un SKU
 // et choisit l'appareil exact. N'offre que ce qui se vend (produit publié, en stock) et ne
-// montre jamais le prix d'achat.
+// montre le prix d'achat qu'à l'admin, au vendeur et au responsable (la limite de la négociation).
 //
 // Recherche par mots (17/11) : « coque iphone » trouve « Coque silicone iPhone 15 ». Chaque mot
 // tapé doit se retrouver quelque part dans le texte de la variante (nom du produit, SKU, valeurs
@@ -22,6 +22,21 @@ export type VariantHit = {
   stock: number;
   conditionReport: string | null;
   image: string | null;
+  // La fiche complète (18/11) : le bouton « Détail » de la vente l'affiche sans autre appel.
+  grade: number | null;
+  batteryHealth: number | null;
+  replacedParts: string[];
+  compatibleParts: string[];
+  defects: string[];
+  limitations: string[];
+  withBox: boolean | null;
+  details: string | null;
+  warrantyMonths: number | null;
+  origin: string | null;
+  reference: string | null;
+  // Le prix d'achat : l'admin le reçoit toujours, le vendeur seulement par cette route (access.ts).
+  purchasePrice: number | null;
+  gifts: { name: string; quantity: number }[];
 };
 
 // Sans accents ni majuscules : « Écouteurs » devient « ecouteurs ». Le même passage des deux côtés
@@ -126,6 +141,7 @@ export async function searchVariants({
   const variants = await prisma.productVariant.findMany({
     where: { id: { in: matches.map((row) => row.id) } },
     include: {
+      gifts: { select: { quantity: true, giftVariant: { select: { product: { select: { name: true } } } } } },
       product: {
         select: {
           name: true,
@@ -146,6 +162,19 @@ export async function searchVariants({
       stock: variant.stock,
       conditionReport: buildConditionReport(variant),
       image: variantImage(variant.options, variant.product.deviceModel?.colorPhotos ?? [], variant.product.images[0]?.url ?? null),
+      grade: variant.grade,
+      batteryHealth: variant.batteryHealth,
+      replacedParts: variant.replacedParts,
+      compatibleParts: variant.compatibleParts,
+      defects: variant.defects,
+      limitations: variant.limitations,
+      withBox: variant.withBox,
+      details: variant.details,
+      warrantyMonths: variant.warrantyMonths,
+      origin: variant.origin,
+      reference: variant.reference,
+      purchasePrice: variant.purchasePrice,
+      gifts: variant.gifts.map((gift) => ({ name: gift.giftVariant.product.name, quantity: gift.quantity })),
     }))
     .sort((a, b) =>
       words.length === 0
