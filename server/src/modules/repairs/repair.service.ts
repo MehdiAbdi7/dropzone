@@ -5,6 +5,7 @@ import { algiersDate } from "../../utils/algiersTime.js";
 import { normalizeText } from "../../utils/normalizeText.js";
 import type { RepairInput, RepairListQuery, RepairPatch } from "./repair.schema.js";
 import { nextStatuses, quoteTotal, type Status } from "./repairRules.js";
+import { afterQuoteChange, lockRepair } from "./repairStock.js";
 import { findWarrantyItem, warrantyOf } from "./warranty.service.js";
 
 // Les fiches de réparation (18/11, étape 2) : création, liste, détail, modification. Les pièces, les étapes et la
@@ -172,14 +173,17 @@ export async function countRepairs() {
   return counts;
 }
 
-export async function updateRepair(id: number, input: RepairPatch) {
-  const current = await prisma.repair.findUnique({ where: { id }, select: { status: true } });
-  if (!current) {
-    throw new AppError(404, "Fiche de réparation introuvable");
-  }
-  if (current.status === "returned") {
-    throw new AppError(409, "Cette réparation est rendue : la fiche ne se modifie plus");
-  }
-  await prisma.repair.update({ where: { id }, data: input });
+export async function updateRepair(id: number, input: RepairPatch, userId: number) {
+  await prisma.$transaction(async (tx) => {
+    const current = await lockRepair(tx, id);
+    if (current.status === "returned") {
+      throw new AppError(409, "Cette réparation est rendue : la fiche ne se modifie plus");
+    }
+    await tx.repair.update({ where: { id }, data: input });
+    // Une autre main-d'œuvre change le prix : hors garantie, le client doit le valider de nouveau.
+    if (input.laborPrice !== undefined && input.laborPrice !== current.laborPrice) {
+      await afterQuoteChange(tx, current, userId);
+    }
+  });
   return getRepair(id);
 }

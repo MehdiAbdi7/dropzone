@@ -45,6 +45,14 @@ export const repairPatchSchema = z.object({
 });
 export type RepairPatch = z.infer<typeof repairPatchSchema>;
 
+// Les pièces d'une fiche : une quantité de 1 à 100 par ligne.
+const lineQuantity = z.number().int().min(1).max(100);
+export const repairLineBodySchema = z.object({ partId: z.number().int().positive(), quantity: lineQuantity });
+export const repairLinePatchSchema = z.object({ quantity: lineQuantity });
+export const repairLineParamsSchema = z.object({ id: z.coerce.number().int().positive(), lineId: z.coerce.number().int().positive() });
+
+export const repairStatusBodySchema = z.object({ status: z.enum(["received", "quote", "in_repair", "ready", "to_return", "returned"]) });
+
 export const REPAIR_STAGES = ["open", "received", "quote", "in_repair", "ready", "to_return", "returned"] as const;
 
 export const repairListQuerySchema = z.object({
