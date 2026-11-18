@@ -10,7 +10,9 @@ export function isSwitchWithinPath(current: URL, destination: URL): boolean {
   if (destination.pathname.startsWith("/produits/")) {
     return destination.searchParams.get("couleur") !== current.searchParams.get("couleur");
   }
-  if (destination.pathname === "/admin/commandes") {
+  // Les onglets de l'Historique (Total, Magasin, Livraisons…, 18/11) : chacun change tous les chiffres de la
+  // page, donc une petite animation. Changer la période (jour, mois, date) ne touche pas `type` : pas d'animation.
+  if (destination.pathname === "/admin/commandes" || destination.pathname === "/admin/historique") {
     return destination.searchParams.get("type") !== current.searchParams.get("type");
   }
   return false;
