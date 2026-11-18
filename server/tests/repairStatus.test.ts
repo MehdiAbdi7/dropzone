@@ -250,11 +250,7 @@ describe("une pièce de plus, ou un prix qui change, pendant la réparation", ()
 });
 
 describe("les rôles", () => {
-  it("vendeur et responsable commande reçoivent 403 sur le changement d'étape, un anonyme 401", async () => {
-    for (const role of ["seller", "order_manager"] as const) {
-      const { agent } = await loginAs(role, `${role}@test.dz`);
-      expect((await agent.post("/admin/repairs/1/status").send({ status: "quote" })).status).toBe(403);
-    }
+  it("un anonyme reçoit 401 sur le changement d'étape (les droits par rôle sont dans repairRoles.test.ts)", async () => {
     expect((await request(app).post("/admin/repairs/1/status").send({ status: "quote" })).status).toBe(401);
   });
 });

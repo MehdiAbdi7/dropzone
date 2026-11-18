@@ -153,16 +153,7 @@ describe("POST /admin/repairs", () => {
     expect((await agent.post("/admin/repairs").send({ ...body, originItemId: sale.itemId })).status).toBe(400);
   });
 
-  it("les rôles : vendeur et responsable commande reçoivent 403, un anonyme 401", async () => {
-    for (const role of ["seller", "order_manager"] as const) {
-      const { agent } = await loginAs(role, `${role}@test.dz`);
-      expect((await agent.post("/admin/repairs").send(body)).status).toBe(403);
-      expect((await agent.get("/admin/repairs")).status).toBe(403);
-      expect((await agent.get("/admin/repairs/counts")).status).toBe(403);
-      expect((await agent.get("/admin/repairs/1")).status).toBe(403);
-      expect((await agent.patch("/admin/repairs/1").send({ note: "x" })).status).toBe(403);
-      expect((await agent.get("/admin/repairs/warranty").query({ phone: "0550123456" })).status).toBe(403);
-    }
+  it("un anonyme reçoit 401 (les droits par rôle sont dans repairRoles.test.ts)", async () => {
     const request = (await import("supertest")).default;
     const app = (await import("../src/app.js")).default;
     expect((await request(app).get("/admin/repairs")).status).toBe(401);

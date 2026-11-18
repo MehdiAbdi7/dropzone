@@ -150,18 +150,12 @@ describe("PATCH et DELETE /admin/repairs/:id/parts/:lineId", () => {
 });
 
 describe("les rôles", () => {
-  it("vendeur et responsable commande reçoivent 403 sur chaque route des pièces d'une fiche, un anonyme 401", async () => {
+  it("un anonyme reçoit 401 sur chaque route des pièces d'une fiche (les droits par rôle sont dans repairRoles.test.ts)", async () => {
     const calls: [string, string][] = [
       ["post", "/admin/repairs/1/parts"],
       ["patch", "/admin/repairs/1/parts/1"],
       ["delete", "/admin/repairs/1/parts/1"],
     ];
-    for (const role of ["seller", "order_manager"] as const) {
-      const { agent } = await loginAs(role, `${role}@test.dz`);
-      for (const [method, url] of calls) {
-        expect((await (agent as never as Record<string, (u: string) => Promise<{ status: number }>>)[method](url)).status, `${role} ${method} ${url}`).toBe(403);
-      }
-    }
     for (const [method, url] of calls) {
       expect((await (request(app) as never as Record<string, (u: string) => Promise<{ status: number }>>)[method](url)).status, `anonyme ${method} ${url}`).toBe(401);
     }

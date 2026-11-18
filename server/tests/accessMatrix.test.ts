@@ -1,7 +1,7 @@
 import request from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 import app, { adminRouter } from "../src/app.js";
-import { ACCESS_RULES, ROLE_RANK } from "../src/middlewares/access.js";
+import { ACCESS_RULES, ruleAllows } from "../src/middlewares/access.js";
 import type { Role } from "../src/generated/prisma/client.js";
 import { loginAs, resetDb } from "./helpers.js";
 
@@ -13,7 +13,7 @@ const agents = {} as Record<Role, Agent>;
 
 beforeAll(async () => {
   await resetDb();
-  for (const role of ["customer", "seller", "order_manager", "admin"] as const) {
+  for (const role of ["customer", "technician", "seller", "order_manager", "admin"] as const) {
     agents[role] = (await loginAs(role, `${role}@matrix.dz`)).agent;
   }
 });
@@ -25,12 +25,13 @@ const call = (agent: Agent, method: string, path: string) => {
 };
 
 describe("matrice des droits du back-office", () => {
-  it.each(ACCESS_RULES.map((rule) => [rule.method, rule.path, rule.min] as const))(
-    "%s %s (à partir de %s)",
-    async (method, path, min) => {
-      for (const role of ["customer", "seller", "order_manager", "admin"] as const) {
+  it.each(ACCESS_RULES.map((rule) => [rule.method, rule.path, rule.min ?? `rôles ${rule.roles?.join(", ")}`] as const))(
+    "%s %s (%s)",
+    async (method, path) => {
+      const rule = ACCESS_RULES.find((candidate) => candidate.method === method && candidate.path === path)!;
+      for (const role of ["customer", "technician", "seller", "order_manager", "admin"] as const) {
         const status = (await call(agents[role], method, path)).status;
-        if (ROLE_RANK[role] >= ROLE_RANK[min]) {
+        if (ruleAllows(rule, role)) {
           expect([401, 403], `${role} devrait passer`).not.toContain(status);
         } else {
           expect(status, `${role} devrait être refusé`).toBe(403);
@@ -50,9 +51,14 @@ describe("matrice des droits du back-office", () => {
     ["PATCH", "/trade-ins/1"],
     ["GET", "/accounts"],
     ["GET", "/products"],
+    // L'atelier (étape 5) : fermées par défaut.
+    ["PATCH", "/parts/1"],
+    ["POST", "/parts/1/corrections"],
+    ["DELETE", "/repairs/1"],
   ])("%s %s est réservée à l'admin", async (method, path) => {
     expect((await call(agents.seller, method, path)).status).toBe(403);
     expect((await call(agents.order_manager, method, path)).status).toBe(403);
+    expect((await call(agents.technician, method, path)).status).toBe(403);
   });
 
   it("un anonyme reçoit 401 partout", async () => {

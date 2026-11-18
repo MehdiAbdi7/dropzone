@@ -171,7 +171,9 @@ describe("GET /admin/parts", () => {
   });
 });
 
-describe("les droits : réservé à l'admin tant que le technicien n'existe pas", () => {
+// Depuis l'étape 5 : le vendeur et le responsable lisent la liste (sans prix d'achat), le reste leur est fermé ; le
+// détail par rôle est dans repairRoles.test.ts. L'admin seul modifie une pièce et corrige un stock.
+describe("les droits des pièces", () => {
   const routes: [string, string, object][] = [
     ["get", "/admin/parts", {}],
     ["post", "/admin/parts", battery],
@@ -181,11 +183,11 @@ describe("les droits : réservé à l'admin tant que le technicien n'existe pas"
     ["get", "/admin/parts/1/movements", {}],
   ];
 
-  it.each(["seller", "order_manager"] as const)("le %s reçoit 403 sur chaque route", async (role) => {
+  it.each(["seller", "order_manager"] as const)("le %s reçoit 403 sur chaque route sauf la liste", async (role) => {
     const { agent } = await loginAs(role, `${role}@test.dz`);
     for (const [method, url, body] of routes) {
       const response = await (agent as unknown as Record<string, (path: string) => request.Test>)[method](url).send(body);
-      expect(response.status, `${method} ${url}`).toBe(403);
+      expect(response.status, `${method} ${url}`).toBe(method === "get" && url === "/admin/parts" ? 200 : 403);
     }
   });
 
