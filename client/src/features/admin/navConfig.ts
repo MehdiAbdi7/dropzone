@@ -150,8 +150,9 @@ const itemOf = (key: string): BottomItem => {
 const SETTINGS_ITEM: BottomItem = { key: "reglages", label: "Réglages", href: SETTINGS_HREF, icon: ClipboardCheckIcon };
 
 export function bottomBarFor(role: Role): { items: BottomItem[]; featured: string; more: NavSection[] } {
-  if (role === "seller") return { items: [itemOf("caisse"), itemOf("vente"), SETTINGS_ITEM], featured: "vente", more: [] };
-  if (role === "order_manager") return { items: [itemOf("vente"), itemOf("commandes"), itemOf("caisse")], featured: "commandes", more: [] };
+  // L'atelier (étape 5) : le vendeur et le responsable y créent et rendent les réparations, sur téléphone aussi.
+  if (role === "seller") return { items: [itemOf("caisse"), itemOf("atelier"), itemOf("vente"), SETTINGS_ITEM], featured: "vente", more: [] };
+  if (role === "order_manager") return { items: [itemOf("vente"), itemOf("caisse"), itemOf("commandes"), itemOf("atelier")], featured: "commandes", more: [] };
   // Le technicien (étape 5) ne voit que l'atelier : une seule entrée, qui s'ouvre sur les réparations.
   if (role === "technician") return { items: [itemOf("atelier")], featured: "atelier", more: [] };
   // L'admin garde la barre d'avant : quatre entrées, « Plus » pour le reste.

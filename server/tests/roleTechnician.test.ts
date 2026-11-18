@@ -40,3 +40,21 @@ describe("le technicien", () => {
     expect(me.body.data.role).toBe("technician");
   });
 });
+
+// Relecture finale : « /repairs/WARRANTY » (majuscules) tombait sur la règle `/repairs/:id` ouverte au technicien alors
+// qu'Express exécutait la recherche de garantie, donc les ventes.
+describe("la casse d'une adresse ne contourne pas les droits", () => {
+  it("le technicien reçoit 403 sur la recherche de garantie écrite en majuscules ou avec une barre finale", async () => {
+    const { agent } = await loginAs("technician", "tech3@test.dz");
+    for (const path of ["/admin/repairs/WARRANTY", "/admin/repairs/Warranty/", "/admin/repairs/warranty/"]) {
+      expect((await agent.get(path).query({ phone: "0550123456" })).status, path).toBe(403);
+    }
+  });
+
+  it("le vendeur garde la recherche de garantie, quelle que soit la casse", async () => {
+    const { agent } = await loginAs("seller", "seller3@test.dz");
+    for (const path of ["/admin/repairs/warranty", "/admin/repairs/WARRANTY"]) {
+      expect((await agent.get(path).query({ phone: "0550123456" })).status, path).toBe(200);
+    }
+  });
+});

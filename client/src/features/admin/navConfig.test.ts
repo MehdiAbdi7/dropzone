@@ -10,13 +10,13 @@ describe("bottomBarFor", () => {
   const keys = (role: Parameters<typeof bottomBarFor>[0]) => bottomBarFor(role).items.map((item) => item.key);
 
   it("le vendeur : Caisse, Ventes au milieu, Réglages", () => {
-    expect(keys("seller")).toEqual(["caisse", "vente", "reglages"]);
+    expect(keys("seller")).toEqual(["caisse", "atelier", "vente", "reglages"]);
     expect(bottomBarFor("seller").featured).toBe("vente");
     expect(bottomBarFor("seller").more).toEqual([]);
   });
 
   it("le responsable commande : Ventes, Commandes au milieu, Caisse", () => {
-    expect(keys("order_manager")).toEqual(["vente", "commandes", "caisse"]);
+    expect(keys("order_manager")).toEqual(["vente", "caisse", "commandes", "atelier"]);
     expect(bottomBarFor("order_manager").featured).toBe("commandes");
     expect(bottomBarFor("order_manager").more).toEqual([]);
   });

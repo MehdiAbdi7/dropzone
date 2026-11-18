@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { prisma } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
 import type { RepairListQuery, WarrantyQuery } from "./repair.schema.js";
 import { countRepairs, createRepair, getRepair, listRepairs, updateRepair } from "./repair.service.js";
@@ -53,7 +54,12 @@ export async function deleteRepairLine(req: Request, res: Response) {
 
 export async function postRepairStatus(req: Request, res: Response) {
   // Le technicien fait avancer la réparation ; proposer le devis, le refuser et rendre l'appareil sont à la vente.
-  if (!canMoveTo(res.locals.user!.role, req.body.status)) {
+  const role = res.locals.user!.role;
+  const repair = role === "technician" ? await prisma.repair.findUnique({ where: { id: Number(req.params.id) }, select: { underWarranty: true } }) : { underWarranty: false };
+  if (!repair) {
+    throw new AppError(404, "Fiche de réparation introuvable");
+  }
+  if (!canMoveTo(role, req.body.status, repair)) {
     throw new AppError(403, SALES_ONLY);
   }
   res.json({ data: await changeStatus(Number(req.params.id), req.body.status, userId(res), req.body.method) });

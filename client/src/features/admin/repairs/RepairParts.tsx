@@ -130,7 +130,7 @@ function AddPart({ repair }: { repair: RepairDetail }) {
             <option value="">Choisir une pièce…</option>
             {parts?.map((part) => (
               <option key={part.id} value={part.id} disabled={part.stock === 0}>
-                {part.name} · {seesCost ? `achat ${formatPrice(part.purchasePrice)}` : formatPrice(part.salePrice)} · {part.stock === 0 ? "épuisée" : `${part.stock} en stock`}
+                {part.name} · {seesCost ? `achat ${formatPrice(part.purchasePrice)} · vente ${formatPrice(part.salePrice)}` : formatPrice(part.salePrice)} · {part.stock === 0 ? "épuisée" : `${part.stock} en stock`}
               </option>
             ))}
           </select>

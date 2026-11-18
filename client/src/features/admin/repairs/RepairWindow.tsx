@@ -78,7 +78,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
   // Ce que ce rôle voit et fait (étape 5) : l'API refuse le reste et retire l'argent du client pour le technicien.
   const role = useAdminRole();
   const caps = repairCapabilities(role);
-  const targets = allowedTargets(role, repair.nextStatuses);
+  const targets = allowedTargets(role, repair.nextStatuses, repair.underWarranty);
   const [editing, setEditing] = useState(false);
   const [returning, setReturning] = useState(false);
   const [change, changing] = useChangeRepairStatusMutation();

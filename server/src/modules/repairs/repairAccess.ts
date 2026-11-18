@@ -5,12 +5,12 @@ import type { Status } from "./repairRules.js";
 // (middlewares/access.ts) ; la route est la même pour le technicien et le vendeur, le geste non : ces règles pures,
 // testées seules, sont appliquées par le contrôleur.
 
-// Le technicien fait avancer la réparation (En réparation, Prêt). Proposer le devis, le refuser et rendre l'appareil
-// (donc encaisser) sont les gestes de la vente : le vendeur, le responsable commande et l'admin.
-const TECHNICIAN_MOVES: Status[] = ["in_repair", "ready"];
-
-export function canMoveTo(role: Role, target: Status): boolean {
-  if (role === "technician") return TECHNICIAN_MOVES.includes(target);
+// Le technicien fait avancer la réparation : Prêt, et En réparation SOUS GARANTIE (le client ne paie rien, il n'y a
+// pas d'accord à recueillir). Hors garantie, « En réparation » est l'accord du client sur un devis que le technicien
+// ne voit même pas : c'est la vente qui l'enregistre. Proposer le devis, le refuser et rendre l'appareil (donc
+// encaisser) sont aussi les gestes de la vente : le vendeur, le responsable commande et l'admin.
+export function canMoveTo(role: Role, target: Status, repair: { underWarranty: boolean }): boolean {
+  if (role === "technician") return target === "ready" || (target === "in_repair" && repair.underWarranty);
   return role === "seller" || role === "order_manager" || role === "admin";
 }
 

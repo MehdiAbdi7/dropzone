@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { CLIENT_MONEY_KEYS } from "../src/utils/withoutCosts.js";
 import { loginAs, resetDb } from "./helpers.js";
-import { addLineOk, adminAgent, device, makePart, makeRepair, openCash, readyRepair, setStatusOk, type Agent } from "./repairHelpers.js";
+import { addLineOk, adminAgent, device, makePart, makeRepair, makeWarrantyRepair, openCash, readyRepair, setStatusOk, type Agent } from "./repairHelpers.js";
 
 // Qui fait quoi dans l'atelier (étape 5, cahier §11 et §14), essayé avec de vrais comptes.
 beforeEach(resetDb);
@@ -21,12 +21,31 @@ function keysOf(value: unknown, found = new Set<string>()): Set<string> {
 }
 
 describe("le technicien dans une fiche", () => {
-  it("fait avancer la réparation : En réparation puis Prêt", async () => {
+  it("fait avancer une réparation sous garantie : En réparation puis Prêt", async () => {
     const admin = await adminAgent();
     const tech = await as("technician");
-    const repair = await makeRepair(admin);
+    const repair = await makeWarrantyRepair(admin);
     expect((await tech.post(`/admin/repairs/${repair.id}/status`).send({ status: "in_repair" })).status).toBe(200);
     expect((await tech.post(`/admin/repairs/${repair.id}/status`).send({ status: "ready" })).status).toBe(200);
+  });
+
+  it("ne passe pas En réparation hors garantie : l'accord du client est enregistré par la vente, aucune pièce ne sort", async () => {
+    const admin = await adminAgent();
+    const tech = await as("technician");
+    const part = await makePart();
+    const repair = await makeRepair(admin);
+    await addLineOk(admin, repair.id, part.id, 1);
+    const response = await tech.post(`/admin/repairs/${repair.id}/status`).send({ status: "in_repair" });
+    expect(response.status).toBe(403);
+    expect(response.body.error.message).toBe("Ce geste est réservé à la vente");
+    // Revenu au devis par une pièce de plus, il ne le revalide pas non plus.
+    await setStatusOk(admin, repair.id, "in_repair");
+    await addLineOk(admin, repair.id, (await makePart("Nappe", 4)).id, 1);
+    expect((await admin.get(`/admin/repairs/${repair.id}`).expect(200)).body.data.status).toBe("quote");
+    expect((await tech.post(`/admin/repairs/${repair.id}/status`).send({ status: "in_repair" })).status).toBe(403);
+    // La vente, elle, peut.
+    const seller = await as("seller");
+    expect((await seller.post(`/admin/repairs/${repair.id}/status`).send({ status: "in_repair" })).status).toBe(200);
   });
 
   it("ne propose pas le devis, ne refuse pas, ne rend jamais l'appareil (même avec un moyen de paiement)", async () => {

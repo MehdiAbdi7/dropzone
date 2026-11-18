@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ACCESS_RULES, ROLE_RANK, minRoleFor, ruleAllows, ruleFor } from "../src/middlewares/access.js";
+import { ACCESS_RULES, ROLE_RANK, minRoleFor, roleCanCall, ruleAllows, ruleFor } from "../src/middlewares/access.js";
 
 // Les droits du cahier §4.13, écrits en dur : toute modification de la table doit changer ce test aussi,
 // donc passer par une décision. La matrice, elle, vérifie que le middleware applique la table.
@@ -148,5 +148,23 @@ describe("le technicien et les règles à liste de rôles", () => {
     expect(ruleFor("GET", "/parts")?.costFor).toEqual(["technician"]);
     expect(ruleFor("GET", "/repairs/3")?.costFor).toEqual(["technician"]);
     expect(ruleFor("GET", "/orders")?.costFor).toBeUndefined();
+  });
+});
+
+// Relecture finale (étape 5) : Express route sans tenir compte de la casse, la table aussi. Sinon « /repairs/WARRANTY »
+// tombait sur la règle `/repairs/:id` (ouverte au technicien) alors qu'Express exécutait la recherche de garantie.
+describe("la casse et les segments littéraux", () => {
+  it("le technicien n'atteint pas la recherche de garantie, quelle que soit la casse ou la barre finale", () => {
+    for (const path of ["/repairs/warranty", "/repairs/WARRANTY", "/repairs/Warranty/", "/repairs/warranty/"]) {
+      expect(roleCanCall("technician", "GET", path), path).toBe(false);
+      expect(roleCanCall("seller", "GET", path), path).toBe(true);
+    }
+  });
+
+  it(":id ne vaut qu'un numéro : un mot n'est pas une fiche", () => {
+    expect(roleCanCall("technician", "GET", "/repairs/12")).toBe(true);
+    expect(roleCanCall("technician", "GET", "/repairs/export")).toBe(false);
+    expect(roleCanCall("technician", "GET", "/repairs/counts")).toBe(true);
+    expect(roleCanCall("technician", "GET", "/REPAIRS/COUNTS")).toBe(true);
   });
 });

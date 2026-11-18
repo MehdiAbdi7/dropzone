@@ -173,10 +173,10 @@ export function repairCapabilities(role: Role): RepairCapabilities {
   return none;
 }
 
-// Les passages d'étape proposés à ce rôle : le technicien n'a que En réparation et Prêt (proposer le devis, le
-// refuser et rendre l'appareil sont à la vente).
-const TECHNICIAN_TARGETS: RepairStatus[] = ["in_repair", "ready"];
-
-export function allowedTargets(role: Role, targets: RepairStatus[]): RepairStatus[] {
-  return role === "technician" ? targets.filter((target) => TECHNICIAN_TARGETS.includes(target)) : targets;
+// Les passages d'étape proposés à ce rôle (comme canMoveTo côté API) : le technicien n'a que Prêt, et En réparation
+// sous garantie ; hors garantie, l'accord du client est enregistré par la vente. Proposer le devis, le refuser et
+// rendre l'appareil sont à la vente.
+export function allowedTargets(role: Role, targets: RepairStatus[], underWarranty: boolean): RepairStatus[] {
+  if (role !== "technician") return targets;
+  return targets.filter((target) => target === "ready" || (target === "in_repair" && underWarranty));
 }

@@ -203,13 +203,18 @@ describe("le texte du Rendu", () => {
 describe("allowedTargets", () => {
   const all = ["quote", "in_repair", "to_return", "ready", "returned"] as const;
 
-  it("le technicien ne garde que En réparation et Prêt", () => {
-    expect(allowedTargets("technician", [...all])).toEqual(["in_repair", "ready"]);
-    expect(allowedTargets("technician", ["quote", "to_return"])).toEqual([]);
+  it("le technicien sous garantie ne garde que En réparation et Prêt", () => {
+    expect(allowedTargets("technician", [...all], true)).toEqual(["in_repair", "ready"]);
+    expect(allowedTargets("technician", ["quote", "to_return"], true)).toEqual([]);
+  });
+
+  it("le technicien hors garantie ne garde que Prêt : l'accord du client est enregistré par la vente", () => {
+    expect(allowedTargets("technician", [...all], false)).toEqual(["ready"]);
+    expect(allowedTargets("technician", ["in_repair"], false)).toEqual([]);
   });
 
   it("le vendeur, le responsable et l'admin gardent tout", () => {
-    for (const role of ["seller", "order_manager", "admin"] as const) expect(allowedTargets(role, [...all]), role).toEqual([...all]);
+    for (const role of ["seller", "order_manager", "admin"] as const) expect(allowedTargets(role, [...all], false), role).toEqual([...all]);
   });
 });
 

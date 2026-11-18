@@ -88,11 +88,13 @@ export function ruleAllows(rule: AccessRule, role: Role): boolean {
   return rule.min !== undefined && ROLE_RANK[role] >= ROLE_RANK[rule.min];
 }
 
-// Chaque règle devient une expression : `:id` accepte un segment, une barre finale est tolérée, et
-// l'adresse doit correspondre en entier (« /orders/12/status » n'est pas « /orders/:id »).
+// Chaque règle devient une expression : `:id` vaut un NUMÉRO (jamais un mot : « /repairs/warranty » n'est pas une
+// fiche), une barre finale est tolérée, la casse est ignorée comme dans le routeur d'Express, et l'adresse doit
+// correspondre en entier (« /orders/12/status » n'est pas « /orders/:id »). Sans ces deux précisions, « /repairs/WARRANTY »
+// tombait sur la règle `/repairs/:id` (ouverte au technicien) pendant qu'Express exécutait la recherche de garantie.
 const COMPILED = ACCESS_RULES.map((rule) => ({
   rule,
-  pattern: new RegExp(`^${rule.path.replace(/:[^/]+/g, "[^/]+")}/?$`),
+  pattern: new RegExp(`^${rule.path.replace(/:[^/]+/g, "\\d+")}/?$`, "i"),
 }));
 
 // La règle de la table qui couvre cette route, ou rien (alors la route est pour l'admin).
