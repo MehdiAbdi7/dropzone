@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { useHistoryQuery } from "@/features/admin/api/historyApi";
+import { useHistoryQuery, type HistoryChannelType } from "@/features/admin/api/historyApi";
 import EditDialog from "@/features/admin/products/EditDialog";
 import HistoryChanges from "@/features/admin/history/HistoryChanges";
 import HistoryChannels, { CHANNEL_LABELS, CHANNEL_ORDER } from "@/features/admin/history/HistoryChannels";
 import HistoryDays from "@/features/admin/history/HistoryDays";
 import HistoryOrders from "@/features/admin/history/HistoryOrders";
+import HistoryRepairs from "@/features/admin/history/HistoryRepairs";
 import HistorySummary from "@/features/admin/history/HistorySummary";
 import PeriodBar from "@/features/admin/history/PeriodBar";
 import { historyHref, parseHistoryView } from "@/features/admin/history/historyView";
@@ -18,10 +19,9 @@ import { algiersDate } from "@/lib/algiersTime";
 import { errorMessage } from "@/lib/errors";
 import { periodRange } from "@/lib/period";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
-import type { OrderType } from "@/types/api";
 
 // Les 4 onglets (17/11, lot 4) : le Total, puis ce que rapporte chaque canal.
-const TABS: { type: OrderType | undefined; label: string }[] = [
+const TABS: { type: HistoryChannelType | undefined; label: string }[] = [
   { type: undefined, label: "Total" },
   ...CHANNEL_ORDER.map((type) => ({ type, label: CHANNEL_LABELS[type] })),
 ];
@@ -56,7 +56,10 @@ function History() {
   const close = () => setOpen(null);
   const showChannels = view.type === undefined;
   const buttons: { key: Panel; label: string; count?: string }[] = [
-    { key: "orders", label: "Commandes", count: data ? `${data.orders.length}${data.ordersTruncated ? "+" : ""}` : undefined },
+    // Sous l'onglet Réparations, la liste est celle des fiches rendues, pas des commandes.
+    view.type === "repair"
+      ? { key: "orders" as const, label: "Réparations", count: data ? String(data.repairs.length) : undefined }
+      : { key: "orders" as const, label: "Commandes", count: data ? `${data.orders.length}${data.ordersTruncated ? "+" : ""}` : undefined },
     { key: "days", label: "Par jour", count: data ? String(data.days.length) : undefined },
     ...(showChannels ? [{ key: "channels" as const, label: "Par canal" }] : []),
     { key: "changes", label: "Modifications", count: data ? String(data.changes.length) : undefined },
@@ -123,18 +126,22 @@ function History() {
 
       {data ? (
         <>
-          <EditDialog open={open === "orders"} title="Commandes de la période" onClose={close}>
+          <EditDialog open={open === "orders"} title={view.type === "repair" ? "Réparations de la période" : "Commandes de la période"} onClose={close}>
             <label className="block max-w-md">
-              <span className="sr-only">Chercher une commande</span>
+              <span className="sr-only">{view.type === "repair" ? "Chercher une réparation" : "Chercher une commande"}</span>
               <input
                 className="input"
                 type="search"
-                placeholder="Numéro, téléphone ou nom…"
+                placeholder={view.type === "repair" ? "Numéro (R-1001), téléphone ou nom…" : "Numéro, téléphone ou nom…"}
                 value={q}
                 onChange={(event) => setQ(event.target.value)}
               />
             </label>
-            <HistoryOrders orders={data.orders} truncated={data.ordersTruncated} onOpen={orderWindow.open} />
+            {view.type === "repair" ? (
+              <HistoryRepairs repairs={data.repairs} />
+            ) : (
+              <HistoryOrders orders={data.orders} truncated={data.ordersTruncated} onOpen={orderWindow.open} />
+            )}
           </EditDialog>
           <EditDialog open={open === "days"} title="Jour par jour" onClose={close}>
             <HistoryDays days={data.days} tab={view.type} />

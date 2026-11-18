@@ -1,25 +1,25 @@
-import type { History } from "@/features/admin/api/historyApi";
+import type { History, HistoryChannelType } from "@/features/admin/api/historyApi";
 import { formatPrice } from "@/lib/format";
-import type { OrderType } from "@/types/api";
 
 // Les noms des onglets de l'historique : ce que chaque canal rapporte au gérant.
-export const CHANNEL_LABELS: Record<OrderType, string> = {
+export const CHANNEL_LABELS: Record<HistoryChannelType, string> = {
   in_store: "Magasin",
   delivery: "Livraisons",
   pickup: "Réservations",
   exchange: "Échanges",
+  repair: "Réparations",
 };
-export const CHANNEL_ORDER: OrderType[] = ["in_store", "delivery", "pickup", "exchange"];
+export const CHANNEL_ORDER: HistoryChannelType[] = ["in_store", "delivery", "pickup", "exchange", "repair"];
 
 // Sous l'onglet Total : ce que chaque canal a rapporté sur la période (argent arrivé, ventes,
 // bénéfice). La somme des canaux est le Total affiché au-dessus.
-export default function HistoryChannels({ channels, onPick }: { channels: History["channels"]; onPick: (type: OrderType) => void }) {
+export default function HistoryChannels({ channels, onPick }: { channels: History["channels"]; onPick: (type: HistoryChannelType) => void }) {
   return (
     <section aria-labelledby="channels-title" className="space-y-3">
       <h2 id="channels-title" className="text-xl">
         Ce que rapporte chaque canal
       </h2>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {CHANNEL_ORDER.map((type) => {
           const channel = channels[type];
           return (

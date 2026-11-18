@@ -42,3 +42,11 @@ describe("historyHref", () => {
     expect(parseHistoryView(new URL(`http://x${historyHref(view)}`).searchParams, today)).toEqual(view);
   });
 });
+
+// L'onglet Réparations (atelier, étape 3) est un type de plus de l'adresse.
+describe("l'onglet Réparations", () => {
+  it("lit type=repair et le garde dans l'adresse", () => {
+    expect(parse("type=repair")).toMatchObject({ type: "repair" });
+    expect(historyHref({ kind: "month", anchor: today, type: "repair" })).toContain("type=repair");
+  });
+});

@@ -32,6 +32,7 @@ const KIND_LABELS: Record<CashMovement["kind"], string> = {
   exchange: "Échange",
   correction: "Correction",
   return_fee: "Frais de retour",
+  repair: "Réparation",
 };
 
 const METHODS = Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[];

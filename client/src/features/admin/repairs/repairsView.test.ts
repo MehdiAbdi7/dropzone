@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { movementLabel } from "../parts/partsView";
-import { actionLabel, confirmText, parseRepairSearch, repairDraftProblem, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
+import { formatPrice } from "@/lib/format";
+import { actionLabel, confirmText, paidText, parseRepairSearch, returnProblem, repairDraftProblem, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
 
 // La logique de la page Réparations (18/11, étape 2) : la frise, le numéro, la recherche, la saisie, la garantie.
 const states = (status: Parameters<typeof repairSteps>[0], underWarranty = false) => repairSteps(status, underWarranty).map((step) => step.state);
@@ -160,5 +161,31 @@ describe("confirmText", () => {
     expect(confirmText("quote", [])).toBeNull();
     expect(confirmText("in_repair", [])).toBeNull();
     expect(confirmText("ready", [])).toBeNull();
+  });
+});
+
+// Le Rendu avec paiement (étape 3).
+describe("returnProblem", () => {
+  it("rien à payer : jamais de problème, même sans moyen", () => {
+    expect(returnProblem(0, null)).toBeNull();
+  });
+
+  it("de l'argent à encaisser : le moyen de paiement est obligatoire", () => {
+    expect(returnProblem(8_000, null)).toBe("Choisissez le moyen de paiement.");
+    expect(returnProblem(8_000, "cash")).toBeNull();
+  });
+});
+
+describe("paidText", () => {
+  it("dit ce que le client a payé, avec le moyen et le jour", () => {
+    expect(paidText({ paidAmount: 8_000, payMethod: "baridimob", returnedOn: "2026-11-18" })).toBe(`Payé ${formatPrice(8_000)} par BaridiMob le 18/11/2026`);
+  });
+
+  it("dit un rendu sans paiement", () => {
+    expect(paidText({ paidAmount: 0, payMethod: null, returnedOn: "2026-11-18" })).toBe("Rendu sans paiement le 18/11/2026");
+  });
+
+  it("n'a rien à dire avant le Rendu", () => {
+    expect(paidText({ paidAmount: null, payMethod: null, returnedOn: null })).toBeNull();
   });
 });
