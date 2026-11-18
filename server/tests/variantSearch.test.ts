@@ -72,10 +72,14 @@ describe("GET /admin/variants", () => {
   });
 
   it("liste les cadeaux offerts avec une affaire", async () => {
-    const deal = await prisma.productVariant.findUniqueOrThrow({ where: { sku: "IP-R-DEAL" } });
-    const gift = await prisma.productVariant.findUniqueOrThrow({ where: { sku: "CHG-20W" }, include: { product: true } });
-    await prisma.variantGift.create({ data: { variantId: deal.id, giftVariantId: gift.id, quantity: 1 } });
-    expect((await search("IP-R-DEAL")).body.data[0].gifts).toEqual([{ name: gift.product.name, quantity: 1 }]);
+    // Le catalogue de test offre déjà un cadeau avec cette affaire : on compare avec ce que la base dit.
+    const links = await prisma.variantGift.findMany({
+      where: { variant: { sku: "IP-R-DEAL" } },
+      include: { giftVariant: { include: { product: true } } },
+    });
+    expect(links.length).toBeGreaterThan(0);
+    const expected = links.map((link) => ({ name: link.giftVariant.product.name, quantity: link.quantity }));
+    expect((await search("IP-R-DEAL")).body.data[0].gifts).toEqual(expected);
     expect((await search("ip-new-256")).body.data[0].gifts).toEqual([]);
   });
 
