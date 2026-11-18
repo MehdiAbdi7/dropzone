@@ -18,7 +18,7 @@ export type PartRow = {
 export type PartMovementRow = {
   id: number;
   createdAt: string;
-  kind: "arrival" | "correction";
+  kind: "arrival" | "correction" | "repair" | "repair_return";
   delta: number;
   unitCost: number | null;
   stockAfter: number;

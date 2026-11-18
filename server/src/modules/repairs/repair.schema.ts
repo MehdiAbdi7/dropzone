@@ -1,0 +1,73 @@
+import { z } from "zod";
+import { phoneSchema } from "../orders/order.schema.js";
+
+// Les fiches de réparation (18/11, étape 2). Tous les textes sont bornés : la fiche est saisie au comptoir, mais
+// un texte énorme ne doit jamais atteindre la base. Aucun champ pour un code de déverrouillage : Zod ignore ce
+// qu'il ne connaît pas, et la fiche n'a de toute façon pas de colonne pour lui.
+const spaced = (text: string) => text.replace(/\s+/g, " ");
+const short = (min: number, max: number) => z.string().trim().min(min).max(max).transform(spaced);
+// Un texte facultatif : vide, c'est « rien » (la fiche garde null).
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .transform((text) => (text === "" ? null : spaced(text)));
+
+const laborPrice = z.number().int().min(0).max(10_000_000);
+
+export const repairBodySchema = z.object({
+  fullName: short(3, 80),
+  phone: phoneSchema,
+  deviceName: short(2, 80),
+  deviceColor: optionalText(300).optional(),
+  deviceState: optionalText(300).optional(),
+  issue: short(3, 500),
+  accessories: optionalText(300).optional(),
+  laborPrice: laborPrice.optional(),
+  // L'article de la vente d'origine : la garantie est recalculée par le serveur, jamais lue du client.
+  originItemId: z.number().int().positive().optional(),
+  forceOutOfWarranty: z.boolean().optional(),
+});
+export type RepairInput = z.infer<typeof repairBodySchema>;
+
+export const repairPatchSchema = z.object({
+  fullName: short(3, 80).optional(),
+  phone: phoneSchema.optional(),
+  deviceName: short(2, 80).optional(),
+  deviceColor: optionalText(300).optional(),
+  deviceState: optionalText(300).optional(),
+  issue: short(3, 500).optional(),
+  accessories: optionalText(300).optional(),
+  // null : on efface la main-d'œuvre (le devis n'est plus fixé).
+  laborPrice: laborPrice.nullable().optional(),
+  note: optionalText(1000).optional(),
+});
+export type RepairPatch = z.infer<typeof repairPatchSchema>;
+
+// Les pièces d'une fiche : une quantité de 1 à 100 par ligne.
+const lineQuantity = z.number().int().min(1).max(100);
+export const repairLineBodySchema = z.object({ partId: z.number().int().positive(), quantity: lineQuantity });
+export const repairLinePatchSchema = z.object({ quantity: lineQuantity });
+export const repairLineParamsSchema = z.object({ id: z.coerce.number().int().positive(), lineId: z.coerce.number().int().positive() });
+
+export const repairStatusBodySchema = z.object({ status: z.enum(["received", "quote", "in_repair", "ready", "to_return", "returned"]) });
+
+export const REPAIR_STAGES = ["open", "received", "quote", "in_repair", "ready", "to_return", "returned"] as const;
+
+export const repairListQuerySchema = z.object({
+  // « open » : tout sauf les fiches rendues.
+  stage: z.enum(REPAIR_STAGES).default("open"),
+  q: z.string().trim().max(60).default(""),
+});
+export type RepairListQuery = z.infer<typeof repairListQuerySchema>;
+
+export const warrantyQuerySchema = z
+  .object({
+    phone: phoneSchema.optional(),
+    order: z.coerce.number().int().positive().optional(),
+  })
+  .refine((query) => query.phone !== undefined || query.order !== undefined, {
+    error: "Indiquez le téléphone du client ou le numéro de la commande",
+  });
+export type WarrantyQuery = z.infer<typeof warrantyQuerySchema>;

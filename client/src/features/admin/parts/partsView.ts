@@ -57,9 +57,13 @@ export function stockProblem(value: number, current: number): string | null {
 
 export const isOutOfStock = (part: { stock: number }): boolean => part.stock === 0;
 
-export function movementLabel(movement: { kind: "arrival" | "correction"; delta: number }): string {
+export function movementLabel(movement: { kind: "arrival" | "correction" | "repair" | "repair_return"; delta: number }): string {
   if (movement.kind === "arrival") return `Arrivage de ${movement.delta}`;
-  return `Correction : ${movement.delta > 0 ? "+" : "−"}${Math.abs(movement.delta)}`;
+  const signed = `${movement.delta > 0 ? "+" : "−"}${Math.abs(movement.delta)}`;
+  // Sorties et retours d'une réparation (étape 2) : la fiche est dans la note du mouvement (« R-1001 »).
+  if (movement.kind === "repair") return `Réparation : ${signed}`;
+  if (movement.kind === "repair_return") return `Retour de réparation : ${signed}`;
+  return `Correction : ${signed}`;
 }
 
 // Le prix d'achat moyen après un arrivage, montré avant de valider. La MÊME formule que l'API

@@ -91,9 +91,19 @@ export const SECTIONS: NavSection[] = [
       { label: "Reprises", href: "/admin/reprises", match: (path) => under(path, "/admin/reprises") },
     ],
   },
-  // L'atelier (18/11) : les pièces d'abord ; l'étape 2 y ajoutera l'onglet « Réparations ». Admin seulement
-  // pour l'instant (aucune route dans la table des droits).
-  { key: "atelier", label: "Atelier", icon: WrenchIcon, href: "/admin/pieces", owns: (path) => under(path, "/admin/pieces") },
+  // L'atelier (18/11) : les appareils confiés au magasin (étape 2) et le stock de pièces (étape 1). Admin seulement
+  // pour l'instant (aucune route dans la table des droits) : le technicien viendra à l'étape 5.
+  {
+    key: "atelier",
+    label: "Atelier",
+    icon: WrenchIcon,
+    href: "/admin/reparations",
+    owns: (path) => anyUnder(path, ["/admin/reparations", "/admin/pieces"]),
+    tabs: [
+      { label: "Réparations", href: "/admin/reparations", match: (path) => under(path, "/admin/reparations") },
+      { label: "Pièces", href: "/admin/pieces", match: (path) => under(path, "/admin/pieces") },
+    ],
+  },
   { key: "historique", label: "Historique", icon: DocumentIcon, href: "/admin/historique", owns: (path) => under(path, "/admin/historique") },
   { key: "clients", label: "Clients", icon: UsersIcon, href: "/admin/clients", owns: (path) => under(path, "/admin/clients") },
   {
