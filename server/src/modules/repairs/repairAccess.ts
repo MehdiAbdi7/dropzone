@@ -16,7 +16,7 @@ export function canMoveTo(role: Role, target: Status): boolean {
 
 // Le technicien ne modifie que sa note : ni la main-d'œuvre (donc le devis), ni l'identité du client ou de l'appareil.
 export function patchAllowed(role: Role, keys: string[]): boolean {
-  if (role === "technician") return keys.length > 0 && keys.every((key) => key === "note");
+  if (role === "technician") return keys.every((key) => key === "note");
   return role === "seller" || role === "order_manager" || role === "admin";
 }
 

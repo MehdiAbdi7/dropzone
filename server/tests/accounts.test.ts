@@ -211,3 +211,62 @@ describe("les comptes sont réservés à l'admin", () => {
     expect(await prisma.user.count({ where: { email: "sami@dropzone.dz" } })).toBe(0);
   });
 });
+
+// Le technicien (atelier, étape 5) est un rôle du personnel comme les autres : l'admin le crée, le liste, change son
+// rôle, le désactive, lui donne un nouveau mot de passe. Rien de cela n'est ouvert au personnel.
+describe("le compte technicien", () => {
+  it("l'admin le crée, il se connecte et atteint les réparations mais pas la vente", async () => {
+    const { agent: admin } = await loginAs("admin", "boss@test.dz");
+    const created = await admin.post("/admin/accounts").send(newAccount({ role: "technician", email: "tech@dropzone.dz" }));
+    expect(created.status).toBe(201);
+    expect(created.body.data).toMatchObject({ role: "technician", disabled: false });
+    expect(created.body.data.passwordHash).toBeUndefined();
+
+    const agent = request.agent(app);
+    await agent.post("/auth/login").send({ email: "tech@dropzone.dz", password: "motdepasse-provisoire" }).expect(200);
+    expect((await agent.get("/admin/repairs")).status).toBe(200);
+    expect((await agent.get("/admin/cash/today")).status).toBe(403);
+  });
+
+  it("il apparaît dans la liste du personnel", async () => {
+    await createUser("technician", "tech@test.dz");
+    const { agent } = await loginAs("admin", "boss@test.dz");
+    const list = (await agent.get("/admin/accounts").expect(200)).body.data as { role: string }[];
+    expect(list.map((account) => account.role)).toContain("technician");
+  });
+
+  it("l'admin change son rôle : les droits suivent à la requête suivante", async () => {
+    const tech = await loginAs("technician", "tech@test.dz");
+    const { agent: admin } = await loginAs("admin", "boss@test.dz");
+    expect((await tech.agent.get("/admin/repairs")).status).toBe(200);
+    expect((await admin.patch(`/admin/accounts/${tech.user.id}`).send({ role: "seller" })).status).toBe(200);
+    expect((await tech.agent.get("/admin/parts/1/movements")).status).toBe(403);
+    expect((await admin.patch(`/admin/accounts/${tech.user.id}`).send({ role: "technician" })).status).toBe(200);
+    expect((await tech.agent.get("/admin/parts/1/movements")).status).not.toBe(403);
+  });
+
+  it("l'admin le désactive : refusé tout de suite ; il lui donne un nouveau mot de passe", async () => {
+    const tech = await loginAs("technician", "tech@test.dz");
+    const { agent: admin } = await loginAs("admin", "boss@test.dz");
+    expect((await admin.post(`/admin/accounts/${tech.user.id}/password`).send({ newPassword: "nouveaumotdepasse" })).status).toBe(200);
+    expect(await canLogin("tech@test.dz", "nouveaumotdepasse")).toBe(true);
+    expect((await admin.patch(`/admin/accounts/${tech.user.id}`).send({ disabled: true })).status).toBe(200);
+    expect((await tech.agent.get("/admin/repairs")).status).toBe(401);
+  });
+
+  it("le personnel ne gère pas les comptes : ni le technicien ni le vendeur", async () => {
+    const target = await createUser("technician", "tech@test.dz");
+    for (const role of ["technician", "seller"] as const) {
+      const { agent } = await loginAs(role, `${role}@acc.dz`);
+      expect((await agent.get("/admin/accounts")).status).toBe(403);
+      expect((await agent.post("/admin/accounts").send(newAccount({ role: "technician" }))).status).toBe(403);
+      expect((await agent.patch(`/admin/accounts/${target.id}`).send({ disabled: true })).status).toBe(403);
+    }
+  });
+
+  it("on ne devient jamais admin par un changement de rôle, même depuis technicien", async () => {
+    const tech = await createUser("technician", "tech@test.dz");
+    const { agent: admin } = await loginAs("admin", "boss@test.dz");
+    expect((await admin.patch(`/admin/accounts/${tech.id}`).send({ role: "admin" })).status).toBe(400);
+  });
+});

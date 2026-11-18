@@ -5,7 +5,7 @@ import { phoneSchema } from "../orders/order.schema.js";
 const name = z.string().trim().min(2).max(40);
 // Un email en minuscules : `Sami@Mail.com` et `sami@mail.com` sont le même compte.
 const email = z.string().trim().toLowerCase().pipe(z.email({ error: "Email invalide" }));
-const staffRole = z.enum(["admin", "order_manager", "seller"]);
+const staffRole = z.enum(["admin", "order_manager", "seller", "technician"]);
 
 export const createAccountSchema = z.object({
   firstName: name,
@@ -23,7 +23,7 @@ export type CreateAccountInput = z.infer<typeof createAccountSchema>;
 // pourrait rétrograder un autre admin, lui donner un mot de passe, puis le re-promouvoir et connaître le
 // mot de passe d'un autre administrateur (revue de sécurité du 17/11). On peut en revanche rétrograder.
 export const updateAccountSchema = z
-  .object({ role: z.enum(["order_manager", "seller"]).optional(), disabled: z.boolean().optional() })
+  .object({ role: z.enum(["order_manager", "seller", "technician"]).optional(), disabled: z.boolean().optional() })
   .refine((body) => body.role !== undefined || body.disabled !== undefined, { error: "Rien à modifier" });
 export type UpdateAccountInput = z.infer<typeof updateAccountSchema>;
 

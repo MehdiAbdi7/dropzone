@@ -76,7 +76,7 @@ export async function updateAccount(actorId: number, id: number, input: UpdateAc
 // administrateur : un administrateur change le sien dans « Mon compte », et cette route ne doit pas permettre
 // de prendre un autre compte administrateur. Dans ces deux cas, le compte répond comme un compte inconnu.
 export async function resetStaffPassword(id: number, newPassword: string) {
-  const account = await prisma.user.findFirst({ where: { id, role: { in: ["seller", "order_manager"] } }, select: { id: true } });
+  const account = await prisma.user.findFirst({ where: { id, role: { in: ["seller", "order_manager", "technician"] } }, select: { id: true } });
   if (!account) {
     throw new AppError(404, "Compte introuvable");
   }

@@ -30,7 +30,8 @@ describe("patchAllowed", () => {
     expect(patchAllowed("technician", ["note", "laborPrice"])).toBe(false);
     expect(patchAllowed("technician", ["laborPrice"])).toBe(false);
     expect(patchAllowed("technician", ["deviceName"])).toBe(false);
-    expect(patchAllowed("technician", [])).toBe(false);
+    // Une modification vide ne change rien : rien d'interdit.
+    expect(patchAllowed("technician", [])).toBe(true);
   });
 
   it("le vendeur, le responsable et l'admin modifient tout", () => {
