@@ -1,6 +1,5 @@
-import { warrantyLabel } from "@/features/admin/repairs/repairsView";
 import { formatDate } from "@/lib/format";
-import { trackPriceText, trackStateText, trackSteps, type RepairTracking } from "./repairTrack";
+import { trackPriceText, trackSkippedText, trackStateText, trackSteps, trackWarrantyText, type RepairTracking } from "./repairTrack";
 
 const STEP_STYLE = {
   done: "border-blue-ink bg-blue-soft",
@@ -23,9 +22,7 @@ export default function RepairTrackView({ tracking }: { tracking: RepairTracking
           {tracking.deviceName}
           {tracking.deviceColor ? ` · ${tracking.deviceColor}` : ""}
         </p>
-        <p className="text-sm text-ink-muted">
-          {warrantyLabel({ underWarranty: tracking.underWarranty, warrantyEndsAt: tracking.warrantyEndsAt, warrantyForcedOff: false })}
-        </p>
+        <p className="text-sm text-ink-muted">{trackWarrantyText(tracking)}</p>
       </header>
 
       {state ? <p className="rounded-lg border border-blue-ink bg-blue-soft p-4 font-semibold">{state}</p> : null}
@@ -34,7 +31,7 @@ export default function RepairTrackView({ tracking }: { tracking: RepairTracking
         {steps.map((step) => (
           <li key={step.label} aria-current={step.state === "current" ? "step" : undefined} className={`rounded-lg border p-3 text-sm ${STEP_STYLE[step.state]}`}>
             <span className={`block font-semibold ${step.state === "skipped" ? "line-through" : ""}`}>{step.label}</span>
-            <span className="block text-xs">{step.state === "skipped" ? "Sans devis (sous garantie)" : step.date ? formatDate(step.date) : "À venir"}</span>
+            <span className="block text-xs">{step.state === "skipped" ? trackSkippedText(tracking.underWarranty) : step.date ? formatDate(step.date) : "À venir"}</span>
           </li>
         ))}
       </ol>

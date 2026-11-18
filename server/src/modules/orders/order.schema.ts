@@ -81,7 +81,8 @@ export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 
 // Le numéro et le téléphone voyagent dans le corps, jamais dans l'URL (qui finit dans les logs).
 export const trackOrderSchema = z.object({
-  number: z.coerce.number().int().min(1),
+  // Un numéro plus grand qu'un entier PostgreSQL ferait une erreur 500 au lieu d'un 404.
+  number: z.coerce.number().int().min(1).max(2_147_483_647),
   phone: phoneSchema,
 });
 

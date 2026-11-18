@@ -48,6 +48,8 @@ export async function trackRepair(number: number, phone: string): Promise<Repair
   const refused = repair.events.some((event) => event.status === "to_return");
   let price: number | null;
   if (repair.underWarranty) price = null;
+  // Le prix est fixé à « Devis à valider » (cahier §6) : avant, une main-d'œuvre ou une pièce saisie n'est qu'un brouillon.
+  else if (repair.status === "received") price = null;
   else if (repair.status === "returned") price = repair.paidAmount ?? 0;
   else if (refused) price = repair.laborPrice ?? 0;
   else price = hasQuote(repair.laborPrice, repair.parts.length) ? repairAmount({ underWarranty: false, refused: false, laborPrice: repair.laborPrice, lines: repair.parts }) : null;
@@ -64,7 +66,9 @@ export async function trackRepair(number: number, phone: string): Promise<Repair
     status: repair.status,
     refused,
     underWarranty: repair.underWarranty,
-    warrantyEndsAt: day(repair.warrantyEndsAt),
+    // Une garantie forcée hors (appareil tombé dans l'eau) garde la date de la vente en base : le client ne doit
+    // jamais lire une fin de garantie dans le futur pour un appareil hors garantie.
+    warrantyEndsAt: repair.underWarranty ? day(repair.warrantyEndsAt) : null,
     price,
     returnedOn: day(repair.returnedOn),
     steps,

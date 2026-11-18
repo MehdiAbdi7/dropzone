@@ -115,9 +115,10 @@ describe("le prix", () => {
     expect((await track({ number: repair.number, phone: "0550123456" }).expect(200)).body.data).toMatchObject({ price: 8_000, status: "ready" });
   });
 
-  it("une main-d'œuvre à 0 sans pièce : le devis est fixé à 0", async () => {
+  it("une main-d'œuvre à 0 sans pièce : le devis est fixé à 0 (une fois le devis proposé)", async () => {
     const agent = await adminAgent();
     const repair = await makeRepair(agent, { laborPrice: 0 });
+    await setStatusOk(agent, repair.id, "quote");
     expect((await track({ number: repair.number, phone: "0550123456" }).expect(200)).body.data.price).toBe(0);
   });
 
@@ -142,5 +143,28 @@ describe("le prix", () => {
     const data = (await track({ number: repair.number, phone: "0550123456" }).expect(200)).body.data;
     expect(data).toMatchObject({ status: "returned", price: 8_000 });
     expect(data.returnedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+// Relecture finale : le client ne lit un prix qu'à partir du moment où le magasin a proposé le devis.
+describe("le prix à l'étape Reçu", () => {
+  it("n'est jamais montré à l'étape Reçu, même avec une main-d'œuvre et une pièce déjà saisies", async () => {
+    const agent = await adminAgent();
+    const part = await makePart("Écran iPhone 13", 5, 8_000, 12_000);
+    const repair = await makeRepair(agent, { laborPrice: 2_000 });
+    await addLineOk(agent, repair.id, part.id, 1);
+    expect((await track({ number: repair.number, phone: "0550123456" }).expect(200)).body.data).toMatchObject({ status: "received", price: null });
+    await setStatusOk(agent, repair.id, "quote");
+    expect((await track({ number: repair.number, phone: "0550123456" }).expect(200)).body.data.price).toBe(14_000);
+  });
+});
+
+// Relecture finale : « forcer hors garantie » ne doit jamais montrer au client une date de fin dans le futur.
+describe("la garantie forcée hors", () => {
+  it("ne donne aucune date de fin de garantie", async () => {
+    const agent = await adminAgent();
+    const repair = await makeRepair(agent);
+    await prisma.repair.update({ where: { id: repair.id }, data: { underWarranty: false, warrantyForcedOff: true, warrantyEndsAt: new Date("2030-01-01T00:00:00Z") } });
+    expect((await track({ number: repair.number, phone: "0550123456" }).expect(200)).body.data).toMatchObject({ underWarranty: false, warrantyEndsAt: null });
   });
 });
