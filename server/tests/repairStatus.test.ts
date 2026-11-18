@@ -143,9 +143,9 @@ describe("le circuit", () => {
     expect(await stockOf(part.id)).toBe(5);
   });
 
-  it("En réparation → Prêt → Rendu, et À rendre → Rendu, sans aucun mouvement d'argent", async () => {
+  it("En réparation → Prêt → Rendu, et À rendre → Rendu, sans aucun mouvement d'argent quand rien n'est dû", async () => {
     const agent = await adminAgent();
-    const repair = await makeRepair(agent);
+    const repair = await makeRepair(agent, { laborPrice: 0 });
     await setStatusOk(agent, repair.id, "in_repair");
     await setStatusOk(agent, repair.id, "ready");
     const done = await setStatusOk(agent, repair.id, "returned");
@@ -167,7 +167,7 @@ describe("le circuit", () => {
     }
     expect((await setStatus(agent, repair.id, "nimporte")).status).toBe(400);
     expect((await setStatus(agent, 99_999, "quote")).status).toBe(404);
-    await prisma.repair.update({ where: { id: repair.id }, data: { status: "returned" } });
+    await prisma.repair.update({ where: { id: repair.id }, data: { status: "returned", returnedOn: new Date("2026-11-18T00:00:00Z") } });
     expect((await setStatus(agent, repair.id, "received")).status).toBe(409);
   });
 
@@ -278,7 +278,8 @@ describe("un devis refusé", () => {
     const diagnostic = (await agent.patch(`/admin/repairs/${repair.id}`).send({ laborPrice: 500 }).expect(200)).body.data;
     expect(diagnostic.total).toBe(500);
 
-    await setStatusOk(agent, repair.id, "returned");
+    await agent.post("/admin/cash/open").send({ openingFloat: 1_000 }).expect(201);
+    await setStatusOk(agent, repair.id, "returned", "cash");
     const done = (await agent.get(`/admin/repairs/${repair.id}`).expect(200)).body.data;
     expect(done).toMatchObject({ status: "returned", refused: true, total: 500 });
   });

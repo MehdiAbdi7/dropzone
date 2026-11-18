@@ -1,6 +1,7 @@
 // Ce que la marchandise a coûté au magasin et ce qu'il gagne dessus : jamais montré au vendeur ni au
 // responsable commande (lot 7). On retire ces clés, à n'importe quelle profondeur d'une réponse.
-const COST_KEYS = new Set(["unitCost", "purchasePrice", "profit", "margin"]);
+// `partsCost` : ce que les pièces d'une réparation ont coûté (atelier, étape 3).
+const COST_KEYS = new Set(["unitCost", "purchasePrice", "profit", "margin", "partsCost"]);
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && Object.getPrototypeOf(value) === Object.prototype;

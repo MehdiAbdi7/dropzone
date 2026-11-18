@@ -1,6 +1,5 @@
-import type { History } from "@/features/admin/api/historyApi";
+import type { History, HistoryChannelType } from "@/features/admin/api/historyApi";
 import { formatPrice } from "@/lib/format";
-import type { OrderType } from "@/types/api";
 
 const dayLabel = (iso: string) => {
   const [year, month, day] = iso.split("-");
@@ -9,7 +8,7 @@ const dayLabel = (iso: string) => {
 
 // Les caisses de la période, jour par jour. L'écart se lit en texte et en couleur : une couleur
 // seule ne suffit pas (WCAG).
-export default function HistoryDays({ days, tab }: { days: History["days"]; tab?: OrderType }) {
+export default function HistoryDays({ days, tab }: { days: History["days"]; tab?: HistoryChannelType }) {
   if (days.length === 0) return null;
   // Sous « Livraisons » : l'argent arrivé jour par jour. Il n'entre jamais dans la caisse du magasin
   // (17/11, lot 4), donc ni fond, ni comptage, ni écart.

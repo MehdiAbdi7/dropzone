@@ -5,7 +5,25 @@ import { data } from "./shared";
 // L'historique d'une période (15/11, lot 2) : l'argent à sa date d'encaissement, les ventes et le
 // bénéfice à la date de la vente, les caisses, les commandes et les modifications.
 
-export type MovementKind = "sale" | "pickup" | "delivery" | "exchange" | "correction" | "return_fee";
+export type MovementKind = "sale" | "pickup" | "delivery" | "exchange" | "correction" | "return_fee" | "repair";
+
+// Un canal de l'historique : un type de commande, ou « repair » (les réparations rendues, atelier étape 3).
+export type HistoryChannelType = OrderType | "repair";
+
+// Une réparation rendue de la période : ce que le client a payé, ce que les pièces ont coûté, le bénéfice.
+export type HistoryRepair = {
+  id: number;
+  number: number;
+  fullName: string;
+  phone: string;
+  deviceName: string;
+  underWarranty: boolean;
+  returnedOn: string;
+  paidAmount: number;
+  partsCost: number;
+  profit: number;
+  payMethod: PaymentMethod | null;
+};
 
 export type HistoryDay = {
   date: string;
@@ -60,22 +78,26 @@ export type History = {
     returnFees: number;
   };
   // Ce que chaque canal rapporte sur la période, quel que soit l'onglet choisi (17/11, lot 4).
-  channels: Record<OrderType, HistoryChannel>;
+  channels: Record<HistoryChannelType, HistoryChannel>;
   days: HistoryDay[];
   orders: HistoryOrder[];
   ordersTruncated: boolean;
+  // Les réparations rendues de la période, seulement sous l'onglet « Réparations ».
+  repairs: HistoryRepair[];
   changes: {
     id: number;
     createdAt: string;
     kind: "edited" | "deleted";
     orderNumber: number;
+    // Une réparation rendue supprimée : son numéro R-…, sans commande.
+    repairNumber: number | null;
     orderId: number | null;
     summary: string;
     userName: string | null;
   }[];
 };
 
-export type HistoryParams = { from: string; to: string; type?: OrderType; q?: string };
+export type HistoryParams = { from: string; to: string; type?: HistoryChannelType; q?: string };
 
 const historyApi = api.injectEndpoints({
   endpoints: (build) => ({

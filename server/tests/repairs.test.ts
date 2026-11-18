@@ -174,7 +174,7 @@ describe("GET /admin/repairs", () => {
     const agent = await admin();
     const open = await create(agent);
     const done = await create(agent, { fullName: "Autre Client" });
-    await prisma.repair.update({ where: { id: done.id }, data: { status: "returned" } });
+    await prisma.repair.update({ where: { id: done.id }, data: { status: "returned", returnedOn: new Date("2026-11-18T00:00:00Z") } });
     const rows = (await agent.get("/admin/repairs").expect(200)).body.data;
     expect(rows.map((row: { id: number }) => row.id)).toEqual([open.id]);
     expect(rows[0]).toMatchObject({ number: 1001, status: "received", partsCount: 0, total: 0 });
@@ -222,7 +222,7 @@ describe("GET /admin/repairs/counts", () => {
     const b = await create(agent);
     const c = await create(agent);
     await prisma.repair.update({ where: { id: b.id }, data: { status: "quote" } });
-    await prisma.repair.update({ where: { id: c.id }, data: { status: "returned" } });
+    await prisma.repair.update({ where: { id: c.id }, data: { status: "returned", returnedOn: new Date("2026-11-18T00:00:00Z") } });
     const counts = (await agent.get("/admin/repairs/counts").expect(200)).body.data;
     expect(counts).toEqual({ open: 2, received: 1, quote: 1, in_repair: 0, ready: 0, to_return: 0, returned: 1 });
   });
@@ -264,7 +264,7 @@ describe("GET et PATCH /admin/repairs/:id", () => {
   it("refuse de modifier une fiche rendue", async () => {
     const agent = await admin();
     const repair = await create(agent);
-    await prisma.repair.update({ where: { id: repair.id }, data: { status: "returned" } });
+    await prisma.repair.update({ where: { id: repair.id }, data: { status: "returned", returnedOn: new Date("2026-11-18T00:00:00Z") } });
     expect((await agent.patch(`/admin/repairs/${repair.id}`).send({ note: "tard" })).status).toBe(409);
   });
 });

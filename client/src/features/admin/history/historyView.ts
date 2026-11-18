@@ -1,14 +1,14 @@
 import type { PeriodKind } from "@/lib/period";
-import type { OrderType } from "@/types/api";
+import type { HistoryChannelType } from "@/features/admin/api/historyApi";
 
 // La vue de la page Historique (15/11) : quelle période, autour de quel jour, quel type de
 // commande. Elle vit dans l'adresse (`?p=month&d=2026-11-14&type=pickup`) : recharger la page
 // ou revenir en arrière retrouve la même vue, et un lien peut la partager.
 
-export type HistoryView = { kind: PeriodKind; anchor: string; type: OrderType | undefined };
+export type HistoryView = { kind: PeriodKind; anchor: string; type: HistoryChannelType | undefined };
 
 const KINDS: PeriodKind[] = ["day", "month", "year"];
-const TYPES: OrderType[] = ["delivery", "pickup", "in_store", "exchange"];
+const TYPES: HistoryChannelType[] = ["delivery", "pickup", "in_store", "exchange", "repair"];
 
 // Un vrai jour « AAAA-MM-JJ » : « 2026-02-30 » a le bon format mais n'existe pas.
 // « 2026-13-01 » a le bon format mais donne une date invalide, dont `toISOString()` lève une
@@ -27,7 +27,24 @@ export function parseHistoryView(params: { get(name: string): string | null }, t
   return {
     kind: KINDS.includes(kind as PeriodKind) ? (kind as PeriodKind) : "month",
     anchor: isRealDay(anchor) ? anchor : today,
-    type: TYPES.includes(type as OrderType) ? (type as OrderType) : undefined,
+    type: TYPES.includes(type as HistoryChannelType) ? (type as HistoryChannelType) : undefined,
+  };
+}
+
+// Les mots de la carte « Ventes » et de la carte « Bénéfice » : sous l'onglet Réparations, une réparation compte le
+// jour de son Rendu et son bénéfice est le prix payé moins ce que les pièces ont coûté.
+export function summaryWords(type: HistoryView["type"]): { salesTitle: string; salesNote: string; profitNote: string } {
+  if (type === "repair") {
+    return {
+      salesTitle: "Réparations rendues",
+      salesNote: "Une réparation compte le jour de son Rendu.",
+      profitNote: "Prix payé moins le coût des pièces (négatif sous garantie).",
+    };
+  }
+  return {
+    salesTitle: "Ventes",
+    salesNote: "Une vente compte le jour de son premier paiement.",
+    profitNote: "Cadeaux compris, frais de livraison exclus.",
   };
 }
 

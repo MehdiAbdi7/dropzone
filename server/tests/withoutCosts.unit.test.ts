@@ -20,3 +20,9 @@ describe("withoutCosts", () => {
     expect(result).toEqual({ when: date, n: 0, s: "x", nothing: null });
   });
 });
+
+describe("withoutCosts : l'atelier", () => {
+  it("retire le coût des pièces d'une réparation (partsCost)", () => {
+    expect(withoutCosts({ data: { id: 1, paidAmount: 8_000, partsCost: 3_500 } })).toEqual({ data: { id: 1, paidAmount: 8_000 } });
+  });
+});

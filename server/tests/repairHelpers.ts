@@ -54,12 +54,26 @@ export async function addLineOk(agent: Agent, repairId: number, partId: number, 
   return response.body.data;
 }
 
-export const setStatus = (agent: Agent, repairId: number, status: string) => agent.post(`/admin/repairs/${repairId}/status`).send({ status });
+export const setStatus = (agent: Agent, repairId: number, status: string, method?: string) =>
+  agent.post(`/admin/repairs/${repairId}/status`).send({ status, ...(method ? { method } : {}) });
 
-export async function setStatusOk(agent: Agent, repairId: number, status: string): Promise<RepairBody> {
-  const response = await setStatus(agent, repairId, status);
+export async function setStatusOk(agent: Agent, repairId: number, status: string, method?: string): Promise<RepairBody> {
+  const response = await setStatus(agent, repairId, status, method);
   expect(response.status, JSON.stringify(response.body)).toBe(200);
   return response.body.data;
 }
 
 export const movementsOf = (partId: number) => prisma.partMovement.findMany({ where: { partId }, orderBy: { id: "asc" } });
+
+// Ouvre la caisse du jour (le Rendu avec de l'argent l'exige).
+export const openCash = (agent: Agent, openingFloat = 10_000) => agent.post("/admin/cash/open").send({ openingFloat }).expect(201);
+
+// Une fiche prête à être rendue : une pièce vendue 6 000 (achetée 3 500), main-d'œuvre 2 000, donc 8 000 DA à payer.
+export async function readyRepair(agent: Agent, over: Record<string, unknown> = {}) {
+  const part = await makePart("Batterie iPhone 13", 5, 3_500, 6_000);
+  const repair = await makeRepair(agent, { laborPrice: 2_000, ...over });
+  await addLineOk(agent, repair.id, part.id, 1);
+  await setStatusOk(agent, repair.id, "in_repair");
+  await setStatusOk(agent, repair.id, "ready");
+  return { repair, part };
+}

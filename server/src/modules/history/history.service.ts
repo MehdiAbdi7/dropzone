@@ -1,7 +1,9 @@
 import { prisma } from "../../config/db.js";
 import type { MovementKind, OrderType, PaymentMethod, Prisma } from "../../generated/prisma/client.js";
 import { priceReduction } from "../orders/negotiation.js";
+import { normalizeText } from "../../utils/normalizeText.js";
 import { orderProfit } from "../orders/orderMath.js";
+import { repairProfit } from "../repairs/repairRules.js";
 import type { HistoryQuery } from "./history.schema.js";
 
 // L'historique d'une période (15/11, lot 2), par onglet depuis le lot 4 (17/11). Deux dates à ne
@@ -19,8 +21,11 @@ import type { HistoryQuery } from "./history.schema.js";
 // Le SQL est écrit à la main (GROUP BY, bool_or) : c'est lui qu'on explique en entretien.
 
 const METHODS: PaymentMethod[] = ["cash", "baridimob", "ccp", "card", "transfer"];
-const KINDS: MovementKind[] = ["sale", "pickup", "delivery", "exchange", "correction", "return_fee"];
-const CHANNELS: OrderType[] = ["in_store", "delivery", "pickup", "exchange"];
+const KINDS: MovementKind[] = ["sale", "pickup", "delivery", "exchange", "correction", "return_fee", "repair"];
+// Un canal est un type de commande, ou « repair » depuis l'atelier (étape 3) : l'argent d'une réparation rendue,
+// reconnu à son `repair_id`, qui n'est pas une commande.
+type Channel = OrderType | "repair";
+const CHANNELS: Channel[] = ["in_store", "delivery", "pickup", "exchange", "repair"];
 const MAX_ORDERS = 500;
 const HOUR = 60 * 60 * 1000;
 
@@ -30,7 +35,8 @@ const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 
 // Le canal d'un mouvement : le type de sa commande, recopié à l'écriture. Un mouvement plus ancien
 // sans type se range d'après sa nature (une vente au magasin, un retrait, une livraison).
-function channelOf(row: { order_type: OrderType | null; kind: MovementKind }): OrderType {
+function channelOf(row: { order_type: OrderType | null; kind: MovementKind; is_repair: boolean }): Channel {
+  if (row.is_repair) return "repair";
   if (row.order_type) return row.order_type;
   if (row.kind === "pickup") return "pickup";
   if (row.kind === "delivery") return "delivery";
@@ -42,27 +48,38 @@ type SaleRow = { order_id: number; type: OrderType; profit: bigint | null; disco
 // `collected` (le mouvement est négatif) et de `profit`.
 const emptyChannel = () => ({ collected: 0, salesCount: 0, profit: 0, unknownCostSales: 0, discount: 0, returnFees: 0 });
 
+// La recherche d'une réparation rendue : « R-1001 » ou « 1001 », un morceau du nom ou du téléphone.
+function matchesRepair(repair: { number: number; fullName: string; phone: string }, q: string | undefined): boolean {
+  if (!q) return true;
+  const number = /^(?:r[-\s]?)?(\d+)$/i.exec(q.trim())?.[1];
+  return (
+    (number !== undefined && repair.number === Number(number)) ||
+    repair.phone.includes(q.replace(/\s/g, "")) ||
+    normalizeText(repair.fullName).includes(normalizeText(q.trim()))
+  );
+}
+
 export async function getHistory(query: HistoryQuery) {
   const { from, to } = query;
   const range = { gte: asDay(from), lte: asDay(to) };
   // L'onglet : sans `type`, tout passe.
-  const inTab = (channel: OrderType) => !query.type || channel === query.type;
+  const inTab = (channel: Channel) => !query.type || channel === query.type;
 
   // 1. L'argent de la période, par moyen, par nature et par canal, puis jour par jour.
   const movements = await prisma.$queryRaw<
-    { day: Date; method: PaymentMethod; kind: MovementKind; order_type: OrderType | null; amount: bigint }[]
+    { day: Date; method: PaymentMethod; kind: MovementKind; order_type: OrderType | null; is_repair: boolean; amount: bigint }[]
   >`
-    SELECT business_date AS day, method, kind, order_type, SUM(amount) AS amount
+    SELECT business_date AS day, method, kind, order_type, (repair_id IS NOT NULL) AS is_repair, SUM(amount) AS amount
     FROM money_movements
     WHERE business_date BETWEEN ${from}::date AND ${to}::date
-    GROUP BY business_date, method, kind, order_type`;
+    GROUP BY business_date, method, kind, order_type, (repair_id IS NOT NULL)`;
   const byMethod = emptyBy(METHODS);
   const byKind = emptyBy(KINDS);
   const perDay = new Map<string, Record<PaymentMethod, number>>();
   // Les espèces du tiroir de chaque jour : tout sauf l'argent des livraisons (il n'entre jamais
   // dans la caisse du magasin), quel que soit l'onglet affiché.
   const drawerCash = new Map<string, number>();
-  const channels = Object.fromEntries(CHANNELS.map((channel) => [channel, emptyChannel()])) as Record<OrderType, ReturnType<typeof emptyChannel>>;
+  const channels = Object.fromEntries(CHANNELS.map((channel) => [channel, emptyChannel()])) as Record<Channel, ReturnType<typeof emptyChannel>>;
   for (const row of movements) {
     const amount = Number(row.amount);
     const channel = channelOf(row);
@@ -106,6 +123,41 @@ export async function getHistory(query: HistoryQuery) {
     else channel.profit += Number(sale.profit);
     channel.discount += Number(sale.discount);
   }
+  // Les réparations rendues de la période (atelier, étape 3), à la date de leur Rendu : leur argent est dans les
+  // mouvements ci-dessus, leur nombre et leur bénéfice (prix payé moins coût des pièces, figés au Rendu) viennent
+  // de la fiche.
+  const returned = await prisma.repair.findMany({
+    where: { status: "returned", returnedOn: range },
+    orderBy: [{ returnedOn: "desc" }, { id: "desc" }],
+    select: {
+      id: true,
+      number: true,
+      fullName: true,
+      phone: true,
+      deviceName: true,
+      underWarranty: true,
+      returnedOn: true,
+      paidAmount: true,
+      partsCost: true,
+      payMethod: true,
+    },
+  });
+  const repairRows = returned.map((repair) => ({
+    id: repair.id,
+    number: repair.number,
+    fullName: repair.fullName,
+    phone: repair.phone,
+    deviceName: repair.deviceName,
+    underWarranty: repair.underWarranty,
+    returnedOn: isoDay(repair.returnedOn as Date),
+    paidAmount: repair.paidAmount ?? 0,
+    partsCost: repair.partsCost ?? 0,
+    profit: repairProfit(repair.paidAmount ?? 0, repair.partsCost ?? 0),
+    payMethod: repair.payMethod,
+  }));
+  channels.repair.salesCount = repairRows.length;
+  channels.repair.profit = repairRows.reduce((sum, repair) => sum + repair.profit, 0);
+
   // Un retour est une perte : les frais payés se retranchent du bénéfice de leur canal.
   for (const channel of CHANNELS) channels[channel].profit -= channels[channel].returnFees;
   const sales = allSales.filter((sale) => inTab(sale.type));
@@ -144,7 +196,7 @@ export async function getHistory(query: HistoryQuery) {
     })
   ).map((row) => row.orderId as number);
   const filters: Prisma.OrderWhereInput[] = [{ OR: [{ businessDate: range }, { id: { in: cashedIds } }] }];
-  if (query.type) filters.push({ type: query.type });
+  if (query.type && query.type !== "repair") filters.push({ type: query.type });
   if (query.q) {
     const number = Number(query.q);
     filters.push({
@@ -155,7 +207,8 @@ export async function getHistory(query: HistoryQuery) {
       ],
     });
   }
-  const found = await prisma.order.findMany({
+  // Sous l'onglet des réparations, la liste est celle des fiches rendues, pas des commandes.
+  const found = query.type === "repair" ? [] : await prisma.order.findMany({
     where: { AND: filters },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: MAX_ORDERS + 1,
@@ -199,7 +252,10 @@ export async function getHistory(query: HistoryQuery) {
   // Sous un onglet, seulement les traces de ce type de commande ; le Total les montre toutes (même
   // celles d'avant le lot 4 dont le type est inconnu).
   const events = await prisma.orderEvent.findMany({
-    where: { createdAt: { gte: start, lt: end }, ...(query.type ? { orderType: query.type } : {}) },
+    where: {
+      createdAt: { gte: start, lt: end },
+      ...(query.type === "repair" ? { repairNumber: { not: null } } : query.type ? { orderType: query.type } : {}),
+    },
     orderBy: { id: "desc" },
   });
   const users = await prisma.user.findMany({
@@ -213,6 +269,8 @@ export async function getHistory(query: HistoryQuery) {
       createdAt: event.createdAt,
       kind: event.kind,
       orderNumber: event.orderNumber,
+      // Une réparation rendue supprimée (étape 3) : son numéro R-…, sans commande.
+      repairNumber: event.repairNumber,
       orderId: event.orderId,
       summary: event.summary,
       userName: user ? `${user.firstName} ${user.lastName}` : null,
@@ -227,8 +285,9 @@ export async function getHistory(query: HistoryQuery) {
       collected: METHODS.reduce((sum, method) => sum + byMethod[method], 0),
       byMethod,
       byKind,
-      salesCount: sales.length,
-      profit: known.reduce((sum, sale) => sum + Number(sale.profit), 0) - tabReturnFees,
+      // Sous l'onglet Réparations, « ventes » = les réparations rendues (leur propre canal) ; ailleurs, les commandes.
+      salesCount: query.type === "repair" ? channels.repair.salesCount : sales.length,
+      profit: known.reduce((sum, sale) => sum + Number(sale.profit), 0) - tabReturnFees + (inTab("repair") ? channels.repair.profit : 0),
       returnFees: tabReturnFees,
       unknownCostSales: sales.length - known.length,
       // Les réductions accordées sur les ventes de la période (lot 3).
@@ -239,6 +298,8 @@ export async function getHistory(query: HistoryQuery) {
     days,
     orders,
     ordersTruncated,
+    // Les réparations rendues de la période, seulement sous l'onglet « Réparations » (filtrées par `q`).
+    repairs: query.type === "repair" ? repairRows.filter((repair) => matchesRepair(repair, query.q)) : [],
     changes,
   };
 }

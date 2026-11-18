@@ -78,6 +78,8 @@ describe("l'historique par onglet", () => {
       pickup: { collected: 200, salesCount: 1, profit: 40, unknownCostSales: 0, discount: 0, returnFees: 0 },
       // Aucun échange dans cet exemple : le canal existe (lot 5), à zéro.
       exchange: { collected: 0, salesCount: 0, profit: 0, unknownCostSales: 0, discount: 0, returnFees: 0 },
+      // Aucune réparation non plus (atelier, étape 3) : le canal existe, à zéro.
+      repair: { collected: 0, salesCount: 0, profit: 0, unknownCostSales: 0, discount: 0, returnFees: 0 },
     });
   });
 

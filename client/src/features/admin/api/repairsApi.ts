@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import type { PaymentMethod } from "@/types/api";
 import type { RepairStatus } from "../repairs/repairsView";
 import { data } from "./shared";
 
@@ -44,6 +45,13 @@ export type RepairDetail = RepairRow & {
   warrantyEndsAt: string | null;
   warrantyForcedOff: boolean;
   originOrderNumber: number | null;
+  // Ce que le client doit encore au Rendu (0 une fois rendu, ou sous garantie).
+  amountDue: number;
+  // Après le Rendu : ce qu'il a payé, avec quel moyen, le jour, et ce que les pièces ont coûté (admin seulement).
+  paidAmount: number | null;
+  payMethod: PaymentMethod | null;
+  returnedOn: string | null;
+  partsCost: number | null;
   parts: RepairLine[];
   events: { status: RepairStatus; createdAt: string; userId: number | null }[];
   nextStatuses: RepairStatus[];
@@ -131,8 +139,9 @@ const repairsApi = api.injectEndpoints({
       transformResponse: data<RepairDetail>,
       invalidatesTags: ["Repairs", "Parts"],
     }),
-    changeRepairStatus: build.mutation<RepairDetail, { id: number; status: RepairStatus }>({
-      query: ({ id, status }) => ({ url: `/admin/repairs/${id}/status`, method: "POST", body: { status } }),
+    // `method` : le moyen de paiement, seulement pour le Rendu quand il y a de l'argent à encaisser.
+    changeRepairStatus: build.mutation<RepairDetail, { id: number; status: RepairStatus; method?: PaymentMethod }>({
+      query: ({ id, status, method }) => ({ url: `/admin/repairs/${id}/status`, method: "POST", body: { status, ...(method ? { method } : {}) } }),
       transformResponse: data<RepairDetail>,
       invalidatesTags: ["Repairs", "Parts"],
     }),

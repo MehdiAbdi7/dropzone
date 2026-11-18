@@ -45,14 +45,6 @@ describe("DELETE /admin/repairs/:id", () => {
     expect(movements.every((movement) => movement.repairId === repair.id && movement.note === "R-1001")).toBe(true);
   });
 
-  it("refuse de supprimer une fiche rendue", async () => {
-    const agent = await adminAgent();
-    const repair = await makeRepair(agent);
-    await prisma.repair.update({ where: { id: repair.id }, data: { status: "returned" } });
-    expect((await agent.delete(`/admin/repairs/${repair.id}`)).status).toBe(409);
-    expect(await prisma.repair.count()).toBe(1);
-  });
-
   it("404 sur une fiche inconnue", async () => {
     const agent = await adminAgent();
     expect((await agent.delete("/admin/repairs/99999")).status).toBe(404);

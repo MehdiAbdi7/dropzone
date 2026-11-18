@@ -1,6 +1,10 @@
 // La logique de la page Réparations (18/11, atelier étape 2) : fonctions pures, sans écran ni réseau. Les bornes sont
 // celles de l'API (server/src/modules/repairs/repair.schema.ts) ; l'API reste la référence.
 
+import { PAYMENT_METHOD_LABELS } from "@/config/catalog";
+import { formatPrice } from "@/lib/format";
+import type { PaymentMethod } from "@/types/api";
+
 export type RepairStatus = "received" | "quote" | "in_repair" | "ready" | "to_return" | "returned";
 
 export const REPAIR_STATUS_LABELS: Record<RepairStatus, string> = {
@@ -116,6 +120,21 @@ export function confirmText(to: RepairStatus, lines: { name: string; quantity: n
     if (out.length === 0) return base;
     return `${base} Ces pièces déjà sorties retournent au stock : ${out.map((line) => `${line.name} × ${line.quantity}`).join(", ")}. Retirez-les de l'appareil.`;
   }
-  if (to === "returned") return "Une fois l'appareil rendu, la fiche ne pourra plus se modifier ni se supprimer.";
+  if (to === "returned") return "Une fois l'appareil rendu, la fiche ne pourra plus se modifier.";
   return null;
+}
+
+// Le Rendu avec paiement (étape 3) : de l'argent à encaisser veut un moyen de paiement. Rien à payer (sous garantie,
+// devis refusé sans frais), rien à choisir.
+export function returnProblem(amountDue: number, method: PaymentMethod | null): string | null {
+  if (amountDue > 0 && method === null) return "Choisissez le moyen de paiement.";
+  return null;
+}
+
+// Ce que dit une fiche rendue : ce que le client a payé, avec quel moyen et quel jour ; null avant le Rendu.
+export function paidText(repair: { paidAmount: number | null; payMethod: PaymentMethod | null; returnedOn: string | null }): string | null {
+  if (repair.returnedOn === null || repair.paidAmount === null) return null;
+  const day = dayMonthYear(repair.returnedOn);
+  if (repair.paidAmount === 0 || repair.payMethod === null) return `Rendu sans paiement le ${day}`;
+  return `Payé ${formatPrice(repair.paidAmount)} par ${PAYMENT_METHOD_LABELS[repair.payMethod]} le ${day}`;
 }

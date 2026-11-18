@@ -16,7 +16,9 @@ export default function HistoryChanges({ changes }: { changes: History["changes"
           <li key={change.id} className="space-y-1 p-3 text-sm">
             <p className="flex flex-wrap items-baseline gap-x-2">
               <strong>{change.kind === "deleted" ? "Supprimée" : "Modifiée"}</strong>
-              {change.kind === "edited" && change.orderId ? (
+              {change.repairNumber !== null ? (
+                <span>réparation R-{change.repairNumber}</span>
+              ) : change.kind === "edited" && change.orderId ? (
                 <Link href={`/admin/commandes/${change.orderId}`} className="text-blue-ink underline">
                   commande suivi {change.orderNumber}
                 </Link>

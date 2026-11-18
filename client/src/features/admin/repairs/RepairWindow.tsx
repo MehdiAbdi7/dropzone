@@ -14,10 +14,11 @@ import { errorMessage } from "@/lib/errors";
 import { formatDate, formatPrice } from "@/lib/format";
 import RepairEditDialog from "./RepairEditDialog";
 import RepairParts from "./RepairParts";
+import RepairReturnDialog from "./RepairReturnDialog";
 import RepairReceipt from "./RepairReceipt";
 import RepairStepper from "./RepairStepper";
 import { RepairBadge } from "./RepairsTable";
-import { REPAIR_STATUS_LABELS, actionLabel, confirmText, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
+import { REPAIR_STATUS_LABELS, actionLabel, confirmText, paidText, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
 
 // La fenêtre d'une fiche, ouverte au clic sur une ligne de la liste (ou juste après la création). Au centre sur
 // ordinateur, une feuille qui monte du bas sur téléphone (`.order-window`, la même que les commandes). `id` vient
@@ -74,6 +75,7 @@ const Row = ({ label, value }: { label: string; value: string | null }) => (
 
 function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => void }) {
   const [editing, setEditing] = useState(false);
+  const [returning, setReturning] = useState(false);
   const [change, changing] = useChangeRepairStatusMutation();
   const [remove, removing] = useDeleteRepairMutation();
   const steps = repairSteps(repair.status, repair.underWarranty, repair.events.map((event) => event.status));
@@ -89,6 +91,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
           </div>
           <p className="font-semibold">{repair.deviceName}</p>
           <p className="text-sm text-ink-muted">{warrantyLabel(repair)}</p>
+          {paidText(repair) ? <p className="text-sm font-semibold">{paidText(repair)}</p> : null}
         </div>
         <button type="button" className="btn btn-secondary btn-small" onClick={onClose} aria-label="Fermer la fiche">
           <CloseIcon />
@@ -103,8 +106,15 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
             {repair.nextStatuses.map((status, index) => {
               const label = actionLabel(repair.status, status, repair.underWarranty);
               const className = `btn ${index === 0 ? "btn-primary" : "btn-secondary"}`;
+              // « Rendre l'appareil » a sa propre fenêtre (le paiement) ; « Devis refusé » une confirmation d'abord.
+              if (status === "returned") {
+                return (
+                  <button key={status} type="button" className={className} onClick={() => setReturning(true)}>
+                    {label}
+                  </button>
+                );
+              }
               const warning = confirmText(status, repair.parts);
-              // « Devis refusé » et « Rendre l'appareil » ne se défont pas : une confirmation d'abord.
               return warning ? (
                 <ConfirmDialog key={status} trigger={label} triggerClassName={className} title={`${label} ?`} confirmLabel={label} onConfirm={() => change({ id: repair.id, status })}>
                   {warning}
@@ -116,9 +126,6 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
               );
             })}
           </div>
-          {repair.nextStatuses.includes("returned") ? (
-            <p className="text-sm text-ink-muted">Aucun paiement n&apos;est encore enregistré à ce stade : l&apos;argent de la réparation viendra avec l&apos;étape suivante de l&apos;atelier.</p>
-          ) : null}
           {changing.error ? (
             <p role="alert" className="field-error">
               {errorMessage(changing.error)}
@@ -165,24 +172,24 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
             Modifier
           </button>
         ) : null}
-        {repair.status !== "returned" ? (
-          <ConfirmDialog
-            trigger="Supprimer la fiche"
-            triggerClassName="btn btn-danger btn-small"
-            title={`Supprimer ${repairNumber(repair.number)} ?`}
-            confirmLabel="Supprimer"
-            onConfirm={async () => {
-              try {
-                await remove(repair.id).unwrap();
-                onClose();
-              } catch {
-                // L'erreur est affichée sous les boutons.
-              }
-            }}
-          >
-            Les pièces déjà sorties du stock y reviennent. Le journal des pièces garde la trace.
-          </ConfirmDialog>
-        ) : null}
+        <ConfirmDialog
+          trigger="Supprimer la fiche"
+          triggerClassName="btn btn-danger btn-small"
+          title={`Supprimer ${repairNumber(repair.number)} ?`}
+          confirmLabel="Supprimer"
+          onConfirm={async () => {
+            try {
+              await remove(repair.id).unwrap();
+              onClose();
+            } catch {
+              // L'erreur est affichée sous les boutons.
+            }
+          }}
+        >
+          {repair.status === "returned"
+            ? "La réparation est rendue : l'argent encaissé est rendu par une correction de la caisse du jour (elle doit être ouverte), les pièces sorties reviennent au stock et une trace reste dans l'Historique."
+            : "Les pièces déjà sorties du stock y reviennent. Le journal des pièces garde la trace."}
+        </ConfirmDialog>
       </div>
       {removing.error ? (
         <p role="alert" className="field-error">
@@ -190,6 +197,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
         </p>
       ) : null}
 
+      <RepairReturnDialog open={returning} repair={repair} onClose={() => setReturning(false)} />
       <RepairEditDialog open={editing} repair={repair} onClose={() => setEditing(false)} />
     </div>
   );
