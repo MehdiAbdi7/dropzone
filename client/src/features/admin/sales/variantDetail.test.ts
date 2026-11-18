@@ -77,6 +77,16 @@ describe("variantDetailRows : les cas où l'information manque", () => {
     expect(JSON.stringify(rows)).not.toContain("NaN");
   });
 
+  // Le client peut passer en ligne avant l'API : une réponse sans les nouveaux champs ne doit ni planter ni dire NaN.
+  it("une réponse d'une ancienne API (sans la fiche ni le prix d'achat) ne plante pas et ne dit pas NaN", () => {
+    const old = { ...makeHit({ condition: "refurbished" }) } as Partial<ReturnType<typeof makeHit>>;
+    for (const key of ["purchasePrice", "gifts", "replacedParts", "compatibleParts", "defects", "limitations"] as const) delete old[key];
+    const rows = variantDetailRows(old as ReturnType<typeof makeHit>);
+    expect(valueOf(rows, "Prix d'achat")).toBe("non renseigné");
+    expect(valueOf(rows, "Pièces changées")).toBe("aucune");
+    expect(JSON.stringify(rows)).not.toContain("NaN");
+  });
+
   it("une garantie absente dit « aucune » ; sans origine, référence, détails ni cadeaux, ces lignes n'existent pas", () => {
     const rows = variantDetailRows(makeHit());
     expect(valueOf(rows, "Garantie")).toBe("aucune");

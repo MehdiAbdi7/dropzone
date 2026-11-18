@@ -228,7 +228,7 @@ export function VariantCard({
             <span className="text-xs text-ink-muted">{disabled ? "déjà ajouté" : `${hit.stock} en stock`}</span>
           </span>
           {/* La limite de la négociation : visible au vendeur, jamais sur le site. */}
-          {hit.purchasePrice !== null ? (
+          {hit.purchasePrice != null ? (
             <span className="text-xs text-ink-muted">Achat : {formatPrice(hit.purchasePrice)}</span>
           ) : null}
         </span>

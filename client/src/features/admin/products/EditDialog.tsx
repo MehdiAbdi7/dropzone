@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { isOwnCloseEvent } from "./dialogEvents";
 
 // Une fenêtre au centre de l'écran pour modifier une partie de la fiche produit.
 // L'élément natif <dialog> (showModal) gère le fond, le focus et la touche Échap.
@@ -46,7 +47,9 @@ export default function EditDialog({
   return (
     <dialog
       ref={dialog}
-      onClose={onClose}
+      onClose={(event) => {
+        if (isOwnCloseEvent(event)) onClose();
+      }}
       onKeyDown={onKeyDown}
       aria-label={title}
       className={`m-auto max-h-[calc(100dvh-2rem)] ${size === "sm" ? "w-[min(34rem,calc(100vw-1.5rem))]" : "w-[min(64rem,calc(100vw-1.5rem))]"} overflow-y-auto rounded-xl border border-line bg-surface p-0 text-ink backdrop:bg-black/70`}

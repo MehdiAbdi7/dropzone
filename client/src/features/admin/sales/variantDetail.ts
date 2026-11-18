@@ -10,7 +10,17 @@ const list = (items: string[], empty: string) => (items.length > 0 ? items.join(
 
 const BOX = { true: "Avec sa boîte d'origine", false: "Sans sa boîte d'origine", null: "Boîte non précisée" };
 
-export function variantDetailRows(hit: VariantHit): DetailRow[] {
+export function variantDetailRows(source: VariantHit): DetailRow[] {
+  // Le client peut passer en ligne avant l'API : une réponse sans les nouveaux champs se lit comme « rien ».
+  const hit = {
+    ...source,
+    replacedParts: source.replacedParts ?? [],
+    compatibleParts: source.compatibleParts ?? [],
+    defects: source.defects ?? [],
+    limitations: source.limitations ?? [],
+    gifts: source.gifts ?? [],
+    purchasePrice: source.purchasePrice ?? null,
+  };
   const rows: DetailRow[] = [];
   const add = (label: string, value: string) => rows.push({ label, value });
 

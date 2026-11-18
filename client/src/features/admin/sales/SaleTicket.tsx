@@ -207,7 +207,7 @@ export default function SaleTicket(props: Props) {
                   <p className="pb-2 text-sm text-ink-muted">Catalogue : {formatPrice(line.listPrice)}</p>
                   {/* La limite de la négociation : ce que l'appareil a coûté au magasin. */}
                   <p className="pb-2 text-sm text-ink-muted">
-                    {line.hit.purchasePrice === null ? "Prix d'achat non renseigné" : `Prix d'achat : ${formatPrice(line.hit.purchasePrice)}`}
+                    {line.hit.purchasePrice == null ? "Prix d'achat non renseigné" : `Prix d'achat : ${formatPrice(line.hit.purchasePrice)}`}
                   </p>
                 </div>
                 {belowPurchasePrice(line.unitPrice, line.hit.purchasePrice) ? (
