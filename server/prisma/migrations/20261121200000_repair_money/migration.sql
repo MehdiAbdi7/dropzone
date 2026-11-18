@@ -18,6 +18,15 @@ ALTER TABLE "repairs" ADD COLUMN "pay_method" "PaymentMethod";
 -- La trace de la suppression d'une réparation rendue.
 ALTER TABLE "order_events" ADD COLUMN "repair_number" INTEGER;
 
+-- Des fiches déjà rendues peuvent exister si l'étape 2 est en ligne avant cette migration : on les date d'abord
+-- d'après leur étape « Rendu » (jour d'Alger, UTC+1), sinon la contrainte ci-dessous ferait échouer la migration.
+UPDATE "repairs" r
+SET "returned_on" = COALESCE(
+  (SELECT MAX(e."created_at" + interval '1 hour')::date FROM "repair_events" e WHERE e."repair_id" = r."id" AND e."status" = 'returned'),
+  (r."updated_at" + interval '1 hour')::date
+)
+WHERE r."status" = 'returned' AND r."returned_on" IS NULL;
+
 -- Les garde-fous : même si le code se trompe, la base refuse.
 ALTER TABLE "repairs" ADD CONSTRAINT "repairs_paid_amount_check" CHECK ("paid_amount" IS NULL OR "paid_amount" >= 0);
 ALTER TABLE "repairs" ADD CONSTRAINT "repairs_parts_cost_check" CHECK ("parts_cost" IS NULL OR "parts_cost" >= 0);

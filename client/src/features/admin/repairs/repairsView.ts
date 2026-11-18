@@ -120,7 +120,7 @@ export function confirmText(to: RepairStatus, lines: { name: string; quantity: n
     if (out.length === 0) return base;
     return `${base} Ces pièces déjà sorties retournent au stock : ${out.map((line) => `${line.name} × ${line.quantity}`).join(", ")}. Retirez-les de l'appareil.`;
   }
-  if (to === "returned") return "Une fois l'appareil rendu, la fiche ne pourra plus se modifier ni se supprimer.";
+  if (to === "returned") return "Une fois l'appareil rendu, la fiche ne pourra plus se modifier.";
   return null;
 }
 

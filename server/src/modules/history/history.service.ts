@@ -285,7 +285,8 @@ export async function getHistory(query: HistoryQuery) {
       collected: METHODS.reduce((sum, method) => sum + byMethod[method], 0),
       byMethod,
       byKind,
-      salesCount: sales.length,
+      // Sous l'onglet Réparations, « ventes » = les réparations rendues (leur propre canal) ; ailleurs, les commandes.
+      salesCount: query.type === "repair" ? channels.repair.salesCount : sales.length,
       profit: known.reduce((sum, sale) => sum + Number(sale.profit), 0) - tabReturnFees + (inTab("repair") ? channels.repair.profit : 0),
       returnFees: tabReturnFees,
       unknownCostSales: sales.length - known.length,

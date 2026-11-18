@@ -189,3 +189,12 @@ describe("paidText", () => {
     expect(paidText({ paidAmount: null, payMethod: null, returnedOn: null })).toBeNull();
   });
 });
+
+// Relecture finale : le texte avant le Rendu ne doit rien affirmer de faux (une fiche rendue SE supprime, par l'admin).
+describe("le texte du Rendu", () => {
+  it("dit que la fiche ne se modifie plus, sans prétendre qu'elle ne se supprime plus", () => {
+    const text = confirmText("returned", []) ?? "";
+    expect(text).toMatch(/ne pourra plus se modifier/i);
+    expect(text).not.toMatch(/supprim/i);
+  });
+});

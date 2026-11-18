@@ -97,7 +97,7 @@ function History() {
         {/* L'argent, les ventes et le bénéfice restent en vue, avec leur détail (moyens de paiement, frais,
             corrections) : plus de bouton « Détail de l'argent » qui répétait les mêmes chiffres. */}
         {data ? (
-          <HistorySummary totals={data.totals} />
+          <HistorySummary totals={data.totals} tab={view.type} />
         ) : (
           <p className="text-ink-muted">Chargement…</p>
         )}

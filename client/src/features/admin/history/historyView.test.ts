@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { historyHref, parseHistoryView } from "./historyView";
+import { historyHref, parseHistoryView, summaryWords } from "./historyView";
 
 // La vue de la page Historique vit dans l'adresse : recharger ou revenir en arrière garde la période.
 const today = "2026-11-14";
@@ -48,5 +48,20 @@ describe("l'onglet Réparations", () => {
   it("lit type=repair et le garde dans l'adresse", () => {
     expect(parse("type=repair")).toMatchObject({ type: "repair" });
     expect(historyHref({ kind: "month", anchor: today, type: "repair" })).toContain("type=repair");
+  });
+});
+
+// Relecture finale : sous l'onglet Réparations, la carte « Ventes » parle de réparations rendues et de leur Rendu.
+describe("summaryWords", () => {
+  it("garde les mots des ventes partout sauf sous l'onglet Réparations", () => {
+    expect(summaryWords(undefined).salesTitle).toBe("Ventes");
+    expect(summaryWords("in_store").salesTitle).toBe("Ventes");
+  });
+
+  it("parle de réparations rendues et du prix payé sous l'onglet Réparations", () => {
+    const words = summaryWords("repair");
+    expect(words.salesTitle).toBe("Réparations rendues");
+    expect(words.salesNote).toMatch(/Rendu/);
+    expect(words.profitNote).toMatch(/pièces/);
   });
 });

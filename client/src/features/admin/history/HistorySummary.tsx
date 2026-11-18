@@ -2,12 +2,14 @@ import { PAYMENT_METHOD_LABELS } from "@/config/catalog";
 import type { History } from "@/features/admin/api/historyApi";
 import { formatPrice } from "@/lib/format";
 import type { PaymentMethod } from "@/types/api";
+import { summaryWords, type HistoryView } from "./historyView";
 
 const METHODS = Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[];
 
 // Les chiffres de la période : l'argent encaissé (par moyen de paiement), les ventes et le bénéfice.
 // L'argent compte à la date de chaque encaissement ; une vente à la date de son premier paiement.
-export default function HistorySummary({ totals }: { totals: History["totals"] }) {
+export default function HistorySummary({ totals, tab }: { totals: History["totals"]; tab?: HistoryView["type"] }) {
+  const words = summaryWords(tab);
   return (
     <section aria-label="Chiffres de la période" className="grid gap-4 md:grid-cols-3">
       <div className="card space-y-3 p-5">
@@ -39,9 +41,9 @@ export default function HistorySummary({ totals }: { totals: History["totals"] }
       </div>
 
       <div className="card space-y-3 p-5">
-        <h2 className="text-sm font-semibold text-ink-muted">Ventes</h2>
+        <h2 className="text-sm font-semibold text-ink-muted">{words.salesTitle}</h2>
         <p className="font-display text-3xl font-bold tabular-nums">{totals.salesCount}</p>
-        <p className="text-sm text-ink-muted">Une vente compte le jour de son premier paiement.</p>
+        <p className="text-sm text-ink-muted">{words.salesNote}</p>
         {totals.discount !== 0 ? (
           <p className="text-sm font-semibold">
             {totals.discount > 0 ? "Réductions accordées" : "Suppléments sur le catalogue"} : {formatPrice(Math.abs(totals.discount))}
@@ -57,7 +59,7 @@ export default function HistorySummary({ totals }: { totals: History["totals"] }
             ? `${totals.unknownCostSales} vente${totals.unknownCostSales > 1 ? "s" : ""} sans prix d'achat, non comptée${
                 totals.unknownCostSales > 1 ? "s" : ""
               }.`
-            : "Cadeaux compris, frais de livraison exclus."}
+            : words.profitNote}
         </p>
       </div>
     </section>

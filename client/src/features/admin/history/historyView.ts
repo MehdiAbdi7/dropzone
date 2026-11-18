@@ -31,6 +31,23 @@ export function parseHistoryView(params: { get(name: string): string | null }, t
   };
 }
 
+// Les mots de la carte « Ventes » et de la carte « Bénéfice » : sous l'onglet Réparations, une réparation compte le
+// jour de son Rendu et son bénéfice est le prix payé moins ce que les pièces ont coûté.
+export function summaryWords(type: HistoryView["type"]): { salesTitle: string; salesNote: string; profitNote: string } {
+  if (type === "repair") {
+    return {
+      salesTitle: "Réparations rendues",
+      salesNote: "Une réparation compte le jour de son Rendu.",
+      profitNote: "Prix payé moins le coût des pièces (négatif sous garantie).",
+    };
+  }
+  return {
+    salesTitle: "Ventes",
+    salesNote: "Une vente compte le jour de son premier paiement.",
+    profitNote: "Cadeaux compris, frais de livraison exclus.",
+  };
+}
+
 export function historyHref(view: HistoryView): string {
   const search = new URLSearchParams({ p: view.kind, d: view.anchor });
   if (view.type) search.set("type", view.type);

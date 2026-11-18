@@ -184,3 +184,13 @@ describe("un devis refusé", () => {
     expect((await history(agent)).channels.repair).toMatchObject({ collected: 500, salesCount: 1, profit: 500 });
   });
 });
+
+// Relecture finale : sous l'onglet Réparations, « Ventes » compte les fiches rendues, pas les commandes.
+describe("le nombre de l'onglet Réparations", () => {
+  it("salesCount compte les réparations rendues sous type=repair", async () => {
+    const agent = await adminAgent();
+    await twoReturned(agent);
+    expect((await history(agent, { type: "repair" })).totals.salesCount).toBe(2);
+    expect((await history(agent)).totals.salesCount).toBe(0);
+  });
+});
