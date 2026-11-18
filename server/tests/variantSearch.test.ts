@@ -57,12 +57,33 @@ describe("GET /admin/variants", () => {
     expect((await search("iphone", "&limit=2")).body.data).toHaveLength(2);
   });
 
-  it("ne montre ni prix d'achat ni rien de secret", async () => {
+  it("donne la fiche d'une affaire (18/11 : le bouton Détail de la vente)", async () => {
+    const hit = (await search("IP-R-DEAL")).body.data[0];
+    expect(hit.batteryHealth).toBe(95);
+    for (const list of ["replacedParts", "compatibleParts", "defects", "limitations"]) {
+      expect(Array.isArray(hit[list]), list).toBe(true);
+    }
+    expect(["boolean", "object"]).toContain(typeof hit.withBox);
+  });
+
+  it("donne le prix d'achat à l'admin", async () => {
+    const hit = (await search("ip-new-256")).body.data[0];
+    expect(hit.purchasePrice).toBe(200_000);
+  });
+
+  it("liste les cadeaux offerts avec une affaire", async () => {
+    const deal = await prisma.productVariant.findUniqueOrThrow({ where: { sku: "IP-R-DEAL" } });
+    const gift = await prisma.productVariant.findUniqueOrThrow({ where: { sku: "CHG-20W" }, include: { product: true } });
+    await prisma.variantGift.create({ data: { variantId: deal.id, giftVariantId: gift.id, quantity: 1 } });
+    expect((await search("IP-R-DEAL")).body.data[0].gifts).toEqual([{ name: gift.product.name, quantity: 1 }]);
+    expect((await search("ip-new-256")).body.data[0].gifts).toEqual([]);
+  });
+
+  it("ne montre jamais le bénéfice, la marge ni le prix d'achat figé d'une vente", async () => {
     const text = JSON.stringify((await search("iphone")).body);
-    for (const secret of ["purchasePrice", "unitCost", "profit", "grade", "batteryHealth"]) {
+    for (const secret of ["unitCost", "profit", "margin"]) {
       expect(text).not.toContain(secret);
     }
-    expect(text).not.toContain("200000");
   });
 
   it("ignore aussi les accents, dans la recherche comme dans le nom", async () => {
