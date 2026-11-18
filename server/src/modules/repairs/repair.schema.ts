@@ -75,3 +75,10 @@ export const warrantyQuerySchema = z
     error: "Indiquez le téléphone du client ou le numéro de la commande",
   });
 export type WarrantyQuery = z.infer<typeof warrantyQuerySchema>;
+
+// Le suivi public : le numéro et le téléphone dans le corps d'un POST, jamais dans l'URL (qui finit dans les logs).
+// Un numéro plus grand qu'un entier PostgreSQL ferait une erreur 500 : il est refusé ici.
+export const repairTrackSchema = z.object({
+  number: z.coerce.number().int().min(1).max(2_147_483_647),
+  phone: phoneSchema,
+});
