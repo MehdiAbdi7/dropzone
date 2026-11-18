@@ -1,6 +1,7 @@
 import { api } from "@/lib/api";
 import type { StoreHours } from "@/lib/algiersTime";
 import type { CartItem, CartPreview, OrderDetail, OrderType } from "@/types/api";
+import type { RepairTracking } from "./repairTrack";
 
 // Livraison ou réservation au magasin (14/11).
 export type Fulfillment = "delivery" | "pickup";
@@ -52,6 +53,11 @@ const ordersApi = api.injectEndpoints({
       query: (body) => ({ url: "/orders/track", method: "POST", body }),
       transformResponse: (body: { data: OrderDetail }) => body.data,
     }),
+    // Le suivi d'une réparation (atelier, étape 4) : le numéro et le téléphone dans le corps, sans connexion.
+    trackRepair: build.mutation<RepairTracking, { number: number; phone: string }>({
+      query: (body) => ({ url: "/repairs/track", method: "POST", body }),
+      transformResponse: (body: { data: RepairTracking }) => body.data,
+    }),
     // L'avance de la réservation illimitée (18/11) : null quand le magasin ne la propose pas. Le numéro BaridiMob
     // n'est jamais ici : le client ne le reçoit que dans le suivi de sa commande, après l'appel du magasin.
     reservationOffer: build.query<{ unlimitedAdvance: number | null }, void>({
@@ -67,4 +73,4 @@ const ordersApi = api.injectEndpoints({
   }),
 });
 
-export const { useCartPreviewQuery, useCreateOrderMutation, useTrackOrderMutation, useStoreHoursQuery, useReservationOfferQuery } = ordersApi;
+export const { useCartPreviewQuery, useCreateOrderMutation, useTrackOrderMutation, useTrackRepairMutation, useStoreHoursQuery, useReservationOfferQuery } = ordersApi;
