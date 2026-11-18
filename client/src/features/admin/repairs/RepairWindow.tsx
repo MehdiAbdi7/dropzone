@@ -17,7 +17,7 @@ import RepairParts from "./RepairParts";
 import RepairReceipt from "./RepairReceipt";
 import RepairStepper from "./RepairStepper";
 import { RepairBadge } from "./RepairsTable";
-import { REPAIR_STATUS_LABELS, actionLabel, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
+import { REPAIR_STATUS_LABELS, actionLabel, confirmText, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
 
 // La fenêtre d'une fiche, ouverte au clic sur une ligne de la liste (ou juste après la création). Au centre sur
 // ordinateur, une feuille qui monte du bas sur téléphone (`.order-window`, la même que les commandes). `id` vient
@@ -76,7 +76,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
   const [editing, setEditing] = useState(false);
   const [change, changing] = useChangeRepairStatusMutation();
   const [remove, removing] = useDeleteRepairMutation();
-  const steps = repairSteps(repair.status, repair.underWarranty);
+  const steps = repairSteps(repair.status, repair.underWarranty, repair.events.map((event) => event.status));
   const total = repairTotal(repair);
 
   return (
@@ -100,17 +100,21 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
       {repair.nextStatuses.length > 0 ? (
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
-            {repair.nextStatuses.map((status, index) => (
-              <button
-                key={status}
-                type="button"
-                className={`btn ${index === 0 ? "btn-primary" : "btn-secondary"}`}
-                disabled={changing.isLoading}
-                onClick={() => change({ id: repair.id, status })}
-              >
-                {actionLabel(repair.status, status, repair.underWarranty)}
-              </button>
-            ))}
+            {repair.nextStatuses.map((status, index) => {
+              const label = actionLabel(repair.status, status, repair.underWarranty);
+              const className = `btn ${index === 0 ? "btn-primary" : "btn-secondary"}`;
+              const warning = confirmText(status, repair.parts);
+              // « Devis refusé » et « Rendre l'appareil » ne se défont pas : une confirmation d'abord.
+              return warning ? (
+                <ConfirmDialog key={status} trigger={label} triggerClassName={className} title={`${label} ?`} confirmLabel={label} onConfirm={() => change({ id: repair.id, status })}>
+                  {warning}
+                </ConfirmDialog>
+              ) : (
+                <button key={status} type="button" className={className} disabled={changing.isLoading} onClick={() => change({ id: repair.id, status })}>
+                  {label}
+                </button>
+              );
+            })}
           </div>
           {repair.nextStatuses.includes("returned") ? (
             <p className="text-sm text-ink-muted">Aucun paiement n&apos;est encore enregistré à ce stade : l&apos;argent de la réparation viendra avec l&apos;étape suivante de l&apos;atelier.</p>

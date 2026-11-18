@@ -17,6 +17,8 @@ export type RepairRow = {
   underWarranty: boolean;
   createdAt: string;
   partsCount: number;
+  // Le devis a été refusé : le total ne compte que les frais de diagnostic.
+  refused: boolean;
   total: number;
 };
 

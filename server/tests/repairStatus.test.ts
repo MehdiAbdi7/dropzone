@@ -258,3 +258,34 @@ describe("les rôles", () => {
     expect((await request(app).post("/admin/repairs/1/status").send({ status: "quote" })).status).toBe(401);
   });
 });
+
+// Un devis refusé (relecture finale) : le client ne paie ni les pièces ni la main-d'œuvre du devis refusé. Il ne
+// reste que des frais de diagnostic saisis à la main, et la fiche garde la trace du refus jusqu'au Rendu.
+describe("un devis refusé", () => {
+  it("remet la main-d'œuvre à zéro, ne compte plus les pièces et garde le refus après le Rendu", async () => {
+    const agent = await adminAgent();
+    const part = await makePart("Écran iPhone 13", 5, 8_000, 12_000);
+    const repair = await makeRepair(agent, { laborPrice: 3_000 });
+    await addLineOk(agent, repair.id, part.id, 1);
+    await setStatusOk(agent, repair.id, "quote");
+
+    const refused = (await setStatusOk(agent, repair.id, "to_return")) as unknown as { laborPrice: number | null; total: number; refused: boolean };
+    expect(refused).toMatchObject({ laborPrice: null, total: 0, refused: true });
+    const row = (await agent.get("/admin/repairs").query({ stage: "to_return" }).expect(200)).body.data[0];
+    expect(row).toMatchObject({ total: 0, refused: true });
+
+    // Des frais de diagnostic voulus : une saisie à la main avant de rendre.
+    const diagnostic = (await agent.patch(`/admin/repairs/${repair.id}`).send({ laborPrice: 500 }).expect(200)).body.data;
+    expect(diagnostic.total).toBe(500);
+
+    await setStatusOk(agent, repair.id, "returned");
+    const done = (await agent.get(`/admin/repairs/${repair.id}`).expect(200)).body.data;
+    expect(done).toMatchObject({ status: "returned", refused: true, total: 500 });
+  });
+
+  it("une fiche non refusée n'est pas marquée refusée", async () => {
+    const agent = await adminAgent();
+    const repair = await makeRepair(agent);
+    expect((await agent.get(`/admin/repairs/${repair.id}`).expect(200)).body.data.refused).toBe(false);
+  });
+});

@@ -34,6 +34,8 @@ export async function changeStatus(repairId: number, target: Status, userId: num
     // Un devis refusé ne garde aucune pièce sortie : celles déjà sorties reviennent au stock.
     if (target === "to_return") {
       await returnConsumedLines(tx, repair, lines, userId);
+      // La main-d'œuvre du devis refusé ne sera pas due : des frais de diagnostic seront une saisie voulue.
+      await tx.repair.update({ where: { id: repairId }, data: { laborPrice: null } });
     }
     await setStatus(tx, repairId, target, userId);
   });

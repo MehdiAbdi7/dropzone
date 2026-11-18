@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { movementLabel } from "../parts/partsView";
-import { actionLabel, parseRepairSearch, repairDraftProblem, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
+import { actionLabel, confirmText, parseRepairSearch, repairDraftProblem, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
 
 // La logique de la page Réparations (18/11, étape 2) : la frise, le numéro, la recherche, la saisie, la garantie.
 const states = (status: Parameters<typeof repairSteps>[0], underWarranty = false) => repairSteps(status, underWarranty).map((step) => step.state);
@@ -106,5 +106,59 @@ describe("le journal des pièces", () => {
   it("dit une sortie et un retour de réparation", () => {
     expect(movementLabel({ kind: "repair", delta: -2 })).toBe("Réparation : −2");
     expect(movementLabel({ kind: "repair_return", delta: 1 })).toBe("Retour de réparation : +1");
+  });
+});
+
+// Relecture finale : la frise dit ce qui s'est VRAIMENT passé, d'après les étapes déjà traversées.
+describe("repairSteps avec l'historique", () => {
+  it("un devis refusé puis rendu garde sa sortie rouge, il n'a jamais été réparé", () => {
+    const steps = repairSteps("returned", false, ["received", "quote", "to_return", "returned"]);
+    expect(steps.map((step) => [step.label, step.state])).toEqual([
+      ["Reçu", "done"],
+      ["Devis à valider", "done"],
+      ["À rendre sans réparation", "exit"],
+      ["Rendu", "done"],
+    ]);
+  });
+
+  it("un devis sauté (client d'accord au comptoir) est montré sauté, pas fait", () => {
+    expect(repairSteps("in_repair", false, ["received", "in_repair"]).map((step) => step.state)).toEqual(["done", "skipped", "current", "upcoming", "upcoming"]);
+    expect(repairSteps("returned", false, ["received", "in_repair", "ready", "returned"]).map((step) => step.state)).toEqual(["done", "skipped", "done", "done", "done"]);
+  });
+
+  it("un devis traversé puis revenu en réparation reste fait", () => {
+    expect(repairSteps("in_repair", false, ["received", "quote", "in_repair"]).map((step) => step.state)).toEqual(["done", "done", "current", "upcoming", "upcoming"]);
+  });
+});
+
+describe("repairTotal d'une fiche refusée", () => {
+  it("ne compte que la main-d'œuvre", () => {
+    const parts = [{ quantity: 1, unitPrice: 12_000 }];
+    expect(repairTotal({ laborPrice: 500, parts, refused: true })).toBe(500);
+    expect(repairTotal({ laborPrice: null, parts, refused: true })).toBe(0);
+    expect(repairTotal({ laborPrice: 500, parts, refused: false })).toBe(12_500);
+  });
+});
+
+describe("confirmText", () => {
+  it("demande confirmation pour un devis refusé, en nommant les pièces déjà sorties", () => {
+    const text = confirmText("to_return", [{ name: "Batterie iPhone 13", quantity: 1, consumed: true }, { name: "Nappe", quantity: 2, consumed: false }]);
+    expect(text).toContain("Batterie iPhone 13 × 1");
+    expect(text).not.toContain("Nappe");
+    expect(text).toMatch(/retour/i);
+  });
+
+  it("sans pièce sortie, dit seulement que la fiche ne peut plus que se rendre", () => {
+    expect(confirmText("to_return", [])).toMatch(/rendre/i);
+  });
+
+  it("demande confirmation pour rendre l'appareil, qui fige la fiche", () => {
+    expect(confirmText("returned", [])).toMatch(/plus se modifier/i);
+  });
+
+  it("ne demande rien pour les autres passages", () => {
+    expect(confirmText("quote", [])).toBeNull();
+    expect(confirmText("in_repair", [])).toBeNull();
+    expect(confirmText("ready", [])).toBeNull();
   });
 });

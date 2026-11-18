@@ -20,18 +20,24 @@ const CIRCUIT: RepairStatus[] = ["received", "quote", "in_repair", "ready", "ret
 export type RepairStepState = "done" | "current" | "upcoming" | "skipped" | "exit";
 export type RepairStep = { status: RepairStatus; label: string; state: RepairStepState };
 
-export function repairSteps(status: RepairStatus, underWarranty: boolean): RepairStep[] {
+// `visited` : les étapes déjà traversées (les étapes de la fiche). Elles disent ce qui s'est VRAIMENT passé : un devis
+// refusé reste une sortie rouge même une fois l'appareil rendu, et un devis sauté (client d'accord au comptoir)
+// reste sauté. Sans elles, on suppose que chaque étape passée a eu lieu.
+export function repairSteps(status: RepairStatus, underWarranty: boolean, visited?: RepairStatus[]): RepairStep[] {
   const step = (target: RepairStatus, state: RepairStepState): RepairStep => ({ status: target, label: REPAIR_STATUS_LABELS[target], state });
+  const refused = status === "to_return" || (visited?.includes("to_return") ?? false);
 
   // Un devis refusé : « À rendre sans réparation » prend la place de la réparation et de l'étape Prêt.
-  if (status === "to_return") {
-    return [step("received", "done"), step("quote", "done"), step("to_return", "exit"), step("returned", "upcoming")];
+  if (refused) {
+    return [step("received", "done"), step("quote", "done"), step("to_return", "exit"), step("returned", status === "returned" ? "done" : "upcoming")];
   }
 
   const at = CIRCUIT.indexOf(status);
   const last = CIRCUIT.length - 1;
   return CIRCUIT.map((target, index) => {
     if (target === "quote" && underWarranty) return step(target, "skipped");
+    // Une étape passée que la fiche n'a jamais traversée a été sautée.
+    if (target === "quote" && visited && index < at && !visited.includes("quote")) return step(target, "skipped");
     // La dernière étape, une fois atteinte, est finie : rien ne vient après.
     if (index < at || (index === at && at === last)) return step(target, "done");
     return step(target, index === at ? "current" : "upcoming");
@@ -81,7 +87,9 @@ export function warrantyLabel(repair: { underWarranty: boolean; warrantyEndsAt: 
 
 // Ce que le client paie : les pièces au prix de vente plus la main-d'œuvre (même calcul que l'API ; sous garantie
 // l'écran dit « gratuit » à la place).
-export function repairTotal(repair: { laborPrice: number | null; parts: { quantity: number; unitPrice: number }[] }): number {
+// Un devis refusé ne compte que la main-d'œuvre (des frais de diagnostic).
+export function repairTotal(repair: { laborPrice: number | null; parts: { quantity: number; unitPrice: number }[]; refused?: boolean }): number {
+  if (repair.refused) return repair.laborPrice ?? 0;
   return (repair.laborPrice ?? 0) + repair.parts.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0);
 }
 
@@ -96,4 +104,18 @@ export function actionLabel(from: RepairStatus, to: RepairStatus, underWarranty:
   if (to === "ready") return "Réparation terminée";
   if (to === "returned") return "Rendre l'appareil";
   return REPAIR_STATUS_LABELS[to];
+}
+
+// Le texte de la confirmation avant un passage qui ne se défait pas ; null quand le passage est sans risque. Un devis
+// refusé remet les pièces déjà sorties au stock (on les nomme : il faut les retirer de l'appareil) ; rendre
+// l'appareil fige la fiche.
+export function confirmText(to: RepairStatus, lines: { name: string; quantity: number; consumed: boolean }[]): string | null {
+  if (to === "to_return") {
+    const out = lines.filter((line) => line.consumed);
+    const base = "La fiche ne pourra plus que se rendre au client, sans réparation.";
+    if (out.length === 0) return base;
+    return `${base} Ces pièces déjà sorties retournent au stock : ${out.map((line) => `${line.name} × ${line.quantity}`).join(", ")}. Retirez-les de l'appareil.`;
+  }
+  if (to === "returned") return "Une fois l'appareil rendu, la fiche ne pourra plus se modifier ni se supprimer.";
+  return null;
 }

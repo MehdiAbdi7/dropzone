@@ -23,6 +23,8 @@ const ROW_SELECT = {
   laborPrice: true,
   createdAt: true,
   parts: { select: { quantity: true, unitPrice: true } },
+  // Seulement pour savoir si le devis a été refusé : la liste n'a pas besoin de toutes les étapes.
+  events: { where: { status: "to_return" }, select: { status: true } },
 } satisfies Prisma.RepairSelect;
 
 export const DETAIL_SELECT = {
@@ -52,9 +54,13 @@ type RowSource = {
   laborPrice: number | null;
   createdAt: Date;
   parts: { quantity: number; unitPrice: number }[];
+  events: { status: Status }[];
 };
 
 function toRow(repair: RowSource) {
+  // Un devis refusé (même rendu ensuite) : aucune pièce n'a servi, le client ne doit que les frais de diagnostic
+  // saisis à la main (la main-d'œuvre du devis refusé est remise à zéro au refus).
+  const refused = repair.events.some((event) => event.status === "to_return");
   return {
     id: repair.id,
     number: repair.number,
@@ -65,7 +71,8 @@ function toRow(repair: RowSource) {
     underWarranty: repair.underWarranty,
     createdAt: repair.createdAt,
     partsCount: repair.parts.length,
-    total: quoteTotal(repair.laborPrice, repair.parts),
+    refused,
+    total: refused ? (repair.laborPrice ?? 0) : quoteTotal(repair.laborPrice, repair.parts),
   };
 }
 
