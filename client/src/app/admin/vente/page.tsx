@@ -9,7 +9,7 @@ import { emptyPhoneDraft, type PhoneOrderDraft } from "@/features/admin/sales/ph
 import SaleDone from "@/features/admin/sales/SaleDone";
 import SaleTicket from "@/features/admin/sales/SaleTicket";
 import ShopPicker from "@/features/admin/sales/ShopPicker";
-import { addToTicket, ticketQuantities, type TicketLine } from "@/features/admin/sales/ticket";
+import { addToTicket, removeFromTicket, ticketQuantities, type TicketLine } from "@/features/admin/sales/ticket";
 
 // Ce que le vendeur saisit : une vente au comptoir (encaissée tout de suite), ou une commande reçue par
 // téléphone (19/11), livraison ou réservation, qui démarre « À confirmer » (ou « Réservée »).
@@ -52,7 +52,11 @@ export default function StoreSalePage() {
   }
 
   const picker = (
-    <ShopPicker onPick={(hit) => setLines((current) => addToTicket(current, hit))} quantities={ticketQuantities(lines)} />
+    <ShopPicker
+      onPick={(hit) => setLines((current) => addToTicket(current, hit))}
+      onRemove={(hit) => setLines((current) => removeFromTicket(current, hit.sku))}
+      quantities={ticketQuantities(lines)}
+    />
   );
 
   return (

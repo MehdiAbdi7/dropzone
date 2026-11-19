@@ -98,6 +98,23 @@ export function addedMessage(name: string, onTicket: OnTicket | undefined): stri
   return `${name} : ${onTicket.quantity} au ticket${onTicket.atLimit ? " (stock atteint)" : ""}`;
 }
 
+// Le message du haut de la recherche, à jour après un ajout comme après un retrait. `quantities` absent : la page
+// ne compte rien (écrans de réparation), le message simple. Un appareil qui n'est plus dans le ticket est dit retiré.
+export function pickedMessage(name: string, sku: string, quantities: Record<string, OnTicket> | undefined): string {
+  if (!quantities) return addedMessage(name, undefined);
+  if (!quantities[sku]) return `${name} : retiré du ticket`;
+  return addedMessage(name, quantities[sku]);
+}
+
+// Le « − » d'une carte : retire un exemplaire, et la ligne disparaît quand il n'en reste plus. Rend le MÊME
+// tableau si l'appareil n'est pas dans le ticket.
+export function removeFromTicket(lines: TicketLine[], sku: string): TicketLine[] {
+  const existing = lines.find((line) => line.sku === sku);
+  if (!existing) return lines;
+  if (existing.quantity <= 1) return lines.filter((line) => line.sku !== sku);
+  return lines.map((line) => (line.sku === sku ? { ...line, quantity: line.quantity - 1 } : line));
+}
+
 export const ticketTotal = (lines: TicketLine[]): number =>
   lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
 

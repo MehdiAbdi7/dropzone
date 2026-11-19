@@ -15,7 +15,7 @@ import {
   useShopSeriesQuery,
 } from "../api/shopPickerApi";
 import { useSearchVariantsQuery } from "../api/salesApi";
-import { addedMessage, hitsOfModel, type OnTicket, type VariantHit } from "./ticket";
+import { hitsOfModel, pickedMessage, type OnTicket, type VariantHit } from "./ticket";
 import VariantDetailDialog from "./VariantDetailDialog";
 import VariantPicker, { VariantCard } from "./VariantPicker";
 
@@ -25,14 +25,16 @@ type Condition = "new" | "refurbished" | undefined;
 // site en ligne (catégories, marques, séries, modèles), puis les variantes en stock du modèle choisi
 // (neuf scellé, affaire, couleurs, stockages) à ajouter au ticket. Un onglet « Rechercher » garde la
 // recherche par mots ou par SKU pour le vendeur qui sait ce qu'il veut.
-// `quantities` : ce qui est déjà dans le ticket, par SKU (19/11). Chaque carte affiche « ✓ 2 au ticket » et le
-// message du haut donne la quantité : un clic (ou un deuxième clic) ne passe plus inaperçu. Sans lui (réparations),
-// la fenêtre garde le message simple.
+// `quantities` : ce qui est déjà dans le ticket, par SKU (19/11). Chaque carte affiche « ✓ 2 au ticket », un « + »
+// pour ajouter et, avec `onRemove`, un « − » pour retirer un exemplaire : un ajout ne passe plus inaperçu. Le
+// message du haut suit les deux. Sans `quantities` (réparations), la fenêtre garde le message simple.
 export default function ShopPicker({
   onPick,
+  onRemove,
   quantities,
 }: {
   onPick: (hit: VariantHit) => void;
+  onRemove?: (hit: VariantHit) => void;
   quantities?: Record<string, OnTicket>;
 }) {
   const [tab, setTab] = useState<"browse" | "search">("browse");
@@ -48,6 +50,12 @@ export default function ShopPicker({
     onPick(hit);
     setAdded({ sku: hit.sku, name: `${hit.productName}${hit.condition === "new" ? "" : " (affaire)"}` });
   }
+  // Le « − » d'une carte : le message du haut dit ce qui reste dans le ticket, ou « retiré ».
+  function remove(hit: VariantHit) {
+    onRemove?.(hit);
+    setAdded({ sku: hit.sku, name: `${hit.productName}${hit.condition === "new" ? "" : " (affaire)"}` });
+  }
+  const onRemoveCard = onRemove ? remove : undefined;
 
   // Revenir à une étape plus haute efface celles qui la suivent.
   const toCategories = () => {
@@ -81,13 +89,13 @@ export default function ShopPicker({
         </div>
         {added ? (
           <p role="status" className="ml-auto rounded-full bg-blue-soft px-3 py-1 text-sm font-semibold">
-            {addedMessage(added.name, quantities?.[added.sku])}
+            {pickedMessage(added.name, added.sku, quantities)}
           </p>
         ) : null}
       </div>
 
       {tab === "search" ? (
-        <VariantPicker grid onPick={pick} quantities={quantities} />
+        <VariantPicker grid onPick={pick} onRemove={onRemoveCard} quantities={quantities} />
       ) : (
         <>
           {crumbs.length > 0 ? (
@@ -110,9 +118,9 @@ export default function ShopPicker({
             <Categories onPick={setCategory} />
           ) : !DEVICE_KINDS.includes(category.kind) ? (
             // Les accessoires n'ont pas de séries : la même liste filtrée sur la catégorie.
-            <VariantPicker grid initialCategory={category.slug} onPick={pick} quantities={quantities} />
+            <VariantPicker grid initialCategory={category.slug} onPick={pick} onRemove={onRemoveCard} quantities={quantities} />
           ) : model && series ? (
-            <Variants category={category} model={model} onPick={pick} quantities={quantities} />
+            <Variants category={category} model={model} onPick={pick} onRemove={onRemoveCard} quantities={quantities} />
           ) : series && brand ? (
             <Models category={category} brand={brand} series={series.slug} onPick={setModel} />
           ) : (
@@ -285,11 +293,13 @@ function Variants({
   category,
   model,
   onPick,
+  onRemove,
   quantities,
 }: {
   category: Category;
   model: PosterModel;
   onPick: (hit: VariantHit) => void;
+  onRemove?: (hit: VariantHit) => void;
   quantities?: Record<string, OnTicket>;
 }) {
   const [condition, setCondition] = useState<Condition>(undefined);
@@ -328,7 +338,7 @@ function Variants({
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4" aria-busy={isFetching}>
           {hits.map((hit) => (
             <li key={hit.sku}>
-              <VariantCard hit={hit} onTicket={quantities?.[hit.sku]} onPick={onPick} onDetail={setDetail} />
+              <VariantCard hit={hit} onTicket={quantities?.[hit.sku]} onPick={onPick} onRemove={onRemove} onDetail={setDetail} />
             </li>
           ))}
         </ul>
