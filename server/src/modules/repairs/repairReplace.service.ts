@@ -9,16 +9,10 @@ import { priceTicket, ticketItems } from "../orders/ticket.service.js";
 import { refreshMinPrice } from "../products/product.service.js";
 import { getRepair } from "./repair.service.js";
 import type { ReplaceInput } from "./repair.schema.js";
-import { isSameModel, replacementDifference } from "./replacementRules.js";
+import { isSameModel, replacementDifference, storageOf } from "./replacementRules.js";
 import { returnConsumedLines } from "./repairStatus.service.js";
 import { lockRepair, setStatus } from "./repairStock.js";
 import { warrantyOf } from "./warranty.service.js";
-
-// Le stockage d'une variante ou d'un article vendu : l'option « Stockage » (« 256 Go »), absente pour un PC.
-const storageOf = (options: unknown): string | null => {
-  const value = (options as Record<string, unknown> | null)?.Stockage;
-  return typeof value === "string" ? value : null;
-};
 
 // Remplacer l'appareil d'une fiche sous garantie (atelier, étape 6, cahier §7). Tout dans UNE transaction, la fiche
 // verrouillée d'abord : deux envois en même temps passent l'un après l'autre, et le second voit une fiche déjà rendue.

@@ -392,3 +392,26 @@ describe("une fiche remplacée", () => {
     expect(await prisma.repair.findUnique({ where: { id: repairId } })).not.toBeNull();
   });
 });
+
+// Le dialogue du remplacement calcule la différence avant d'envoyer : la fiche donne l'article d'origine.
+describe("GET /admin/repairs/:id : l'article d'origine", () => {
+  it("donne le prix payé, le produit et le stockage au vendeur, jamais le prix payé au technicien", async () => {
+    const admin = await adminAgent();
+    const sale = await originalSale(200_000);
+    const repair = await warrantyRepair(admin, sale.itemId);
+    const seller = (await loginAs("seller", "vendeur@test.dz")).agent;
+    const asSeller = (await seller.get(`/admin/repairs/${repair.id}`).expect(200)).body.data;
+    expect(asSeller.origin).toEqual({ unitPrice: 200_000, productId: catalog.phone.id, storage: "256 Go" });
+    expect(asSeller.replacementOrderNumber).toBeNull();
+
+    const technician = (await loginAs("technician", "tech@test.dz")).agent;
+    const asTechnician = (await technician.get(`/admin/repairs/${repair.id}`).expect(200)).body.data;
+    expect(asTechnician.origin).toEqual({ productId: catalog.phone.id, storage: "256 Go" });
+  });
+
+  it("est null sans article d'origine", async () => {
+    const admin = await adminAgent();
+    const repair = (await admin.post("/admin/repairs").send({ ...device, laborPrice: 1_000 }).expect(201)).body.data;
+    expect((await admin.get(`/admin/repairs/${repair.id}`).expect(200)).body.data.origin).toBeNull();
+  });
+});

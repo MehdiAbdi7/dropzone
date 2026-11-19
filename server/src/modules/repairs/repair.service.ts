@@ -5,6 +5,7 @@ import { algiersDate } from "../../utils/algiersTime.js";
 import { normalizeText } from "../../utils/normalizeText.js";
 import type { RepairInput, RepairListQuery, RepairPatch } from "./repair.schema.js";
 import { nextStatuses, quoteTotal, repairAmount, type Status } from "./repairRules.js";
+import { storageOf } from "./replacementRules.js";
 import { afterQuoteChange, lockRepair } from "./repairStock.js";
 import { findWarrantyItem, warrantyOf } from "./warranty.service.js";
 
@@ -38,6 +39,9 @@ export const DETAIL_SELECT = {
   warrantyForcedOff: true,
   originOrderNumber: true,
   replacementOrder: { select: { number: true } },
+  // L'article d'origine : le dialogue du remplacement calcule la différence avant d'envoyer (le prix payé de l'article,
+  // retiré pour le technicien avec `unitPrice`).
+  originItem: { select: { unitPrice: true, productId: true, options: true } },
   returnedOn: true,
   paidAmount: true,
   partsCost: true,
@@ -91,6 +95,7 @@ type DetailSource = RowSource & {
   warrantyForcedOff: boolean;
   originOrderNumber: number | null;
   replacementOrder: { number: number } | null;
+  originItem: { unitPrice: number; productId: number | null; options: unknown } | null;
   returnedOn: Date | null;
   paidAmount: number | null;
   partsCost: number | null;
@@ -113,6 +118,7 @@ function toDetail(repair: DetailSource) {
     originOrderNumber: repair.originOrderNumber,
     // Étape 6 : le numéro de la commande de remplacement (null : la fiche n'a pas été remplacée).
     replacementOrderNumber: repair.replacementOrder?.number ?? null,
+    origin: repair.originItem ? { unitPrice: repair.originItem.unitPrice, productId: repair.originItem.productId, storage: storageOf(repair.originItem.options) } : null,
     // Ce que le client doit encore au Rendu (0 une fois rendu) ; après le Rendu, ce qu'il a payé, avec quel moyen,
     // le jour, et ce que les pièces ont coûté (admin seulement : `partsCost` est retiré pour les autres rôles).
     amountDue:

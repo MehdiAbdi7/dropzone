@@ -1,5 +1,11 @@
 // Les règles pures du remplacement sous garantie (atelier, étape 6, cahier §7 et §14) : sans base ni réseau.
 
+// Le stockage d'une variante ou d'un article vendu : l'option « Stockage » (« 256 Go »), absente pour un PC.
+export function storageOf(options: unknown): string | null {
+  const value = (options as Record<string, unknown> | null)?.Stockage;
+  return typeof value === "string" ? value : null;
+}
+
 // « Même modèle » : même produit ET même stockage, la couleur étant libre. Un 128 Go remplacé par un 256 Go n'est
 // PAS le même modèle : on compare alors avec le prix payé, sinon le client gagnerait un appareil plus cher gratuitement.
 // Un article d'origine sans produit (le produit a été supprimé du catalogue) n'est jamais « le même ».
