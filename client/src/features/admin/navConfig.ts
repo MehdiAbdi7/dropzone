@@ -95,7 +95,10 @@ export const SECTIONS: NavSection[] = [
   // pour l'instant (aucune route dans la table des droits) : le technicien viendra à l'étape 5.
   {
     key: "atelier",
-    label: "Atelier",
+    // Renommée le 20/11 : « Atelier » ne disait pas ce qu'on y trouve. La clé interne ne change pas. Le libellé
+    // court sert à la barre du bas du téléphone (4 entrées) et au panneau « Plus » ; on y arrive sur les réparations.
+    label: "Pièces et réparations",
+    short: "Réparations",
     icon: WrenchIcon,
     href: "/admin/reparations",
     owns: (path) => anyUnder(path, ["/admin/reparations", "/admin/pieces"]),
