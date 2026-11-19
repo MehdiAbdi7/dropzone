@@ -5,8 +5,10 @@ import { usePublishTradeInMutation, useUpdateTradeInMutation, type TradeInRow } 
 import EditDialog from "@/features/admin/products/EditDialog";
 import { errorMessage } from "@/lib/errors";
 import { formatOptions, formatPrice } from "@/lib/format";
+import { repairNumber } from "@/features/admin/repairs/repairsView";
 import { tradeInProblem, type TradeInDraft } from "./exchange";
 import TradeInForm from "./TradeInForm";
+import { DismantleDialog, UsePartDialog } from "./TradeInPartsDialogs";
 import { buildTradeInUpdateBody, marginText, repairCostOf, resaleProblem, resalePrice, sheetSummary, tradeInToDraft } from "./tradeInView";
 
 const dayLabel = (iso: string) => {
@@ -18,7 +20,7 @@ const dayLabel = (iso: string) => {
 // « Modifier la fiche » (le téléphone a été remis en état : batterie neuve, écran… la fiche le dit et les frais
 // s'ajoutent au prix d'achat) et « Mettre en vente » (le prix de revente, fixé par l'admin). Chacun ouvre sa fenêtre.
 export default function TradeInCard({ tradeIn, onPublished }: { tradeIn: TradeInRow; onPublished: (name: string) => void }) {
-  const [open, setOpen] = useState<"edit" | "publish" | null>(null);
+  const [open, setOpen] = useState<"edit" | "publish" | "usePart" | "dismantle" | null>(null);
   const pending = tradeIn.listedAt === null;
   const options = { ...tradeIn.sheet.options, Couleur: tradeIn.color };
   const name = `${tradeIn.deviceModel.brand} ${tradeIn.deviceModel.name}`;
@@ -30,6 +32,10 @@ export default function TradeInCard({ tradeIn, onPublished }: { tradeIn: TradeIn
         <div className="min-w-0">
           <h2 className="text-lg sm:text-xl">{name}</h2>
           <p className="text-sm text-ink-muted">{formatOptions(options)}</p>
+          {/* Étape 6 : un appareil en panne laissé par un remplacement sous garantie (réparation R-…), repris à 0 DA. */}
+          {tradeIn.repairNumber !== null ? (
+            <p className="mt-1 inline-block rounded-full bg-blue-soft px-2.5 py-0.5 text-xs font-bold">Remplacement sous garantie · {repairNumber(tradeIn.repairNumber)}</p>
+          ) : null}
         </div>
         <p className="font-display text-lg font-bold tabular-nums">Repris à {formatPrice(tradeIn.price)}</p>
       </div>
@@ -44,9 +50,19 @@ export default function TradeInCard({ tradeIn, onPublished }: { tradeIn: TradeIn
           <button type="button" className="btn btn-secondary" onClick={() => setOpen("edit")}>
             Modifier la fiche
           </button>
+          <button type="button" className="btn btn-secondary" onClick={() => setOpen("usePart")}>
+            Utiliser une pièce
+          </button>
+          {tradeIn.dismantlable ? (
+            <button type="button" className="btn btn-secondary" onClick={() => setOpen("dismantle")}>
+              Démonter pour pièces
+            </button>
+          ) : null}
           <button type="button" className="btn btn-primary" onClick={() => setOpen("publish")}>
             Mettre en vente
           </button>
+          <UsePartDialog open={open === "usePart"} tradeIn={tradeIn} onClose={close} />
+          <DismantleDialog open={open === "dismantle"} tradeIn={tradeIn} onClose={close} />
           <EditDialog open={open === "edit"} title={`Modifier la fiche : ${name}`} onClose={close} closeLabel="Annuler">
             <EditForm tradeIn={tradeIn} onDone={close} />
           </EditDialog>

@@ -11,6 +11,7 @@ import {
   patchRepairLine,
   postRepair,
   postRepairLine,
+  postRepairReplace,
   postRepairStatus,
   removeRepair,
 } from "./repair.controller.js";
@@ -22,6 +23,7 @@ import {
   repairListQuerySchema,
   repairPatchSchema,
   repairStatusBodySchema,
+  replaceBodySchema,
   warrantyQuerySchema,
 } from "./repair.schema.js";
 
@@ -38,6 +40,7 @@ repairAdminRouter.get("/repairs/:id", validate({ params: idParamsSchema }), getO
 repairAdminRouter.patch("/repairs/:id", validate({ params: idParamsSchema, body: repairPatchSchema }), patchRepair);
 repairAdminRouter.delete("/repairs/:id", validate({ params: idParamsSchema }), removeRepair);
 repairAdminRouter.post("/repairs/:id/status", validate({ params: idParamsSchema, body: repairStatusBodySchema }), postRepairStatus);
-repairAdminRouter.post("/repairs/:id/parts", validate({ params: idParamsSchema, body: repairLineBodySchema }), postRepairLine);
+repairAdminRouter.post("/repairs/:id/replace", validate({ params: idParamsSchema, body: replaceBodySchema }), postRepairReplace);
+repairAdminRouter.post("/repairs/:id/parts",validate({ params: idParamsSchema, body: repairLineBodySchema }), postRepairLine);
 repairAdminRouter.patch("/repairs/:id/parts/:lineId", validate({ params: repairLineParamsSchema, body: repairLinePatchSchema }), patchRepairLine);
 repairAdminRouter.delete("/repairs/:id/parts/:lineId", validate({ params: repairLineParamsSchema }), deleteRepairLine);

@@ -49,7 +49,7 @@ export default function PartsPage() {
       ) : isLoading ? (
         <p className="text-ink-muted">Chargement…</p>
       ) : data?.length ? (
-        <ul className="space-y-4">
+        <ul className="card divide-y divide-line overflow-hidden p-0">
           {data.map((part) => (
             <PartCard key={part.id} part={part} />
           ))}

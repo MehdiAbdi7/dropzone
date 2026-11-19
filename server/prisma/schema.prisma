@@ -475,6 +475,9 @@ model Order {
   items               OrderItem[]
   // Le téléphone que le client a rendu, pour un échange (lot 5).
   tradeIn             TradeIn?
+  // La fiche de réparation dont cette commande est le remplacement sous garantie (atelier, étape 6) : null pour
+  // toute autre commande. Une telle commande ne se modifie ni ne se supprime depuis les Commandes.
+  replacementOf       Repair?     @relation("RepairReplacement")
   // La facture (lot 6) : son numéro est attribué à la PREMIÈRE ouverture et ne change plus. Une suite
   // continue par année (F-2026-0001…), voir InvoiceCounter. null = pas encore de facture.
   invoiceNumber       Int?        @map("invoice_number")
@@ -547,6 +550,9 @@ model OrderItem {
   grantedById     Int?      @map("granted_by_id")
   // Les réparations ouvertes pour cet article (garantie, étape 2 de l'atelier).
   repairs         Repair[]
+  // La date de fin de garantie EXPLICITE d'un appareil de remplacement (étape 6) : il garde le reste de l'ancienne
+  // garantie. null = elle se déduit de la date de vente et de `warrantyMonths`.
+  warrantyUntil   DateTime? @map("warranty_until") @db.Date
 
   @@index([orderId])
   @@index([productId])
@@ -735,6 +741,10 @@ enum PartMovementKind {
   repair
   // Une pièce remise au stock : devis refusé, fiche supprimée, ligne retirée ou diminuée après sa sortie.
   repair_return
+  // Des pièces récupérées sur une reprise démontée (étape 6) : elles entrent à 0 DA l'unité.
+  salvage
+  // Une pièce sortie du stock pour remettre une reprise en état (étape 6) : son prix d'achat s'ajoute aux frais.
+  trade_in_use
 }
 
 // Une pièce de l'atelier (batterie, écran…) : ce qu'elle a coûté, à quel prix on la vend, combien il en reste.
@@ -772,6 +782,8 @@ model PartMovement {
   // La fiche d'un mouvement `repair` ou `repair_return` : sans clé étrangère, la trace survit à la suppression
   // de la fiche.
   repairId   Int?             @map("repair_id")
+  // La reprise d'un mouvement `salvage` ou `trade_in_use` (sans clé étrangère : la reprise démontée disparaît).
+  tradeInId  Int?             @map("trade_in_id")
 
   @@index([partId])
   @@map("part_movements")
@@ -830,6 +842,10 @@ model Repair {
   createdById       Int?          @map("created_by_id")
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @default(now()) @updatedAt @map("updated_at")
+  // Le remplacement sous garantie (étape 6) : la commande `exchange` qui l'a fait, une seule par fiche. Si la
+  // commande disparaît, la fiche reste.
+  replacementOrderId Int?         @unique @map("replacement_order_id")
+  replacementOrder  Order?        @relation("RepairReplacement", fields: [replacementOrderId], references: [id], onDelete: SetNull)
   parts             RepairPart[]
   events            RepairEvent[]
 

@@ -1,4 +1,4 @@
-import { prisma } from "../../config/db.js";
+import { prisma, type Tx } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
 import { algiersDate } from "../../utils/algiersTime.js";
 import { requireOpenCashDay } from "../cash/cash.service.js";
@@ -16,22 +16,26 @@ import type { ExchangeInput, UpdateTradeInInput } from "./exchange.schema.js";
 // le stock sort, la commande est de type `exchange`, et le journal reçoit UN mouvement `exchange` égal
 // à la différence : positive quand le client paie, négative quand le magasin rend de l'argent. La
 // reprise n'entre PAS dans le catalogue : elle attend dans `trade_ins` jusqu'à sa mise en vente.
+// Le modèle repris doit être un modèle de notre catalogue, et pouvoir recevoir son affaire : une fiche
+// existe déjà, ou une série pour la créer (même règle que l'ajout d'un exemplaire dans le Catalogue). Partagée
+// avec le remplacement sous garantie (atelier, étape 6), dont l'appareil en panne devient une reprise.
+export async function requireTradeInModel(tx: Tx, deviceModelId: number) {
+  const model = await tx.deviceModel.findUnique({
+    where: { id: deviceModelId },
+    select: { id: true, name: true, series: { select: { id: true } }, products: { select: { id: true }, take: 1 } },
+  });
+  if (!model) {
+    throw new AppError(400, "Ce modèle n'existe pas dans le catalogue");
+  }
+  if (model.products.length === 0 && !model.series) {
+    throw new AppError(400, `« ${model.name} » n'a ni fiche ni série : rangez-le dans une série du catalogue avant de le reprendre`);
+  }
+}
+
 export async function createExchange(input: ExchangeInput, userId: number, now: Date = new Date()) {
   return prisma.$transaction(async (tx) => {
     await requireOpenCashDay(tx, now);
-
-    // Le modèle repris doit être un modèle de notre catalogue, et pouvoir recevoir son affaire : une fiche
-    // existe déjà, ou une série pour la créer (même règle que l'ajout d'un exemplaire dans le Catalogue).
-    const model = await tx.deviceModel.findUnique({
-      where: { id: input.tradeIn.deviceModelId },
-      select: { id: true, name: true, series: { select: { id: true } }, products: { select: { id: true }, take: 1 } },
-    });
-    if (!model) {
-      throw new AppError(400, "Ce modèle n'existe pas dans le catalogue");
-    }
-    if (model.products.length === 0 && !model.series) {
-      throw new AppError(400, `« ${model.name} » n'a ni fiche ni série : rangez-le dans une série du catalogue avant de le reprendre`);
-    }
+    await requireTradeInModel(tx, input.tradeIn.deviceModelId);
 
     const ticket = await priceTicket(tx, input.lines, input.acceptLimitations);
     const { cart, priced } = ticket;
@@ -92,11 +96,15 @@ export async function listTradeIns(status: "pending" | "listed") {
     orderBy: { id: status === "listed" ? "desc" : "asc" },
     include: {
       deviceModel: { select: { id: true, brand: true, name: true, kind: true } },
-      order: { select: { number: true, dailyNumber: true, fullName: true, phone: true, businessDate: true } },
+      // `replacementOf` : la réparation d'où vient une reprise à 0 DA (remplacement sous garantie, atelier étape 6).
+      order: { select: { number: true, dailyNumber: true, fullName: true, phone: true, businessDate: true, replacementOf: { select: { number: true } } } },
     },
   });
   return rows.map((row) => ({
     id: row.id,
+    repairNumber: row.order.replacementOf?.number ?? null,
+    // Se démonte pour pièces : à 0 DA, sans remise en état commencée, pas encore en vente.
+    dismantlable: row.order.replacementOf !== null && row.price === 0 && row.repairCost === 0 && row.listedAt === null,
     orderId: row.orderId,
     orderNumber: row.order.number,
     dailyNumber: row.order.dailyNumber,

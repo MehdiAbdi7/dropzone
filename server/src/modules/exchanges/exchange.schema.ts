@@ -22,6 +22,18 @@ export const tradeInSchema = z
   .superRefine((tradeIn, ctx) => checkTradeInSheet(tradeIn, ctx));
 export type TradeInInput = z.infer<typeof tradeInSchema>;
 
+// L'appareil en panne laissé par un remplacement sous garantie (atelier, étape 6) : la même fiche d'état qu'une
+// reprise, SANS prix. Son prix de reprise est 0 DA, fixé par le service : le magasin a déjà payé l'appareil donné.
+export const replacementTradeInSchema = z
+  .object({
+    deviceModelId: z.number().int().positive({ error: "Choisissez le modèle de l'appareil en panne" }),
+    color: z.string().trim().min(1, { error: "Choisissez la couleur" }).max(60),
+    options: labelRecord(60).default({}),
+    ...sheetFields,
+  })
+  .superRefine((tradeIn, ctx) => checkTradeInSheet(tradeIn, ctx));
+export type ReplacementTradeInInput = z.infer<typeof replacementTradeInSchema>;
+
 // Une reprise est toujours une affaire : sa boîte est dite, ses pièces sont cohérentes, sa garantie est dite.
 // La même règle à l'échange et à la modification de la fiche avant la mise en vente.
 function checkTradeInSheet(tradeIn: Parameters<typeof checkRefurbishedSheet>[0] & { warrantyMonths: number | null }, ctx: z.RefinementCtx) {
@@ -79,4 +91,20 @@ export const tradeInListQuerySchema = z.object({
 // Mettre en vente : le prix de revente, fixé par l'admin. Le prix de reprise reste le prix d'achat.
 export const publishTradeInBodySchema = z.object({
   price: z.number({ error: "Saisissez le prix de revente, en dinars" }).int({ error: "Un montant en dinars, sans virgule" }).min(0).max(10_000_000),
+});
+
+// Démonter une reprise à 0 DA pour pièces (atelier, étape 6) : les pièces récupérées, chacune une fois.
+export const dismantleBodySchema = z.object({
+  parts: z
+    .array(z.object({ partId: z.number().int().positive(), quantity: z.number().int().min(1, { error: "Une quantité d'au moins 1" }).max(100) }))
+    .min(1, { error: "Choisissez au moins une pièce récupérée" })
+    .max(20)
+    .refine((parts) => new Set(parts.map((part) => part.partId)).size === parts.length, { error: "Une pièce ne figure qu'une fois : additionnez les quantités" }),
+});
+export type DismantleInput = z.infer<typeof dismantleBodySchema>;
+
+// Utiliser une pièce du stock pour remettre une reprise en état.
+export const useTradeInPartBodySchema = z.object({
+  partId: z.number().int().positive(),
+  quantity: z.number().int().min(1, { error: "Une quantité d'au moins 1" }).max(100),
 });

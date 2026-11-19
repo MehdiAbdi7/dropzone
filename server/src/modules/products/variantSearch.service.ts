@@ -15,6 +15,8 @@ import { variantImage } from "./variantImage.js";
 //   3. à une lettre doublée près (« sillicone » pour « silicone »).
 export type VariantHit = {
   sku: string;
+  // Le produit de la variante : le remplacement sous garantie compare « même modèle » par produit et stockage.
+  productId: number;
   productName: string;
   options: Prisma.JsonValue;
   condition: Condition;
@@ -155,6 +157,7 @@ export async function searchVariants({
   const hits = variants
     .map((variant) => ({
       sku: variant.sku,
+      productId: variant.productId,
       productName: variant.product.name,
       options: variant.options,
       condition: variant.condition,

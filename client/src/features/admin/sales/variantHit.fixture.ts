@@ -5,6 +5,7 @@ import type { VariantHit } from "./ticket";
 export function makeHit(over: Partial<VariantHit> = {}): VariantHit {
   return {
     sku: "IP-NEW-256",
+    productId: 1,
     productName: "iPhone 15 Pro Max",
     options: { Stockage: "256 Go" },
     condition: "new",

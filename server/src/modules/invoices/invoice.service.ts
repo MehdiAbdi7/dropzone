@@ -4,6 +4,7 @@ import { AppError } from "../../utils/AppError.js";
 import { algiersDate } from "../../utils/algiersTime.js";
 import { priceReduction } from "../orders/negotiation.js";
 import { lockOrder } from "../orders/orderLock.js";
+import { refuseIfReplacement } from "../repairs/replacementGuard.js";
 import { amountInWords } from "./amountInWords.js";
 import type { InvoiceSettingsInput } from "./invoice.schema.js";
 import { invoiceBlocker } from "./invoiceRules.js";
@@ -30,6 +31,8 @@ const PAYMENT_KINDS = ["sale", "pickup", "delivery", "exchange"] as const;
 export async function issueInvoice(id: number, now: Date = new Date(), role?: Role) {
   return prisma.$transaction(async (tx) => {
     await lockOrder(tx, id);
+    // Un remplacement sous garantie n'est pas une vente : pas de facture (atelier, étape 6).
+    await refuseIfReplacement(tx, id);
     const order = await tx.order.findUniqueOrThrow({
       where: { id },
       include: {

@@ -1,6 +1,5 @@
-import { PAYMENT_METHOD_LABELS } from "@/config/catalog";
 import type { HistoryRepair } from "@/features/admin/api/historyApi";
-import { repairNumber } from "@/features/admin/repairs/repairsView";
+import { historyAmountText, repairNumber } from "@/features/admin/repairs/repairsView";
 import { formatPrice } from "@/lib/format";
 
 const dayLabel = (iso: string) => iso.split("-").reverse().join("/");
@@ -29,12 +28,12 @@ export default function HistoryRepairs({ repairs }: { repairs: HistoryRepair[] }
                 </span>
                 <span className="block text-xs text-ink-muted">
                   Rendu le {dayLabel(repair.returnedOn)}
-                  {repair.underWarranty ? " · sous garantie" : ""}
+                  {repair.replacement ? " · remplacement sous garantie" : repair.underWarranty ? " · sous garantie" : ""}
                 </span>
               </span>
               <span className="shrink-0 text-right">
                 <span className="block font-bold tabular-nums">
-                  {repair.paidAmount > 0 ? `${formatPrice(repair.paidAmount)}${repair.payMethod ? ` · ${PAYMENT_METHOD_LABELS[repair.payMethod]}` : ""}` : "Rien payé"}
+                  {historyAmountText(repair.paidAmount, repair.payMethod)}
                 </span>
                 <span className="block text-ink-muted">pièces {formatPrice(repair.partsCost)}</span>
                 <span className="block text-ink-muted">bénéfice {profitText(repair.profit)}</span>

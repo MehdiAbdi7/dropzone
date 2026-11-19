@@ -8,6 +8,7 @@ import type { EditOrderInput } from "./order.schema.js";
 import { lockOrder } from "./orderLock.js";
 import { correctionMovements, describeEdit, groupThousands, stockDeltas } from "./orderMath.js";
 import { restockItems } from "./reservations.js";
+import { refuseIfReplacement } from "../repairs/replacementGuard.js";
 
 // Modifier et supprimer une commande après coup (15/11, lot 2). Deux règles tiennent tout :
 //  - le stock et l'argent suivent : la différence de stock est appliquée, et l'argent déjà
@@ -64,6 +65,7 @@ function mainMethod(paid: Partial<Record<PaymentMethod, number>>): PaymentMethod
 export async function editOrder(id: number, input: EditOrderInput, userId: number, now: Date = new Date()) {
   return prisma.$transaction(async (tx) => {
     await lockOrder(tx, id);
+    await refuseIfReplacement(tx, id);
     const order = await tx.order.findUniqueOrThrow({ where: { id }, include: { items: { orderBy: { id: "asc" } } } });
     // Un échange lie un téléphone donné, un téléphone repris et une différence d'argent : modifier
     // l'un fausserait les autres (lot 5). L'admin le supprime et le refait.
@@ -288,6 +290,7 @@ export async function editOrder(id: number, input: EditOrderInput, userId: numbe
 export async function deleteOrder(id: number, userId: number, now: Date = new Date()) {
   return prisma.$transaction(async (tx) => {
     await lockOrder(tx, id);
+    await refuseIfReplacement(tx, id);
     const order = await tx.order.findUniqueOrThrow({ where: { id }, include: { items: true } });
     // La reprise d'un échange disparaît avec lui (cascade), sauf si son affaire existe encore dans le
     // catalogue (en vente, ou déjà vendue) : la supprimer à la place de l'admin serait une surprise.

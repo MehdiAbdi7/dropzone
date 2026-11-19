@@ -55,14 +55,19 @@ export function stockProblem(value: number, current: number): string | null {
   return null;
 }
 
-export const isOutOfStock = (part: { stock: number }): boolean => part.stock === 0;
+export type PartMovementKind = "arrival" | "correction" | "repair" | "repair_return" | "salvage" | "trade_in_use";
 
-export function movementLabel(movement: { kind: "arrival" | "correction" | "repair" | "repair_return"; delta: number }): string {
+export const isOutOfStock =(part: { stock: number }): boolean => part.stock === 0;
+
+export function movementLabel(movement: { kind: PartMovementKind; delta: number }): string {
   if (movement.kind === "arrival") return `Arrivage de ${movement.delta}`;
   const signed = `${movement.delta > 0 ? "+" : "−"}${Math.abs(movement.delta)}`;
   // Sorties et retours d'une réparation (étape 2) : la fiche est dans la note du mouvement (« R-1001 »).
   if (movement.kind === "repair") return `Réparation : ${signed}`;
   if (movement.kind === "repair_return") return `Retour de réparation : ${signed}`;
+  // Étape 6 : les pièces d'une reprise démontée entrent au stock, et une pièce sert à remettre une reprise en état.
+  if (movement.kind === "salvage") return `Pièces récupérées : ${signed}`;
+  if (movement.kind === "trade_in_use") return `Remise en état d'une reprise : ${signed}`;
   return `Correction : ${signed}`;
 }
 

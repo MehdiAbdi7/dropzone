@@ -115,6 +115,8 @@ export async function getHistory(query: HistoryQuery) {
     JOIN orders o ON o.id = s.order_id
     JOIN order_items i ON i.order_id = o.id
     WHERE s.sale_date BETWEEN ${from}::date AND ${to}::date
+      -- Un remplacement sous garantie (atelier, étape 6) compte dans sa fiche, jamais comme une vente.
+      AND NOT EXISTS (SELECT 1 FROM repairs r WHERE r.replacement_order_id = o.id)
     GROUP BY s.order_id, o.type`;
   for (const sale of allSales) {
     const channel = channels[sale.type];
@@ -140,9 +142,12 @@ export async function getHistory(query: HistoryQuery) {
       paidAmount: true,
       partsCost: true,
       payMethod: true,
+      replacementOrderId: true,
     },
   });
   const repairRows = returned.map((repair) => ({
+    // Étape 6 : la fiche a été rendue par un remplacement (le montant peut être négatif : le magasin a rendu de l'argent).
+    replacement: repair.replacementOrderId !== null,
     id: repair.id,
     number: repair.number,
     fullName: repair.fullName,
@@ -195,7 +200,7 @@ export async function getHistory(query: HistoryQuery) {
       distinct: ["orderId"],
     })
   ).map((row) => row.orderId as number);
-  const filters: Prisma.OrderWhereInput[] = [{ OR: [{ businessDate: range }, { id: { in: cashedIds } }] }];
+  const filters: Prisma.OrderWhereInput[] = [{ OR: [{ businessDate: range }, { id: { in: cashedIds } }] }, { replacementOf: { is: null } }];
   if (query.type && query.type !== "repair") filters.push({ type: query.type });
   if (query.q) {
     const number = Number(query.q);

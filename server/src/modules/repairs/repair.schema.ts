@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { replacementTradeInSchema } from "../exchanges/exchange.schema.js";
 import { paymentMethodSchema, phoneSchema } from "../orders/order.schema.js";
 
 // Les fiches de réparation (18/11, étape 2). Tous les textes sont bornés : la fiche est saisie au comptoir, mais
@@ -57,7 +58,20 @@ export const repairStatusBodySchema = z.object({
   method: paymentMethodSchema.optional(),
 });
 
-export const REPAIR_STAGES = ["open", "received", "quote", "in_repair", "ready", "to_return", "returned"] as const;
+// Remplacer l'appareil sous garantie (étape 6) : ce que le magasin donne (un seul article, au prix catalogue ou
+// négocié ; le prix n'est pas lu pour un même modèle), l'appareil en panne et le moyen de paiement de la différence.
+export const replaceBodySchema = z.object({
+  method: paymentMethodSchema,
+  acceptLimitations: z.boolean().default(false),
+  line: z.object({
+    sku: z.string().trim().toUpperCase().min(3).max(40),
+    unitPrice: z.number().int().min(0).max(10_000_000).optional(),
+  }),
+  tradeIn: replacementTradeInSchema,
+});
+export type ReplaceInput = z.infer<typeof replaceBodySchema>;
+
+export const REPAIR_STAGES =["open", "received", "quote", "in_repair", "ready", "to_return", "returned"] as const;
 
 export const repairListQuerySchema = z.object({
   // « open » : tout sauf les fiches rendues.

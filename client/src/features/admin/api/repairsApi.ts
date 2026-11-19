@@ -1,6 +1,7 @@
 import { api } from "@/lib/api";
 import type { PaymentMethod } from "@/types/api";
 import type { RepairStatus } from "../repairs/repairsView";
+import type { buildReplaceBody } from "../repairs/replaceRules";
 import { data } from "./shared";
 
 // Les fiches de réparation de l'atelier (18/11, étape 2) : la liste, la création, les pièces d'une fiche, les étapes.
@@ -45,6 +46,10 @@ export type RepairDetail = RepairRow & {
   warrantyEndsAt: string | null;
   warrantyForcedOff: boolean;
   originOrderNumber: number | null;
+  // Étape 6 : le numéro de la commande de remplacement (null : la fiche n'a pas été remplacée).
+  replacementOrderNumber: number | null;
+  // L'article d'origine, pour annoncer la différence d'un remplacement ; `unitPrice` (le prix payé) manque pour le technicien.
+  origin: { unitPrice?: number; productId: number | null; storage: string | null } | null;
   // Ce que le client doit encore au Rendu (0 une fois rendu, ou sous garantie).
   amountDue: number;
   // Après le Rendu : ce qu'il a payé, avec quel moyen, le jour, et ce que les pièces ont coûté (admin seulement).
@@ -57,7 +62,18 @@ export type RepairDetail = RepairRow & {
   nextStatuses: RepairStatus[];
 };
 
-export type RepairCounts = Record<"open" | RepairStatus, number>;
+// Ce que le serveur répond à un remplacement : la fiche rendue, la différence payée (négative : rendue au client) et
+// les numéros utiles. `costKnown` faux : le prix d'achat de l'appareil donné manquait, le bénéfice est sous-évalué.
+export type ReplaceDone = {
+  repair: RepairDetail;
+  difference: number;
+  costKnown: boolean;
+  orderNumber: number;
+  tradeInId: number;
+  notices: string[];
+};
+
+export type RepairCounts =Record<"open" | RepairStatus, number>;
 
 export type WarrantyHit = {
   itemId: number;
@@ -145,6 +161,13 @@ const repairsApi = api.injectEndpoints({
       transformResponse: data<RepairDetail>,
       invalidatesTags: ["Repairs", "Parts"],
     }),
+    // Remplacer l'appareil sous garantie : stock de l'appareil donné, reprise à 0 DA, caisse (si la différence n'est pas
+    // nulle), Historique et stock des pièces bougent ensemble.
+    replaceRepair: build.mutation<ReplaceDone, { id: number; body: ReturnType<typeof buildReplaceBody> }>({
+      query: ({ id, body }) => ({ url: `/admin/repairs/${id}/replace`, method: "POST", body }),
+      transformResponse: data<ReplaceDone>,
+      invalidatesTags: ["Repairs", "Parts", "Orders", "Stats", "Cash", "Products", "History", "TradeIns"],
+    }),
     deleteRepair: build.mutation<{ ok: true }, number>({
       query: (id) => ({ url: `/admin/repairs/${id}`, method: "DELETE" }),
       transformResponse: data<{ ok: true }>,
@@ -164,5 +187,6 @@ export const {
   useUpdateRepairPartMutation,
   useRemoveRepairPartMutation,
   useChangeRepairStatusMutation,
+  useReplaceRepairMutation,
   useDeleteRepairMutation,
 } = repairsApi;

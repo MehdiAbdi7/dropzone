@@ -13,16 +13,27 @@ export const warrantyItemWhere: Prisma.OrderItemWhereInput = {
   isGift: false,
   warrantyMonths: { not: null },
   order: { status: { in: [...HANDED_OVER] } },
+  // Un article déjà remplacé n'est plus proposé (étape 6) : son appareil de remplacement porte la garantie, et ouvrir une
+  // fiche sur l'ancien article permettrait un second remplacement calculé sur un vieux prix.
+  repairs: { none: { replacementOrderId: { not: null } } },
 };
 
 const ITEM = {
   id: true,
   name: true,
   warrantyMonths: true,
+  // Étape 6 : un appareil de remplacement garde la fin de garantie de l'ancien, écrite ici.
+  warrantyUntil: true,
   order: { select: { number: true, createdAt: true } },
 } as const;
 
-type ItemRow = { id: number; name: string; warrantyMonths: number | null; order: { number: number; createdAt: Date } };
+type ItemRow = {
+  id: number;
+  name: string;
+  warrantyMonths: number | null;
+  warrantyUntil: Date | null;
+  order: { number: number; createdAt: Date };
+};
 
 export type WarrantyHit = {
   itemId: number;
@@ -38,7 +49,7 @@ export type WarrantyHit = {
 export function warrantyOf(item: ItemRow, today: string): WarrantyHit {
   const months = item.warrantyMonths ?? 0;
   const soldOn = algiersDate(item.order.createdAt);
-  const warrantyEndsAt = warrantyEndDate(soldOn, months);
+  const warrantyEndsAt = warrantyEndDate(soldOn, months, item.warrantyUntil?.toISOString().slice(0, 10));
   return {
     itemId: item.id,
     orderNumber: item.order.number,

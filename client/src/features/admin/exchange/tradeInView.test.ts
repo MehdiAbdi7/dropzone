@@ -48,6 +48,8 @@ describe("sheetSummary", () => {
 // et le corps envoyé à l'API porte la couleur, les options, la fiche et les frais de remise en état.
 const row = {
   id: 7,
+  repairNumber: null,
+  dismantlable: false,
   orderId: 1,
   orderNumber: 1,
   dailyNumber: 1,
