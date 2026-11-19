@@ -107,6 +107,19 @@ describe("GET /admin/repairs/warranty", () => {
     expect(hits).toEqual([]);
   });
 
+  // Étape 6 : l'appareil de remplacement garde le reste de l'ancienne garantie, écrit sur son article.
+  it("lit la date de fin explicite d'un article de remplacement, jusqu'à la fin de ce jour inclus", async () => {
+    const agent = await admin();
+    const sale = await sell({ type: "exchange", daysAgo: 1, months: 12 });
+    await prisma.orderItem.update({ where: { id: sale.itemId }, data: { warrantyUntil: new Date("2030-03-01T00:00:00Z") } });
+    const hits = (await agent.get("/admin/repairs/warranty").query({ phone: "0550123456" }).expect(200)).body.data;
+    expect(hits[0]).toMatchObject({ itemId: sale.itemId, warrantyEndsAt: "2030-03-01", underWarranty: true });
+    // Le dernier jour compte encore, le lendemain non (même règle que `isUnderWarranty`).
+    await prisma.orderItem.update({ where: { id: sale.itemId }, data: { warrantyUntil: new Date(`${algiersDate(new Date(Date.now() - 86_400_000))}T00:00:00Z`) } });
+    const ended = (await agent.get("/admin/repairs/warranty").query({ phone: "0550123456" }).expect(200)).body.data;
+    expect(ended[0].underWarranty).toBe(false);
+  });
+
   it("classe du plus récent au plus ancien", async () => {
     const agent = await admin();
     const old = await sell({ daysAgo: 30 });
