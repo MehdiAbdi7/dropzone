@@ -5,7 +5,8 @@ import { canAccess, isBackOffice } from "@/features/admin/access";
 import AdminGuard from "@/features/admin/AdminGuard";
 import { AdminRoleProvider } from "@/features/admin/AdminRoleContext";
 import NewOrderAlert from "@/features/admin/alerts/NewOrderAlert";
-import AdminNav, { AdminBottomNav } from "@/features/admin/AdminNav";
+import { AdminBottomNav } from "@/features/admin/AdminNav";
+import AdminSidebar from "@/features/admin/AdminSidebar";
 import AdminSubNav from "@/features/admin/AdminSubNav";
 import AdminTopbar from "@/features/admin/AdminTopbar";
 import { getCurrentUser } from "@/lib/serverFetch";
@@ -27,16 +28,14 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
 
   return (
     <AdminRoleProvider role={user.role}>
-      <div className="flex flex-1 flex-col">
-        {/* La barre du haut (logo, boutique, menu ☰) reste collée en haut, comme sur Niwa (14/11). */}
-        <AdminTopbar />
-        <div className="flex flex-1 flex-col lg:flex-row">
-          {/* Sur ordinateur, la barre latérale (les sections permises au rôle) reste en place pendant le
-              défilement : sticky sous la barre du haut, avec son propre défilement si besoin.
-              Sur téléphone et tablette, la navigation est dans la barre du bas (AdminBottomNav). */}
-          <aside className="hidden border-r border-line bg-surface lg:sticky lg:top-14 lg:block lg:h-[calc(100dvh-3.5rem)] lg:w-60 lg:shrink-0 lg:self-start lg:overflow-y-auto">
-            <AdminNav />
-          </aside>
+      {/* `admin-skin` (styles/admin.css) : l'habillage du back-office, sans toucher à celui de la boutique. */}
+      <div className="admin-skin flex flex-1 flex-col lg:flex-row">
+        {/* Sur ordinateur, la barre latérale (logo, sections permises au rôle, qui est connecté) reste en place
+            pendant le défilement. Sur téléphone et tablette, la navigation est dans la barre du bas. */}
+        <AdminSidebar firstName={user.firstName} lastName={user.lastName} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* La barre du haut (titre de la section, boutique, thème, avatar) reste collée en haut. */}
+          <AdminTopbar firstName={user.firstName} lastName={user.lastName} />
           {/* pb-24 sous lg : la barre du bas ne cache pas la fin de la page. */}
           <main id="contenu" className="min-w-0 flex-1 p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 admin-glow">
             {/* L'alerte des nouvelles commandes (son et bannière), sur toutes les pages du back-office. Dans

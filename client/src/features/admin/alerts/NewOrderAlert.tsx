@@ -77,10 +77,10 @@ export default function NewOrderAlert() {
 
   const count = unseenDeliveries.length;
   return (
-    // sticky top-[4.25rem] : dans le contenu, et collée juste sous la barre du haut (h-14) quand on défile.
+    // sticky top-[5rem] : dans le contenu, et collée juste sous la barre du haut (h-16) quand on défile.
     // Elle ne passe plus sous la barre, quel que soit le bandeau « démo » au-dessus. z-30 : au-dessus
     // du contenu, sous la barre du haut et les fenêtres.
-    <div className="sticky top-[4.25rem] z-30 mb-6 flex max-w-2xl flex-col gap-2">
+    <div className="sticky top-[5rem] z-30 mb-6 flex max-w-2xl flex-col gap-2">
       {audioBlocked ? (
         <div role="status" className="card flex items-center gap-2.5 px-4 py-3 text-sm font-semibold shadow-lg">
           <AlertIcon size={20} className="shrink-0 text-red" />
