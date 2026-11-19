@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { prisma } from "../src/config/db.js";
 import { CLIENT_MONEY_KEYS } from "../src/utils/withoutCosts.js";
 import { loginAs, resetDb } from "./helpers.js";
 import { addLineOk, adminAgent, device, makePart, makeRepair, makeWarrantyRepair, openCash, readyRepair, setStatusOk, type Agent } from "./repairHelpers.js";
@@ -76,11 +77,52 @@ describe("le technicien dans une fiche", () => {
     expect(detail).toMatchObject({ laborPrice: 1_000, note: "Vitre arrière aussi", deviceName: "iPhone 13" });
   });
 
-  it("ne crée pas de fiche, ne cherche pas la garantie, ne supprime pas une fiche", async () => {
+  it("crée une fiche : appareil, client, panne ; la réponse n'a aucune clé d'argent du client", async () => {
+    const tech = await as("technician");
+    const created = await tech.post("/admin/repairs").send(device);
+    expect(created.status).toBe(201);
+    expect(created.body.data).toMatchObject({ number: 1001, status: "received", deviceName: "iPhone 13" });
+    for (const key of CLIENT_MONEY_KEYS) expect(keysOf(created.body).has(key), key).toBe(false);
+    // La fiche créée a bien reçu la note et l'étape Reçu, et le technicien la relit.
+    expect((await tech.get(`/admin/repairs/${created.body.data.id}`)).status).toBe(200);
+  });
+
+  it("ne fixe pas ce que le client paiera à la création : ni main-d'œuvre, ni « hors garantie forcé »", async () => {
+    const tech = await as("technician");
+    const withLabor = await tech.post("/admin/repairs").send({ ...device, laborPrice: 0 });
+    expect(withLabor.status).toBe(403);
+    expect(withLabor.body.error.message).toBe("Ce geste est réservé à la vente");
+    expect((await tech.post("/admin/repairs").send({ ...device, forceOutOfWarranty: true })).status).toBe(403);
+  });
+
+  it("cherche la garantie de l'appareil et la rattache à la fiche, sans voir d'argent", async () => {
+    const tech = await as("technician");
+    const order = await prisma.order.create({
+      data: {
+        fullName: "Karim Benali",
+        phone: "0550123456",
+        type: "in_store",
+        status: "picked_up",
+        dailyNumber: 1,
+        businessDate: new Date("2026-11-18"),
+        subtotal: 80_000,
+        shippingFee: 0,
+        total: 80_000,
+        items: { create: [{ sku: "IP13-128", name: "iPhone 13", unitPrice: 80_000, quantity: 1, warrantyMonths: 12 }] },
+      },
+      select: { items: { select: { id: true } } },
+    });
+    const hits = await tech.get("/admin/repairs/warranty").query({ phone: "0550123456" }).expect(200);
+    expect(hits.body.data[0]).toMatchObject({ itemId: order.items[0].id, underWarranty: true });
+    for (const key of CLIENT_MONEY_KEYS) expect(keysOf(hits.body).has(key), key).toBe(false);
+    const created = await tech.post("/admin/repairs").send({ ...device, originItemId: order.items[0].id });
+    expect(created.status).toBe(201);
+    expect(created.body.data).toMatchObject({ underWarranty: true, nextStatuses: ["in_repair"] });
+  });
+
+  it("ne supprime pas une fiche", async () => {
     const admin = await adminAgent();
     const tech = await as("technician");
-    expect((await tech.post("/admin/repairs").send(device)).status).toBe(403);
-    expect((await tech.get("/admin/repairs/warranty").query({ phone: "0550123456" })).status).toBe(403);
     const repair = await makeRepair(admin);
     expect((await tech.delete(`/admin/repairs/${repair.id}`)).status).toBe(403);
   });

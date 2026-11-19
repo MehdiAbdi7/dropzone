@@ -5,9 +5,10 @@ import { useCreateRepairMutation, useWarrantySearchQuery, type WarrantyHit } fro
 import EditDialog from "@/features/admin/products/EditDialog";
 import ShopPicker from "@/features/admin/sales/ShopPicker";
 import type { VariantHit } from "@/features/admin/sales/ticket";
+import { useAdminRole } from "@/features/admin/AdminRoleContext";
 import { errorMessage } from "@/lib/errors";
 import { ClientInputs, DeviceInputs, LaborInput, WindowButton, toLabor, type ClientFields, type DeviceFields } from "./RepairFields";
-import { repairDraftProblem, warrantyLabel } from "./repairsView";
+import { repairCapabilities, repairDraftProblem, warrantyLabel } from "./repairsView";
 
 const dayMonthYear = (day: string) => day.split("-").reverse().join("/");
 
@@ -33,6 +34,9 @@ function CreateBody({ onCreated }: { onCreated: (id: number) => void }) {
   const [forceOut, setForceOut] = useState(false);
   const [create, { isLoading, error }] = useCreateRepairMutation();
   const close = () => setWindow(null);
+  // Le technicien crée la fiche sans fixer le prix : ni main-d'œuvre, ni recherche dans le catalogue (qui montre les
+  // prix de vente), ni « hors garantie forcé ». La vente les ajoute ensuite dans la fiche.
+  const setsPrice = repairCapabilities(useAdminRole()).editsRepair;
 
   const laborPrice = toLabor(labor);
   const problem = repairDraftProblem({ ...client, deviceName: device.deviceName, issue: device.issue, laborPrice });
@@ -48,8 +52,8 @@ function CreateBody({ onCreated }: { onCreated: (id: number) => void }) {
         deviceState: device.deviceState,
         issue: device.issue,
         accessories: device.accessories,
-        ...(laborPrice !== null ? { laborPrice } : {}),
-        ...(origin ? { originItemId: origin.itemId, forceOutOfWarranty: forceOut } : {}),
+        ...(setsPrice && laborPrice !== null ? { laborPrice } : {}),
+        ...(origin ? { originItemId: origin.itemId, ...(setsPrice ? { forceOutOfWarranty: forceOut } : {}) } : {}),
       }).unwrap();
       onCreated(repair.id);
     } catch {
@@ -72,9 +76,11 @@ function CreateBody({ onCreated }: { onCreated: (id: number) => void }) {
         <WindowButton onClick={() => setWindow("warranty")} done={origin !== null}>
           Garantie
         </WindowButton>
-        <WindowButton onClick={() => setWindow("price")} done={laborPrice !== null}>
-          Prix
-        </WindowButton>
+        {setsPrice ? (
+          <WindowButton onClick={() => setWindow("price")} done={laborPrice !== null}>
+            Prix
+          </WindowButton>
+        ) : null}
       </div>
 
       <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[10rem_1fr]">
@@ -95,8 +101,12 @@ function CreateBody({ onCreated }: { onCreated: (id: number) => void }) {
             "Hors garantie : acheté ailleurs ou commande non retrouvée"
           )}
         </dd>
-        <dt className="font-semibold">Main-d&apos;œuvre</dt>
-        <dd>{laborPrice === null ? <span className="text-ink-muted">À fixer plus tard</span> : `${laborPrice} DA`}</dd>
+        {setsPrice ? (
+          <>
+            <dt className="font-semibold">Main-d&apos;œuvre</dt>
+            <dd>{laborPrice === null ? <span className="text-ink-muted">À fixer plus tard</span> : `${laborPrice} DA`}</dd>
+          </>
+        ) : null}
       </dl>
 
       {problem ? <p className="text-sm text-ink-muted">{problem}</p> : null}
@@ -111,7 +121,7 @@ function CreateBody({ onCreated }: { onCreated: (id: number) => void }) {
 
       <EditDialog open={window === "device"} title="Appareil" size="sm" onClose={close}>
         <div className="space-y-4">
-          <PickFromCatalogue onPick={(hit) => setDevice((current) => ({ ...current, deviceName: hit.productName, deviceColor: colorOf(hit) || current.deviceColor }))} />
+          {setsPrice ? <PickFromCatalogue onPick={(hit) => setDevice((current) => ({ ...current, deviceName: hit.productName, deviceColor: colorOf(hit) || current.deviceColor }))} /> : null}
           <DeviceInputs value={device} onChange={setDevice} />
         </div>
       </EditDialog>
@@ -123,6 +133,7 @@ function CreateBody({ onCreated }: { onCreated: (id: number) => void }) {
           defaultPhone={client.phone}
           origin={origin}
           forceOut={forceOut}
+          canForce={setsPrice}
           onPick={(hit) => {
             setOrigin(hit);
             if (!hit) setForceOut(false);
@@ -175,12 +186,14 @@ function WarrantyWindow({
   defaultPhone,
   origin,
   forceOut,
+  canForce,
   onPick,
   onForceOut,
 }: {
   defaultPhone: string;
   origin: WarrantyHit | null;
   forceOut: boolean;
+  canForce: boolean;
   onPick: (hit: WarrantyHit | null) => void;
   onForceOut: (value: boolean) => void;
 }) {
@@ -233,7 +246,7 @@ function WarrantyWindow({
           </li>
         ))}
       </ul>
-      {origin ? (
+      {origin && canForce ? (
         <label className="flex items-center gap-2 text-sm font-semibold">
           <input type="checkbox" checked={forceOut} onChange={(event) => onForceOut(event.target.checked)} />
           Forcer « hors garantie » (appareil tombé dans l&apos;eau, cassé par le client…)

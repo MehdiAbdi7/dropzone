@@ -14,9 +14,6 @@ const SELLER_ROUTES = [
   "PUT /invoice-settings",
   "PUT /store/hours",
   "POST /orders/:id/invoice",
-  // L'atelier (étape 5) : le vendeur crée une fiche et cherche la garantie.
-  "POST /repairs",
-  "GET /repairs/warranty",
 ];
 const MANAGER_ROUTES = [
   "GET /orders",
@@ -154,11 +151,18 @@ describe("le technicien et les règles à liste de rôles", () => {
 // Relecture finale (étape 5) : Express route sans tenir compte de la casse, la table aussi. Sinon « /repairs/WARRANTY »
 // tombait sur la règle `/repairs/:id` (ouverte au technicien) alors qu'Express exécutait la recherche de garantie.
 describe("la casse et les segments littéraux", () => {
-  it("le technicien n'atteint pas la recherche de garantie, quelle que soit la casse ou la barre finale", () => {
+  // Le technicien crée une fiche (décision de Mehdi, 19/11) : il cherche donc la garantie de l'appareil, comme la vente.
+  it("la recherche de garantie est ouverte à la vente et au technicien, quelle que soit la casse ou la barre finale", () => {
     for (const path of ["/repairs/warranty", "/repairs/WARRANTY", "/repairs/Warranty/", "/repairs/warranty/"]) {
-      expect(roleCanCall("technician", "GET", path), path).toBe(false);
+      expect(roleCanCall("technician", "GET", path), path).toBe(true);
       expect(roleCanCall("seller", "GET", path), path).toBe(true);
+      expect(roleCanCall("customer", "GET", path), path).toBe(false);
     }
+  });
+
+  it("créer une fiche est ouvert au technicien, au vendeur et au responsable, pas à un client", () => {
+    for (const role of ["technician", "seller", "order_manager", "admin"] as const) expect(roleCanCall(role, "POST", "/repairs"), role).toBe(true);
+    expect(roleCanCall("customer", "POST", "/repairs")).toBe(false);
   });
 
   it(":id ne vaut qu'un numéro : un mot n'est pas une fiche", () => {

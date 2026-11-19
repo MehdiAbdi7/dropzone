@@ -46,9 +46,6 @@ export const ACCESS_RULES: AccessRule[] = [
   { method: "PUT", path: "/store/hours", min: "seller" },
   // Un vendeur n'ouvre que la facture d'une vente ou d'un échange du comptoir : le service le vérifie.
   { method: "POST", path: "/orders/:id/invoice", min: "seller" },
-  // L'atelier (étape 5) : le vendeur crée une fiche et cherche la garantie de l'appareil.
-  { method: "POST", path: "/repairs", min: "seller" },
-  { method: "GET", path: "/repairs/warranty", min: "seller" },
   // Responsable commande : tout le vendeur, plus la page Commandes. Modifier et supprimer une commande
   // restent à l'admin (elles ne sont pas dans la table).
   { method: "GET", path: "/orders", min: "order_manager" },
@@ -65,6 +62,10 @@ export const ACCESS_RULES: AccessRule[] = [
   // choisissent leurs pièces ; QUEL passage d'étape et QUEL champ de la fiche sont permis à chacun se décide dans
   // le service (repairAccess.ts), la route étant la même. Supprimer une fiche, modifier une pièce, corriger un
   // stock : absents de la table, donc pour l'admin.
+  // Créer une fiche et chercher la garantie de l'appareil : le technicien aussi (décision de Mehdi, 19/11). Il ne fixe
+  // pas ce que le client paiera à la création : le contrôleur refuse la main-d'œuvre et « hors garantie forcé ».
+  { method: "POST", path: "/repairs", roles: ["technician", "seller", "order_manager"], costFor: ["technician"] },
+  { method: "GET", path: "/repairs/warranty", roles: ["technician", "seller", "order_manager"], costFor: ["technician"] },
   { method: "GET", path: "/repairs", roles: ["technician", "seller", "order_manager"], costFor: ["technician"] },
   { method: "GET", path: "/repairs/counts", roles: ["technician", "seller", "order_manager"], costFor: ["technician"] },
   { method: "GET", path: "/repairs/:id", roles: ["technician", "seller", "order_manager"], costFor: ["technician"] },

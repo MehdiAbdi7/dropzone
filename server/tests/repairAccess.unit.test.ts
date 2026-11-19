@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canMoveTo, patchAllowed } from "../src/modules/repairs/repairAccess.js";
+import { canMoveTo, createAllowed, patchAllowed } from "../src/modules/repairs/repairAccess.js";
 
 // Ce que chaque rôle peut faire dans une fiche (atelier, étape 5, cahier §14) : la route est la même, le geste non.
 describe("canMoveTo", () => {
@@ -45,5 +45,29 @@ describe("patchAllowed", () => {
     for (const role of ["seller", "order_manager", "admin"] as const) {
       expect(patchAllowed(role, ["laborPrice", "note", "deviceName"]), role).toBe(true);
     }
+  });
+});
+
+// Le technicien crée une fiche (décision de Mehdi, 19/11), mais ne fixe pas ce que le client paiera : ni la
+// main-d'œuvre, ni « forcer hors garantie » (qui rend la réparation payante).
+describe("createAllowed", () => {
+  it("le technicien crée une fiche sans prix et sans forcer la garantie", () => {
+    expect(createAllowed("technician", ["fullName", "phone", "deviceName", "issue", "originItemId"])).toBe(true);
+    expect(createAllowed("technician", [])).toBe(true);
+  });
+
+  it("le technicien ne fixe ni la main-d'œuvre ni « hors garantie forcé »", () => {
+    expect(createAllowed("technician", ["fullName", "laborPrice"])).toBe(false);
+    expect(createAllowed("technician", ["forceOutOfWarranty"])).toBe(false);
+  });
+
+  it("le vendeur, le responsable et l'admin créent avec tout", () => {
+    for (const role of ["seller", "order_manager", "admin"] as const) {
+      expect(createAllowed(role, ["laborPrice", "forceOutOfWarranty", "deviceName"]), role).toBe(true);
+    }
+  });
+
+  it("un client ne crée rien", () => {
+    expect(createAllowed("customer", ["deviceName"])).toBe(false);
   });
 });
