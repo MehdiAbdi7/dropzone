@@ -9,6 +9,8 @@ const SELLER_ROUTES = [
   "POST /cash/close",
   "POST /sales",
   "POST /exchanges",
+  // Une commande reçue par téléphone (19/11) : le vendeur la saisit, la page Commandes reste au responsable.
+  "POST /orders",
   "GET /variants",
   "GET /invoice-settings",
   "PUT /invoice-settings",

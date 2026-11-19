@@ -12,6 +12,7 @@ import {
   patchStatus,
   postCollect,
   postOrder,
+  postPhoneOrder,
   postAdvanceReceived,
   postBaridiNumber,
   postPickup,
@@ -27,6 +28,7 @@ import {
   createOrderSchema,
   editOrderBodySchema,
   orderNumberParamsSchema,
+  phoneOrderBodySchema,
   pickupBodySchema,
   previewBodySchema,
   returnBodySchema,
@@ -46,6 +48,8 @@ orderRouter.get("/mine/:number", requireAuth, validate({ params: orderNumberPara
 // Monté sous /admin, déjà protégé.
 export const orderAdminRouter = Router();
 orderAdminRouter.get("/orders", validate({ query: adminOrderListQuerySchema }), getAdminOrders);
+// Une commande reçue par téléphone, saisie par le vendeur (19/11) : « À confirmer » comme une commande du site.
+orderAdminRouter.post("/orders", validate({ body: phoneOrderBodySchema }), postPhoneOrder);
 orderAdminRouter.get("/orders/:id", validate({ params: idParamsSchema }), getAdminOrderOne);
 // Modifier une commande après coup (15/11, lot 2) : stock, argent et trace suivent.
 orderAdminRouter.patch(

@@ -425,7 +425,8 @@ model User {
   addressCommune String?  @map("address_commune")
   addressLine    String?  @map("address_line")
   createdAt      DateTime @default(now()) @map("created_at")
-  orders         Order[]
+  orders         Order[]  @relation("OrderCustomer")
+  takenOrders    Order[]  @relation("OrderTakenBy")
 
   @@map("users")
 }
@@ -438,7 +439,12 @@ model Order {
   // (réglé à la main dans la migration add_store_tables).
   number              Int         @unique @default(autoincrement())
   userId              Int?        @map("user_id")
-  user                User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // Prisma veut un nom à chaque relation dès qu'il y en a deux entre les mêmes modèles : `user` est le
+  // client du compte, `takenBy` l'employé qui a saisi la commande reçue par téléphone.
+  user                User?       @relation("OrderCustomer", fields: [userId], references: [id], onDelete: SetNull)
+  // La commande prise par téléphone (19/11) : l'employé qui l'a saisie au back-office. null = commande du site.
+  takenById           Int?        @map("taken_by_id")
+  takenBy             User?       @relation("OrderTakenBy", fields: [takenById], references: [id], onDelete: SetNull)
   fullName            String      @map("full_name")
   phone               String
   // Le type de commande (14/11). Une livraison a toujours son adresse ; un retrait a son jour,
