@@ -32,8 +32,11 @@ export default function VariantPicker({
   grid = false,
   initialCategory,
   quantities,
+  onRemove,
 }: {
   onPick: (hit: VariantHit) => void;
+  // Retirer un exemplaire du ticket, depuis la carte (le « − »).
+  onRemove?: (hit: VariantHit) => void;
   // Ce qui est déjà dans le ticket, par SKU : chaque carte l'affiche (le clic ne doit pas passer inaperçu).
   quantities?: Record<string, OnTicket>;
   // Des cartes avec photo, comme la boutique en ligne (page Vente et Échange), au lieu d'une liste.
@@ -136,7 +139,7 @@ export default function VariantPicker({
             if (grid) {
               return (
                 <li key={hit.sku}>
-                  <VariantCard hit={hit} disabled={disabled} onTicket={quantities?.[hit.sku]} onPick={onPick} onDetail={setDetail} />
+                  <VariantCard hit={hit} disabled={disabled} onTicket={quantities?.[hit.sku]} onPick={onPick} onRemove={onRemove} onDetail={setDetail} />
                 </li>
               );
             }
@@ -201,29 +204,34 @@ function Chip({ selected, onClick, children }: { selected: boolean; onClick: () 
 }
 
 // La carte d'une variante, comme une carte de la boutique : photo, nom, état et options, prix, stock.
-// Un bouton « Détail » (18/11) s'ajoute SOUS la carte quand `onDetail` est donné : la carte est un conteneur
-// avec deux boutons côte à côte, car un bouton dans un bouton n'est pas permis en HTML.
+// Depuis le 19/11, on n'ajoute plus en cliquant la carte (trop facile de cliquer deux fois sans le voir) mais avec
+// un « + » bien visible en bas ; une fois l'appareil dans le ticket, « − N + » permet de le retirer depuis la
+// carte (`onRemove`). Un bouton « Détail » (18/11) est à côté : tous des boutons frères, car un bouton dans un
+// bouton n'est pas permis en HTML.
 export function VariantCard({
   hit,
   disabled = false,
   onTicket,
   onPick,
+  onRemove,
   onDetail,
 }: {
   hit: VariantHit;
   disabled?: boolean;
-  // Déjà dans le ticket (19/11) : la carte le dit et se cadre, pour qu'on voie que le clic a marché.
+  // Déjà dans le ticket (19/11) : la carte le dit et se cadre, pour qu'on voie que l'ajout a marché.
   onTicket?: OnTicket;
   onPick: (hit: VariantHit) => void;
+  // Retirer un exemplaire du ticket ; absent, la carte n'offre que le « + ».
+  onRemove?: (hit: VariantHit) => void;
   onDetail?: (hit: VariantHit) => void;
 }) {
+  const name = hit.productName;
+  const stepButton = "btn btn-primary btn-small min-w-11 text-lg font-bold leading-none";
   return (
     <div
-      className={`card flex h-full w-full flex-col overflow-hidden transition-transform hover:-translate-y-0.5 ${
-        onTicket ? "border-2 border-blue-ink" : ""
-      }`}
+      className={`card flex h-full w-full flex-col overflow-hidden ${onTicket ? "border-2 border-blue-ink" : ""}`}
     >
-      <button type="button" className="flex flex-1 flex-col text-left disabled:opacity-50" disabled={disabled} onClick={() => onPick(hit)}>
+      <div className={`flex flex-1 flex-col text-left ${disabled ? "opacity-50" : ""}`}>
         <span className="relative block aspect-[4/3] w-full bg-surface-2">
           <ProductImage src={hit.image} alt="" sizes="(min-width: 1280px) 15vw, 30vw" />
           {onTicket ? (
@@ -233,7 +241,7 @@ export function VariantCard({
           ) : null}
         </span>
         <span className="flex w-full flex-1 flex-col gap-0.5 p-3">
-          <span className="line-clamp-2 font-semibold leading-tight">{hit.productName}</span>
+          <span className="line-clamp-2 font-semibold leading-tight">{name}</span>
           <span className="text-xs text-ink-muted">
             {CONDITION_LABELS[hit.condition]}
             {Object.keys(hit.options).length ? ` · ${formatOptions(hit.options)}` : ""}
@@ -247,12 +255,40 @@ export function VariantCard({
             <span className="text-xs text-ink-muted">Achat : {formatPrice(hit.purchasePrice)}</span>
           ) : null}
         </span>
-      </button>
-      {onDetail ? (
-        <button type="button" className="btn btn-secondary btn-small m-3 mt-0" onClick={() => onDetail(hit)}>
-          Détail
-        </button>
-      ) : null}
+      </div>
+      <div className="m-3 mt-0 flex items-center justify-between gap-2">
+        {onDetail ? (
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => onDetail(hit)}>
+            Détail
+          </button>
+        ) : (
+          <span />
+        )}
+        {onTicket && onRemove ? (
+          // Dans le ticket : « − 2 + ». Le « − » retire un exemplaire (le dernier retire la ligne), le « + » s'arrête au stock.
+          <div role="group" aria-label={`${name} dans le ticket`} className="flex items-center gap-1">
+            <button type="button" className={stepButton} aria-label={`Retirer un ${name} du ticket`} onClick={() => onRemove(hit)}>
+              −
+            </button>
+            <span className="min-w-8 text-center font-display font-bold tabular-nums" aria-live="polite">
+              {onTicket.quantity}
+            </span>
+            <button
+              type="button"
+              className={stepButton}
+              aria-label={`Ajouter un ${name} au ticket`}
+              disabled={disabled || onTicket.atLimit}
+              onClick={() => onPick(hit)}
+            >
+              +
+            </button>
+          </div>
+        ) : (
+          <button type="button" className={stepButton} aria-label={`Ajouter ${name} au ticket`} disabled={disabled} onClick={() => onPick(hit)}>
+            +
+          </button>
+        )}
+      </div>
     </div>
   );
 }

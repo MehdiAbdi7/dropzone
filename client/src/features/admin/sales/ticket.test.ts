@@ -4,6 +4,8 @@ import { makeHit } from "./variantHit.fixture";
 import {
   addedMessage,
   addToTicket,
+  pickedMessage,
+  removeFromTicket,
   belowPurchasePrice,
   buildSaleBody,
   clientReady,
@@ -259,5 +261,41 @@ describe("addedMessage", () => {
 
   it("sans quantité connue (autre page), garde le message simple", () => {
     expect(addedMessage("Coque", undefined)).toBe("Ajouté au ticket : Coque");
+  });
+});
+
+// Le « − » de la carte : retire un exemplaire, et la ligne disparaît quand il n'en reste plus.
+describe("removeFromTicket", () => {
+  it("retire un exemplaire de la ligne", () => {
+    const lines = [line({ sku: "A", quantity: 3 })];
+    expect(removeFromTicket(lines, "A")).toEqual([line({ sku: "A", quantity: 2 })]);
+  });
+
+  it("retire la ligne quand il n'en reste qu'un", () => {
+    expect(removeFromTicket([line({ sku: "A", quantity: 1 }), line({ sku: "B", key: "B", quantity: 2 })], "A")).toEqual([
+      line({ sku: "B", key: "B", quantity: 2 }),
+    ]);
+  });
+
+  it("ne touche à rien pour un appareil absent du ticket", () => {
+    const lines = [line({ sku: "A" })];
+    expect(removeFromTicket(lines, "Z")).toBe(lines);
+  });
+});
+
+// Le message du haut de la recherche, à jour après un ajout comme après un retrait.
+describe("pickedMessage", () => {
+  const quantities = { A: { quantity: 2, atLimit: false } };
+
+  it("donne la quantité d'un appareil encore dans le ticket", () => {
+    expect(pickedMessage("iPhone", "A", quantities)).toBe("iPhone : 2 au ticket");
+  });
+
+  it("dit que l'appareil est retiré quand il a quitté le ticket", () => {
+    expect(pickedMessage("iPhone", "Z", quantities)).toBe("iPhone : retiré du ticket");
+  });
+
+  it("garde le message simple quand la page ne compte rien (réparations)", () => {
+    expect(pickedMessage("iPhone", "A", undefined)).toBe("Ajouté au ticket : iPhone");
   });
 });
