@@ -200,7 +200,8 @@ export async function previewCart(items: CartItemInput[], fulfillment: Fulfillme
 
 // Le jour et la fin de réservation d'un retrait, après vérification du créneau : le serveur fait
 // foi (un créneau passé entre l'affichage du formulaire et l'envoi est refusé).
-async function pickupSlot(tx: Tx, input: Extract<CreateOrderInput, { fulfillment: "pickup" }>, now: Date) {
+// Partagé avec la commande prise par téléphone (19/11) : seuls le jour et l'heure comptent.
+export async function pickupSlot(tx: Tx, input: { pickupDate?: string; pickupTime?: string }, now: Date) {
   // Le schéma exige déjà le jour et l'heure d'une réservation de deux jours ; ceci rassure TypeScript.
   if (!input.pickupDate || !input.pickupTime) {
     throw new AppError(400, "Choisissez le jour et l'heure de votre passage");
@@ -343,7 +344,7 @@ export async function createOrder(input: CreateOrderInput, userId: number | unde
 
 // Le jour du retrait en texte (« 2026-11-15 ») : une date sans heure, lue telle quelle par le
 // front, sans décalage de fuseau.
-function withPickupDay<T extends { pickupDate: Date | null }>(order: T) {
+export function withPickupDay<T extends { pickupDate: Date | null }>(order: T) {
   return { ...order, pickupDate: order.pickupDate ? order.pickupDate.toISOString().slice(0, 10) : null };
 }
 

@@ -199,5 +199,21 @@ const phoneDeliverySchema = z.object({
   shippingFee: z.number().int({ error: "Un montant en dinars, sans virgule" }).min(0).max(100_000).optional(),
 });
 
-export const phoneOrderBodySchema = z.discriminatedUnion("fulfillment", [phoneDeliverySchema]);
+// La réservation : deux jours (jour et heure obligatoires, revérifiés par le serveur) ou illimitée (sans date,
+// contre l'avance BaridiMob des réglages), comme pour la commande du site.
+const phonePickupSchema = z
+  .object({
+    ...phoneOrderBase,
+    fulfillment: z.literal("pickup"),
+    reservationMode: z.enum(["two_days", "unlimited"]).default("two_days"),
+    pickupDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Choisissez le jour de la réservation" }).optional(),
+    pickupTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, { error: "Choisissez une heure" }).optional(),
+  })
+  .superRefine((order, ctx) => {
+    if (order.reservationMode !== "two_days") return;
+    if (!order.pickupDate) ctx.addIssue({ code: "custom", path: ["pickupDate"], message: "Choisissez le jour de la réservation" });
+    if (!order.pickupTime) ctx.addIssue({ code: "custom", path: ["pickupTime"], message: "Choisissez une heure" });
+  });
+
+export const phoneOrderBodySchema = z.discriminatedUnion("fulfillment", [phoneDeliverySchema, phonePickupSchema]);
 export type PhoneOrderInput = z.infer<typeof phoneOrderBodySchema>;

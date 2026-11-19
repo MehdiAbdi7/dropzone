@@ -161,11 +161,12 @@ describe("POST /admin/orders, réservation", () => {
     const { agent } = await loginAs("seller");
     const far = await agent.post("/admin/orders").send(reservation({ pickupDate: "2026-11-21" }));
     expect(far.status).toBe(400);
-    expect(far.body.error?.message ?? far.body.message).toContain("créneau");
+    expect(far.body.error.message).toBe("Ce créneau n'est pas disponible");
 
     expect(pickupSlots(HOURS, "2026-11-16", NOW)).not.toContain("09:00");
     const past = await agent.post("/admin/orders").send(reservation({ pickupDate: "2026-11-16", pickupTime: "09:00" }));
     expect(past.status).toBe(400);
+    expect(past.body.error.message).toBe("Ce créneau n'est pas disponible");
     expect(await prisma.order.count()).toBe(0);
   });
 
@@ -173,6 +174,7 @@ describe("POST /admin/orders, réservation", () => {
     const { agent } = await loginAs("seller");
     const response = await agent.post("/admin/orders").send(reservation({ pickupDate: undefined, pickupTime: undefined }));
     expect(response.status).toBe(400);
+    expect(JSON.stringify(response.body)).toContain("pickupDate");
     expect(await prisma.order.count()).toBe(0);
   });
 
@@ -192,9 +194,12 @@ describe("POST /admin/orders, réservation", () => {
     const { agent } = await loginAs("seller");
     const unlimited = reservation({ reservationMode: "unlimited", pickupDate: undefined, pickupTime: undefined });
 
-    expect((await agent.post("/admin/orders").send(unlimited)).status).toBe(400);
+    const off = "La réservation illimitée n'est pas disponible pour le moment";
+    const noAdvance = await agent.post("/admin/orders").send(unlimited);
+    expect([noAdvance.status, noAdvance.body.error.message]).toEqual([400, off]);
     await prisma.storeSettings.update({ where: { id: 1 }, data: { reservationAdvance: 5000 } });
-    expect((await agent.post("/admin/orders").send(unlimited)).status).toBe(400);
+    const noNumber = await agent.post("/admin/orders").send(unlimited);
+    expect([noNumber.status, noNumber.body.error.message]).toEqual([400, off]);
     expect(await prisma.order.count()).toBe(0);
   });
 });
