@@ -22,6 +22,18 @@ export const tradeInSchema = z
   .superRefine((tradeIn, ctx) => checkTradeInSheet(tradeIn, ctx));
 export type TradeInInput = z.infer<typeof tradeInSchema>;
 
+// L'appareil en panne laissé par un remplacement sous garantie (atelier, étape 6) : la même fiche d'état qu'une
+// reprise, SANS prix. Son prix de reprise est 0 DA, fixé par le service : le magasin a déjà payé l'appareil donné.
+export const replacementTradeInSchema = z
+  .object({
+    deviceModelId: z.number().int().positive({ error: "Choisissez le modèle de l'appareil en panne" }),
+    color: z.string().trim().min(1, { error: "Choisissez la couleur" }).max(60),
+    options: labelRecord(60).default({}),
+    ...sheetFields,
+  })
+  .superRefine((tradeIn, ctx) => checkTradeInSheet(tradeIn, ctx));
+export type ReplacementTradeInInput = z.infer<typeof replacementTradeInSchema>;
+
 // Une reprise est toujours une affaire : sa boîte est dite, ses pièces sont cohérentes, sa garantie est dite.
 // La même règle à l'échange et à la modification de la fiche avant la mise en vente.
 function checkTradeInSheet(tradeIn: Parameters<typeof checkRefurbishedSheet>[0] & { warrantyMonths: number | null }, ctx: z.RefinementCtx) {

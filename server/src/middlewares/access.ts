@@ -71,6 +71,9 @@ export const ACCESS_RULES: AccessRule[] = [
   { method: "GET", path: "/repairs/:id", roles: ["technician", "seller", "order_manager"], costFor: ["technician"] },
   { method: "PATCH", path: "/repairs/:id", roles: ["technician", "seller", "order_manager"], costFor: ["technician"] },
   { method: "POST", path: "/repairs/:id/status", roles: ["technician", "seller", "order_manager"], costFor: ["technician"] },
+  // Remplacer l'appareil sous garantie (étape 6) : un geste de vente, l'argent et la reprise en dépendent. Le technicien
+  // en est exclu parce qu'il n'est pas dans l'escalier `min: "seller"`.
+  { method: "POST", path: "/repairs/:id/replace", min: "seller" },
   { method: "POST", path: "/repairs/:id/parts", roles: ["technician", "seller", "order_manager"], costFor: ["technician"] },
   { method: "PATCH", path: "/repairs/:id/parts/:lineId", roles: ["technician", "seller", "order_manager"], costFor: ["technician"] },
   { method: "DELETE", path: "/repairs/:id/parts/:lineId", roles: ["technician", "seller", "order_manager"], costFor: ["technician"] },

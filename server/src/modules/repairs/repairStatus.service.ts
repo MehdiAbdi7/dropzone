@@ -83,7 +83,7 @@ async function collect(
   });
 }
 
-async function returnConsumedLines(
+export async function returnConsumedLines(
   tx: Tx,
   repair: { id: number; number: number },
   lines: { id: number; partId: number; quantity: number; consumed: boolean }[],

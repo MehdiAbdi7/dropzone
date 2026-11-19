@@ -4,6 +4,7 @@ import { AppError } from "../../utils/AppError.js";
 import type { RepairListQuery, WarrantyQuery } from "./repair.schema.js";
 import { countRepairs, createRepair, getRepair, listRepairs, updateRepair } from "./repair.service.js";
 import { addLine, removeLine, updateLine } from "./repairParts.service.js";
+import { replaceRepair } from "./repairReplace.service.js";
 import { changeStatus, deleteRepair } from "./repairStatus.service.js";
 import { canMoveTo, createAllowed, patchAllowed, SALES_ONLY } from "./repairAccess.js";
 import { findWarranty } from "./warranty.service.js";
@@ -68,6 +69,10 @@ export async function postRepairStatus(req: Request, res: Response) {
     throw new AppError(403, SALES_ONLY);
   }
   res.json({ data: await changeStatus(Number(req.params.id), req.body.status, userId(res), req.body.method) });
+}
+
+export async function postRepairReplace(req: Request, res: Response) {
+  res.status(201).json({ data: await replaceRepair(Number(req.params.id), req.body, userId(res)) });
 }
 
 export async function removeRepair(req: Request, res: Response) {

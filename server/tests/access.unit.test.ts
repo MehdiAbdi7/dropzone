@@ -14,6 +14,8 @@ const SELLER_ROUTES = [
   "PUT /invoice-settings",
   "PUT /store/hours",
   "POST /orders/:id/invoice",
+  // Remplacer l'appareil d'une réparation sous garantie (atelier, étape 6) : le technicien n'y a pas droit.
+  "POST /repairs/:id/replace",
 ];
 const MANAGER_ROUTES = [
   "GET /orders",

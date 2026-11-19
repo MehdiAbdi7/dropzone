@@ -37,6 +37,7 @@ export const DETAIL_SELECT = {
   warrantyEndsAt: true,
   warrantyForcedOff: true,
   originOrderNumber: true,
+  replacementOrder: { select: { number: true } },
   returnedOn: true,
   paidAmount: true,
   partsCost: true,
@@ -89,6 +90,7 @@ type DetailSource = RowSource & {
   warrantyEndsAt: Date | null;
   warrantyForcedOff: boolean;
   originOrderNumber: number | null;
+  replacementOrder: { number: number } | null;
   returnedOn: Date | null;
   paidAmount: number | null;
   partsCost: number | null;
@@ -109,6 +111,8 @@ function toDetail(repair: DetailSource) {
     warrantyEndsAt: day(repair.warrantyEndsAt),
     warrantyForcedOff: repair.warrantyForcedOff,
     originOrderNumber: repair.originOrderNumber,
+    // Étape 6 : le numéro de la commande de remplacement (null : la fiche n'a pas été remplacée).
+    replacementOrderNumber: repair.replacementOrder?.number ?? null,
     // Ce que le client doit encore au Rendu (0 une fois rendu) ; après le Rendu, ce qu'il a payé, avec quel moyen,
     // le jour, et ce que les pièces ont coûté (admin seulement : `partsCost` est retiré pour les autres rôles).
     amountDue:
