@@ -345,7 +345,7 @@ export default function CheckoutForm({ user }: { user: User | null }) {
                     </select>
                   </Field>
                   <p className="rounded-lg border border-line bg-surface-2 p-3 text-sm">
-                    Votre appareil est réservé jusqu&apos;à minuit le jour choisi. Vous le payez au magasin.
+                    Votre appareil est réservé jusqu&apos;à la fermeture du magasin le jour choisi. Vous le payez au magasin.
                   </p>
                 </>
               )}

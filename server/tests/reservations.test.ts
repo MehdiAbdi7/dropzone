@@ -7,8 +7,9 @@ import { releaseReservationsMiddleware } from "../src/middlewares/releaseReserva
 import { releaseExpiredReservations } from "../src/modules/orders/reservations.js";
 import { createCatalog, previewThenOrder, resetDb } from "./helpers.js";
 
-// Un retrait non récupéré (14/11) : la réservation tient jusqu'à minuit le jour choisi, puis la
-// commande passe « expirée » et l'appareil revient en stock tout seul.
+// Un retrait non récupéré (14/11) : la réservation tient jusqu'à la FERMETURE du magasin le jour choisi (20h avec
+// les horaires de départ, changé le 19/11 : ce n'était pas minuit), puis la commande passe « expirée » et
+// l'appareil revient en stock tout seul.
 const at = (algiers: string) => new Date(`${algiers}+01:00`);
 const stockOf = async (sku: string) => (await prisma.productVariant.findUniqueOrThrow({ where: { sku } })).stock;
 
@@ -34,19 +35,20 @@ afterEach(() => {
 });
 
 describe("releaseExpiredReservations", () => {
-  it("à minuit passé, la commande expire et l'appareil revient en stock", async () => {
+  it("à la fermeture passée, la commande expire et l'appareil revient en stock", async () => {
     const before = await stockOf("IP-NEW-256");
     const order = await reserveToday();
     expect(await stockOf("IP-NEW-256")).toBe(before - 1);
 
-    expect(await releaseExpiredReservations(at("2026-11-15T00:01"))).toBe(1);
+    expect(await releaseExpiredReservations(at("2026-11-14T20:01"))).toBe(1);
     expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("expired");
     expect(await stockOf("IP-NEW-256")).toBe(before);
   });
 
   it("ne touche pas une réservation encore valable", async () => {
     const order = await reserveToday();
-    expect(await releaseExpiredReservations(at("2026-11-14T23:59"))).toBe(0);
+    // Une minute avant la fermeture : l'appareil est encore gardé pour le client.
+    expect(await releaseExpiredReservations(at("2026-11-14T19:59"))).toBe(0);
     expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("reserved");
   });
 
@@ -54,8 +56,8 @@ describe("releaseExpiredReservations", () => {
     const before = await stockOf("IP-NEW-256");
     await reserveToday();
     const counts = await Promise.all([
-      releaseExpiredReservations(at("2026-11-15T00:01")),
-      releaseExpiredReservations(at("2026-11-15T00:01")),
+      releaseExpiredReservations(at("2026-11-14T20:01")),
+      releaseExpiredReservations(at("2026-11-14T20:01")),
     ]);
     expect(counts.reduce((sum, count) => sum + count, 0)).toBe(1);
     expect(await stockOf("IP-NEW-256")).toBe(before);
@@ -63,7 +65,7 @@ describe("releaseExpiredReservations", () => {
 
   it("remet à jour le prix « dès » du produit d'une affaire libérée", async () => {
     await reserveToday("IP-R-DEAL");
-    await releaseExpiredReservations(at("2026-11-15T00:01"));
+    await releaseExpiredReservations(at("2026-11-14T20:01"));
     const deal = await prisma.productVariant.findUniqueOrThrow({ where: { sku: "IP-R-DEAL" }, include: { product: true } });
     expect(deal.stock).toBe(1);
     expect(deal.product.minPrice).toBeLessThanOrEqual(deal.price);
@@ -71,10 +73,10 @@ describe("releaseExpiredReservations", () => {
 });
 
 describe("dans l'API", () => {
-  it("un client qui consulte la boutique après minuit libère le retrait expiré", async () => {
+  it("un client qui consulte la boutique après la fermeture libère le retrait expiré", async () => {
     const before = await stockOf("IP-NEW-256");
     const order = await reserveToday();
-    vi.setSystemTime(at("2026-11-15T08:00"));
+    vi.setSystemTime(at("2026-11-14T20:30"));
     await request(app).get("/products").expect(200);
     expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("expired");
     expect(await stockOf("IP-NEW-256")).toBe(before);

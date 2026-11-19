@@ -146,6 +146,9 @@ describe("GET /admin/history", () => {
     };
     const first = await reserve("2026-11-14");
     const second = await reserve("2026-11-15");
+    // Ce test vérifie le jour de l'historique à minuit, pas la fin d'une réservation : depuis le 19/11 elle tombe à la
+    // fermeture du magasin (20h), et on valide ici à 23h59. On la prolonge pour que la validation reste possible.
+    await prisma.order.updateMany({ data: { reservedUntil: at("2026-11-16T12:00") } });
     await admin.agent.post("/admin/cash/open").send({ openingFloat: 0 }).expect(201);
     vi.setSystemTime(at("2026-11-14T23:59"));
     await admin.agent.post(`/admin/orders/${first.id}/pickup`).send({ method: "cash" }).expect(200);

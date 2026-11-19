@@ -63,7 +63,7 @@ export default function ConfirmationView({ number }: { number: string | undefine
           ) : (
             <p>
               Réservation au magasin <strong>{pickupLabel(pickup.pickupDate!, pickup.pickupTime!)}</strong>. Votre appareil est réservé
-              jusqu&apos;à minuit ce jour-là.
+              jusqu&apos;à la fermeture du magasin ce jour-là.
             </p>
           )}
           {mine?.total !== undefined ? (

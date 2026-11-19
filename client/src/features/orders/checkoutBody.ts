@@ -14,7 +14,7 @@ export type CheckoutValues = {
   acceptLimitations: boolean;
   pickupDate: string;
   pickupTime: string;
-  // « two_days » : un jour et une heure, jusqu'à minuit ; « unlimited » : sans date, contre une avance BaridiMob (18/11).
+  // « two_days » : un jour et une heure, jusqu'à la fermeture du magasin ; « unlimited » : sans date, contre une avance BaridiMob (18/11).
   reservationMode: "two_days" | "unlimited";
 };
 

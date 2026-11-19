@@ -16,9 +16,11 @@ export function algiersDate(now: Date): string {
   return new Date(now.getTime() + ALGIERS_OFFSET_MS).toISOString().slice(0, 10);
 }
 
-// L'instant de minuit à Alger le soir de `date` (le début du jour suivant).
-export function algiersMidnightAfter(date: string): Date {
-  return new Date(Date.parse(`${addDays(date, 1)}T00:00:00Z`) - ALGIERS_OFFSET_MS);
+// L'instant de la fermeture du magasin à Alger le jour `date` (« 20:00 » le 13/11 = 19h UTC). C'est la fin d'une
+// réservation de deux jours (19/11) : l'appareil revient en vente à la fermeture du jour choisi, pas à minuit.
+// `closingTime` est toujours après l'ouverture quand des créneaux existent (voir `pickupSlots`), donc dans le jour.
+export function algiersClosingTime(date: string, closingTime: string): Date {
+  return new Date(Date.parse(`${date}T${closingTime}:00Z`) - ALGIERS_OFFSET_MS);
 }
 
 export function addDays(date: string, days: number): string {
