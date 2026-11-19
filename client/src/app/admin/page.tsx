@@ -2,22 +2,31 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { STATUS_LABELS } from "@/config/catalog";
 import { useTradeInsQuery } from "@/features/admin/api/exchangeApi";
 import { useStatsQuery } from "@/features/admin/api/ordersApi";
+import { useOverviewQuery, type OverviewDays } from "@/features/admin/api/overviewApi";
+import ActivityChart from "@/features/admin/dashboard/ActivityChart";
+import ChannelsCard from "@/features/admin/dashboard/ChannelsCard";
+import type { Metric } from "@/features/admin/dashboard/chartMath";
+import RecentSalesCard from "@/features/admin/dashboard/RecentSalesCard";
+import StatusCard from "@/features/admin/dashboard/StatusCard";
 import EditDialog from "@/features/admin/products/EditDialog";
-import { ordersHref } from "@/features/admin/navConfig";
 import { formatPrice } from "@/lib/format";
-import type { OrderStatus } from "@/types/api";
-
-const STATUSES: OrderStatus[] = ["pending", "confirmed", "shipped", "delivered", "reserved", "cancelled"];
+import { useNow } from "@/lib/useNow";
 
 // L'accueil du back-office. Depuis le 14/11, il montre la journée du magasin (caisse, retraits
 // attendus) au lieu du « stock faible » : avec les affaires, beaucoup d'articles sont toujours à
-// 0, la liste ne disait rien.
+// 0, la liste ne disait rien. Depuis le 20/11, il a aussi des graphiques : un grand graphique dont la liste
+// déroulante choisit la mesure (ventes, commandes, bénéfice, encaissé) sur 7 ou 30 jours, la répartition par canal,
+// les derniers produits vendus et les commandes par statut. Chaque grille garde `min-w-0` à ses enfants : sans lui, un
+// graphique large élargirait la page au lieu de s'adapter à l'écran.
 export default function DashboardPage() {
-  const [open, setOpen] = useState<"pickups" | "status" | null>(null);
+  const [pickupsOpen, setPickupsOpen] = useState(false);
+  const [days, setDays] = useState<OverviewDays>(7);
+  const [metric, setMetric] = useState<Metric>("sales");
+  const now = useNow();
   const { data: stats, isError } = useStatsQuery(undefined, { pollingInterval: 60_000 });
+  const overview = useOverviewQuery(days, { pollingInterval: 60_000 });
   // Les téléphones repris en échange qui attendent un prix de revente (lot 5).
   const { data: tradeIns } = useTradeInsQuery("pending", { pollingInterval: 60_000 });
 
@@ -29,10 +38,12 @@ export default function DashboardPage() {
   }
 
   const { cash } = stats;
+  // Pendant le changement de période, l'ancienne réponse reste affichée (RTK Query la garde) : seul le premier
+  // chargement montre « … ».
+  const loading = overview.isLoading;
 
   // Les commandes à confirmer ne s'annoncent plus ici : l'alerte du back-office (son et bannière, sur
-  // toutes les pages) et la pastille rouge de « Commandes » le font déjà. Le détail par statut reste
-  // plus bas.
+  // toutes les pages) et la pastille rouge de « Commandes » le font déjà.
   return (
     <div className="space-y-4">
       <h1 className="text-2xl sm:text-3xl">Tableau de bord</h1>
@@ -89,61 +100,66 @@ export default function DashboardPage() {
         ))}
       </dl>
 
-      {/* Les listes sont derrière des boutons (refonte du 18/11) : la page tient sur un écran. */}
-      <div role="group" aria-label="Détails du jour" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <button
-          type="button"
-          onClick={() => setOpen("pickups")}
-          className="card flex items-center justify-between gap-2 p-4 text-left font-display font-bold transition-[border-color] hover:border-blue-ink"
-        >
-          <span>Réservations attendues aujourd&apos;hui</span>
-          <span className="rounded-full bg-blue-soft px-2.5 py-0.5 text-sm tabular-nums">{stats.pickupsToday.length}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setOpen("status")}
-          className="card flex items-center justify-between gap-2 p-4 text-left font-display font-bold transition-[border-color] hover:border-blue-ink"
-        >
-          <span>Commandes par statut</span>
-          <span aria-hidden="true" className="text-ink-muted">
-            ›
-          </span>
-        </button>
+      {overview.isError ? (
+        <p role="alert" className="card p-4 text-sm font-semibold text-red">
+          Les graphiques ne répondent pas, réessayez dans un instant.
+        </p>
+      ) : null}
+
+      {/* Le grand graphique et l'anneau des canaux : côte à côte sur grand écran, l'un sous l'autre sinon. */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="min-w-0 xl:col-span-2">
+          <ActivityChart
+            series={overview.data?.series}
+            days={days}
+            onDays={setDays}
+            metric={metric}
+            onMetric={setMetric}
+            profitUnknown={overview.data?.profitUnknown ?? 0}
+            loading={loading}
+          />
+        </div>
+        <div className="min-w-0">
+          <ChannelsCard channels={overview.data?.channels} days={days} loading={loading} />
+        </div>
       </div>
 
-      <EditDialog open={open === "pickups"} title="Réservations attendues aujourd'hui" onClose={() => setOpen(null)}>
-          {stats.pickupsToday.length === 0 ? (
-            <p className="text-sm text-ink-muted">Aucun client n&apos;a réservé pour aujourd&apos;hui.</p>
-          ) : (
-            <ul className="card divide-y divide-line text-sm">
-              {stats.pickupsToday.map((pickup) => (
-                <li key={pickup.id}>
-                  <Link
-                    href={`/admin/commandes/${pickup.id}`}
-                    className="flex flex-wrap items-center justify-between gap-3 py-2 hover:text-blue-ink"
-                  >
-                    <span>
-                      <span className="font-display font-bold tabular-nums">{pickup.pickupTime.replace(":", "h")}</span>{" "}
-                      {pickup.fullName} <span className="text-ink-muted">· n° {pickup.dailyNumber}</span>
-                    </span>
-                    <span className="font-semibold tabular-nums">{formatPrice(pickup.total)}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-      </EditDialog>
-      <EditDialog open={open === "status"} title="Commandes par statut" size="sm" onClose={() => setOpen(null)}>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="min-w-0 xl:col-span-2">
+          <RecentSalesCard sales={overview.data?.recent} loading={loading} now={now} />
+        </div>
+        <div className="min-w-0 space-y-4">
+          <StatusCard counts={stats.ordersByStatus} />
+          {/* La liste des réservations du jour est derrière un bouton (refonte du 18/11). */}
+          <button
+            type="button"
+            onClick={() => setPickupsOpen(true)}
+            className="card flex w-full items-center justify-between gap-2 p-4 text-left font-display font-bold"
+          >
+            <span>Réservations attendues aujourd&apos;hui</span>
+            <span className="rounded-full bg-blue-soft px-2.5 py-0.5 text-sm tabular-nums">{stats.pickupsToday.length}</span>
+          </button>
+        </div>
+      </div>
+
+      <EditDialog open={pickupsOpen} title="Réservations attendues aujourd'hui" onClose={() => setPickupsOpen(false)}>
+        {stats.pickupsToday.length === 0 ? (
+          <p className="text-sm text-ink-muted">Aucun client n&apos;a réservé pour aujourd&apos;hui.</p>
+        ) : (
           <ul className="card divide-y divide-line text-sm">
-            {STATUSES.map((status) => (
-              <li key={status}>
-                <Link href={ordersHref(status)} className="flex justify-between py-2 hover:text-blue-ink">
-                  <span>{STATUS_LABELS[status]}</span>
-                  <span className="font-semibold tabular-nums">{stats.ordersByStatus[status] ?? 0}</span>
+            {stats.pickupsToday.map((pickup) => (
+              <li key={pickup.id}>
+                <Link href={`/admin/commandes/${pickup.id}`} className="flex flex-wrap items-center justify-between gap-3 py-2 hover:text-blue-ink">
+                  <span>
+                    <span className="font-display font-bold tabular-nums">{pickup.pickupTime.replace(":", "h")}</span> {pickup.fullName}{" "}
+                    <span className="text-ink-muted">· n° {pickup.dailyNumber}</span>
+                  </span>
+                  <span className="font-semibold tabular-nums">{formatPrice(pickup.total)}</span>
                 </Link>
               </li>
             ))}
           </ul>
+        )}
       </EditDialog>
     </div>
   );
