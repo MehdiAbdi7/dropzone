@@ -133,6 +133,17 @@ export function ticketProblem(lines: TicketLine[], form: SaleForm): string | nul
   return null;
 }
 
+// Les lignes d'un ticket envoyées à l'API (vente au magasin et commande par téléphone). Le prix n'est envoyé que
+// s'il a été négocié : sans lui, le serveur prend le prix catalogue d'AUJOURD'HUI. Envoyer toujours le prix vu à
+// la recherche ferait passer un prix périmé pour une remise (ou un supplément) accordée par le vendeur.
+export function ticketLinesBody(lines: TicketLine[]) {
+  return lines.map((line) => ({
+    sku: line.sku,
+    quantity: line.quantity,
+    ...(line.unitPrice !== line.listPrice ? { unitPrice: line.unitPrice } : {}),
+  }));
+}
+
 // Le corps de POST /admin/sales.
 export function buildSaleBody(input: {
   lines: TicketLine[];
@@ -148,14 +159,7 @@ export function buildSaleBody(input: {
     method: input.method,
     ...(note ? { note } : {}),
     acceptLimitations: input.acceptLimitations,
-    // Le prix n'est envoyé que s'il a été négocié : sans lui, le serveur prend le prix catalogue
-    // d'AUJOURD'HUI. Envoyer toujours le prix vu à la recherche ferait passer un prix périmé pour une
-    // remise (ou un supplément) accordée par le vendeur.
-    lines: input.lines.map((line) => ({
-      sku: line.sku,
-      quantity: line.quantity,
-      ...(line.unitPrice !== line.listPrice ? { unitPrice: line.unitPrice } : {}),
-    })),
+    lines: ticketLinesBody(input.lines),
   };
 }
 
