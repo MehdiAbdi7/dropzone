@@ -8,6 +8,12 @@ export function initialsOf(firstName: string, lastName: string): string {
   return letters === "" ? "?" : letters;
 }
 
+// Les initiales d'un client à partir de son nom complet (20/11, listes de commandes) : le premier et le dernier mot.
+export function nameInitials(fullName: string): string {
+  const words = fullName.trim().split(/\s+/).filter(Boolean);
+  return initialsOf(words[0] ?? "", words.length > 1 ? words[words.length - 1] : "");
+}
+
 // « jeudi 19 novembre » : le jour à Alger (le fuseau est fixé, sinon un navigateur à l'étranger changerait de jour
 // à une autre heure que le magasin).
 export function todayLabel(now: Date): string {

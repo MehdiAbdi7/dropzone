@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialsOf, roleLabel, todayLabel } from "./adminIdentity";
+import { initialsOf, nameInitials, roleLabel, todayLabel } from "./adminIdentity";
 
 // Qui est connecté, montré dans la barre latérale et la barre du haut du back-office (19/11).
 describe("initialsOf", () => {
@@ -20,6 +20,23 @@ describe("initialsOf", () => {
   it("ignore les espaces autour et rend un point d'interrogation sans nom", () => {
     expect(initialsOf("  Mehdi ", " Abdi  ")).toBe("MA");
     expect(initialsOf(" ", "")).toBe("?");
+  });
+});
+
+// L'avatar d'un client dans les listes de commandes (20/11) : on ne reçoit que son nom complet.
+describe("nameInitials", () => {
+  it("prend la première lettre du premier et du dernier mot", () => {
+    expect(nameInitials("Amine Test")).toBe("AT");
+    expect(nameInitials("Mohamed Amine Benali")).toBe("MB");
+  });
+
+  it("se contente d'une lettre pour un seul mot, ignore les espaces en trop", () => {
+    expect(nameInitials("Amine")).toBe("A");
+    expect(nameInitials("  amine   test  ")).toBe("AT");
+  });
+
+  it("rend un point d'interrogation sans nom", () => {
+    expect(nameInitials("   ")).toBe("?");
   });
 });
 
