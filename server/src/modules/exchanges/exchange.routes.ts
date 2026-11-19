@@ -1,8 +1,15 @@
 import { Router } from "express";
 import { validate } from "../../middlewares/validate.js";
 import { idParamsSchema } from "../../utils/idParams.js";
-import { getTradeIns, patchTradeIn, postExchange, postPublishTradeIn } from "./exchange.controller.js";
-import { exchangeBodySchema, publishTradeInBodySchema, tradeInListQuerySchema, updateTradeInBodySchema } from "./exchange.schema.js";
+import { getTradeIns, patchTradeIn, postDismantleTradeIn, postExchange, postPublishTradeIn, postTradeInPart } from "./exchange.controller.js";
+import {
+  dismantleBodySchema,
+  exchangeBodySchema,
+  publishTradeInBodySchema,
+  tradeInListQuerySchema,
+  updateTradeInBodySchema,
+  useTradeInPartBodySchema,
+} from "./exchange.schema.js";
 
 // Monté sous /admin, déjà protégé.
 export const exchangeAdminRouter = Router();
@@ -18,3 +25,7 @@ exchangeAdminRouter.post(
   validate({ params: idParamsSchema, body: publishTradeInBodySchema }),
   postPublishTradeIn,
 );
+// Les pièces d'une reprise (atelier, étape 6) : la démonter pour pièces, ou en utiliser une pour la remettre en état.
+// Absentes de la table des droits : admin seul, comme la page Reprises.
+exchangeAdminRouter.post("/trade-ins/:id/dismantle", validate({ params: idParamsSchema, body: dismantleBodySchema }), postDismantleTradeIn);
+exchangeAdminRouter.post("/trade-ins/:id/parts", validate({ params: idParamsSchema, body: useTradeInPartBodySchema }), postTradeInPart);

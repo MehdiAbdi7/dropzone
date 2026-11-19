@@ -92,3 +92,19 @@ export const tradeInListQuerySchema = z.object({
 export const publishTradeInBodySchema = z.object({
   price: z.number({ error: "Saisissez le prix de revente, en dinars" }).int({ error: "Un montant en dinars, sans virgule" }).min(0).max(10_000_000),
 });
+
+// Démonter une reprise à 0 DA pour pièces (atelier, étape 6) : les pièces récupérées, chacune une fois.
+export const dismantleBodySchema = z.object({
+  parts: z
+    .array(z.object({ partId: z.number().int().positive(), quantity: z.number().int().min(1, { error: "Une quantité d'au moins 1" }).max(100) }))
+    .min(1, { error: "Choisissez au moins une pièce récupérée" })
+    .max(20)
+    .refine((parts) => new Set(parts.map((part) => part.partId)).size === parts.length, { error: "Une pièce ne figure qu'une fois : additionnez les quantités" }),
+});
+export type DismantleInput = z.infer<typeof dismantleBodySchema>;
+
+// Utiliser une pièce du stock pour remettre une reprise en état.
+export const useTradeInPartBodySchema = z.object({
+  partId: z.number().int().positive(),
+  quantity: z.number().int().min(1, { error: "Une quantité d'au moins 1" }).max(100),
+});
