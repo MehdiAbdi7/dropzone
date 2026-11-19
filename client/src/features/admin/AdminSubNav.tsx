@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import PendingBadge from "./alerts/PendingBadge";
 import { usePendingDeliveries, useReservedPickups } from "./alerts/usePendingDeliveries";
-import { activeTab, sectionFor } from "./navConfig";
+import { useAdminRole } from "./AdminRoleContext";
+import { activeTab, sectionFor, visibleTabs } from "./navConfig";
 
 // Les sous-onglets de la section affichée (Commandes : Livraisons, Retraits, Magasin…), en haut de
 // la page. Une section sans onglets (Historique, Clients) n'en montre pas. Le détail d'une commande
@@ -14,14 +15,18 @@ export default function AdminSubNav() {
   const params = useSearchParams();
   const { count: pending } = usePendingDeliveries();
   const reservations = useReservedPickups().todo.length;
+  const role = useAdminRole();
   const section = sectionFor(path);
   if (!section?.tabs) return null;
   const current = activeTab(section, path, params);
+  const tabs = visibleTabs(section, role);
+  // Un seul onglet permis (le vendeur dans l'Atelier) : une rangée d'un bouton ne sert à rien.
+  if (tabs.length < 2) return null;
 
   return (
     <nav aria-label={section.label} className="mb-6 flex flex-wrap items-center gap-2 border-b border-line pb-3">
       <span className="mr-2 font-display text-sm font-bold text-ink-muted">{section.label}</span>
-      {section.tabs.map((tab) => (
+      {tabs.map((tab) => (
         <Link
           key={tab.href}
           href={tab.href}

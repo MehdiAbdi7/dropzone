@@ -4,8 +4,9 @@ import { idParamsSchema } from "../../utils/idParams.js";
 import { getMovements, getParts, patchPart, postArrival, postCorrection, postPart } from "./part.controller.js";
 import { arrivalBodySchema, correctionBodySchema, partBodySchema, partPatchSchema, partSearchQuerySchema } from "./part.schema.js";
 
-// Monté sous /admin. Aucune de ces routes n'est dans la table des droits (middlewares/access.ts) : elles sont
-// donc pour l'admin seul, jusqu'à ce que le rôle technicien (étape 5) en ouvre une partie.
+// Monté sous /admin. La table des droits (middlewares/access.ts) ouvre au technicien la liste, la création, les
+// arrivages et le journal (le vendeur et le responsable lisent la liste) ; modifier une pièce et corriger un stock
+// n'y figurent pas : admin seul.
 export const partAdminRouter = Router();
 
 partAdminRouter.get("/parts", validate({ query: partSearchQuerySchema }), getParts);

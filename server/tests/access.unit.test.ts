@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ACCESS_RULES, ROLE_RANK, minRoleFor, ruleFor } from "../src/middlewares/access.js";
+import { ACCESS_RULES, ROLE_RANK, minRoleFor, roleCanCall, ruleAllows, ruleFor } from "../src/middlewares/access.js";
 
 // Les droits du cahier §4.13, écrits en dur : toute modification de la table doit changer ce test aussi,
 // donc passer par une décision. La matrice, elle, vérifie que le middleware applique la table.
@@ -14,6 +14,9 @@ const SELLER_ROUTES = [
   "PUT /invoice-settings",
   "PUT /store/hours",
   "POST /orders/:id/invoice",
+  // L'atelier (étape 5) : le vendeur crée une fiche et cherche la garantie.
+  "POST /repairs",
+  "GET /repairs/warranty",
 ];
 const MANAGER_ROUTES = [
   "GET /orders",
@@ -88,5 +91,80 @@ describe("minRoleFor", () => {
   it("ne confond pas une adresse plus longue avec une adresse de la table", () => {
     expect(minRoleFor("GET", "/orders/12/status")).toBe("admin");
     expect(minRoleFor("POST", "/sales/extra")).toBe("admin");
+  });
+});
+
+// L'atelier (étape 5) : le technicien n'est PAS au-dessus du vendeur. Ses routes sont des règles à liste de rôles.
+describe("le technicien et les règles à liste de rôles", () => {
+  const rule = (roles: ("technician" | "seller" | "order_manager" | "admin")[]) => ({ method: "GET" as const, path: "/x", roles });
+
+  it("le technicien est au rang 0 : aucune règle à rôle minimum ne le laisse passer", () => {
+    expect(ROLE_RANK.technician).toBe(0);
+    for (const rule of ACCESS_RULES.filter((candidate) => candidate.min)) {
+      expect(ruleAllows(rule, "technician"), `${rule.method} ${rule.path}`).toBe(false);
+    }
+  });
+
+  it("une règle à liste laisse passer les rôles listés et l'admin, et personne d'autre", () => {
+    expect(ruleAllows(rule(["technician"]), "technician")).toBe(true);
+    expect(ruleAllows(rule(["technician"]), "admin")).toBe(true);
+    expect(ruleAllows(rule(["technician"]), "seller")).toBe(false);
+    expect(ruleAllows(rule(["technician"]), "order_manager")).toBe(false);
+    expect(ruleAllows(rule(["technician"]), "customer")).toBe(false);
+  });
+
+  it("une règle à rôle minimum garde l'escalier", () => {
+    const seller = { method: "GET" as const, path: "/x", min: "seller" as const };
+    expect(ruleAllows(seller, "seller")).toBe(true);
+    expect(ruleAllows(seller, "order_manager")).toBe(true);
+    expect(ruleAllows(seller, "technician")).toBe(false);
+    expect(ruleAllows(seller, "customer")).toBe(false);
+  });
+
+  it("l'atelier : les pièces et les réparations en lecture sont ouvertes au technicien, au vendeur et au responsable", () => {
+    for (const [method, path] of [["GET", "/repairs"], ["GET", "/repairs/3"], ["GET", "/parts"], ["POST", "/repairs/3/status"]] as const) {
+      const found = ruleFor(method, path)!;
+      expect(ruleAllows(found, "technician"), `${method} ${path} technicien`).toBe(true);
+      expect(ruleAllows(found, "seller"), `${method} ${path} vendeur`).toBe(true);
+    }
+  });
+
+  it("le stock d'une pièce est au technicien seul (hors admin) : le vendeur n'y touche pas", () => {
+    for (const [method, path] of [["POST", "/parts"], ["POST", "/parts/3/arrivals"], ["GET", "/parts/3/movements"]] as const) {
+      const found = ruleFor(method, path)!;
+      expect(ruleAllows(found, "technician"), `${method} ${path}`).toBe(true);
+      expect(ruleAllows(found, "seller"), `${method} ${path}`).toBe(false);
+      expect(ruleAllows(found, "order_manager"), `${method} ${path}`).toBe(false);
+    }
+  });
+
+  it("reste fermé par défaut : modifier une pièce, corriger un stock, supprimer une fiche sont pour l'admin", () => {
+    expect(ruleFor("PATCH", "/parts/3")).toBeUndefined();
+    expect(ruleFor("POST", "/parts/3/corrections")).toBeUndefined();
+    expect(ruleFor("DELETE", "/repairs/3")).toBeUndefined();
+  });
+
+  it("le prix d'achat n'est ouvert qu'au technicien sur les routes des pièces et des réparations", () => {
+    expect(ruleFor("GET", "/parts")?.costFor).toEqual(["technician"]);
+    expect(ruleFor("GET", "/repairs/3")?.costFor).toEqual(["technician"]);
+    expect(ruleFor("GET", "/orders")?.costFor).toBeUndefined();
+  });
+});
+
+// Relecture finale (étape 5) : Express route sans tenir compte de la casse, la table aussi. Sinon « /repairs/WARRANTY »
+// tombait sur la règle `/repairs/:id` (ouverte au technicien) alors qu'Express exécutait la recherche de garantie.
+describe("la casse et les segments littéraux", () => {
+  it("le technicien n'atteint pas la recherche de garantie, quelle que soit la casse ou la barre finale", () => {
+    for (const path of ["/repairs/warranty", "/repairs/WARRANTY", "/repairs/Warranty/", "/repairs/warranty/"]) {
+      expect(roleCanCall("technician", "GET", path), path).toBe(false);
+      expect(roleCanCall("seller", "GET", path), path).toBe(true);
+    }
+  });
+
+  it(":id ne vaut qu'un numéro : un mot n'est pas une fiche", () => {
+    expect(roleCanCall("technician", "GET", "/repairs/12")).toBe(true);
+    expect(roleCanCall("technician", "GET", "/repairs/export")).toBe(false);
+    expect(roleCanCall("technician", "GET", "/repairs/counts")).toBe(true);
+    expect(roleCanCall("technician", "GET", "/REPAIRS/COUNTS")).toBe(true);
   });
 });

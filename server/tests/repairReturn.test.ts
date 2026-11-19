@@ -159,11 +159,7 @@ describe("sous garantie et devis refusé", () => {
 });
 
 describe("les rôles", () => {
-  it("vendeur et responsable commande reçoivent 403 sur le Rendu, un anonyme 401", async () => {
-    for (const role of ["seller", "order_manager"] as const) {
-      const { agent } = await loginAs(role, `${role}@test.dz`);
-      expect((await agent.post("/admin/repairs/1/status").send({ status: "returned", method: "cash" })).status).toBe(403);
-    }
+  it("un anonyme reçoit 401 sur le Rendu (les droits par rôle sont dans repairRoles.test.ts)", async () => {
     expect((await request(app).post("/admin/repairs/1/status").send({ status: "returned", method: "cash" })).status).toBe(401);
   });
 });

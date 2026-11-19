@@ -1,8 +1,11 @@
 import type { Request, Response } from "express";
+import { prisma } from "../../config/db.js";
+import { AppError } from "../../utils/AppError.js";
 import type { RepairListQuery, WarrantyQuery } from "./repair.schema.js";
 import { countRepairs, createRepair, getRepair, listRepairs, updateRepair } from "./repair.service.js";
 import { addLine, removeLine, updateLine } from "./repairParts.service.js";
 import { changeStatus, deleteRepair } from "./repairStatus.service.js";
+import { canMoveTo, patchAllowed, SALES_ONLY } from "./repairAccess.js";
 import { findWarranty } from "./warranty.service.js";
 
 // L'auteur d'un geste : le compte connecté (la route est derrière requireAuth).
@@ -29,6 +32,11 @@ export async function getOneRepair(req: Request, res: Response) {
 }
 
 export async function patchRepair(req: Request, res: Response) {
+  // Le technicien ne modifie que sa note (la route est la même que celle du vendeur).
+  const keys = Object.entries(req.body as Record<string, unknown>).filter(([, value]) => value !== undefined).map(([key]) => key);
+  if (!patchAllowed(res.locals.user!.role, keys)) {
+    throw new AppError(403, SALES_ONLY);
+  }
   res.json({ data: await updateRepair(Number(req.params.id), req.body, userId(res)) });
 }
 
@@ -45,6 +53,15 @@ export async function deleteRepairLine(req: Request, res: Response) {
 }
 
 export async function postRepairStatus(req: Request, res: Response) {
+  // Le technicien fait avancer la réparation ; proposer le devis, le refuser et rendre l'appareil sont à la vente.
+  const role = res.locals.user!.role;
+  const repair = role === "technician" ? await prisma.repair.findUnique({ where: { id: Number(req.params.id) }, select: { underWarranty: true } }) : { underWarranty: false };
+  if (!repair) {
+    throw new AppError(404, "Fiche de réparation introuvable");
+  }
+  if (!canMoveTo(role, req.body.status, repair)) {
+    throw new AppError(403, SALES_ONLY);
+  }
   res.json({ data: await changeStatus(Number(req.params.id), req.body.status, userId(res), req.body.method) });
 }
 

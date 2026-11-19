@@ -25,8 +25,8 @@ import {
   warrantyQuerySchema,
 } from "./repair.schema.js";
 
-// Monté sous /admin. Aucune de ces routes n'est dans la table des droits (middlewares/access.ts) : elles sont
-// donc pour l'admin seul, jusqu'à ce que les rôles technicien et vendeur (étape 5) en ouvrent une partie.
+// Monté sous /admin. La table des droits (middlewares/access.ts) ouvre une partie de ces routes au technicien, au
+// vendeur et au responsable commande ; supprimer une fiche n'y figure pas : admin seul.
 // `/repairs/warranty` et `/repairs/counts` passent AVANT `/repairs/:id`, sinon « warranty » serait pris pour un numéro.
 export const repairAdminRouter = Router();
 

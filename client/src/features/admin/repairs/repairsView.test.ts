@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { movementLabel } from "../parts/partsView";
 import { formatPrice } from "@/lib/format";
-import { actionLabel, confirmText, paidText, parseRepairSearch, returnProblem, repairDraftProblem, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
+import { actionLabel, allowedTargets, confirmText, paidText, parseRepairSearch, repairCapabilities, returnProblem, repairDraftProblem, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
 
 // La logique de la page Réparations (18/11, étape 2) : la frise, le numéro, la recherche, la saisie, la garantie.
 const states = (status: Parameters<typeof repairSteps>[0], underWarranty = false) => repairSteps(status, underWarranty).map((step) => step.state);
@@ -196,5 +196,59 @@ describe("le texte du Rendu", () => {
     const text = confirmText("returned", []) ?? "";
     expect(text).toMatch(/ne pourra plus se modifier/i);
     expect(text).not.toMatch(/supprim/i);
+  });
+});
+
+// L'atelier selon le rôle (étape 5) : le technicien avance la réparation, la vente fait le devis et le Rendu.
+describe("allowedTargets", () => {
+  const all = ["quote", "in_repair", "to_return", "ready", "returned"] as const;
+
+  it("le technicien sous garantie ne garde que En réparation et Prêt", () => {
+    expect(allowedTargets("technician", [...all], true)).toEqual(["in_repair", "ready"]);
+    expect(allowedTargets("technician", ["quote", "to_return"], true)).toEqual([]);
+  });
+
+  it("le technicien hors garantie ne garde que Prêt : l'accord du client est enregistré par la vente", () => {
+    expect(allowedTargets("technician", [...all], false)).toEqual(["ready"]);
+    expect(allowedTargets("technician", ["in_repair"], false)).toEqual([]);
+  });
+
+  it("le vendeur, le responsable et l'admin gardent tout", () => {
+    for (const role of ["seller", "order_manager", "admin"] as const) expect(allowedTargets(role, [...all], false), role).toEqual([...all]);
+  });
+});
+
+describe("repairCapabilities", () => {
+  it("le technicien : les pièces et leur prix d'achat, pas l'argent du client ni les gestes de la vente", () => {
+    expect(repairCapabilities("technician")).toEqual({
+      createsRepair: false,
+      editsRepair: false,
+      seesClientMoney: false,
+      deletesRepair: false,
+      createsPart: true,
+      editsPart: false,
+      seesPartCost: true,
+      seesPartJournal: true,
+    });
+  });
+
+  it("le vendeur et le responsable : la vente, sans le stock ni le prix d'achat", () => {
+    for (const role of ["seller", "order_manager"] as const) {
+      expect(repairCapabilities(role), role).toEqual({
+        createsRepair: true,
+        editsRepair: true,
+        seesClientMoney: true,
+        deletesRepair: false,
+        createsPart: false,
+        editsPart: false,
+        seesPartCost: false,
+        seesPartJournal: false,
+      });
+    }
+  });
+
+  it("l'admin peut tout, un client rien", () => {
+    expect(Object.values(repairCapabilities("admin")).every(Boolean)).toBe(true);
+    expect(Object.values(repairCapabilities("customer")).some(Boolean)).toBe(false);
   });
 });

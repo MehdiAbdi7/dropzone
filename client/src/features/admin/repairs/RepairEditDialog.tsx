@@ -26,16 +26,18 @@ function changes(repair: RepairDetail, next: Record<keyof Omit<RepairPatchBody, 
   };
 }
 
-export default function RepairEditDialog({ open, repair, onClose }: { open: boolean; repair: RepairDetail; onClose: () => void }) {
+// `noteOnly` : le technicien ne modifie que sa note (ni la main-d'œuvre, ni le client, ni l'appareil) ; sa fiche ne
+// contient d'ailleurs pas l'argent du client.
+export default function RepairEditDialog({ open, repair, noteOnly = false, onClose }: { open: boolean; repair: RepairDetail; noteOnly?: boolean; onClose: () => void }) {
   return (
     <EditDialog open={open} title={`Modifier la fiche R-${repair.number}`} size="sm" onClose={onClose} closeLabel="Annuler">
-      <EditBody repair={repair} onDone={onClose} />
+      <EditBody repair={repair} noteOnly={noteOnly} onDone={onClose} />
     </EditDialog>
   );
 }
 
 // Monté seulement fenêtre ouverte : le brouillon repart de la fiche telle qu'elle est.
-function EditBody({ repair, onDone }: { repair: RepairDetail; onDone: () => void }) {
+function EditBody({ repair, noteOnly, onDone }: { repair: RepairDetail; noteOnly: boolean; onDone: () => void }) {
   const [client, setClient] = useState({ fullName: repair.fullName, phone: repair.phone });
   const [device, setDevice] = useState({
     deviceName: repair.deviceName,
@@ -49,8 +51,10 @@ function EditBody({ repair, onDone }: { repair: RepairDetail; onDone: () => void
   const [update, { isLoading, error }] = useUpdateRepairMutation();
 
   const laborPrice = toLabor(labor);
-  const patch = changes(repair, { ...client, ...device, note, laborPrice });
-  const problem = repairDraftProblem({ ...client, deviceName: device.deviceName, issue: device.issue, laborPrice }) ?? (Object.keys(patch).length === 0 ? "Rien n'a changé." : null);
+  // Le technicien n'envoie que sa note : jamais un champ qu'il ne voit pas (la main-d'œuvre n'est pas dans sa fiche).
+  const patch: RepairPatchBody = noteOnly ? (note.trim() !== (repair.note ?? "") ? { note: note.trim() } : {}) : changes(repair, { ...client, ...device, note, laborPrice });
+  const problem =
+    (noteOnly ? null : repairDraftProblem({ ...client, deviceName: device.deviceName, issue: device.issue, laborPrice })) ?? (Object.keys(patch).length === 0 ? "Rien n'a changé." : null);
   const reopensQuote = repair.status === "in_repair" && !repair.underWarranty && "laborPrice" in patch;
 
   async function submit(event: FormEvent) {
@@ -66,9 +70,13 @@ function EditBody({ repair, onDone }: { repair: RepairDetail; onDone: () => void
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
-      <ClientInputs value={client} onChange={setClient} />
-      <DeviceInputs value={device} onChange={setDevice} />
-      <LaborInput value={labor} onChange={setLabor} />
+      {noteOnly ? null : (
+        <>
+          <ClientInputs value={client} onChange={setClient} />
+          <DeviceInputs value={device} onChange={setDevice} />
+          <LaborInput value={labor} onChange={setLabor} />
+        </>
+      )}
       {reopensQuote ? <p className="text-sm font-semibold">Changer la main-d&apos;œuvre pendant la réparation redemande l&apos;accord du client : la fiche revient à « Devis à valider ».</p> : null}
       <label className="block text-sm font-semibold">
         <span className="label">Note du technicien (jamais montrée au client)</span>

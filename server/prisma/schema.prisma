@@ -59,6 +59,9 @@ enum Role {
   admin
   seller
   order_manager
+  // Le technicien de l'atelier (étape 5) : il voit Réparations et Pièces, avec le prix d'achat des pièces, jamais
+  // l'argent du client. Il n'est PAS au-dessus du vendeur : voir `roles` dans middlewares/access.ts.
+  technician
 }
 
 // Une réservation au magasin : deux jours au plus sans avance, ou illimitée contre une avance BaridiMob (18/11).

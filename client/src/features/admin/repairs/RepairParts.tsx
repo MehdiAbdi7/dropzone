@@ -9,13 +9,16 @@ import {
   type RepairDetail,
   type RepairLine,
 } from "@/features/admin/api/repairsApi";
+import { useAdminRole } from "@/features/admin/AdminRoleContext";
 import { errorMessage } from "@/lib/errors";
+import { repairCapabilities } from "./repairsView";
 import { formatPrice } from "@/lib/format";
 
 // Les pièces d'une fiche : chaque ligne garde le nom et les prix de la pièce AU MOMENT où elle a été ajoutée. Une
 // pièce « sortie du stock » est déjà retirée du stock (la fiche est passée « En réparation »). Les lignes ne
 // changent plus quand l'appareil est prêt, à rendre ou rendu.
 export default function RepairParts({ repair }: { repair: RepairDetail }) {
+  const caps = repairCapabilities(useAdminRole());
   const editable = repair.status === "received" || repair.status === "quote" || repair.status === "in_repair";
   const [update, updating] = useUpdateRepairPartMutation();
   const [remove, removing] = useRemoveRepairPartMutation();
@@ -31,6 +34,7 @@ export default function RepairParts({ repair }: { repair: RepairDetail }) {
             key={line.id}
             line={line}
             editable={editable}
+            priceText={caps.seesClientMoney ? `${formatPrice(line.unitPrice)} l'unité` : caps.seesPartCost ? `Achat : ${formatPrice(line.unitCost)} l'unité` : ""}
             busy={updating.isLoading || removing.isLoading}
             onQuantity={(quantity) => update({ id: repair.id, lineId: line.id, quantity })}
             onRemove={() => remove({ id: repair.id, lineId: line.id })}
@@ -50,12 +54,14 @@ export default function RepairParts({ repair }: { repair: RepairDetail }) {
 function Line({
   line,
   editable,
+  priceText,
   busy,
   onQuantity,
   onRemove,
 }: {
   line: RepairLine;
   editable: boolean;
+  priceText: string;
   busy: boolean;
   onQuantity: (quantity: number) => void;
   onRemove: () => void;
@@ -65,7 +71,9 @@ function Line({
       <p className="min-w-0 font-semibold">
         {line.name}
         <span className="block text-sm font-normal text-ink-muted">
-          {formatPrice(line.unitPrice)} l&apos;unité{line.consumed ? " · sortie du stock" : ""}
+          {priceText}
+          {priceText && line.consumed ? " · " : ""}
+          {line.consumed ? "sortie du stock" : ""}
         </span>
       </p>
       <div className="flex items-center gap-2">
@@ -93,6 +101,7 @@ function Line({
 // Ajouter une pièce du stock : les pièces épuisées sont grisées et ne se choisissent pas (une pièce à 0 « ne peut
 // pas entrer dans une réparation »).
 function AddPart({ repair }: { repair: RepairDetail }) {
+  const seesCost = repairCapabilities(useAdminRole()).seesPartCost;
   const { data: parts } = usePartsQuery("");
   const [add, adding] = useAddRepairPartMutation();
   const [partId, setPartId] = useState("");
@@ -121,7 +130,7 @@ function AddPart({ repair }: { repair: RepairDetail }) {
             <option value="">Choisir une pièce…</option>
             {parts?.map((part) => (
               <option key={part.id} value={part.id} disabled={part.stock === 0}>
-                {part.name} · {formatPrice(part.salePrice)} · {part.stock === 0 ? "épuisée" : `${part.stock} en stock`}
+                {part.name} · {seesCost ? `achat ${formatPrice(part.purchasePrice)} · vente ${formatPrice(part.salePrice)}` : formatPrice(part.salePrice)} · {part.stock === 0 ? "épuisée" : `${part.stock} en stock`}
               </option>
             ))}
           </select>

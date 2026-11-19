@@ -5,6 +5,8 @@ import { useCorrectStockMutation, usePartMovementsQuery, type PartRow } from "@/
 import EditDialog from "@/features/admin/products/EditDialog";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatPrice } from "@/lib/format";
+import { useAdminRole } from "@/features/admin/AdminRoleContext";
+import { repairCapabilities } from "@/features/admin/repairs/repairsView";
 import { movementLabel, stockProblem } from "./partsView";
 
 const digits = (text: string) => text.replace(/\D/g, "");
@@ -21,6 +23,8 @@ export default function PartJournalDialog({ open, part, onClose }: { open: boole
 
 // Monté seulement fenêtre ouverte : la liste n'est lue qu'à l'ouverture.
 function Journal({ part }: { part: PartRow }) {
+  // Corriger un stock est à l'admin ; le technicien lit le journal.
+  const canCorrect = repairCapabilities(useAdminRole()).editsPart;
   const { data, isLoading, error } = usePartMovementsQuery(part.id);
   const [counted, setCounted] = useState("");
   const [note, setNote] = useState("");
@@ -43,6 +47,7 @@ function Journal({ part }: { part: PartRow }) {
 
   return (
     <div className="space-y-4">
+      {canCorrect ? (
       <form onSubmit={submit} className="space-y-3 rounded-lg border border-line p-3" noValidate>
         <p className="text-sm font-semibold">Corriger le stock (en stock : {part.stock})</p>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -65,6 +70,7 @@ function Journal({ part }: { part: PartRow }) {
           {saving ? "Enregistrement…" : "Corriger"}
         </button>
       </form>
+      ) : null}
 
       {error ? (
         <p role="alert" className="field-error">

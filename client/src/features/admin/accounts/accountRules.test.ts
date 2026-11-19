@@ -61,15 +61,30 @@ describe("roleChoices : vers quel rôle on peut changer un compte", () => {
   });
 
   it("propose les rôles du dessous, sauf le rôle actuel", () => {
-    expect(roleChoices("seller")).toEqual(["order_manager"]);
-    expect(roleChoices("order_manager")).toEqual(["seller"]);
-    expect(roleChoices("admin")).toEqual(["order_manager", "seller"]);
+    expect(roleChoices("seller")).toEqual(["order_manager", "technician"]);
+    expect(roleChoices("order_manager")).toEqual(["seller", "technician"]);
+    expect(roleChoices("admin")).toEqual(["order_manager", "seller", "technician"]);
   });
 });
 
 describe("ROLE_LABELS", () => {
   it("un libellé français pour chaque rôle du personnel", () => {
-    expect(ROLE_LABELS).toEqual({ admin: "Administrateur", order_manager: "Responsable commande", seller: "Vendeur" });
+    expect(ROLE_LABELS).toEqual({ admin: "Administrateur", order_manager: "Responsable commande", seller: "Vendeur", technician: "Technicien" });
     expect([...STAFF_ROLES].sort()).toEqual(Object.keys(ROLE_LABELS).sort());
+  });
+});
+
+// Le technicien (atelier, étape 5) est un rôle du personnel de plus.
+describe("le rôle technicien", () => {
+  it("est proposé à la création, avec son libellé", () => {
+    expect(STAFF_ROLES).toContain("technician");
+    expect(ROLE_LABELS.technician).toBe("Technicien");
+  });
+
+  it("est proposé au changement de rôle, et jamais « admin »", () => {
+    expect(roleChoices("seller")).toEqual(["order_manager", "technician"]);
+    expect(roleChoices("order_manager")).toEqual(["seller", "technician"]);
+    expect(roleChoices("technician")).toEqual(["order_manager", "seller"]);
+    expect(roleChoices("admin")).toEqual(["order_manager", "seller", "technician"]);
   });
 });

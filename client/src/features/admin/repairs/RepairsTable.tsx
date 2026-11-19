@@ -18,11 +18,14 @@ export default function RepairsTable({
   repairs,
   busy,
   empty,
+  showMoney = true,
   onOpen,
 }: {
   repairs: RepairRow[] | undefined;
   busy: boolean;
   empty: string;
+  // Faux pour le technicien : l'argent du client n'est pas dans ses réponses.
+  showMoney?: boolean;
   onOpen: (id: number) => void;
 }) {
   return (
@@ -37,7 +40,7 @@ export default function RepairsTable({
                 <span className="block truncate text-sm font-semibold">{repair.deviceName}</span>
                 <span className="block truncate text-xs text-ink-muted">{repair.fullName}</span>
               </span>
-              <span className="shrink-0 text-sm font-bold tabular-nums">{priceText(repair)}</span>
+              {showMoney ? <span className="shrink-0 text-sm font-bold tabular-nums">{priceText(repair)}</span> : null}
             </button>
           </li>
         ))}
@@ -53,9 +56,11 @@ export default function RepairsTable({
               <th scope="col">Appareil</th>
               <th scope="col">Client</th>
               <th scope="col">Téléphone</th>
-              <th scope="col" className="text-right">
-                Prix
-              </th>
+              {showMoney ? (
+                <th scope="col" className="text-right">
+                  Prix
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -72,12 +77,12 @@ export default function RepairsTable({
                 <td>{repair.deviceName}</td>
                 <td>{repair.fullName}</td>
                 <td className="tabular-nums">{repair.phone}</td>
-                <td className="text-right font-bold tabular-nums">{priceText(repair)}</td>
+                {showMoney ? <td className="text-right font-bold tabular-nums">{priceText(repair)}</td> : null}
               </tr>
             ))}
             {repairs && repairs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-6 text-ink-muted">
+                <td colSpan={showMoney ? 6 : 5} className="p-6 text-ink-muted">
                   {empty}
                 </td>
               </tr>

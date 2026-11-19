@@ -73,3 +73,30 @@ describe("isBackOffice", () => {
     expect(isBackOffice("customer")).toBe(false);
   });
 });
+
+// L'atelier (étape 5) : le technicien n'ouvre que Réparations, Pièces et son compte ; le vendeur et le responsable
+// ouvrent les réparations (devis, Rendu) mais pas la page Pièces (stock).
+describe("l'atelier", () => {
+  it.each(["/admin/reparations", "/admin/reparations/3", "/admin/pieces", "/admin/compte"])("le technicien ouvre %s", (path) => {
+    expect(canAccess("technician", path)).toBe(true);
+  });
+
+  it.each([...SELLER_PAGES.filter((path) => path !== "/admin/compte"), ...MANAGER_ONLY_PAGES, ...ADMIN_ONLY_PAGES])("le technicien n'ouvre pas %s", (path) => {
+    expect(canAccess("technician", path)).toBe(false);
+  });
+
+  it.each(["seller", "order_manager"] as const)("le %s ouvre les réparations, pas la page Pièces", (role) => {
+    expect(canAccess(role, "/admin/reparations")).toBe(true);
+    expect(canAccess(role, "/admin/pieces")).toBe(false);
+  });
+
+  it("l'admin ouvre tout l'atelier, un client rien", () => {
+    expect(canAccess("admin", "/admin/pieces")).toBe(true);
+    expect(canAccess("customer", "/admin/reparations")).toBe(false);
+  });
+
+  it("le technicien arrive sur les réparations, et c'est un compte du back-office", () => {
+    expect(homeFor("technician")).toBe("/admin/reparations");
+    expect(isBackOffice("technician")).toBe(true);
+  });
+});
