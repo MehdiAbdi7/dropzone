@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import Field from "@/components/ui/Field";
@@ -16,6 +16,7 @@ import { errorMessage } from "@/lib/errors";
 import { formatOptions, formatPrice } from "@/lib/format";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useHydrated } from "@/lib/useHydrated";
+import { useNow } from "@/lib/useNow";
 import type { User } from "@/types/api";
 import { useCartPreview } from "@/features/cart/useCartPreview";
 import { checkoutBody } from "./checkoutBody";
@@ -58,17 +59,6 @@ const schema = z
     }
   });
 type Values = z.input<typeof schema>;
-
-// « Maintenant », relu chaque minute : les créneaux du jour disparaissent au fil des heures.
-// Gardé dans un état (et pas relu à chaque rendu) pour que le rendu reste prévisible.
-function useNow() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(timer);
-  }, []);
-  return now;
-}
 
 export default function CheckoutForm({ user }: { user: User | null }) {
   const router = useRouter();

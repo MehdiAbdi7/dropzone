@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from "react";
 import { CONDITION_LABELS, PAYMENT_METHOD_LABELS } from "@/config/catalog";
 import { useCreateExchangeMutation, type ExchangeDone } from "@/features/admin/api/exchangeApi";
+import { useCreatePhoneOrderMutation, type PhoneOrderDone } from "@/features/admin/api/phoneOrderApi";
 import { useCreateSaleMutation, type SaleDone } from "@/features/admin/api/salesApi";
 import {
   buildExchangeBody,
@@ -31,6 +32,7 @@ import {
   type TicketLine,
   type VariantHit,
 } from "./ticket";
+import { buildPhoneOrderBody, phoneOrderProblem, type PhoneOrderDraft } from "./phoneOrder";
 import VariantDetailDialog from "./VariantDetailDialog";
 
 const METHODS = Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[];
@@ -43,32 +45,41 @@ const toNumber = (text: string) => (text.trim() === "" ? Number.NaN : Number(tex
 // Avec `exchange` (lot 5), le même ticket est celui de ce que le MAGASIN DONNE dans un échange : le
 // formulaire de la reprise du client s'insère sous les lignes, et le bouton valide l'échange (la
 // différence va dans la caisse du jour, positive si le client paie, négative si le magasin rend).
+// Avec `phoneOrder` (19/11), c'est le ticket d'une commande reçue par téléphone : une livraison ou une réservation,
+// sans moyen de paiement ni caisse. Le bouton « Livraison » ou « Réservation » ouvre la fenêtre de l'adresse ou du
+// jour, et le bouton crée la commande « À confirmer » (ou « Réservée »).
 // `picker` : la fenêtre de recherche de produit (ShopPicker), ouverte par « Ajouter un produit » (vente)
 // ou « Téléphone proposé » (échange).
 type Props = { lines: TicketLine[]; setLines: Dispatch<SetStateAction<TicketLine[]>>; picker: ReactNode } & (
-  | { exchange?: undefined; onDone: (sale: SaleDone) => void }
-  | { exchange: { tradeIn: TradeInDraft; form: ReactNode }; onDone: (done: ExchangeDone) => void }
+  | { exchange?: undefined; phoneOrder?: undefined; onDone: (sale: SaleDone) => void }
+  | { exchange: { tradeIn: TradeInDraft; form: ReactNode }; phoneOrder?: undefined; onDone: (done: ExchangeDone) => void }
+  // `form` reçoit les frais de livraison que le serveur calcule pour ce panier (null tant qu'on ne les connaît pas).
+  | { exchange?: undefined; phoneOrder: { draft: PhoneOrderDraft; form: (estimatedFee: number | null) => ReactNode }; onDone: (done: PhoneOrderDone) => void }
 );
 
 export default function SaleTicket(props: Props) {
   const { lines, setLines } = props;
   const [createSale, saleState] = useCreateSaleMutation();
   const [createExchange, exchangeState] = useCreateExchangeMutation();
-  const { isLoading, error } = props.exchange ? exchangeState : saleState;
+  const [createPhoneOrder, phoneState] = useCreatePhoneOrderMutation();
+  const { isLoading, error } = props.exchange ? exchangeState : props.phoneOrder ? phoneState : saleState;
   const [form, setForm] = useState<SaleForm>({ fullName: "", phone: "" });
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [note, setNote] = useState("");
   // Les trois formulaires vivent dans des fenêtres (refonte du 18/11) : la page reste courte, le
   // vendeur ouvre seulement ce dont il a besoin. Les valeurs restent ici, la fermeture ne les perd pas.
-  const [open, setOpen] = useState<"client" | "tradeIn" | "picker" | null>(null);
+  const [open, setOpen] = useState<"client" | "tradeIn" | "picker" | "phone" | null>(null);
   const close = () => setOpen(null);
   // L'appareil dont on regarde la fiche (bouton « Détail » d'une ligne).
   const [detail, setDetail] = useState<VariantHit | null>(null);
 
   // Le récapitulatif du serveur : cadeaux d'une affaire, limitations, problèmes de stock. Le même
-  // calcul que la commande du site (retrait : pas de frais de livraison).
+  // calcul que la commande du site (retrait : pas de frais de livraison ; une commande par téléphone suit son mode).
   const items = useMemo(() => lines.map(({ sku, quantity }) => ({ sku, quantity })), [lines]);
-  const { data: preview } = useCartPreviewQuery({ items, fulfillment: "pickup" }, { skip: lines.length === 0 });
+  const { data: preview } = useCartPreviewQuery(
+    { items, fulfillment: props.phoneOrder?.draft.fulfillment ?? "pickup" },
+    { skip: lines.length === 0 },
+  );
   const gifts: CartLine[] = preview?.lines.filter((line) => line.isGift) ?? [];
   const limitations = preview?.limitations ?? [];
   const problems = preview?.lines.filter((line) => line.problem) ?? [];
@@ -92,6 +103,7 @@ export default function SaleTicket(props: Props) {
   const problem =
     ticketProblem(shown, form) ??
     (props.exchange ? tradeInProblem(props.exchange.tradeIn) : null) ??
+    (props.phoneOrder ? phoneOrderProblem(props.phoneOrder.draft) : null) ??
     (limitations.length > 0 && !accepted ? "Le client doit accepter les limitations des appareils reconditionnés." : null);
   // Ce que le client paie en plus (positif) ou ce que le magasin lui rend (négatif) ; NaN tant qu'un des
   // deux prix manque.
@@ -107,6 +119,8 @@ export default function SaleTicket(props: Props) {
       const ticket = { lines: shown, form, method, note, acceptLimitations: accepted };
       if (props.exchange) {
         props.onDone(await createExchange(buildExchangeBody({ ...ticket, tradeIn: props.exchange.tradeIn })).unwrap());
+      } else if (props.phoneOrder) {
+        props.onDone(await createPhoneOrder(buildPhoneOrderBody(ticket, props.phoneOrder.draft)).unwrap());
       } else {
         props.onDone(await createSale(buildSaleBody(ticket)).unwrap());
       }
@@ -120,7 +134,7 @@ export default function SaleTicket(props: Props) {
       onSubmit={submit}
       id="ticket"
       className="card scroll-mt-20 space-y-4 p-4 sm:p-5"
-      aria-label={props.exchange ? "Ticket de l'échange" : "Ticket de vente"}
+      aria-label={props.exchange ? "Ticket de l'échange" : props.phoneOrder ? "Ticket de la commande par téléphone" : "Ticket de vente"}
       // Entrée dans un champ (prix, remarque, ou une douchette) ne doit pas encaisser par mégarde :
       // on encaisse avec le bouton.
       onKeyDown={(event) => {
@@ -139,6 +153,11 @@ export default function SaleTicket(props: Props) {
           {props.exchange ? (
             <WindowButton onClick={() => setOpen("tradeIn")} done={tradeInProblem(props.exchange.tradeIn) === null}>
               Téléphone repris
+            </WindowButton>
+          ) : null}
+          {props.phoneOrder ? (
+            <WindowButton onClick={() => setOpen("phone")} done={phoneOrderProblem(props.phoneOrder.draft) === null}>
+              {props.phoneOrder.draft.fulfillment === "delivery" ? "Livraison" : "Réservation"}
             </WindowButton>
           ) : null}
           <WindowButton onClick={() => setOpen("client")} done={clientReady(form)}>
@@ -260,6 +279,18 @@ export default function SaleTicket(props: Props) {
         </EditDialog>
       ) : null}
 
+      {/* L'adresse de livraison, ou le jour et l'heure de la réservation (commande par téléphone). */}
+      {props.phoneOrder ? (
+        <EditDialog
+          open={open === "phone"}
+          title={props.phoneOrder.draft.fulfillment === "delivery" ? "Livraison" : "Réservation au magasin"}
+          size="sm"
+          onClose={close}
+        >
+          {props.phoneOrder.form(preview?.shippingFee ?? null)}
+        </EditDialog>
+      ) : null}
+
       <EditDialog open={open === "client"} title="Formulaire client" size="sm" onClose={close}>
       <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
@@ -285,16 +316,19 @@ export default function SaleTicket(props: Props) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm font-semibold">
-          <span className="label">{props.exchange ? "Moyen de paiement de la différence" : "Moyen de paiement"}</span>
-          <select className="input" value={method} onChange={(event) => setMethod(event.target.value as PaymentMethod)}>
-            {METHODS.map((value) => (
-              <option key={value} value={value}>
-                {PAYMENT_METHOD_LABELS[value]}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* Une commande par téléphone n'encaisse rien : pas de moyen de paiement. */}
+        {props.phoneOrder ? null : (
+          <label className="block text-sm font-semibold">
+            <span className="label">{props.exchange ? "Moyen de paiement de la différence" : "Moyen de paiement"}</span>
+            <select className="input" value={method} onChange={(event) => setMethod(event.target.value as PaymentMethod)}>
+              {METHODS.map((value) => (
+                <option key={value} value={value}>
+                  {PAYMENT_METHOD_LABELS[value]}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="block text-sm font-semibold">
           <span className="label">Remarque (facultatif)</span>
           <input className="input" value={note} onChange={(event) => setNote(event.target.value)} />
@@ -320,7 +354,11 @@ export default function SaleTicket(props: Props) {
               checked={accepted}
               onChange={(event) => setAcceptedFor(event.target.checked ? limitationsKey : null)}
             />
-            <span>Le client a pris connaissance de ces limitations et les accepte.</span>
+            <span>
+              {props.phoneOrder
+                ? "Le client a été informé de ces limitations par téléphone et les accepte."
+                : "Le client a pris connaissance de ces limitations et les accepte."}
+            </span>
           </label>
         </div>
       ) : null}
@@ -359,9 +397,13 @@ export default function SaleTicket(props: Props) {
           ? isLoading
             ? "Enregistrement…"
             : "Valider l'échange"
-          : isLoading
-            ? "Encaissement…"
-            : `Encaisser · ${Number.isNaN(total) ? "—" : formatPrice(total)}`}
+          : props.phoneOrder
+            ? isLoading
+              ? "Enregistrement…"
+              : `Créer la commande · ${Number.isNaN(total) ? "—" : formatPrice(total)}`
+            : isLoading
+              ? "Encaissement…"
+              : `Encaisser · ${Number.isNaN(total) ? "—" : formatPrice(total)}`}
       </button>
     </form>
   );
