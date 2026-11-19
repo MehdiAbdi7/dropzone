@@ -157,21 +157,47 @@ export type EditOrderInput = z.infer<typeof editOrderBodySchema>;
 
 // La vente au magasin (16/11, lot 3) : le vendeur saisit le ticket au comptoir. `unitPrice` est le
 // prix accordé ; absent, c'est le prix catalogue. Nom, téléphone et moyen de paiement obligatoires.
+// Les lignes d'un ticket saisi au back-office : la vente au magasin et la commande prise par téléphone.
+const ticketLinesSchema = z
+  .array(
+    z.object({
+      sku: z.string().trim().toUpperCase().min(3).max(40),
+      quantity: z.number().int().min(1).max(10),
+      unitPrice: z.number().int().min(0).max(10_000_000).optional(),
+    }),
+  )
+  .min(1, { error: "Le ticket est vide" })
+  .max(30);
+
 export const storeSaleBodySchema = z.object({
   fullName: z.string().trim().min(3, { error: "Le nom et le prénom du client (3 caractères au minimum)" }).max(80),
   phone: phoneSchema,
   method: paymentMethodSchema,
   note: z.string().trim().max(500).optional(),
   acceptLimitations: z.boolean().default(false),
-  lines: z
-    .array(
-      z.object({
-        sku: z.string().trim().toUpperCase().min(3).max(40),
-        quantity: z.number().int().min(1).max(10),
-        unitPrice: z.number().int().min(0).max(10_000_000).optional(),
-      }),
-    )
-    .min(1, { error: "Le ticket est vide" })
-    .max(30),
+  lines: ticketLinesSchema,
 });
 export type StoreSaleInput = z.infer<typeof storeSaleBodySchema>;
+
+// La commande prise par téléphone (19/11) : le vendeur saisit une livraison pour un client qui appelle. Pas de
+// `cartHash` (personne n'a vu de récapitulatif à l'écran) ; `acceptLimitations` dit que le client a été informé de
+// vive voix. `shippingFee` : des frais saisis à la main, absents le serveur les calcule comme pour le site.
+const phoneOrderBase = {
+  fullName: z.string().trim().min(3, { error: "Le nom et le prénom du client (3 caractères au minimum)" }).max(80),
+  phone: phoneSchema,
+  note: z.string().trim().max(500).optional(),
+  acceptLimitations: z.boolean().default(false),
+  lines: ticketLinesSchema,
+};
+
+const phoneDeliverySchema = z.object({
+  ...phoneOrderBase,
+  fulfillment: z.literal("delivery"),
+  wilaya: z.enum(WILAYAS, { error: "Wilaya inconnue" }),
+  commune: z.string().trim().min(2).max(60),
+  address: z.string().trim().min(5).max(200),
+  shippingFee: z.number().int({ error: "Un montant en dinars, sans virgule" }).min(0).max(100_000).optional(),
+});
+
+export const phoneOrderBodySchema = z.discriminatedUnion("fulfillment", [phoneDeliverySchema]);
+export type PhoneOrderInput = z.infer<typeof phoneOrderBodySchema>;

@@ -16,7 +16,13 @@ import {
   validatePickup,
 } from "./order.service.js";
 import { deleteOrder, editOrder } from "./orderEdit.service.js";
+import { createPhoneOrder } from "./phoneOrder.service.js";
 import { createStoreSale } from "./storeSale.service.js";
+
+// La commande prise par téléphone (19/11) : saisie au back-office, au nom de l'employé connecté.
+export async function postPhoneOrder(req: Request, res: Response) {
+  res.status(201).json({ data: await createPhoneOrder(req.body, res.locals.user!.id) });
+}
 
 // La vente au magasin (16/11, lot 3) : créée et encaissée au comptoir.
 export async function postSale(req: Request, res: Response) {

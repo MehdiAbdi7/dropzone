@@ -40,6 +40,8 @@ export const ACCESS_RULES: AccessRule[] = [
   { method: "POST", path: "/cash/close", min: "seller" },
   { method: "POST", path: "/sales", min: "seller" },
   { method: "POST", path: "/exchanges", min: "seller" },
+  // Une commande reçue par téléphone (19/11) : le vendeur la saisit, la page Commandes reste au responsable.
+  { method: "POST", path: "/orders", min: "seller" },
   { method: "GET", path: "/variants", min: "seller", showsCost: true },
   { method: "GET", path: "/invoice-settings", min: "seller" },
   { method: "PUT", path: "/invoice-settings", min: "seller" },
