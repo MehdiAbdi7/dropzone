@@ -40,7 +40,9 @@ export async function getStats(now: Date = new Date()) {
 
   const byStatus = await prisma.$queryRaw<{ status: string; count: bigint }[]>`
     SELECT status::text AS status, COUNT(*) AS count
-    FROM orders
+    FROM orders o
+    -- Le remplacement d'un appareil sous garantie n'est pas une commande (atelier, étape 6).
+    WHERE NOT EXISTS (SELECT 1 FROM repairs r WHERE r.replacement_order_id = o.id)
     GROUP BY status
   `;
 
@@ -64,7 +66,8 @@ export async function getStats(now: Date = new Date()) {
       (SELECT COALESCE(SUM(i.quantity), 0)
          FROM order_items i
          JOIN orders o ON o.id = i.order_id
-        WHERE i.condition = 'refurbished' AND NOT i.is_gift AND o.status <> 'cancelled') AS sold
+        WHERE i.condition = 'refurbished' AND NOT i.is_gift AND o.status <> 'cancelled'
+          AND NOT EXISTS (SELECT 1 FROM repairs r WHERE r.replacement_order_id = o.id)) AS sold
   `;
 
   // PostgreSQL renvoie COUNT et SUM en bigint, que JSON ne sait pas écrire : Number().

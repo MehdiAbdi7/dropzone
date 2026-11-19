@@ -41,6 +41,11 @@ export async function replaceRepair(repairId: number, input: ReplaceInput, userI
     if (fiche.originItemId === null) {
       throw new AppError(400, "La commande d'origine est introuvable : le prix payé est inconnu, le remplacement ne peut pas se calculer");
     }
+    // Un article déjà remplacé ne se remplace pas une seconde fois : c'est son remplacement qui porte la garantie.
+    const alreadyReplaced = await tx.repair.count({ where: { originItemId: fiche.originItemId, replacementOrderId: { not: null } } });
+    if (alreadyReplaced > 0) {
+      throw new AppError(409, "L'appareil d'origine a déjà été remplacé : ouvrez la fiche sur son appareil de remplacement");
+    }
     const origin = await tx.orderItem.findUniqueOrThrow({
       where: { id: fiche.originItemId },
       select: { id: true, name: true, productId: true, options: true, unitPrice: true, warrantyMonths: true, warrantyUntil: true, order: { select: { number: true, createdAt: true } } },
@@ -73,7 +78,12 @@ export async function replaceRepair(repairId: number, input: ReplaceInput, userI
     await takeStock(tx, cart.lines, "le ticket");
     const { dailyNumber, businessDate } = await issueDailyNumber(tx, now);
     const costs = await variantCosts(tx, cart.lines.map((line) => line.sku));
-    const costKnown = cart.lines.every((line) => costs.get(line.sku) != null);
+    // Sans prix d'achat, le bénéfice de la fiche serait faux (un coût de 0) : on refuse plutôt que de le figer.
+    const unknownCost = cart.lines.find((line) => costs.get(line.sku) == null);
+    if (unknownCost) {
+      throw new AppError(409, `Saisissez le prix d'achat de « ${unknownCost.name} » dans le Catalogue avant de le donner en remplacement`);
+    }
+    const costKnown = true;
     const givenCost = cart.lines.reduce((sum, line) => sum + line.quantity * (costs.get(line.sku) ?? 0), 0);
 
     const { deviceModelId, color, ...sheet } = input.tradeIn;

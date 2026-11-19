@@ -30,8 +30,13 @@ export async function dismantleTradeIn(id: number, parts: { partId: number; quan
     if (tradeIn.price !== 0 || tradeIn.repair_cost !== 0) {
       throw new AppError(409, "Seule une reprise à 0 DA, sans remise en état commencée, se démonte pour pièces");
     }
+    // Seul l'appareil en panne d'un remplacement sous garantie se démonte (cahier §14) : une reprise à 0 DA d'un échange
+    // ordinaire, supprimée ensuite avec son échange, laisserait des pièces récupérées au stock sans appareil.
     const repair = await tx.repair.findFirst({ where: { replacementOrder: { tradeIn: { id } } }, select: { number: true } });
-    const note = repair ? `Démontage de la reprise ${id} (réparation R-${repair.number})` : `Démontage de la reprise ${id}`;
+    if (!repair) {
+      throw new AppError(409, "Seul l'appareil en panne d'un remplacement sous garantie se démonte pour pièces");
+    }
+    const note = `Démontage de la reprise ${id} (réparation R-${repair.number})`;
 
     let added = 0;
     for (const line of [...parts].sort((a, b) => a.partId - b.partId)) {

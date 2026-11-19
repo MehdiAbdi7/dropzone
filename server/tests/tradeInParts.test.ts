@@ -15,7 +15,7 @@ beforeEach(async () => {
 });
 
 // Une reprise (avec sa commande d'échange) : à 0 DA par défaut, comme celle d'un remplacement sous garantie.
-async function tradeInRow(over: { price?: number; repairCost?: number; listedAt?: Date | null } = {}) {
+async function tradeInRow(over: { price?: number; repairCost?: number; listedAt?: Date | null; linked?: boolean } = {}) {
   dailyNumber += 1;
   const order = await prisma.order.create({
     data: {
@@ -34,6 +34,24 @@ async function tradeInRow(over: { price?: number; repairCost?: number; listedAt?
     },
     select: { id: true, tradeIn: { select: { id: true } } },
   });
+  // Par défaut, la reprise vient d'un remplacement sous garantie (une fiche lui est liée) : seule celle-là se démonte.
+  if (over.linked !== false) {
+    await prisma.repair.create({
+      data: {
+        fullName: "Karim Benali",
+        phone: "0550123456",
+        deviceName: "iPhone 15 Pro Max",
+        issue: "Ne s'allume plus",
+        underWarranty: true,
+        warrantyEndsAt: new Date("2027-03-01T00:00:00Z"),
+        status: "returned",
+        returnedOn: new Date("2026-11-16T00:00:00Z"),
+        paidAmount: 0,
+        partsCost: 0,
+        replacementOrderId: order.id,
+      },
+    });
+  }
   return { orderId: order.id, id: order.tradeIn!.id };
 }
 
@@ -73,6 +91,15 @@ describe("POST /admin/trade-ins/:id/dismantle", () => {
       const agent = await adminAgent();
       const part = await makePart("Batterie iPhone 13", 2);
       const reprise = await tradeInRow({ price: 150_000 });
+      expect((await dismantle(agent, reprise.id, [{ partId: part.id, quantity: 1 }])).status).toBe(409);
+      expect(await stockOf(part.id)).toBe(2);
+      expect(await prisma.tradeIn.count()).toBe(1);
+    });
+
+    it("une reprise à 0 DA qui ne vient pas d'un remplacement sous garantie", async () => {
+      const agent = await adminAgent();
+      const part = await makePart("Batterie iPhone 13", 2);
+      const reprise = await tradeInRow({ linked: false });
       expect((await dismantle(agent, reprise.id, [{ partId: part.id, quantity: 1 }])).status).toBe(409);
       expect(await stockOf(part.id)).toBe(2);
       expect(await prisma.tradeIn.count()).toBe(1);
@@ -204,8 +231,9 @@ describe("POST /admin/trade-ins/:id/parts", () => {
 describe("GET /admin/trade-ins", () => {
   it("dit d'où vient une reprise (la réparation R-…) et si elle se démonte", async () => {
     const agent = await adminAgent();
-    const plain = await tradeInRow({ price: 150_000 });
-    const free = await tradeInRow();
+    const plain = await tradeInRow({ price: 150_000, linked: false });
+    const free = await tradeInRow({ linked: false });
+    const unlinkedFree = await tradeInRow({ linked: false });
     const repair = await prisma.repair.create({
       data: {
         fullName: "Karim Benali",
@@ -224,6 +252,8 @@ describe("GET /admin/trade-ins", () => {
 
     const rows = (await agent.get("/admin/trade-ins").expect(200)).body.data as { id: number; repairNumber: number | null; dismantlable: boolean }[];
     expect(rows.find((row) => row.id === plain.id)).toMatchObject({ repairNumber: null, dismantlable: false });
+    // À 0 DA mais sans fiche : pas démontable (seul un remplacement sous garantie l'est).
+    expect(rows.find((row) => row.id === unlinkedFree.id)).toMatchObject({ repairNumber: null, dismantlable: false });
     expect(rows.find((row) => row.id === free.id)).toMatchObject({ repairNumber: repair.number, dismantlable: true });
 
     // Remise en état commencée : on ne la démonte plus.

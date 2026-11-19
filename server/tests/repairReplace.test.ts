@@ -176,7 +176,10 @@ describe("POST /admin/repairs/:id/replace", () => {
     await replace(agent, first.id, body("IP-NEW-256")).expect(201);
     // Le client revient avec l'appareil de remplacement : sa garantie se retrouve par son téléphone.
     const hits = (await agent.get("/admin/repairs/warranty").query({ phone: device.phone }).expect(200)).body.data as { itemId: number; warrantyEndsAt: string }[];
-    const replacement = hits.find((hit) => hit.itemId !== sale.itemId)!;
+    // L'ancien article est déjà remplacé : il n'est plus proposé, seul le remplacement l'est (même fin de garantie).
+    expect(hits.map((hit) => hit.itemId)).not.toContain(sale.itemId);
+    expect(hits).toHaveLength(1);
+    const replacement = hits[0];
     expect(replacement.warrantyEndsAt).toBe("2027-03-01");
 
     const second = await warrantyRepair(agent, replacement.itemId);

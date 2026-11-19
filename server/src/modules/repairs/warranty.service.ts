@@ -13,6 +13,9 @@ export const warrantyItemWhere: Prisma.OrderItemWhereInput = {
   isGift: false,
   warrantyMonths: { not: null },
   order: { status: { in: [...HANDED_OVER] } },
+  // Un article déjà remplacé n'est plus proposé (étape 6) : son appareil de remplacement porte la garantie, et ouvrir une
+  // fiche sur l'ancien article permettrait un second remplacement calculé sur un vieux prix.
+  repairs: { none: { replacementOrderId: { not: null } } },
 };
 
 const ITEM = {

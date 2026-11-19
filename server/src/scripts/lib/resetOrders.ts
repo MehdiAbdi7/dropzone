@@ -37,6 +37,10 @@ export async function resetOrders(db: Tx, { keepStock }: { keepStock: boolean })
 
   // Les lignes d'une commande partent avec elle (CASCADE). Les autres tables ne pointent pas vers les
   // commandes par une clé étrangère : on les vide chacune.
+  // Une fiche remplacée sous garantie (atelier, étape 6) pointe vers sa commande : le lien tombe (SET NULL) et son
+  // montant payé, peut-être négatif, ne se justifie plus puisque l'argent est effacé aussi. Sans cela, le CHECK du montant
+  // fait échouer toute la remise à zéro.
+  await db.repair.updateMany({ where: { replacementOrderId: { not: null } }, data: { paidAmount: 0, replacementOrderId: null } });
   const orders = await db.order.deleteMany();
   const movements = await db.moneyMovement.deleteMany();
   const events = await db.orderEvent.deleteMany();

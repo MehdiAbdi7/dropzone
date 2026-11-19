@@ -104,7 +104,7 @@ export async function listTradeIns(status: "pending" | "listed") {
     id: row.id,
     repairNumber: row.order.replacementOf?.number ?? null,
     // Se démonte pour pièces : à 0 DA, sans remise en état commencée, pas encore en vente.
-    dismantlable: row.price === 0 && row.repairCost === 0 && row.listedAt === null,
+    dismantlable: row.order.replacementOf !== null && row.price === 0 && row.repairCost === 0 && row.listedAt === null,
     orderId: row.orderId,
     orderNumber: row.order.number,
     dailyNumber: row.order.dailyNumber,

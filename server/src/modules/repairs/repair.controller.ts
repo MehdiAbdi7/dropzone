@@ -33,8 +33,17 @@ export async function getRepairCounts(_req: Request, res: Response) {
   res.json({ data: await countRepairs() });
 }
 
+// Une fiche remplacée (étape 6) : `partsCost` est le prix d'achat de l'appareil donné, pas celui d'une pièce. Le
+// technicien n'a droit qu'au prix d'achat des pièces (cahier §11) : on le retire de sa réponse.
+function forRole<T extends { replacementOrderNumber: number | null; partsCost: number | null }>(detail: T, res: Response): T {
+  if (res.locals.user!.role !== "technician" || detail.replacementOrderNumber === null) return detail;
+  const { partsCost: _hidden, ...rest } = detail;
+  void _hidden;
+  return rest as T;
+}
+
 export async function getOneRepair(req: Request, res: Response) {
-  res.json({ data: await getRepair(Number(req.params.id)) });
+  res.json({ data: forRole(await getRepair(Number(req.params.id)), res) });
 }
 
 export async function patchRepair(req: Request, res: Response) {
@@ -43,7 +52,7 @@ export async function patchRepair(req: Request, res: Response) {
   if (!patchAllowed(res.locals.user!.role, keys)) {
     throw new AppError(403, SALES_ONLY);
   }
-  res.json({ data: await updateRepair(Number(req.params.id), req.body, userId(res)) });
+  res.json({ data: forRole(await updateRepair(Number(req.params.id), req.body, userId(res)), res) });
 }
 
 export async function postRepairLine(req: Request, res: Response) {
@@ -68,7 +77,7 @@ export async function postRepairStatus(req: Request, res: Response) {
   if (!canMoveTo(role, req.body.status, repair)) {
     throw new AppError(403, SALES_ONLY);
   }
-  res.json({ data: await changeStatus(Number(req.params.id), req.body.status, userId(res), req.body.method) });
+  res.json({ data: forRole(await changeStatus(Number(req.params.id), req.body.status, userId(res), req.body.method), res) });
 }
 
 export async function postRepairReplace(req: Request, res: Response) {
