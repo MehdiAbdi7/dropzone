@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { buildPhoneOrderBody, emptyPhoneDraft, phoneOrderProblem, type PhoneOrderDraft } from "./phoneOrder";
+import {
+  buildPhoneOrderBody,
+  emptyPhoneDraft,
+  phoneOrderProblem,
+  phoneOrderShipping,
+  phoneOrderTotal,
+  unlimitedReservationNote,
+  type PhoneOrderDraft,
+} from "./phoneOrder";
 import type { TicketLine } from "./ticket";
 import { makeHit } from "./variantHit.fixture";
 
@@ -110,5 +118,51 @@ describe("buildPhoneOrderBody", () => {
 
   it("transmet l'acceptation des limitations", () => {
     expect(buildPhoneOrderBody({ ...ticket, acceptLimitations: true }, delivery()).acceptLimitations).toBe(true);
+  });
+});
+
+// Les frais et le total d'une commande par téléphone : la même base que le serveur, le sous-total APRÈS les
+// prix accordés (le vendeur lit ce total au client avant de créer la commande).
+describe("phoneOrderShipping", () => {
+  it("une réservation n'a jamais de frais", () => {
+    expect(phoneOrderShipping(5_000, pickup())).toBe(0);
+  });
+
+  it("des frais saisis priment, y compris 0", () => {
+    expect(phoneOrderShipping(5_000, delivery({ shippingFee: 1200 }))).toBe(1200);
+    expect(phoneOrderShipping(5_000, delivery({ shippingFee: 0 }))).toBe(0);
+  });
+
+  it("sans frais saisis, la règle du site s'applique au sous-total accordé", () => {
+    // 10 500 au catalogue mais 9 800 accordés : 600 de frais (le serveur calcule sur le prix accordé).
+    expect(phoneOrderShipping(9_800, delivery())).toBe(600);
+    // 9 500 monté à 10 200 : livraison offerte.
+    expect(phoneOrderShipping(10_200, delivery())).toBe(0);
+    expect(phoneOrderShipping(10_000, delivery())).toBe(0);
+    expect(phoneOrderShipping(0, delivery())).toBe(0);
+  });
+
+  it("reste vide (NaN) tant qu'un prix du ticket manque", () => {
+    expect(phoneOrderShipping(Number.NaN, delivery())).toBeNaN();
+  });
+});
+
+describe("phoneOrderTotal", () => {
+  it("ajoute les frais au sous-total", () => {
+    expect(phoneOrderTotal(245_000, delivery({ shippingFee: 1200 }))).toBe(246_200);
+    expect(phoneOrderTotal(3_500, delivery())).toBe(4_100);
+    expect(phoneOrderTotal(245_000, pickup())).toBe(245_000);
+  });
+});
+
+describe("unlimitedReservationNote", () => {
+  it("dit au responsable des commandes quoi faire ensuite", () => {
+    expect(unlimitedReservationNote(true, 5_000)).toMatch(/envoyez ensuite le numéro BaridiMob/);
+  });
+
+  it("renvoie un vendeur, qui n'a pas ces boutons, vers un responsable", () => {
+    const note = unlimitedReservationNote(false, 5_000);
+    expect(note).toMatch(/responsable/);
+    expect(note).not.toMatch(/envoyez/);
   });
 });

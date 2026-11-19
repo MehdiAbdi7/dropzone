@@ -2,11 +2,13 @@
 
 import { useEffect } from "react";
 import { WILAYAS } from "@/config/wilayas";
+import { canAccess } from "@/features/admin/access";
+import { useAdminRole } from "@/features/admin/AdminRoleContext";
 import { useReservationOfferQuery, useStoreHoursQuery } from "@/features/orders/ordersApi";
 import { algiersDate, describePickupDay, pickupDays, pickupSlots } from "@/lib/algiersTime";
 import { formatPrice } from "@/lib/format";
 import { useNow } from "@/lib/useNow";
-import type { PhoneOrderDraft } from "./phoneOrder";
+import { unlimitedReservationNote, type PhoneOrderDraft } from "./phoneOrder";
 
 // Un nombre vide reste vide (NaN) : les frais laissés vides sont calculés par le serveur.
 const toNumber = (text: string) => (text.trim() === "" ? Number.NaN : Number(text));
@@ -75,6 +77,7 @@ function ReservationFields({ draft, onChange }: Pick<Props, "draft" | "onChange"
   const { data: hours } = useStoreHoursQuery();
   const { data: offer } = useReservationOfferQuery();
   const unlimitedAdvance = offer?.unlimitedAdvance ?? null;
+  const role = useAdminRole();
   const now = useNow();
   const today = algiersDate(now);
   const days = hours ? pickupDays(hours, now) : [];
@@ -114,8 +117,7 @@ function ReservationFields({ draft, onChange }: Pick<Props, "draft" | "onChange"
 
       {draft.reservationMode === "unlimited" ? (
         <p className="rounded-lg border border-line bg-surface-2 p-3 text-sm">
-          L&apos;appareil est gardé sans date limite. Depuis la commande, envoyez ensuite le numéro BaridiMob au client (il le voit dans
-          son suivi), puis confirmez l&apos;avance de <strong>{formatPrice(unlimitedAdvance ?? 0)}</strong> quand elle arrive.
+          {unlimitedReservationNote(canAccess(role, "/admin/commandes"), unlimitedAdvance ?? 0)}
         </p>
       ) : !hours ? (
         <p className="text-sm text-ink-muted">Chargement des horaires du magasin…</p>

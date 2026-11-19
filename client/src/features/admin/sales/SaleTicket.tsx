@@ -32,7 +32,7 @@ import {
   type TicketLine,
   type VariantHit,
 } from "./ticket";
-import { buildPhoneOrderBody, phoneOrderProblem, type PhoneOrderDraft } from "./phoneOrder";
+import { buildPhoneOrderBody, phoneOrderProblem, phoneOrderShipping, phoneOrderTotal, type PhoneOrderDraft } from "./phoneOrder";
 import VariantDetailDialog from "./VariantDetailDialog";
 
 const METHODS = Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[];
@@ -287,7 +287,10 @@ export default function SaleTicket(props: Props) {
           size="sm"
           onClose={close}
         >
-          {props.phoneOrder.form(preview?.shippingFee ?? null)}
+          {/* L'estimation des frais suit la base du serveur : le sous-total après les prix accordés. */}
+          {props.phoneOrder.form(
+            Number.isNaN(total) ? null : phoneOrderShipping(total, { ...props.phoneOrder.draft, shippingFee: Number.NaN }),
+          )}
         </EditDialog>
       ) : null}
 
@@ -382,6 +385,14 @@ export default function SaleTicket(props: Props) {
         </p>
       ) : null}
 
+      {/* Le total que le vendeur lit au client : les articles et la livraison, sur la même base que le serveur. */}
+      {props.phoneOrder?.draft.fulfillment === "delivery" && !Number.isNaN(total) && lines.length > 0 ? (
+        <p className="rounded-md bg-surface-2 p-3 text-sm" aria-live="polite">
+          Articles {formatPrice(total)} · livraison {formatPrice(phoneOrderShipping(total, props.phoneOrder.draft))} ·{" "}
+          <strong>total {formatPrice(phoneOrderTotal(total, props.phoneOrder.draft))}</strong>
+        </p>
+      ) : null}
+
       {/* Le bilan de l'échange : ce que le magasin donne, ce qu'il reprend, et qui paie la différence. */}
       {props.exchange && !Number.isNaN(difference) ? (
         <div className="space-y-1 rounded-lg border border-line bg-surface-2 p-4" aria-live="polite">
@@ -400,7 +411,7 @@ export default function SaleTicket(props: Props) {
           : props.phoneOrder
             ? isLoading
               ? "Enregistrement…"
-              : `Créer la commande · ${Number.isNaN(total) ? "—" : formatPrice(total)}`
+              : `Créer la commande · ${Number.isNaN(total) ? "—" : formatPrice(phoneOrderTotal(total, props.phoneOrder.draft))}`
             : isLoading
               ? "Encaissement…"
               : `Encaisser · ${Number.isNaN(total) ? "—" : formatPrice(total)}`}

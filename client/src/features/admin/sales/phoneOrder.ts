@@ -1,3 +1,5 @@
+import { FREE_SHIPPING_FROM, SHIPPING_FEE } from "@/config/shipping";
+import { formatPrice } from "@/lib/format";
 import { ticketLinesBody, type SaleForm, type TicketLine } from "./ticket";
 
 // La commande prise par téléphone (19/11) : le vendeur saisit une livraison ou une réservation pour un client qui
@@ -46,6 +48,28 @@ export function phoneOrderProblem(draft: PhoneOrderDraft): string | null {
     if (draft.pickupTime === "") return "Choisissez l'heure de la réservation.";
   }
   return null;
+}
+
+// Les frais de livraison que la commande aura : aucun pour une réservation, ceux que le vendeur a saisis (même 0),
+// sinon la règle du site. La base est le sous-total APRÈS les prix accordés, comme le serveur (une remise peut
+// faire passer sous le seuil de livraison offerte). NaN tant qu'un prix du ticket manque.
+export function phoneOrderShipping(subtotal: number, draft: PhoneOrderDraft): number {
+  if (draft.fulfillment === "pickup") return 0;
+  if (!Number.isNaN(draft.shippingFee)) return draft.shippingFee;
+  if (Number.isNaN(subtotal)) return Number.NaN;
+  return subtotal === 0 || subtotal >= FREE_SHIPPING_FROM ? 0 : SHIPPING_FEE;
+}
+
+// Le total que le vendeur lit au client avant de créer la commande.
+export const phoneOrderTotal = (subtotal: number, draft: PhoneOrderDraft): number =>
+  subtotal + phoneOrderShipping(subtotal, draft);
+
+// Ce que le vendeur doit savoir d'une réservation illimitée : le numéro BaridiMob et l'avance se gèrent depuis la
+// page Commandes, qu'un simple vendeur n'a pas (lot 7). Il est renvoyé vers un responsable au lieu d'un bouton absent.
+export function unlimitedReservationNote(canManageOrders: boolean, advance: number): string {
+  return canManageOrders
+    ? `L'appareil est gardé sans date limite. Depuis la commande, envoyez ensuite le numéro BaridiMob au client (il le voit dans son suivi), puis confirmez l'avance de ${formatPrice(advance)} quand elle arrive.`
+    : `L'appareil est gardé sans date limite. Un responsable des commandes enverra ensuite le numéro BaridiMob au client et confirmera l'avance de ${formatPrice(advance)} quand elle arrive.`;
 }
 
 // Le corps de POST /admin/orders.
