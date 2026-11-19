@@ -6,7 +6,9 @@ import { useDeliverySummaryQuery } from "@/features/admin/api/deliveriesApi";
 import EditDialog from "@/features/admin/products/EditDialog";
 import OrderWindow from "@/features/admin/orders/OrderWindow";
 import OrdersTable from "@/features/admin/orders/OrdersTable";
-import OrdersTabs, { type OrdersTab } from "@/features/admin/orders/OrdersTabs";
+import OrdersPagination from "@/features/admin/orders/OrdersPagination";
+import { type OrdersTab } from "@/features/admin/orders/OrdersTabs";
+import OrdersToolbar from "@/features/admin/orders/OrdersToolbar";
 import { useOrderWindow } from "@/features/admin/orders/useOrderWindow";
 import { errorMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/format";
@@ -50,7 +52,7 @@ function Deliveries() {
   const [daysOpen, setDaysOpen] = useState(false);
 
   return (
-    <div className="max-w-4xl space-y-4">
+    <div className="max-w-6xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl sm:text-3xl">Livraisons</h1>
         {/* L'argent arrivé jour par jour est derrière un bouton (refonte du 18/11). */}
@@ -83,28 +85,21 @@ function Deliveries() {
       )}
 
       <section aria-label="Les livraisons" className="space-y-3">
-        <OrdersTabs
+        <OrdersToolbar
           tab={tab}
-          onChange={(next) => {
+          onTab={(next) => {
             setTab(next);
             setPage(1);
           }}
           newCount={newCount.data?.pagination.total}
           ongoingCount={ongoingCount.data?.pagination.total}
+          q={q}
+          onQ={(value) => {
+            setQ(value);
+            setPage(1);
+          }}
+          searchLabel="Chercher une livraison"
         />
-        <label className="block max-w-md">
-          <span className="sr-only">Chercher une livraison</span>
-          <input
-            className="input"
-            type="search"
-            placeholder="Numéro, téléphone ou nom…"
-            value={q}
-            onChange={(event) => {
-              setQ(event.target.value);
-              setPage(1);
-            }}
-          />
-        </label>
         {orders.isError ? (
           <p role="alert" className="field-error">
             {errorMessage(orders.error)}
@@ -117,24 +112,7 @@ function Deliveries() {
             onOpen={orderWindow.open}
           />
         )}
-        {orders.data && orders.data.pagination.pages > 1 ? (
-          <div className="flex items-center justify-center gap-3">
-            <button type="button" className="btn btn-secondary btn-small" disabled={page === 1} onClick={() => setPage(page - 1)}>
-              Précédente
-            </button>
-            <p className="text-sm">
-              Page {orders.data.pagination.page} sur {orders.data.pagination.pages}
-            </p>
-            <button
-              type="button"
-              className="btn btn-secondary btn-small"
-              disabled={page >= orders.data.pagination.pages}
-              onClick={() => setPage(page + 1)}
-            >
-              Suivante
-            </button>
-          </div>
-        ) : null}
+        {orders.data ? <OrdersPagination page={orders.data.pagination.page} pages={orders.data.pagination.pages} onChange={setPage} /> : null}
       </section>
 
       {data ? (

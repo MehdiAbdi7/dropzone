@@ -7,7 +7,8 @@ import { useAdminOrdersQuery } from "@/features/admin/api/ordersApi";
 import { ordersHref } from "@/features/admin/navConfig";
 import OrderWindow from "@/features/admin/orders/OrderWindow";
 import OrdersTable from "@/features/admin/orders/OrdersTable";
-import OrdersTabs, { type OrdersTab } from "@/features/admin/orders/OrdersTabs";
+import { type OrdersTab } from "@/features/admin/orders/OrdersTabs";
+import OrdersToolbar from "@/features/admin/orders/OrdersToolbar";
 import { isOngoingReservation } from "@/features/admin/orders/reservationStage";
 import { useOrderWindow } from "@/features/admin/orders/useOrderWindow";
 import type { OrderType } from "@/types/api";
@@ -60,17 +61,15 @@ function OrdersList() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl sm:text-3xl">Réservations au magasin</h1>
-      <OrdersTabs tab={tab} onChange={setTab} newCount={fresh?.length} ongoingCount={ongoing?.length} />
-      <label className="block max-w-md">
-        <span className="sr-only">Chercher une commande</span>
-        <input
-          className="input"
-          type="search"
-          placeholder="Numéro, téléphone ou nom…"
-          value={q}
-          onChange={(event) => setQ(event.target.value)}
-        />
-      </label>
+      <OrdersToolbar
+        tab={tab}
+        onTab={setTab}
+        newCount={fresh?.length}
+        ongoingCount={ongoing?.length}
+        q={q}
+        onQ={setQ}
+        searchLabel="Chercher une réservation"
+      />
 
       <OrdersTable
         orders={tab === "new" ? fresh : ongoing}
