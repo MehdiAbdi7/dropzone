@@ -6,7 +6,7 @@ import { AppError } from "../../utils/AppError.js";
 import { paginate, paginationMeta } from "../../utils/pagination.js";
 import { buildConditionReport, refreshMinPrice } from "../products/product.service.js";
 import { sameColor } from "../models/modelColors.js";
-import { algiersDate, algiersMidnightAfter, pickupDays, pickupSlots } from "../../utils/algiersTime.js";
+import { algiersClosingTime, algiersDate, pickupDays, pickupSlots } from "../../utils/algiersTime.js";
 import { requireOpenCashDay } from "../cash/cash.service.js";
 import { getReservationSettings, getStoreHours, getUnlimitedAdvance } from "../store/store.service.js";
 import { issueDailyNumber } from "./dailyNumber.js";
@@ -214,7 +214,9 @@ export async function pickupSlot(tx: Tx, input: { pickupDate?: string; pickupTim
   return {
     pickupDate: new Date(`${input.pickupDate}T00:00:00Z`),
     pickupTime: input.pickupTime,
-    reservedUntil: algiersMidnightAfter(input.pickupDate),
+    // L'appareil est gardé jusqu'à la fermeture du magasin ce jour-là (19/11), pas jusqu'à minuit : passé l'heure,
+    // plus personne ne vient le chercher, il doit revenir en vente. Les horaires du jour de la commande font foi.
+    reservedUntil: algiersClosingTime(input.pickupDate, hours.closingTime),
   };
 }
 
@@ -611,7 +613,7 @@ export async function validatePickup(
 ) {
   return prisma.$transaction(async (tx) => {
     await requireOpenCashDay(tx, now);
-    // Conditionnelle : un deuxième clic, ou l'expiration de minuit, a pu passer avant. Seul
+    // Conditionnelle : un deuxième clic, ou l'expiration de la fermeture, a pu passer avant. Seul
     // l'appel qui fait passer la commande de « réservée » à « récupérée » encaisse.
     const { count } = await tx.order.updateMany({
       // Une réservation illimitée n'a pas de date limite (reservedUntil null) : elle ne s'expire jamais.

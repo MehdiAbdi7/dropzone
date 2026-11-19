@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app.js";
 import { prisma } from "../src/config/db.js";
 import { computeShippingFee } from "../src/config/shipping.js";
-import { algiersMidnightAfter, pickupDays, pickupSlots } from "../src/utils/algiersTime.js";
+import { algiersClosingTime, pickupDays, pickupSlots } from "../src/utils/algiersTime.js";
 import { createCatalog, loginAs, resetDb } from "./helpers.js";
 
 // La commande prise par téléphone (19/11) : le vendeur saisit au back-office une livraison ou une réservation
@@ -152,7 +152,7 @@ describe("POST /admin/orders, réservation", () => {
 
     const order = await prisma.order.findFirstOrThrow();
     expect(order).toMatchObject({ type: "pickup", status: "reserved", shippingFee: 0, takenById: user.id, pickupTime: body.pickupTime });
-    expect(order.reservedUntil?.getTime()).toBe(algiersMidnightAfter(body.pickupDate as string).getTime());
+    expect(order.reservedUntil?.getTime()).toBe(algiersClosingTime(body.pickupDate as string, HOURS.closingTime).getTime());
     expect(await stockOf("IP-NEW-256")).toBe(before - 1);
     expect(await prisma.moneyMovement.count()).toBe(0);
   });

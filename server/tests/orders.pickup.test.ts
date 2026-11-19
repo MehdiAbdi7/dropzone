@@ -5,7 +5,7 @@ import { prisma } from "../src/config/db.js";
 import { createCatalog, customer, loginAs, previewThenOrder, resetDb } from "./helpers.js";
 
 // Le retrait au magasin (14/11) : le client choisit l'un des deux jours proposés et une heure ; le
-// téléphone est réservé (stock retiré) jusqu'à minuit le jour choisi ; il paie au magasin.
+// téléphone est réservé (stock retiré) jusqu'à la fermeture du magasin le jour choisi ; il paie au magasin.
 const stockOf = async (sku: string) => (await prisma.productVariant.findUniqueOrThrow({ where: { sku } })).stock;
 const at = (algiers: string) => new Date(`${algiers}+01:00`);
 
@@ -39,7 +39,7 @@ afterEach(() => {
 });
 
 describe("POST /orders en retrait au magasin", () => {
-  it("réserve l'appareil : stock retiré, sans frais de livraison, réservé jusqu'à minuit le jour choisi", async () => {
+  it("réserve l'appareil : stock retiré, sans frais de livraison, réservé jusqu'à la fermeture le jour choisi", async () => {
     const before = await stockOf("IP-NEW-256");
     const response = await previewThenOrder([{ sku: "IP-NEW-256", quantity: 1 }], pickup(TOMORROW, "15:30"));
     expect(response.status).toBe(201);
@@ -49,7 +49,8 @@ describe("POST /orders en retrait au magasin", () => {
     const order = await prisma.order.findFirstOrThrow();
     expect(order).toMatchObject({ status: "reserved", type: "pickup", shippingFee: 0, wilaya: null, address: null });
     expect(order.total).toBe(order.subtotal);
-    expect(order.reservedUntil?.toISOString()).toBe("2026-11-15T23:00:00.000Z");
+    // Fermeture à 20h (horaires de départ) le 15/11 à Alger : 19h UTC, et non minuit.
+    expect(order.reservedUntil?.toISOString()).toBe("2026-11-15T19:00:00.000Z");
   });
 
   it("numérote chaque commande dans sa journée", async () => {
@@ -112,7 +113,15 @@ describe("POST /orders en retrait au magasin", () => {
     expect(dayAfter.body.data).toMatchObject({ pickupDate: DAY_AFTER });
 
     const order = await prisma.order.findFirstOrThrow({ orderBy: { id: "desc" } });
-    expect(order.reservedUntil?.toISOString()).toBe("2026-11-16T23:00:00.000Z");
+    expect(order.reservedUntil?.toISOString()).toBe("2026-11-16T19:00:00.000Z");
+  });
+
+  it("suit l'heure de fermeture réglée par le magasin le jour de la réservation", async () => {
+    await prisma.storeSettings.update({ where: { id: 1 }, data: { closingTime: "18:30" } });
+    const response = await previewThenOrder([{ sku: "IP-NEW-256", quantity: 1 }], pickup(TOMORROW, "15:30"));
+    expect(response.status).toBe(201);
+    const order = await prisma.order.findFirstOrThrow();
+    expect(order.reservedUntil?.toISOString()).toBe("2026-11-15T17:30:00.000Z");
   });
 
   it("n'exige pas d'adresse pour un retrait, et l'exige toujours pour une livraison", async () => {

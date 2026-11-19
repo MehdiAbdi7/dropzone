@@ -12,10 +12,10 @@ export async function restockItems(tx: Tx, items: { sku: string; quantity: numbe
   await refreshMinPrice(tx, items.map((item) => item.productId));
 }
 
-// Les retraits non récupérés (14/11) : après minuit le jour choisi (`reservedUntil`), la commande
-// passe « expirée » et ses articles reviennent en stock. Rien ne tourne à minuit (l'API dort sur
-// Render) : cette fonction est appelée à la lecture (releaseReservationsMiddleware), avant de
-// répondre. Renvoie le nombre de commandes expirées par CET appel.
+// Les retraits non récupérés (14/11) : après la fermeture du magasin le jour choisi (`reservedUntil`, 19/11 : ce
+// n'est plus minuit), la commande passe « expirée » et ses articles reviennent en stock. Rien ne tourne à
+// l'heure dite (l'API dort sur Render) : cette fonction est appelée à la lecture (releaseReservationsMiddleware),
+// avant de répondre. Renvoie le nombre de commandes expirées par CET appel.
 export async function releaseExpiredReservations(now: Date): Promise<number> {
   const due = await prisma.order.findMany({
     where: { status: "reserved", reservedUntil: { lte: now } },

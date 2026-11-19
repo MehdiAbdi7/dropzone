@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, algiersDate, algiersMidnightAfter, pickupDays, pickupSlots } from "../src/utils/algiersTime.js";
+import { addDays, algiersClosingTime, algiersDate, pickupDays, pickupSlots } from "../src/utils/algiersTime.js";
 
 // L'heure d'Alger (UTC+1 toute l'année) et les créneaux de retrait (14/11).
 const hours = { openingTime: "09:00", closingTime: "20:00", closedDays: [] as number[] };
@@ -13,9 +13,15 @@ describe("algiersDate", () => {
   });
 });
 
-describe("algiersMidnightAfter", () => {
-  it("donne l'instant de minuit à Alger le soir du jour", () => {
-    expect(algiersMidnightAfter("2026-11-13").toISOString()).toBe("2026-11-13T23:00:00.000Z");
+// La fin d'une réservation de deux jours (19/11) : l'heure de fermeture du magasin le jour choisi, pas minuit.
+describe("algiersClosingTime", () => {
+  it("donne l'instant de la fermeture à Alger le jour choisi", () => {
+    expect(algiersClosingTime("2026-11-13", "20:00").toISOString()).toBe("2026-11-13T19:00:00.000Z");
+    expect(algiersClosingTime("2026-11-13", "18:30").toISOString()).toBe("2026-11-13T17:30:00.000Z");
+  });
+
+  it("reste le jour choisi, même tard dans la soirée ou à la fin d'un mois", () => {
+    expect(algiersClosingTime("2026-11-30", "23:30").toISOString()).toBe("2026-11-30T22:30:00.000Z");
   });
 });
 

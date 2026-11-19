@@ -180,6 +180,6 @@ export const STATUS_STEPS: { status: OrderStatus; text: string }[] = [
 
 // Les étapes d'une réservation au magasin (14/11).
 export const PICKUP_STEPS: { status: OrderStatus; text: string }[] = [
-  { status: "reserved", text: "Appareil réservé à votre nom jusqu'à minuit le jour choisi." },
+  { status: "reserved", text: "Appareil réservé à votre nom jusqu'à la fermeture du magasin le jour choisi." },
   { status: "picked_up", text: "Récupéré et payé au magasin." },
 ];

@@ -54,7 +54,7 @@ const deliveryOrderSchema = z.object({
 // serveur avec les horaires du magasin (createOrder).
 //
 // Depuis le 18/11, deux façons de réserver : `two_days` (par défaut, comme avant : un jour et une heure,
-// jusqu'à minuit) ou `unlimited` (sans date, contre une avance BaridiMob réglée par le magasin).
+// jusqu'à la fermeture du magasin) ou `unlimited` (sans date, contre une avance BaridiMob réglée par le magasin).
 const pickupOrderSchema = z
   .object({
     ...orderBase,
