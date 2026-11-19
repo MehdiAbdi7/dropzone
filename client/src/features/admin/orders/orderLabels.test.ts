@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dailyLabel, receptionLabel } from "./orderLabels";
+import { dailyLabel, receptionLabel, takenByLabel } from "./orderLabels";
 
 // Les libellés de la page Commandes du back-office (14/11).
 describe("dailyLabel", () => {
@@ -27,5 +27,21 @@ describe("receptionLabel", () => {
 
   it("une vente au magasin le dit simplement", () => {
     expect(receptionLabel({ type: "in_store", wilaya: null, pickupDate: null, pickupTime: null })).toBe("Vente au magasin");
+  });
+});
+
+// La commande prise par téléphone (19/11) : la mention « Prise par téléphone », avec le nom quand on le connaît.
+describe("takenByLabel", () => {
+  it("dit « Prise par téléphone » pour une commande saisie par un employé", () => {
+    expect(takenByLabel({ takenById: 7 })).toBe("Prise par téléphone");
+  });
+
+  it("ajoute le nom de l'employé quand le détail le donne", () => {
+    expect(takenByLabel({ takenById: 7, takenByName: "Amine Test" })).toBe("Prise par téléphone par Amine Test");
+  });
+
+  it("ne dit rien d'une commande du site", () => {
+    expect(takenByLabel({ takenById: null })).toBeNull();
+    expect(takenByLabel({})).toBeNull();
   });
 });

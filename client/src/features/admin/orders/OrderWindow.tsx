@@ -13,7 +13,7 @@ import OrderDetails from "./OrderDetails";
 import { CallSheet } from "./OrderInfo";
 import OrderStepper from "./OrderStepper";
 import StepActions from "./StepActions";
-import { dailyLabel } from "./orderLabels";
+import { dailyLabel, takenByLabel } from "./orderLabels";
 import { initialStep, orderSteps, type OrderStep } from "./orderSteps";
 
 // La fenêtre d'une commande, ouverte au clic sur une ligne du tableau. Au centre sur ordinateur, une
@@ -83,6 +83,7 @@ function OrderContent({ order, onClose }: { order: AdminOrder; onClose: () => vo
           <p className="text-sm text-ink-muted">
             {ORDER_TYPE_LABELS[order.type]} · suivi {order.number} · {formatDate(order.createdAt)}
           </p>
+          {takenByLabel(order) ? <p className="text-sm font-semibold">{takenByLabel(order)}</p> : null}
         </div>
         <button type="button" className="icon-btn shrink-0" aria-label="Fermer la commande" onClick={onClose}>
           <CloseIcon />
