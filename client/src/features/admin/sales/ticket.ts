@@ -82,6 +82,22 @@ export function addToTicket(lines: TicketLine[], hit: VariantHit): TicketLine[] 
   ];
 }
 
+// Combien de fois chaque appareil est dans le ticket (par SKU), et si la limite (le stock, 10 au plus) est atteinte.
+// La recherche de produit reste ouverte pendant qu'on ajoute : chaque carte l'affiche, pour qu'un clic (ou un
+// deuxième clic) ne passe jamais inaperçu.
+export type OnTicket = { quantity: number; atLimit: boolean };
+
+export function ticketQuantities(lines: Pick<TicketLine, "sku" | "quantity" | "maxQuantity">[]): Record<string, OnTicket> {
+  return Object.fromEntries(lines.map((line) => [line.sku, { quantity: line.quantity, atLimit: line.quantity >= line.maxQuantity }]));
+}
+
+// Le message qui suit un clic : le premier ajout le dit, les suivants donnent la quantité (le texte change donc à
+// chaque clic), et la limite est dite au lieu d'être subie en silence. Sans quantité connue, le message simple.
+export function addedMessage(name: string, onTicket: OnTicket | undefined): string {
+  if (!onTicket || (onTicket.quantity === 1 && !onTicket.atLimit)) return `Ajouté au ticket : ${name}`;
+  return `${name} : ${onTicket.quantity} au ticket${onTicket.atLimit ? " (stock atteint)" : ""}`;
+}
+
 export const ticketTotal = (lines: TicketLine[]): number =>
   lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
 

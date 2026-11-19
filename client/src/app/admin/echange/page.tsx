@@ -7,7 +7,7 @@ import { emptyTradeIn, type TradeInDraft } from "@/features/admin/exchange/excha
 import TradeInForm from "@/features/admin/exchange/TradeInForm";
 import SaleTicket from "@/features/admin/sales/SaleTicket";
 import ShopPicker from "@/features/admin/sales/ShopPicker";
-import { addToTicket, type TicketLine } from "@/features/admin/sales/ticket";
+import { addToTicket, ticketQuantities, type TicketLine } from "@/features/admin/sales/ticket";
 
 // L'échange (lot 5, 15/11) : le client rend un téléphone et en prend un autre. Le vendeur choisit ce que le
 // magasin donne (comme un ticket de vente, prix négociable), puis saisit le téléphone du client, au
@@ -39,7 +39,7 @@ export default function ExchangePage() {
           key={round}
           lines={lines}
           setLines={setLines}
-          picker={<ShopPicker onPick={(hit) => setLines((current) => addToTicket(current, hit))} />}
+          picker={<ShopPicker onPick={(hit) => setLines((current) => addToTicket(current, hit))} quantities={ticketQuantities(lines)} />}
           exchange={{ tradeIn, form: <TradeInForm draft={tradeIn} onChange={setTradeIn} /> }}
           onDone={finish}
         />
