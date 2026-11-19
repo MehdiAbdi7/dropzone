@@ -489,6 +489,8 @@ export async function listAdminOrders(query: AdminOrderListQuery) {
         total: true,
         status: true,
         createdAt: true,
+        // L'employé qui a saisi la commande reçue par téléphone (19/11) ; null pour une commande du site.
+        takenById: true,
         _count: { select: { items: true } },
       },
     }),
@@ -502,6 +504,8 @@ export async function getAdminOrder(id: number) {
     include: {
       items: { orderBy: { id: "asc" } },
       user: { select: { id: true, email: true, firstName: true, lastName: true } },
+      // L'employé qui a pris la commande par téléphone : seul son nom sort (voir `takenByName`).
+      takenBy: { select: { firstName: true, lastName: true } },
       // Le téléphone repris d'un échange (lot 5) ; null pour toute autre commande.
       tradeIn: { include: { deviceModel: { select: { id: true, brand: true, name: true } } } },
     },
@@ -523,8 +527,10 @@ export async function getAdminOrder(id: number) {
     const user = grantors.find((candidate) => candidate.id === userId);
     return user ? `${user.firstName} ${user.lastName}` : null;
   };
+  const { takenBy, ...rest } = order;
   return {
-    ...order,
+    ...rest,
+    takenByName: takenBy ? `${takenBy.firstName} ${takenBy.lastName}` : null,
     items: order.items.map((item) => ({ ...item, grantedByName: grantorName(item.grantedById) })),
     allowedTransitions: TRANSITIONS[order.status],
     payments,

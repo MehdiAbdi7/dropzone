@@ -203,3 +203,48 @@ describe("POST /admin/orders, réservation", () => {
     expect(await prisma.order.count()).toBe(0);
   });
 });
+
+describe("qui a pris la commande", () => {
+  it("le détail admin donne le nom de l'employé, la liste son identifiant", async () => {
+    const { agent, user } = await loginAs("seller");
+    const created = await agent.post("/admin/orders").send(delivery());
+    const manager = await loginAs("order_manager");
+
+    const detail = await manager.agent.get(`/admin/orders/${created.body.data.id}`);
+    expect(detail.body.data.takenByName).toBe("Amine Test");
+    expect(detail.body.data.takenBy).toBeUndefined();
+
+    const list = await manager.agent.get("/admin/orders");
+    expect(list.body.data[0].takenById).toBe(user.id);
+  });
+
+  it("une commande du site n'a pas d'employé", async () => {
+    const preview = await request(app).post("/orders/preview").send({ items: [{ sku: "IP-NEW-256", quantity: 1 }] });
+    const site = await request(app)
+      .post("/orders")
+      .send({
+        items: [{ sku: "IP-NEW-256", quantity: 1 }],
+        fullName: "Client Site",
+        phone: "0555123456",
+        wilaya: "Alger",
+        commune: "Kouba",
+        address: "12 rue des Frères Bouadou",
+        acceptTerms: true,
+        cartHash: preview.body.data.cartHash,
+      });
+    expect(site.status).toBe(201);
+    const admin = await loginAs("admin");
+    const row = (await admin.agent.get("/admin/orders")).body.data[0];
+    expect(row.takenById).toBeNull();
+    const id = (await prisma.order.findFirstOrThrow()).id;
+    expect((await admin.agent.get(`/admin/orders/${id}`)).body.data.takenByName).toBeNull();
+  });
+
+  it("le suivi public d'une commande prise par téléphone ne montre pas l'employé", async () => {
+    const { agent } = await loginAs("seller");
+    const created = await agent.post("/admin/orders").send(delivery());
+    const tracked = await request(app).post("/orders/track").send({ number: created.body.data.number, phone: "0555 12 34 56" });
+    expect(tracked.status).toBe(200);
+    expect(JSON.stringify(tracked.body)).not.toContain("takenBy");
+  });
+});
