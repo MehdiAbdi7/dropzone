@@ -136,6 +136,8 @@ export function paidText(repair: { paidAmount: number | null; payMethod: Payment
   if (repair.returnedOn === null || repair.paidAmount === null) return null;
   const day = dayMonthYear(repair.returnedOn);
   if (repair.paidAmount === 0 || repair.payMethod === null) return `Rendu sans paiement le ${day}`;
+  // Un remplacement moins cher que l'appareil d'origine (étape 6) : le magasin a rendu de l'argent au client.
+  if (repair.paidAmount < 0) return `Rendu au client ${formatPrice(-repair.paidAmount)} par ${PAYMENT_METHOD_LABELS[repair.payMethod]} le ${day}`;
   return `Payé ${formatPrice(repair.paidAmount)} par ${PAYMENT_METHOD_LABELS[repair.payMethod]} le ${day}`;
 }
 
@@ -150,6 +152,8 @@ export type RepairCapabilities = {
   editsRepair: boolean;
   seesClientMoney: boolean;
   deletesRepair: boolean;
+  // Remplacer l'appareil sous garantie (étape 6) : un geste de vente, comme le Rendu.
+  replacesDevice: boolean;
   createsPart: boolean;
   editsPart: boolean;
   seesPartCost: boolean;
@@ -162,6 +166,7 @@ export function repairCapabilities(role: Role): RepairCapabilities {
     editsRepair: false,
     seesClientMoney: false,
     deletesRepair: false,
+    replacesDevice: false,
     createsPart: false,
     editsPart: false,
     seesPartCost: false,
@@ -171,7 +176,7 @@ export function repairCapabilities(role: Role): RepairCapabilities {
   // Le technicien crée une fiche (décision de Mehdi, 19/11) sans fixer le prix : `editsRepair` reste faux, donc pas de
   // main-d'œuvre, pas de catalogue (qui montre les prix de vente), pas de « hors garantie forcé ».
   if (role === "technician") return { ...none, createsRepair: true, createsPart: true, seesPartCost: true, seesPartJournal: true };
-  if (role === "seller" || role === "order_manager") return { ...none, createsRepair: true, editsRepair: true, seesClientMoney: true };
+  if (role === "seller" || role === "order_manager") return { ...none, createsRepair: true, editsRepair: true, seesClientMoney: true, replacesDevice: true };
   return none;
 }
 

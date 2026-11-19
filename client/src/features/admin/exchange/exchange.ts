@@ -67,13 +67,16 @@ export function tradeInProblem(draft: TradeInDraft): string | null {
 
 // La reprise telle que l'API l'attend : la fiche d'état de la variante, sans SKU ni stock (la mise en
 // vente les crée), et la couleur à part des autres options.
-export function buildTradeInBody(draft: TradeInDraft) {
+export const buildTradeInBody = (draft: TradeInDraft) => ({ ...buildTradeInSheetBody(draft), price: tradeInPrice(draft) });
+
+// La même reprise SANS prix : le remplacement sous garantie (atelier, étape 6) laisse l'appareil en panne à 0 DA, le
+// prix est fixé par le serveur.
+export function buildTradeInSheetBody(draft: TradeInDraft) {
   const sheet = variantBody({ ...draft.variant, sku: "REPRISE", price: "0", stock: "1" });
   const { Couleur: color, ...options } = sheet.options;
   return {
     deviceModelId: draft.model!.id,
     color,
-    price: tradeInPrice(draft),
     options,
     grade: sheet.grade,
     batteryHealth: sheet.batteryHealth,

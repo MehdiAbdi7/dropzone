@@ -21,14 +21,18 @@ const KINDS: ProductKind[] = ["phone", "tablet", "laptop"];
 // `editing` (18/11) : on modifie une reprise déjà enregistrée, avant sa mise en vente. Le modèle et le prix de reprise
 // ne changent plus (ils sont affichés), et une section « Remise en état » dit ce que la batterie neuve ou l'écran a
 // coûté : ces frais s'ajoutent au prix d'achat de l'affaire.
+// `noPrice` (étape 6) : l'appareil en panne d'un remplacement sous garantie n'a pas de prix de reprise (0 DA, fixé par le
+// serveur) : la section du prix disparaît et les suivantes se renumérotent.
 export default function TradeInForm({
   draft,
   onChange,
   editing = false,
+  noPrice = false,
 }: {
   draft: TradeInDraft;
   onChange: (draft: TradeInDraft) => void;
   editing?: boolean;
+  noPrice?: boolean;
 }) {
   const { data: choiceData } = useChoicesQuery();
   const { variant, kind } = draft;
@@ -113,7 +117,7 @@ export default function TradeInForm({
           </div>
         </section>
 
-        {editing ? (
+        {noPrice ? null : editing ? (
           <section className="space-y-4 bg-blue-soft/30 p-4 sm:p-5">
             <SectionHeading
               number="02"
@@ -152,7 +156,7 @@ export default function TradeInForm({
         )}
 
         <section className="space-y-4 p-4 sm:p-5">
-          <SectionHeading number="03" title="Garantie et origine" description="Ce que le magasin annoncera quand il revendra cette affaire." />
+          <SectionHeading number={noPrice ? "02" : "03"} title="Garantie et origine" description="Ce que le magasin annoncera quand il revendra cette affaire." />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id={id("warranty")} label="Garantie (1 à 36 mois)">
               <input
@@ -167,7 +171,7 @@ export default function TradeInForm({
           </div>
         </section>
 
-        <ConditionSheet variant={variant} number="04" idOf={id} set={set} onChange={setVariant} />
+        <ConditionSheet variant={variant} number={noPrice ? "03" : "04"} idOf={id} set={set} onChange={setVariant} />
       </div>
     </fieldset>
   );

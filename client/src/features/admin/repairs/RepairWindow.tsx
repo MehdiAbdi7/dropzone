@@ -17,7 +17,9 @@ import RepairEditDialog from "./RepairEditDialog";
 import RepairParts from "./RepairParts";
 import RepairReturnDialog from "./RepairReturnDialog";
 import RepairReceipt from "./RepairReceipt";
+import RepairReplaceDialog from "./RepairReplaceDialog";
 import RepairStepper from "./RepairStepper";
+import { canReplace } from "./replaceRules";
 import { RepairBadge } from "./RepairsTable";
 import { REPAIR_STATUS_LABELS, actionLabel, confirmText, allowedTargets, paidText, repairCapabilities, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
 
@@ -81,6 +83,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
   const targets = allowedTargets(role, repair.nextStatuses, repair.underWarranty);
   const [editing, setEditing] = useState(false);
   const [returning, setReturning] = useState(false);
+  const [replacing, setReplacing] = useState(false);
   const [change, changing] = useChangeRepairStatusMutation();
   const [remove, removing] = useDeleteRepairMutation();
   const steps = repairSteps(repair.status, repair.underWarranty, repair.events.map((event) => event.status));
@@ -97,6 +100,9 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
           <p className="font-semibold">{repair.deviceName}</p>
           <p className="text-sm text-ink-muted">{warrantyLabel(repair)}</p>
           {caps.seesClientMoney && paidText(repair) ? <p className="text-sm font-semibold">{paidText(repair)}</p> : null}
+          {repair.replacementOrderNumber !== null ? (
+            <p className="text-sm font-semibold">Appareil remplacé sous garantie (commande {repair.replacementOrderNumber}) : l&apos;appareil en panne est dans les Reprises.</p>
+          ) : null}
         </div>
         <button type="button" className="btn btn-secondary btn-small" onClick={onClose} aria-label="Fermer la fiche">
           <CloseIcon />
@@ -105,7 +111,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
 
       <RepairStepper steps={steps} />
 
-      {targets.length > 0 ? (
+      {targets.length > 0 || canReplace(repair, caps.replacesDevice) ? (
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
             {targets.map((status, index) => {
@@ -130,6 +136,11 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
                 </button>
               );
             })}
+            {canReplace(repair, caps.replacesDevice) ? (
+              <button type="button" className="btn btn-secondary" onClick={() => setReplacing(true)}>
+                Remplacer l&apos;appareil
+              </button>
+            ) : null}
           </div>
           {changing.error ? (
             <p role="alert" className="field-error">
@@ -179,7 +190,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
             Modifier
           </button>
         ) : null}
-        {caps.deletesRepair ? (
+        {caps.deletesRepair && repair.replacementOrderNumber === null ? (
         <ConfirmDialog
           trigger="Supprimer la fiche"
           triggerClassName="btn btn-danger btn-small"
@@ -207,6 +218,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
       ) : null}
 
       <RepairReturnDialog open={returning} repair={repair} onClose={() => setReturning(false)} />
+      <RepairReplaceDialog open={replacing} repair={repair} onClose={() => setReplacing(false)} />
       <RepairEditDialog open={editing} noteOnly={!caps.editsRepair} repair={repair} onClose={() => setEditing(false)} />
     </div>
   );

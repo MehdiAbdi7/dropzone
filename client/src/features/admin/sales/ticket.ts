@@ -10,6 +10,8 @@ export const MAX_UNIT_PRICE = 10_000_000;
 // Une variante trouvée par la recherche du comptoir (GET /admin/variants).
 export type VariantHit = {
   sku: string;
+  // Le produit de la variante : le remplacement sous garantie compare « même modèle » par produit et stockage.
+  productId: number;
   productName: string;
   options: Options;
   condition: Condition;
