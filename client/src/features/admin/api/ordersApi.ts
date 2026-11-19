@@ -31,6 +31,8 @@ export type AdminOrderRow = OrderReception & {
   total: number;
   status: OrderStatus;
   createdAt: string;
+  // L'employé qui a saisi la commande reçue par téléphone (19/11) ; null pour une commande du site.
+  takenById: number | null;
   _count: { items: number };
 };
 
@@ -48,6 +50,9 @@ export type AdminOrder = OrderReception & {
   shippingFee: number;
   total: number;
   limitationsAccepted: boolean;
+  // La commande reçue par téléphone (19/11) : qui l'a saisie (l'identifiant, puis son nom) ; null pour une commande du site.
+  takenById: number | null;
+  takenByName: string | null;
   allowedTransitions: OrderStatus[];
   user: { id: number; email: string; firstName: string; lastName: string } | null;
   // L'argent de la commande et ses traces (lot 2) : ce qui est payé (net des corrections), chaque

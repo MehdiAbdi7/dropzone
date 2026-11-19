@@ -10,6 +10,13 @@ export function dailyLabel(dailyNumber: number, businessDate: string): string {
   return `n° ${dailyNumber} · ${day}/${month}`;
 }
 
+// La commande a été saisie par un employé quand un client a appelé (19/11) : la liste sait seulement que c'est
+// le cas (`takenById`), le détail donne aussi le nom. Une commande du site n'a pas de mention.
+export function takenByLabel(order: { takenById?: number | null; takenByName?: string | null }): string | null {
+  if (order.takenById == null) return null;
+  return order.takenByName ? `Prise par téléphone par ${order.takenByName}` : "Prise par téléphone";
+}
+
 // Comment le client reçoit sa commande, en une ligne.
 export function receptionLabel(order: {
   type: OrderType;

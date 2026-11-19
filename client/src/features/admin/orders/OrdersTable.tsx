@@ -1,7 +1,7 @@
 import type { AdminOrderRow } from "@/features/admin/api/ordersApi";
 import { formatDate, formatPrice } from "@/lib/format";
 import type { OrderStatus, OrderType } from "@/types/api";
-import { dailyLabel, receptionLabel } from "./orderLabels";
+import { dailyLabel, receptionLabel, takenByLabel } from "./orderLabels";
 import { stepBadge } from "./orderSteps";
 import { unlimitedStage, unlimitedStageLabel } from "./reservationStage";
 
@@ -58,6 +58,7 @@ export default function OrdersTable({
                 <span className="block font-display font-bold text-blue-ink">{dailyLabel(order.dailyNumber, order.businessDate)}</span>
                 <span className="block truncate text-sm font-semibold">{order.fullName}</span>
                 <span className="block truncate text-xs text-ink-muted">{receptionLabel(order)}</span>
+                {takenByLabel(order) ? <span className="block truncate text-xs text-ink-muted">{takenByLabel(order)}</span> : null}
               </span>
               <span className="shrink-0 font-bold tabular-nums">{formatPrice(order.total)}</span>
             </button>
@@ -106,7 +107,15 @@ export default function OrdersTable({
                   <br />
                   <span className="text-ink-muted">{order.phone}</span>
                 </td>
-                <td>{receptionLabel(order)}</td>
+                <td>
+                  {receptionLabel(order)}
+                  {takenByLabel(order) ? (
+                    <>
+                      <br />
+                      <span className="text-xs text-ink-muted">{takenByLabel(order)}</span>
+                    </>
+                  ) : null}
+                </td>
                 <td>{formatDate(order.createdAt)}</td>
                 <td className="text-right font-semibold tabular-nums">{formatPrice(order.total)}</td>
               </tr>
