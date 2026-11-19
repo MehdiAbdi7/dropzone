@@ -41,6 +41,9 @@ export async function replaceRepair(repairId: number, input: ReplaceInput, userI
     if (fiche.originItemId === null) {
       throw new AppError(400, "La commande d'origine est introuvable : le prix payé est inconnu, le remplacement ne peut pas se calculer");
     }
+    // Deux fiches ouvertes sur le même article se verrouillent chacune leur ligne : on verrouille aussi l'article d'origine,
+    // sinon les deux verraient « pas encore remplacé » et passeraient ensemble.
+    await tx.$queryRaw`SELECT id FROM order_items WHERE id = ${fiche.originItemId} FOR UPDATE`;
     // Un article déjà remplacé ne se remplace pas une seconde fois : c'est son remplacement qui porte la garantie.
     const alreadyReplaced = await tx.repair.count({ where: { originItemId: fiche.originItemId, replacementOrderId: { not: null } } });
     if (alreadyReplaced > 0) {

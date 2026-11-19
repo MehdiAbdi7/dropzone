@@ -96,6 +96,20 @@ describe("relecture du remplacement", () => {
     expect(await prisma.order.count()).toBe(before);
   });
 
+  it("deux fiches ouvertes sur le même article d'origine, remplacées en même temps : un seul remplacement", async () => {
+    const agent = await adminAgent();
+    const sale = await originalSale(200_000);
+    const first = await warrantyRepair(agent, sale.itemId);
+    const second = await prisma.repair.create({
+      data: { fullName: device.fullName, phone: device.phone, deviceName: "iPhone", issue: "Panne", underWarranty: true, warrantyEndsAt: new Date("2027-03-01T00:00:00Z"), status: "in_repair", originItemId: sale.itemId },
+    });
+    const stockBefore = await variantStock("IP-NEW-256");
+    const results = await Promise.all([replace(agent, first.id, "IP-NEW-256"), replace(agent, second.id, "IP-NEW-256")]);
+    expect(results.map((result) => result.status).sort()).toEqual([201, 409]);
+    expect(await variantStock("IP-NEW-256")).toBe(stockBefore - 1);
+    expect(await prisma.tradeIn.count()).toBe(1);
+  });
+
   it("le technicien ne reçoit pas le prix d'achat de l'appareil donné d'une fiche remplacée", async () => {
     const agent = await adminAgent();
     const sale = await originalSale(200_000);
