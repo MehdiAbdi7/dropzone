@@ -168,7 +168,9 @@ export function repairCapabilities(role: Role): RepairCapabilities {
     seesPartJournal: false,
   };
   if (role === "admin") return Object.fromEntries(Object.keys(none).map((key) => [key, true])) as RepairCapabilities;
-  if (role === "technician") return { ...none, createsPart: true, seesPartCost: true, seesPartJournal: true };
+  // Le technicien crée une fiche (décision de Mehdi, 19/11) sans fixer le prix : `editsRepair` reste faux, donc pas de
+  // main-d'œuvre, pas de catalogue (qui montre les prix de vente), pas de « hors garantie forcé ».
+  if (role === "technician") return { ...none, createsRepair: true, createsPart: true, seesPartCost: true, seesPartJournal: true };
   if (role === "seller" || role === "order_manager") return { ...none, createsRepair: true, editsRepair: true, seesClientMoney: true };
   return none;
 }

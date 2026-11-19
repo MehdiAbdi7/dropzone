@@ -5,7 +5,7 @@ import type { RepairListQuery, WarrantyQuery } from "./repair.schema.js";
 import { countRepairs, createRepair, getRepair, listRepairs, updateRepair } from "./repair.service.js";
 import { addLine, removeLine, updateLine } from "./repairParts.service.js";
 import { changeStatus, deleteRepair } from "./repairStatus.service.js";
-import { canMoveTo, patchAllowed, SALES_ONLY } from "./repairAccess.js";
+import { canMoveTo, createAllowed, patchAllowed, SALES_ONLY } from "./repairAccess.js";
 import { findWarranty } from "./warranty.service.js";
 
 // L'auteur d'un geste : le compte connecté (la route est derrière requireAuth).
@@ -16,6 +16,11 @@ export async function getWarranty(_req: Request, res: Response) {
 }
 
 export async function postRepair(req: Request, res: Response) {
+  // Le technicien crée une fiche sans fixer le prix : ni main-d'œuvre, ni « hors garantie forcé ».
+  const keys = Object.entries(req.body as Record<string, unknown>).filter(([, value]) => value !== undefined).map(([key]) => key);
+  if (!createAllowed(res.locals.user!.role, keys)) {
+    throw new AppError(403, SALES_ONLY);
+  }
   res.status(201).json({ data: await createRepair(req.body, userId(res)) });
 }
 

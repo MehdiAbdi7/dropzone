@@ -20,4 +20,13 @@ export function patchAllowed(role: Role, keys: string[]): boolean {
   return role === "seller" || role === "order_manager" || role === "admin";
 }
 
+// Créer une fiche : le technicien aussi (décision de Mehdi, 19/11), mais sans fixer ce que le client paiera : ni la
+// main-d'œuvre, ni « forcer hors garantie » (qui rend la réparation payante). La vente les fixe ensuite dans la fiche.
+const TECHNICIAN_FORBIDDEN_AT_CREATION = ["laborPrice", "forceOutOfWarranty"];
+
+export function createAllowed(role: Role, keys: string[]): boolean {
+  if (role === "technician") return !keys.some((key) => TECHNICIAN_FORBIDDEN_AT_CREATION.includes(key));
+  return role === "seller" || role === "order_manager" || role === "admin";
+}
+
 export const SALES_ONLY = "Ce geste est réservé à la vente";

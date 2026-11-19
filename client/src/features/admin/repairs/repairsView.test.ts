@@ -219,9 +219,9 @@ describe("allowedTargets", () => {
 });
 
 describe("repairCapabilities", () => {
-  it("le technicien : les pièces et leur prix d'achat, pas l'argent du client ni les gestes de la vente", () => {
+  it("le technicien : crée une fiche et gère les pièces avec leur prix d'achat, pas l'argent du client ni le devis", () => {
     expect(repairCapabilities("technician")).toEqual({
-      createsRepair: false,
+      createsRepair: true,
       editsRepair: false,
       seesClientMoney: false,
       deletesRepair: false,
