@@ -131,6 +131,15 @@ export function returnProblem(amountDue: number, method: PaymentMethod | null): 
   return null;
 }
 
+// L'argent d'une fiche rendue dans l'Historique : ce que le client a payé (avec le moyen), ce que le magasin lui a rendu
+// (remplacement moins cher, montant négatif, étape 6), ou rien.
+export function historyAmountText(paidAmount: number, payMethod: PaymentMethod | null): string {
+  const method = payMethod ? ` · ${PAYMENT_METHOD_LABELS[payMethod]}` : "";
+  if (paidAmount > 0) return `${formatPrice(paidAmount)}${method}`;
+  if (paidAmount < 0) return `Rendu au client ${formatPrice(-paidAmount)}${method}`;
+  return "Rien payé";
+}
+
 // Ce que dit une fiche rendue : ce que le client a payé, avec quel moyen et quel jour ; null avant le Rendu.
 export function paidText(repair: { paidAmount: number | null; payMethod: PaymentMethod | null; returnedOn: string | null }): string | null {
   if (repair.returnedOn === null || repair.paidAmount === null) return null;

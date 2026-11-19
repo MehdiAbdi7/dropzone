@@ -18,6 +18,8 @@ export type HistoryRepair = {
   phone: string;
   deviceName: string;
   underWarranty: boolean;
+  // Étape 6 : rendue par un remplacement (le montant payé peut être négatif : le magasin a rendu de l'argent).
+  replacement: boolean;
   returnedOn: string;
   paidAmount: number;
   partsCost: number;

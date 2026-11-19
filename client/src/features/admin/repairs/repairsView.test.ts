@@ -108,6 +108,10 @@ describe("le journal des pièces", () => {
     expect(movementLabel({ kind: "repair", delta: -2 })).toBe("Réparation : −2");
     expect(movementLabel({ kind: "repair_return", delta: 1 })).toBe("Retour de réparation : +1");
   });
+  it("dit des pièces récupérées sur une reprise démontée, et une pièce utilisée pour la remettre en état (étape 6)", () => {
+    expect(movementLabel({ kind: "salvage", delta: 2 })).toBe("Pièces récupérées : +2");
+    expect(movementLabel({ kind: "trade_in_use", delta: -1 })).toBe("Remise en état d'une reprise : −1");
+  });
 });
 
 // Relecture finale : la frise dit ce qui s'est VRAIMENT passé, d'après les étapes déjà traversées.
@@ -225,6 +229,7 @@ describe("repairCapabilities", () => {
       editsRepair: false,
       seesClientMoney: false,
       deletesRepair: false,
+      replacesDevice: false,
       createsPart: true,
       editsPart: false,
       seesPartCost: true,
@@ -239,6 +244,7 @@ describe("repairCapabilities", () => {
         editsRepair: true,
         seesClientMoney: true,
         deletesRepair: false,
+        replacesDevice: true,
         createsPart: false,
         editsPart: false,
         seesPartCost: false,

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { emptyTradeIn, type TradeInDraft } from "@/features/admin/exchange/exchange";
 import { makeHit } from "@/features/admin/sales/variantHit.fixture";
 import { formatPrice } from "@/lib/format";
-import { paidText, repairCapabilities } from "./repairsView";
+import { historyAmountText, paidText, repairCapabilities } from "./repairsView";
 import { buildReplaceBody, canReplace, givenModelMatches, replaceDifference, replaceProblem } from "./replaceRules";
 
 // Remplacer l'appareil sous garantie (atelier, étape 6) : la différence annoncée avant d'envoyer (le serveur refait le
@@ -106,5 +106,14 @@ describe("une fiche rendue par un remplacement", () => {
     expect(repairCapabilities("order_manager").replacesDevice).toBe(true);
     expect(repairCapabilities("technician").replacesDevice).toBe(false);
     expect(repairCapabilities("customer").replacesDevice).toBe(false);
+  });
+});
+
+describe("historyAmountText", () => {
+  it("dit l'argent d'une fiche dans l'Historique : payé, rendu au client, ou rien", () => {
+    expect(historyAmountText(35_000, "cash")).toBe(`${formatPrice(35_000)} · Espèces`);
+    expect(historyAmountText(35_000, null)).toBe(formatPrice(35_000));
+    expect(historyAmountText(-15_000, "cash")).toBe(`Rendu au client ${formatPrice(15_000)} · Espèces`);
+    expect(historyAmountText(0, null)).toBe("Rien payé");
   });
 });

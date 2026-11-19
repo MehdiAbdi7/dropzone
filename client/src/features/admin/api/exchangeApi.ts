@@ -23,6 +23,9 @@ export type ExchangeDone = {
 // Une reprise : le téléphone du client, au prix que le magasin lui a donné.
 export type TradeInRow = {
   id: number;
+  // Étape 6 : la réparation d'où vient une reprise à 0 DA (remplacement sous garantie), et si elle se démonte pour pièces.
+  repairNumber: number | null;
+  dismantlable: boolean;
   orderId: number;
   orderNumber: number;
   dailyNumber: number;
@@ -75,6 +78,18 @@ const exchangeApi = api.injectEndpoints({
       transformResponse: data<{ id: number }>,
       invalidatesTags: ["TradeIns"],
     }),
+    // Démonter une reprise à 0 DA : les pièces récupérées entrent au stock de l'atelier, la reprise disparaît.
+    dismantleTradeIn: build.mutation<{ id: number; added: number }, { id: number; parts: { partId: number; quantity: number }[] }>({
+      query: ({ id, parts }) => ({ url: `/admin/trade-ins/${id}/dismantle`, method: "POST", body: { parts } }),
+      transformResponse: data<{ id: number; added: number }>,
+      invalidatesTags: ["TradeIns", "Parts"],
+    }),
+    // Utiliser une pièce du stock pour remettre une reprise en état : ses frais augmentent du prix d'achat de la pièce.
+    useTradeInPart: build.mutation<{ id: number; repairCost: number }, { id: number; partId: number; quantity: number }>({
+      query: ({ id, ...body }) => ({ url: `/admin/trade-ins/${id}/parts`, method: "POST", body }),
+      transformResponse: data<{ id: number; repairCost: number }>,
+      invalidatesTags: ["TradeIns", "Parts"],
+    }),
     // Mettre en vente : le prix de revente, fixé par l'admin. L'affaire entre dans la fiche du modèle.
     publishTradeIn: build.mutation<{ id: number; productId: number; variantId: number; sku: string }, { id: number; price: number }>({
       query: ({ id, price }) => ({ url: `/admin/trade-ins/${id}/publish`, method: "POST", body: { price } }),
@@ -84,4 +99,11 @@ const exchangeApi = api.injectEndpoints({
   }),
 });
 
-export const { useCreateExchangeMutation, useTradeInsQuery, usePublishTradeInMutation, useUpdateTradeInMutation } = exchangeApi;
+export const {
+  useCreateExchangeMutation,
+  useTradeInsQuery,
+  usePublishTradeInMutation,
+  useUpdateTradeInMutation,
+  useDismantleTradeInMutation,
+  useUseTradeInPartMutation,
+} = exchangeApi;
