@@ -33,6 +33,8 @@ export async function getStats(now: Date = new Date()) {
       -- livraison non plus tant que son argent n'est pas arrivé (lot 4) ; un colis retourné jamais.
       WHERE o.status NOT IN ('cancelled', 'reserved', 'expired', 'returned')
         AND (o.type <> 'delivery' OR o.status = 'collected')
+        -- Le remplacement d'un appareil sous garantie n'est pas une vente (atelier, étape 6).
+        AND NOT EXISTS (SELECT 1 FROM repairs r WHERE r.replacement_order_id = o.id)
     ) s
   `;
 

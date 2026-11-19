@@ -327,3 +327,68 @@ describe("POST /admin/repairs/:id/replace", () => {
     expect((await replace(seller, repair.id, body("IP-NEW-256"))).status).toBe(201);
   });
 });
+
+// Après le remplacement : la commande liée n'est ni une vente ni un échange comme les autres.
+describe("une fiche remplacée", () => {
+  // Payé 150 000, donné l'affaire à 185 000 (acheté 120 000, chargeur offert 1 000) : le client paie 35 000 et le
+  // bénéfice est 35 000 − 121 000 = −86 000.
+  async function replacedRepair() {
+    const agent = await adminAgent();
+    await openCash(agent);
+    const sale = await originalSale(150_000);
+    const repair = await warrantyRepair(agent, sale.itemId);
+    await replace(agent, repair.id, body("IP-R-DEAL")).expect(201);
+    const fiche = await prisma.repair.findUniqueOrThrow({ where: { id: repair.id } });
+    return { agent, repairId: repair.id, number: fiche.number, orderId: fiche.replacementOrderId! };
+  }
+  const history = (agent: Agent, type?: string) =>
+    agent.get("/admin/history").query({ from: "2026-11-16", to: "2026-11-16", ...(type ? { type } : {}) }).expect(200).then((response) => response.body.data);
+
+  it("l'Historique range l'argent et le bénéfice sous Réparations, une seule fois", async () => {
+    const { agent, number } = await replacedRepair();
+    const repairs = await history(agent, "repair");
+    expect(repairs.repairs).toHaveLength(1);
+    expect(repairs.repairs[0]).toMatchObject({ number, underWarranty: true, paidAmount: 35_000, partsCost: 121_000, profit: -86_000, replacement: true });
+    expect(repairs.totals).toMatchObject({ collected: 35_000, profit: -86_000, salesCount: 1 });
+
+    // Le Total compte l'argent une fois et le bénéfice une fois (pas aussi « prix de l'article − son coût »).
+    const total = await history(agent);
+    expect(total.totals).toMatchObject({ collected: 35_000, profit: -86_000 });
+    expect(total.channels.repair).toMatchObject({ salesCount: 1, profit: -86_000, collected: 35_000 });
+    expect(total.channels.exchange).toMatchObject({ salesCount: 0, profit: 0, collected: 0 });
+    // La commande n'apparaît dans aucune liste de commandes de l'Historique.
+    expect(total.orders.map((order: { type: string }) => order.type)).not.toContain("exchange");
+    expect((await history(agent, "exchange")).orders).toEqual([]);
+  });
+
+  it("n'apparaît pas dans la liste des commandes, ni dans les ventes du jour de l'accueil", async () => {
+    const { agent, orderId } = await replacedRepair();
+    const list = (await agent.get("/admin/orders").expect(200)).body.data as { id: number }[];
+    expect(list.map((order) => order.id)).not.toContain(orderId);
+    const stats = (await agent.get("/admin/stats").expect(200)).body.data;
+    // Le remplacement n'est pas une vente du jour : ni son chiffre d'affaires, ni son compte.
+    expect(stats.revenueToday).toBe(0);
+    expect(stats.ordersToday).toBe(0);
+  });
+
+  it("la commande ne se modifie, ne se supprime ni ne se facture depuis les commandes", async () => {
+    const { agent, orderId, number } = await replacedRepair();
+    const edit = await agent.patch(`/admin/orders/${orderId}`).send({ lines: [{ sku: "IP-R-DEAL", quantity: 1, unitPrice: 185_000 }] });
+    expect(edit.status).toBe(409);
+    expect(edit.body.error.message).toContain(`R-${number}`);
+    const del = await agent.delete(`/admin/orders/${orderId}`);
+    expect(del.status).toBe(409);
+    expect(del.body.error.message).toContain(`R-${number}`);
+    expect((await agent.post(`/admin/orders/${orderId}/invoice`)).status).toBe(409);
+    expect(await prisma.order.findUnique({ where: { id: orderId } })).not.toBeNull();
+  });
+
+  it("la fiche ne se supprime pas : le remplacement a déjà sorti un appareil du stock", async () => {
+    const { agent, repairId } = await replacedRepair();
+    const stock = await variantStock("IP-R-DEAL");
+    const response = await agent.delete(`/admin/repairs/${repairId}`);
+    expect(response.status).toBe(409);
+    expect(await variantStock("IP-R-DEAL")).toBe(stock);
+    expect(await prisma.repair.findUnique({ where: { id: repairId } })).not.toBeNull();
+  });
+});

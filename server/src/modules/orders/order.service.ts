@@ -442,7 +442,8 @@ const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 const ONGOING_STATUSES: OrderStatus[] = ["confirmed", "shipped", "delivered"];
 
 export async function listAdminOrders(query: AdminOrderListQuery) {
-  const filters: Prisma.OrderWhereInput[] = [];
+  // Le remplacement d'un appareil sous garantie (atelier, étape 6) vit dans sa fiche, pas dans les commandes.
+  const filters: Prisma.OrderWhereInput[] = [{ replacementOf: { is: null } }];
   if (query.status) {
     filters.push({ status: query.status });
   }

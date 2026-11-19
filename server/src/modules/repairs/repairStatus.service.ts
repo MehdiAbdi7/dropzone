@@ -103,6 +103,11 @@ export async function returnConsumedLines(
 export async function deleteRepair(repairId: number, userId: number, now: Date = new Date()) {
   return prisma.$transaction(async (tx) => {
     const repair = await lockRepair(tx, repairId);
+    // Un remplacement a sorti un appareil du stock et créé une reprise : la fiche ne se supprime pas (étape 6).
+    const replaced = await tx.repair.findUniqueOrThrow({ where: { id: repairId }, select: { replacementOrderId: true } });
+    if (replaced.replacementOrderId !== null) {
+      throw new AppError(409, "Cette fiche a été remplacée sous garantie : elle ne se supprime pas");
+    }
     const lines = await tx.repairPart.findMany({ where: { repairId }, orderBy: { partId: "asc" } });
 
     let refunded = 0;
