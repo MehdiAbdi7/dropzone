@@ -14,8 +14,8 @@ function useActiveKey() {
   return sectionFor(usePathname())?.key;
 }
 
-// La barre latérale, sur ordinateur (lg et plus) : le travail de tous les jours. Leurs sous-onglets sont
-// en haut de la page (AdminSubNav). Le logo, « Voir la boutique », la Caisse, la Personnalisation, les
+// Les sections de la barre latérale (AdminSidebar, ordinateur) : le travail de tous les jours. Leurs
+// sous-onglets sont en haut de la page (AdminSubNav). « Voir la boutique », la Caisse, la Personnalisation, les
 // Réglages, le thème et la déconnexion sont dans la barre du haut (AdminTopbar).
 export default function AdminNav() {
   const activeKey = useActiveKey();
@@ -25,18 +25,12 @@ export default function AdminNav() {
   const pending = usePendingDeliveries().count + useReservedPickups().todo.length;
 
   return (
-    <nav aria-label="Back-office" className="hidden px-2 py-3 lg:block">
+    <nav aria-label="Back-office" className="px-3 pb-3">
       <ul className="flex flex-col gap-1">
         {NAV_SECTIONS.filter(isVisibleTo(role)).map(({ key, href, label, icon: SectionIcon }) => (
           <li key={key}>
-            <Link
-              href={href}
-              aria-current={activeKey === key ? "page" : undefined}
-              className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-semibold whitespace-nowrap ${
-                activeKey === key ? "bg-blue text-on-brand" : "text-ink-muted hover:bg-surface-2 hover:text-ink"
-              }`}
-            >
-              <SectionIcon size={18} />
+            <Link href={href} aria-current={activeKey === key ? "page" : undefined} className="admin-nav-link">
+              <SectionIcon size={20} />
               {label}
               {key === "commandes" ? <PendingBadge count={pending} className="ml-auto" /> : null}
             </Link>
@@ -108,7 +102,7 @@ export function AdminBottomNav() {
       {/* La barre elle-même, toujours visible en bas de l'écran. */}
       <nav
         aria-label="Back-office"
-        className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="admin-bottombar fixed inset-x-0 bottom-0 z-30 flex items-stretch pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         {items.map(({ key, href, label, icon: ItemIcon }) =>
           key === featured ? (
@@ -136,11 +130,13 @@ export function AdminBottomNav() {
               key={key}
               href={href}
               aria-current={activeKey === key ? "page" : undefined}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold ${
+              className={`flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[11px] font-semibold ${
                 activeKey === key ? "text-blue-ink" : "text-ink-muted"
               }`}
             >
-              <ItemIcon size={22} />
+              <span className="admin-bottombar-pill">
+                <ItemIcon size={22} />
+              </span>
               {label}
             </Link>
           ),
@@ -149,12 +145,15 @@ export function AdminBottomNav() {
           <button
             type="button"
             aria-expanded={moreOpen}
+            aria-current={moreActive ? "true" : undefined}
             onClick={() => setMoreOpen(true)}
-            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold ${
+            className={`flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[11px] font-semibold ${
               moreActive ? "text-blue-ink" : "text-ink-muted"
             }`}
           >
-            <DotsIcon size={22} />
+            <span className="admin-bottombar-pill">
+              <DotsIcon size={22} />
+            </span>
             Plus
           </button>
         ) : null}

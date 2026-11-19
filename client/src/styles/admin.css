@@ -1,0 +1,117 @@
+/* L'habillage du back-office (19/11). Tout est sous `.admin-skin` (posé par app/admin/layout.tsx) : la boutique
+   garde ses composants tels quels, notamment les cartes à bordure dégradée de `.card`.
+   Le principe : un outil de travail calme. Des surfaces unies, une fine bordure, une ombre douce ; le bleu
+   de la marque ne sert qu'à dire « où je suis » et « quoi faire ». */
+
+@layer components {
+  .admin-skin {
+    --admin-line: #e3e6f4;
+    --admin-shadow: 0 1px 2px rgb(10 11 20 / 0.04), 0 14px 30px -22px rgb(43 55 224 / 0.22);
+    --admin-shadow-hover: 0 1px 2px rgb(10 11 20 / 0.05), 0 20px 36px -22px rgb(43 55 224 / 0.38);
+    --admin-bar: rgb(255 255 255 / 0.78);
+  }
+  [data-theme="dark"] .admin-skin {
+    --admin-line: rgb(255 255 255 / 0.08);
+    --admin-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 18px 36px -26px rgb(0 0 0 / 0.9);
+    --admin-shadow-hover: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 22px 40px -24px rgb(61 75 255 / 0.55);
+    --admin-bar: rgb(14 15 26 / 0.78);
+  }
+
+  /* Les cartes : plus de bordure dégradée ni de flou, une surface unie, une fine bordure, une ombre douce. */
+  .admin-skin .card {
+    border: 1px solid var(--admin-line);
+    background: var(--surface);
+    backdrop-filter: none;
+    box-shadow: var(--admin-shadow);
+  }
+  /* Une carte qui se clique (ligne de commande, tuile) se soulève un peu et prend un bord bleuté. */
+  .admin-skin button.card,
+  .admin-skin a.card {
+    transition:
+      border-color 150ms,
+      box-shadow 150ms,
+      transform 150ms;
+  }
+  .admin-skin button.card:not(:disabled):hover,
+  .admin-skin a.card:hover {
+    border-color: color-mix(in srgb, var(--blue) 45%, var(--admin-line));
+    box-shadow: var(--admin-shadow-hover);
+  }
+
+  /* La barre latérale (ordinateur) : le logo en haut, les sections, puis qui est connecté. */
+  .admin-sidebar {
+    border-right: 1px solid var(--admin-line);
+    background: var(--surface);
+  }
+  .admin-nav-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 12px;
+    color: var(--ink-muted);
+    font-size: 0.925rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      background-color 150ms,
+      color 150ms,
+      box-shadow 150ms;
+  }
+  .admin-nav-link:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+  /* La page affichée : une pastille bleue pleine, avec une lueur douce dessous. */
+  .admin-nav-link[aria-current="page"] {
+    background: var(--blue);
+    color: var(--on-brand);
+    box-shadow: 0 12px 22px -12px var(--blue);
+  }
+
+  /* La barre du haut : translucide, elle laisse deviner la page qui défile dessous. */
+  .admin-topbar {
+    border-bottom: 1px solid var(--admin-line);
+    background: var(--admin-bar);
+    backdrop-filter: blur(14px) saturate(1.4);
+  }
+
+  /* L'avatar : les initiales dans un rond teinté du bleu de la marque. */
+  .admin-avatar {
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: var(--blue-soft);
+    color: var(--blue-ink);
+    font-family: var(--font-display, inherit);
+    font-size: 0.875rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--blue) 30%, transparent);
+  }
+
+  /* La barre du bas (téléphone) : même verre dépoli que la barre du haut. */
+  .admin-bottombar {
+    border-top: 1px solid var(--admin-line);
+    background: var(--admin-bar);
+    backdrop-filter: blur(14px) saturate(1.4);
+  }
+  /* L'icône de la page affichée y est posée sur une pastille. */
+  .admin-bottombar-pill {
+    display: grid;
+    place-items: center;
+    width: 3.5rem;
+    height: 2rem;
+    border-radius: 999px;
+    transition: background-color 150ms;
+  }
+  .admin-bottombar a[aria-current="page"] .admin-bottombar-pill,
+  .admin-bottombar button[aria-current="true"] .admin-bottombar-pill {
+    background: var(--blue-soft);
+  }
+}
