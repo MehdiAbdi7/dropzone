@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { formatPrice } from "@/lib/format";
 import { makeHit } from "./variantHit.fixture";
 import {
+  addedMessage,
   addToTicket,
   belowPurchasePrice,
   buildSaleBody,
@@ -10,6 +11,7 @@ import {
   reductionText,
   syncCatalogPrices,
   ticketProblem,
+  ticketQuantities,
   ticketReduction,
   ticketTotal,
   type TicketLine,
@@ -221,5 +223,41 @@ describe("belowPurchasePrice", () => {
 describe("addToTicket : la fiche suit la ligne", () => {
   it("garde la variante trouvée, pour le bouton Détail du ticket", () => {
     expect(addToTicket([], hit)[0].hit).toBe(hit);
+  });
+});
+
+// Le retour d'un ajout (19/11) : la recherche de produit reste ouverte, chaque carte dit combien de fois
+// l'appareil est déjà dans le ticket, pour qu'un clic ne passe jamais inaperçu.
+describe("ticketQuantities", () => {
+  it("donne la quantité de chaque appareil du ticket, par SKU", () => {
+    const lines = [line({ sku: "A", quantity: 2, maxQuantity: 5 }), line({ sku: "B", quantity: 1, maxQuantity: 1 })];
+    expect(ticketQuantities(lines)).toEqual({
+      A: { quantity: 2, atLimit: false },
+      B: { quantity: 1, atLimit: true },
+    });
+  });
+
+  it("n'a rien pour un appareil absent du ticket, et rien pour un ticket vide", () => {
+    expect(ticketQuantities([])).toEqual({});
+    expect(ticketQuantities([line({ sku: "A" })]).Z).toBeUndefined();
+  });
+});
+
+describe("addedMessage", () => {
+  it("un premier ajout dit simplement qu'il est ajouté", () => {
+    expect(addedMessage("iPhone 15 Pro Max", { quantity: 1, atLimit: false })).toBe("Ajouté au ticket : iPhone 15 Pro Max");
+  });
+
+  it("un deuxième clic change le message : il donne la quantité", () => {
+    expect(addedMessage("iPhone 15 Pro Max", { quantity: 2, atLimit: false })).toBe("iPhone 15 Pro Max : 2 au ticket");
+  });
+
+  it("dit quand le stock est atteint, y compris pour le dernier exemplaire", () => {
+    expect(addedMessage("iPhone 15 Pro Max", { quantity: 3, atLimit: true })).toBe("iPhone 15 Pro Max : 3 au ticket (stock atteint)");
+    expect(addedMessage("iPhone 15 Pro Max", { quantity: 1, atLimit: true })).toBe("iPhone 15 Pro Max : 1 au ticket (stock atteint)");
+  });
+
+  it("sans quantité connue (autre page), garde le message simple", () => {
+    expect(addedMessage("Coque", undefined)).toBe("Ajouté au ticket : Coque");
   });
 });

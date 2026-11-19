@@ -15,7 +15,7 @@ import {
   useShopSeriesQuery,
 } from "../api/shopPickerApi";
 import { useSearchVariantsQuery } from "../api/salesApi";
-import { hitsOfModel, type VariantHit } from "./ticket";
+import { addedMessage, hitsOfModel, type OnTicket, type VariantHit } from "./ticket";
 import VariantDetailDialog from "./VariantDetailDialog";
 import VariantPicker, { VariantCard } from "./VariantPicker";
 
@@ -25,7 +25,16 @@ type Condition = "new" | "refurbished" | undefined;
 // site en ligne (catégories, marques, séries, modèles), puis les variantes en stock du modèle choisi
 // (neuf scellé, affaire, couleurs, stockages) à ajouter au ticket. Un onglet « Rechercher » garde la
 // recherche par mots ou par SKU pour le vendeur qui sait ce qu'il veut.
-export default function ShopPicker({ onPick }: { onPick: (hit: VariantHit) => void }) {
+// `quantities` : ce qui est déjà dans le ticket, par SKU (19/11). Chaque carte affiche « ✓ 2 au ticket » et le
+// message du haut donne la quantité : un clic (ou un deuxième clic) ne passe plus inaperçu. Sans lui (réparations),
+// la fenêtre garde le message simple.
+export default function ShopPicker({
+  onPick,
+  quantities,
+}: {
+  onPick: (hit: VariantHit) => void;
+  quantities?: Record<string, OnTicket>;
+}) {
   const [tab, setTab] = useState<"browse" | "search">("browse");
   const [category, setCategory] = useState<Category | null>(null);
   const [brand, setBrand] = useState<string | null>(null);
@@ -33,11 +42,11 @@ export default function ShopPicker({ onPick }: { onPick: (hit: VariantHit) => vo
   const [model, setModel] = useState<PosterModel | null>(null);
   // Le dernier ajout : la fenêtre reste ouverte (on peut ajouter plusieurs appareils), il faut donc
   // dire que le clic a marché.
-  const [added, setAdded] = useState<string | null>(null);
+  const [added, setAdded] = useState<{ sku: string; name: string } | null>(null);
 
   function pick(hit: VariantHit) {
     onPick(hit);
-    setAdded(`${hit.productName}${hit.condition === "new" ? "" : " (affaire)"}`);
+    setAdded({ sku: hit.sku, name: `${hit.productName}${hit.condition === "new" ? "" : " (affaire)"}` });
   }
 
   // Revenir à une étape plus haute efface celles qui la suivent.
@@ -60,7 +69,8 @@ export default function ShopPicker({ onPick }: { onPick: (hit: VariantHit) => vo
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Collée en haut : le message reste visible même quand la liste des appareils défile. */}
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 bg-surface py-1">
         <div role="group" aria-label="Façon de chercher" className="flex gap-2">
           <Tab selected={tab === "browse"} onClick={() => setTab("browse")}>
             Parcourir
@@ -71,13 +81,13 @@ export default function ShopPicker({ onPick }: { onPick: (hit: VariantHit) => vo
         </div>
         {added ? (
           <p role="status" className="ml-auto rounded-full bg-blue-soft px-3 py-1 text-sm font-semibold">
-            Ajouté au ticket : {added}
+            {addedMessage(added.name, quantities?.[added.sku])}
           </p>
         ) : null}
       </div>
 
       {tab === "search" ? (
-        <VariantPicker grid onPick={pick} />
+        <VariantPicker grid onPick={pick} quantities={quantities} />
       ) : (
         <>
           {crumbs.length > 0 ? (
@@ -100,9 +110,9 @@ export default function ShopPicker({ onPick }: { onPick: (hit: VariantHit) => vo
             <Categories onPick={setCategory} />
           ) : !DEVICE_KINDS.includes(category.kind) ? (
             // Les accessoires n'ont pas de séries : la même liste filtrée sur la catégorie.
-            <VariantPicker grid initialCategory={category.slug} onPick={pick} />
+            <VariantPicker grid initialCategory={category.slug} onPick={pick} quantities={quantities} />
           ) : model && series ? (
-            <Variants category={category} model={model} onPick={pick} />
+            <Variants category={category} model={model} onPick={pick} quantities={quantities} />
           ) : series && brand ? (
             <Models category={category} brand={brand} series={series.slug} onPick={setModel} />
           ) : (
@@ -271,7 +281,17 @@ function Models({
 }
 
 // L'étape 4 : les variantes en stock du modèle (neuf scellé, affaires), à ajouter au ticket.
-function Variants({ category, model, onPick }: { category: Category; model: PosterModel; onPick: (hit: VariantHit) => void }) {
+function Variants({
+  category,
+  model,
+  onPick,
+  quantities,
+}: {
+  category: Category;
+  model: PosterModel;
+  onPick: (hit: VariantHit) => void;
+  quantities?: Record<string, OnTicket>;
+}) {
   const [condition, setCondition] = useState<Condition>(undefined);
   // L'appareil dont on regarde la fiche (bouton « Détail » des cartes).
   const [detail, setDetail] = useState<VariantHit | null>(null);
@@ -308,7 +328,7 @@ function Variants({ category, model, onPick }: { category: Category; model: Post
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4" aria-busy={isFetching}>
           {hits.map((hit) => (
             <li key={hit.sku}>
-              <VariantCard hit={hit} onPick={onPick} onDetail={setDetail} />
+              <VariantCard hit={hit} onTicket={quantities?.[hit.sku]} onPick={onPick} onDetail={setDetail} />
             </li>
           ))}
         </ul>

@@ -7,7 +7,7 @@ import { useCategoriesQuery } from "@/features/admin/api/catalogApi";
 import { useSearchVariantsQuery } from "@/features/admin/api/salesApi";
 import { formatOptions, formatPrice } from "@/lib/format";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
-import type { VariantHit } from "./ticket";
+import type { OnTicket, VariantHit } from "./ticket";
 import VariantDetailDialog from "./VariantDetailDialog";
 
 // Le sélecteur de variantes du comptoir (16/11, lot 3, refait le 17/11) : on trouve l'appareil exact
@@ -31,8 +31,11 @@ export default function VariantPicker({
   label = "Chercher un appareil",
   grid = false,
   initialCategory,
+  quantities,
 }: {
   onPick: (hit: VariantHit) => void;
+  // Ce qui est déjà dans le ticket, par SKU : chaque carte l'affiche (le clic ne doit pas passer inaperçu).
+  quantities?: Record<string, OnTicket>;
   // Des cartes avec photo, comme la boutique en ligne (page Vente et Échange), au lieu d'une liste.
   grid?: boolean;
   // Une catégorie déjà choisie à l'ouverture (les accessoires, dans le parcours de la fenêtre).
@@ -133,7 +136,7 @@ export default function VariantPicker({
             if (grid) {
               return (
                 <li key={hit.sku}>
-                  <VariantCard hit={hit} disabled={disabled} onPick={onPick} onDetail={setDetail} />
+                  <VariantCard hit={hit} disabled={disabled} onTicket={quantities?.[hit.sku]} onPick={onPick} onDetail={setDetail} />
                 </li>
               );
             }
@@ -203,19 +206,31 @@ function Chip({ selected, onClick, children }: { selected: boolean; onClick: () 
 export function VariantCard({
   hit,
   disabled = false,
+  onTicket,
   onPick,
   onDetail,
 }: {
   hit: VariantHit;
   disabled?: boolean;
+  // Déjà dans le ticket (19/11) : la carte le dit et se cadre, pour qu'on voie que le clic a marché.
+  onTicket?: OnTicket;
   onPick: (hit: VariantHit) => void;
   onDetail?: (hit: VariantHit) => void;
 }) {
   return (
-    <div className="card flex h-full w-full flex-col overflow-hidden transition-transform hover:-translate-y-0.5">
+    <div
+      className={`card flex h-full w-full flex-col overflow-hidden transition-transform hover:-translate-y-0.5 ${
+        onTicket ? "border-2 border-blue-ink" : ""
+      }`}
+    >
       <button type="button" className="flex flex-1 flex-col text-left disabled:opacity-50" disabled={disabled} onClick={() => onPick(hit)}>
         <span className="relative block aspect-[4/3] w-full bg-surface-2">
           <ProductImage src={hit.image} alt="" sizes="(min-width: 1280px) 15vw, 30vw" />
+          {onTicket ? (
+            <span className="absolute right-2 top-2 rounded-full bg-blue px-2.5 py-1 text-sm font-bold text-on-brand shadow">
+              ✓ {onTicket.quantity} au ticket{onTicket.atLimit ? " · max" : ""}
+            </span>
+          ) : null}
         </span>
         <span className="flex w-full flex-1 flex-col gap-0.5 p-3">
           <span className="line-clamp-2 font-semibold leading-tight">{hit.productName}</span>
