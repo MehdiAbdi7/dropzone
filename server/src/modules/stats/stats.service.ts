@@ -1,6 +1,7 @@
 import { prisma } from "../../config/db.js";
 import { algiersDate } from "../../utils/algiersTime.js";
 import { getTodayCash } from "../cash/cash.service.js";
+import { validSales } from "./validSales.js";
 
 // Le tableau de bord, écrit en SQL : GROUP BY et SUM sont plus lisibles ici qu'en
 // Prisma, et c'est ce SQL qu'on demande en entretien. Les valeurs passent toujours
@@ -20,22 +21,8 @@ export async function getStats(now: Date = new Date()) {
       COALESCE(SUM(s.total) FILTER (WHERE s.sale_date = ${today}::date), 0) AS today,
       COALESCE(SUM(s.total) FILTER (WHERE s.sale_date BETWEEN ${monthStart}::date AND ${today}::date), 0) AS month,
       COUNT(*) FILTER (WHERE s.sale_date = ${today}::date) AS orders_today
-    FROM (
-      -- La date d'une vente (lot 2, 15/11) : le jour où l'argent est arrivé (au comptoir pour un
-      -- retrait ou une vente au magasin, à l'encaissement pour une livraison, lot 4).
-      SELECT o.total,
-             COALESCE(
-               (SELECT MIN(m.business_date) FROM money_movements m
-                 WHERE m.order_id = o.id AND m.kind IN ('sale', 'pickup', 'delivery', 'exchange')),
-               o.business_date) AS sale_date
-      FROM orders o
-      -- Une réservation n'est pas une vente tant que le client n'est pas venu payer (14/11) ; une
-      -- livraison non plus tant que son argent n'est pas arrivé (lot 4) ; un colis retourné jamais.
-      WHERE o.status NOT IN ('cancelled', 'reserved', 'expired', 'returned')
-        AND (o.type <> 'delivery' OR o.status = 'collected')
-        -- Le remplacement d'un appareil sous garantie n'est pas une vente (atelier, étape 6).
-        AND NOT EXISTS (SELECT 1 FROM repairs r WHERE r.replacement_order_id = o.id)
-    ) s
+    -- Ce qui compte comme une vente est défini une fois, dans validSales (les graphiques de l'accueil le réutilisent).
+    FROM (${validSales}) s
   `;
 
   const byStatus = await prisma.$queryRaw<{ status: string; count: bigint }[]>`

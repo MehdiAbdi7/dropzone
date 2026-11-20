@@ -22,7 +22,7 @@ export default function PartsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl">Pièces</h1>
-          <p className="text-ink-muted">Le stock de l&apos;atelier : ce qu&apos;on peut réparer dépend des pièces qu&apos;il reste.</p>
+          <p className="text-ink-muted">Le stock de pièces : ce qu&apos;on peut réparer dépend des pièces qu&apos;il reste.</p>
         </div>
         <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
           Nouvelle pièce

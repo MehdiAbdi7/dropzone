@@ -45,7 +45,7 @@ function DismantleForm({ tradeIn, onDone }: { tradeIn: TradeInRow; onDone: () =>
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <p className="text-sm text-ink-muted">
-        Les pièces choisies entrent au stock de l&apos;atelier à 0 DA l&apos;unité (le prix d&apos;achat moyen de la pièce baisse en conséquence). La reprise
+        Les pièces choisies entrent au stock de pièces à 0 DA l&apos;unité (le prix d&apos;achat moyen de la pièce baisse en conséquence). La reprise
         disparaît de cette liste : cela ne s&apos;annule pas.
       </p>
       <ul className="space-y-2">

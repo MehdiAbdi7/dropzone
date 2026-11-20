@@ -43,6 +43,7 @@ describe("matrice des droits du back-office", () => {
   it.each([
     ["GET", "/history"],
     ["GET", "/stats"],
+    ["GET", "/stats/overview"],
     ["GET", "/customers"],
     ["PATCH", "/orders/1"],
     ["DELETE", "/orders/1"],

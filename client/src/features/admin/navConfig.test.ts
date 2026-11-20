@@ -164,6 +164,14 @@ describe("les sections du back-office", () => {
     expect(visible("customer")).not.toContain("atelier");
   });
 
+  // Renommée le 20/11 : « Atelier » ne disait pas ce qu'on y trouve. La clé interne `atelier` ne change pas.
+  it("la section s'appelle « Pièces et réparations », et « Réparations » dans la barre du bas", () => {
+    const section = SECTIONS.find((candidate) => candidate.key === "atelier");
+    expect(section?.label).toBe("Pièces et réparations");
+    expect(bottomBarFor("technician").items[0].label).toBe("Réparations");
+    expect(bottomBarFor("seller").items.map((item) => item.label)).toContain("Réparations");
+  });
+
   it("le technicien ne voit que l'Atelier", () => {
     expect(visibleSections("technician").map((section) => section.key)).toEqual(["atelier"]);
   });
