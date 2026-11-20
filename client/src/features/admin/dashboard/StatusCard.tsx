@@ -11,11 +11,13 @@ const NEEDS_ACTION: OrderStatus[] = ["pending", "reserved"];
 export default function StatusCard({ counts }: { counts: Partial<Record<OrderStatus, number>> }) {
   const max = Math.max(1, ...STATUSES.map((status) => counts[status] ?? 0));
   return (
-    <section aria-labelledby="statuts" className="card space-y-4 p-4 sm:p-5">
+    // `flex-1` : dans la colonne de droite du tableau de bord, la carte prend la hauteur que laisse le bouton voisin,
+    // et ses lignes se répartissent dessus (`justify-between`) au lieu de laisser un vide en bas.
+    <section aria-labelledby="statuts" className="card flex flex-1 flex-col gap-4 p-4 sm:p-5">
       <h2 id="statuts" className="text-lg">
         Commandes par statut
       </h2>
-      <ul className="space-y-3">
+      <ul className="flex flex-1 flex-col justify-between gap-3">
         {STATUSES.map((status) => {
           const count = counts[status] ?? 0;
           const color = status === "cancelled" ? "var(--ink-muted)" : NEEDS_ACTION.includes(status) ? "var(--red)" : "var(--blue)";

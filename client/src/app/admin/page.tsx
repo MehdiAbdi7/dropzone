@@ -128,7 +128,9 @@ export default function DashboardPage() {
         <div className="min-w-0 xl:col-span-2">
           <RecentSalesCard sales={overview.data?.recent} loading={loading} now={now} />
         </div>
-        <div className="min-w-0 space-y-4">
+        {/* Colonne de droite : les statuts prennent toute la hauteur que laisse le bouton, pour que les deux colonnes
+            finissent à la même ligne (sinon la carte des ventes, plus courte, laissait un vide à côté). */}
+        <div className="flex min-w-0 flex-col gap-4">
           <StatusCard counts={stats.ordersByStatus} />
           {/* La liste des réservations du jour est derrière un bouton (refonte du 18/11). */}
           <button

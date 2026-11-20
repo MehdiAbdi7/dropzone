@@ -11,14 +11,15 @@ import { relativeDayLabel } from "./chartMath";
 export default function RecentSalesCard({ sales, loading, now }: { sales: RecentSale[] | undefined; loading: boolean; now: Date }) {
   const today = algiersDate(now);
   return (
-    <section aria-labelledby="dernieres" className="card space-y-3 p-4 sm:p-5">
+    <section aria-labelledby="dernieres" className="card flex h-full flex-col gap-3 p-4 sm:p-5">
       <h2 id="dernieres" className="text-lg">
         Derniers produits vendus
       </h2>
+      {/* Sans vente, le message est centré dans la carte : elle reste aussi haute que sa voisine, sans vide au-dessus. */}
       {loading ? (
-        <p className="text-sm text-ink-muted">Chargement…</p>
+        <p className="grid flex-1 place-content-center py-8 text-sm text-ink-muted">Chargement…</p>
       ) : !sales || sales.length === 0 ? (
-        <p className="text-sm text-ink-muted">Aucune vente pour le moment.</p>
+        <p className="grid flex-1 place-content-center py-8 text-sm text-ink-muted">Aucune vente pour le moment.</p>
       ) : (
         <ul className="divide-y divide-[var(--admin-line)]">
           {sales.map((sale, index) => (
