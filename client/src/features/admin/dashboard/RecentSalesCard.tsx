@@ -31,8 +31,8 @@ export default function RecentSalesCard({ sales, loading, now }: { sales: Recent
                   <ProductImage src={sale.image} alt="" sizes="56px" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold">{sale.name}</span>
-                  <span className="block truncate text-xs text-ink-muted">
+                  <span className="line-clamp-2 font-semibold leading-snug">{sale.name}</span>
+                  <span className="line-clamp-2 text-xs text-ink-muted">
                     {Object.keys(sale.options ?? {}).length > 0 ? `${formatOptions(sale.options)} · ` : ""}
                     {ORDER_TYPE_LABELS[sale.type]} · n° {sale.dailyNumber}
                   </span>
