@@ -2,9 +2,12 @@ import type { Role } from "@/types/api";
 
 // Qui est connecté, montré dans la barre latérale et la barre du haut du back-office (19/11).
 
-// Les initiales de l'avatar : la première lettre du prénom et du nom. « ? » quand on n'a aucun nom.
+// La première LETTRE d'un mot (un signe ou un chiffre en tête, comme dans « .1 », est sauté), en majuscule.
+const firstLetter = (part: string): string => [...part].find((char) => /\p{L}/u.test(char))?.toUpperCase() ?? "";
+
+// Les initiales de l'avatar : la première lettre du prénom et du nom. « ? » quand on n'a aucune lettre.
 export function initialsOf(firstName: string, lastName: string): string {
-  const letters = [firstName, lastName].map((part) => [...part.trim()][0]?.toUpperCase() ?? "").join("");
+  const letters = firstLetter(firstName) + firstLetter(lastName);
   return letters === "" ? "?" : letters;
 }
 

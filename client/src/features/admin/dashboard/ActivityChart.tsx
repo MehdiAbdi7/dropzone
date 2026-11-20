@@ -67,7 +67,7 @@ export default function ActivityChart({
   const dayText = (date: string) => (days <= 7 && !compact ? shortDayLabel(date) : dayMonth(date));
 
   return (
-    <section aria-labelledby="activite" className="card space-y-4 p-4 sm:p-5">
+    <section aria-labelledby="activite" className="card h-full space-y-4 p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h2 id="activite" className="text-lg">

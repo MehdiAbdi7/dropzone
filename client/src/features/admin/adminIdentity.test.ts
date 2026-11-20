@@ -21,6 +21,14 @@ describe("initialsOf", () => {
     expect(initialsOf("  Mehdi ", " Abdi  ")).toBe("MA");
     expect(initialsOf(" ", "")).toBe("?");
   });
+
+  // Un compte créé avec un nom comme « .1 » donnait « A. » : l'initiale est une LETTRE, pas un signe ou un chiffre.
+  it("saute les signes et les chiffres en tête d'un nom, et ne garde que des lettres", () => {
+    expect(initialsOf("Admin", ".1")).toBe("A");
+    expect(initialsOf("Admin", "'Abdi")).toBe("AA");
+    expect(initialsOf("1er", "Test")).toBe("ET");
+    expect(initialsOf("...", "123")).toBe("?");
+  });
 });
 
 // L'avatar d'un client dans les listes de commandes (20/11) : on ne reçoit que son nom complet.

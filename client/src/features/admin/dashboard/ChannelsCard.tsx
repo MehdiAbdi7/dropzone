@@ -25,7 +25,7 @@ export default function ChannelsCard({ channels, days, loading }: { channels: Ov
   const shares = percentages(rows.map((row) => row.total));
 
   return (
-    <section aria-labelledby="canaux" className="card space-y-4 p-4 sm:p-5">
+    <section aria-labelledby="canaux" className="card flex h-full flex-col gap-4 p-4 sm:p-5">
       <div>
         <h2 id="canaux" className="text-lg">
           Ventes par canal
@@ -33,7 +33,8 @@ export default function ChannelsCard({ channels, days, loading }: { channels: Ov
         <p className="text-sm text-ink-muted">sur {days} jours</p>
       </div>
 
-      <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center xl:flex-col 2xl:flex-row">
+      {/* `my-auto` : si la carte est plus haute que son contenu (sa voisine est plus haute), l'anneau se centre. */}
+      <div className="my-auto flex flex-col items-center gap-5 sm:flex-row sm:items-center xl:flex-col 2xl:flex-row">
         <div className="relative size-36 shrink-0">
           <svg viewBox="0 0 120 120" role="img" aria-label={`Ventes par canal : ${formatPrice(total)} en tout`} className="size-full -rotate-90">
             <circle cx={60} cy={60} r={RADIUS} fill="none" stroke="var(--surface-2)" strokeWidth={16} />
