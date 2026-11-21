@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import { prisma } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
 import type { RepairListQuery, WarrantyQuery } from "./repair.schema.js";
 import { countRepairs, createRepair, getRepair, listRepairs, updateRepair } from "./repair.service.js";
@@ -17,9 +16,7 @@ export async function getWarranty(_req: Request, res: Response) {
 }
 
 export async function postRepair(req: Request, res: Response) {
-  // Le technicien crée une fiche sans fixer le prix : ni main-d'œuvre, ni « hors garantie forcé ».
-  const keys = Object.entries(req.body as Record<string, unknown>).filter(([, value]) => value !== undefined).map(([key]) => key);
-  if (!createAllowed(res.locals.user!.role, keys)) {
+  if (!createAllowed(res.locals.user!.role)) {
     throw new AppError(403, SALES_ONLY);
   }
   res.status(201).json({ data: await createRepair(req.body, userId(res)) });
@@ -33,13 +30,15 @@ export async function getRepairCounts(_req: Request, res: Response) {
   res.json({ data: await countRepairs() });
 }
 
-// Une fiche remplacée (étape 6) : `partsCost` est le prix d'achat de l'appareil donné, pas celui d'une pièce. Le
-// technicien n'a droit qu'au prix d'achat des pièces (cahier §11) : on le retire de sa réponse.
-function forRole<T extends { replacementOrderNumber: number | null; partsCost: number | null }>(detail: T, res: Response): T {
-  if (res.locals.user!.role !== "technician" || detail.replacementOrderNumber === null) return detail;
-  const { partsCost: _hidden, ...rest } = detail;
-  void _hidden;
-  return rest as T;
+// Ce que le technicien ne reçoit pas d'une fiche, même s'il voit tout son travail : le prix que le client a payé son
+// appareil à la vente (`origin.unitPrice`, qui ne sert qu'au remplacement, un geste de la vente), et, pour une fiche
+// remplacée (étape 6), `partsCost`, qui est alors le prix d'achat de l'appareil donné et non celui d'une pièce.
+function forRole<T extends { replacementOrderNumber: number | null; partsCost: number | null; origin: { unitPrice?: number } | null }>(detail: T, res: Response): T {
+  if (res.locals.user!.role !== "technician") return detail;
+  const { partsCost, origin, ...rest } = detail;
+  const visibleOrigin = origin ? { ...origin } : origin;
+  if (visibleOrigin) delete visibleOrigin.unitPrice;
+  return { ...rest, origin: visibleOrigin, ...(detail.replacementOrderNumber === null ? { partsCost } : {}) } as T;
 }
 
 export async function getOneRepair(req: Request, res: Response) {
@@ -47,9 +46,7 @@ export async function getOneRepair(req: Request, res: Response) {
 }
 
 export async function patchRepair(req: Request, res: Response) {
-  // Le technicien ne modifie que sa note (la route est la même que celle du vendeur).
-  const keys = Object.entries(req.body as Record<string, unknown>).filter(([, value]) => value !== undefined).map(([key]) => key);
-  if (!patchAllowed(res.locals.user!.role, keys)) {
+  if (!patchAllowed(res.locals.user!.role)) {
     throw new AppError(403, SALES_ONLY);
   }
   res.json({ data: forRole(await updateRepair(Number(req.params.id), req.body, userId(res)), res) });
@@ -68,13 +65,8 @@ export async function deleteRepairLine(req: Request, res: Response) {
 }
 
 export async function postRepairStatus(req: Request, res: Response) {
-  // Le technicien fait avancer la réparation ; proposer le devis, le refuser et rendre l'appareil sont à la vente.
-  const role = res.locals.user!.role;
-  const repair = role === "technician" ? await prisma.repair.findUnique({ where: { id: Number(req.params.id) }, select: { underWarranty: true } }) : { underWarranty: false };
-  if (!repair) {
-    throw new AppError(404, "Fiche de réparation introuvable");
-  }
-  if (!canMoveTo(role, req.body.status, repair)) {
+  // Le technicien fait tous les passages sauf rendre l'appareil (il encaisse : geste de la vente).
+  if (!canMoveTo(res.locals.user!.role, req.body.status)) {
     throw new AppError(403, SALES_ONLY);
   }
   res.json({ data: forRole(await changeStatus(Number(req.params.id), req.body.status, userId(res), req.body.method), res) });

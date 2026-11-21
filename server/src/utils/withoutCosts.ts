@@ -3,12 +3,9 @@
 // `partsCost` : ce que les pièces d'une réparation ont coûté (atelier, étape 3).
 const COST_KEYS = new Set(["unitCost", "purchasePrice", "profit", "margin", "partsCost"]);
 
-// Ce que le technicien garde (atelier, étape 5) : le prix d'achat des pièces, jamais le bénéfice ni la marge.
+// Ce que le technicien garde (atelier, étape 5) : le prix d'achat des pièces, jamais le bénéfice ni la marge. Depuis le
+// 21/11 il voit aussi l'argent du client (main-d'œuvre, prix, total) : ce n'est pas un coût, rien n'est retiré.
 export const TECHNICIAN_COST_KEYS: ReadonlySet<string> = new Set(["unitCost", "purchasePrice", "partsCost"]);
-
-// L'argent du client dans l'atelier : retiré des réponses du technicien (il voit les pièces et leur coût, pas ce que
-// le client paie).
-export const CLIENT_MONEY_KEYS: ReadonlySet<string> = new Set(["laborPrice", "unitPrice", "total", "amountDue", "paidAmount", "payMethod", "price", "profit", "margin"]);
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && Object.getPrototypeOf(value) === Object.prototype;

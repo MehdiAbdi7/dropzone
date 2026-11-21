@@ -16,6 +16,7 @@ import { useAdminRole } from "@/features/admin/AdminRoleContext";
 import RepairEditDialog from "./RepairEditDialog";
 import RepairParts from "./RepairParts";
 import RepairReturnDialog from "./RepairReturnDialog";
+import RepairQuote from "./RepairQuote";
 import RepairReceipt from "./RepairReceipt";
 import RepairReplaceDialog from "./RepairReplaceDialog";
 import RepairStepper from "./RepairStepper";
@@ -28,11 +29,13 @@ import {
   confirmText,
   initialRepairStep,
   paidText,
+  quoteReady,
   repairCapabilities,
   repairNumber,
   repairSteps,
   repairTotal,
   warrantyLabel,
+  type RepairStatus,
   type RepairStep,
 } from "./repairsView";
 
@@ -171,19 +174,25 @@ function StepPanel({ repair, step, steps }: { repair: RepairDetail; step: Repair
 }
 
 // Les actions de l'étape où en est la fiche, et seulement elles : les passages d'étape permis à ce rôle, le
-// remplacement sous garantie, puis les pièces (qu'on ajoute tant que l'appareil n'est pas Prêt).
+// remplacement sous garantie, puis les pièces (qu'on ajoute tant que l'appareil n'est pas Prêt). À « Reçu » et « Devis à
+// valider » (21/11), on commence par ce qu'on saisit, les pièces puis le prix, et les boutons du devis viennent après.
 function StepActions({ repair }: { repair: RepairDetail }) {
-  // Ce que ce rôle voit et fait (étape 5) : l'API refuse le reste et retire l'argent du client pour le technicien.
+  // Ce que ce rôle voit et fait (étape 5) : l'API refuse le reste.
   const role = useAdminRole();
   const caps = repairCapabilities(role);
-  const targets = allowedTargets(role, repair.nextStatuses, repair.underWarranty);
+  const targets = allowedTargets(role, repair.nextStatuses);
   const [returning, setReturning] = useState(false);
   const [replacing, setReplacing] = useState(false);
   const [change, changing] = useChangeRepairStatusMutation();
   const replaceable = canReplace(repair, caps.replacesDevice);
+  const entryFirst = repair.status === "received" || repair.status === "quote";
+  // Hors garantie, proposer le devis ou enregistrer l'accord du client demande un prix ou une pièce (l'API refuse sinon).
+  const showPrice = entryFirst && !repair.underWarranty && caps.editsRepair;
+  const waitsForQuote = (status: RepairStatus) => (status === "quote" || status === "in_repair") && !repair.underWarranty && !quoteReady(repair);
 
-  return (
-    <div className="space-y-5">
+  const actions = (
+    <>
+      {showPrice && !quoteReady(repair) ? <p className="text-sm text-ink-muted">Ajoute la pièce à changer ou fixe le prix de la réparation, puis propose le devis au client.</p> : null}
       {targets.length > 0 || replaceable ? (
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
@@ -204,7 +213,7 @@ function StepActions({ repair }: { repair: RepairDetail }) {
                   {warning}
                 </ConfirmDialog>
               ) : (
-                <button key={status} type="button" className={className} disabled={changing.isLoading} onClick={() => change({ id: repair.id, status })}>
+                <button key={status} type="button" className={className} disabled={changing.isLoading || waitsForQuote(status)} onClick={() => change({ id: repair.id, status })}>
                   {label}
                 </button>
               );
@@ -224,8 +233,23 @@ function StepActions({ repair }: { repair: RepairDetail }) {
       ) : (
         <p className="text-ink-muted">{REPAIR_STATUS_LABELS[repair.status]} : rien à faire ici pour votre rôle.</p>
       )}
+    </>
+  );
 
-      <RepairParts repair={repair} />
+  return (
+    <div className="space-y-5">
+      {entryFirst ? (
+        <>
+          <RepairParts repair={repair} />
+          {showPrice ? <RepairQuote repair={repair} /> : null}
+          {actions}
+        </>
+      ) : (
+        <>
+          {actions}
+          <RepairParts repair={repair} />
+        </>
+      )}
 
       <RepairReturnDialog open={returning} repair={repair} onClose={() => setReturning(false)} />
       <RepairReplaceDialog open={replacing} repair={repair} onClose={() => setReplacing(false)} />

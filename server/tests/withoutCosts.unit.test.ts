@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CLIENT_MONEY_KEYS, TECHNICIAN_COST_KEYS, withoutCosts, withoutKeys } from "../src/utils/withoutCosts.js";
+import { TECHNICIAN_COST_KEYS, withoutCosts, withoutKeys } from "../src/utils/withoutCosts.js";
 
 describe("withoutCosts", () => {
   it("retire les coûts et les bénéfices à toute profondeur, garde le reste", () => {
@@ -33,8 +33,9 @@ describe("withoutCosts avec une liste à garder, et withoutKeys", () => {
     expect(withoutCosts(body, TECHNICIAN_COST_KEYS)).toEqual({ unitCost: 3_500, purchasePrice: 3_000, partsCost: 7_000, ok: 1 });
   });
 
-  it("withoutKeys retire l'argent du client à toute profondeur, sans toucher au reste", () => {
+  it("withoutKeys retire les clés données à toute profondeur, sans toucher au reste", () => {
+    const keys = new Set(["laborPrice", "unitPrice", "total", "amountDue", "paidAmount", "payMethod", "price"]);
     const body = { data: [{ id: 1, laborPrice: 2_000, parts: [{ unitPrice: 6_000, unitCost: 3_500 }], nested: { paidAmount: 8_000, amountDue: 0, total: 8_000, price: 1, payMethod: "cash", keep: true } }] };
-    expect(withoutKeys(body, CLIENT_MONEY_KEYS)).toEqual({ data: [{ id: 1, parts: [{ unitCost: 3_500 }], nested: { keep: true } }] });
+    expect(withoutKeys(body, keys)).toEqual({ data: [{ id: 1, parts: [{ unitCost: 3_500 }], nested: { keep: true } }] });
   });
 });
