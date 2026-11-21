@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { usePartsQuery } from "@/features/admin/api/partsApi";
+import { usePartCategoriesQuery, usePartsQuery } from "@/features/admin/api/partsApi";
+import { activeCategoryId, visibleParts } from "@/features/admin/parts/partsView";
 import {
   useAddRepairPartMutation,
   useRemoveRepairPartMutation,
@@ -98,51 +99,100 @@ function Line({
   );
 }
 
-// Ajouter une pièce du stock : les pièces épuisées sont grisées et ne se choisissent pas (une pièce à 0 « ne peut
-// pas entrer dans une réparation »).
+// Ajouter une pièce du stock, en deux temps comme sur la page Pièces (21/11) : on clique la catégorie (Batterie,
+// Afficheur…), puis le bouton « Ajouter » de la pièce voulue ; une barre de recherche trouve une pièce dans toutes les
+// catégories. Chaque clic ajoute UNE pièce ; la quantité se règle ensuite avec − et + sur sa ligne. Les pièces
+// épuisées sont grisées et ne s'ajoutent pas (une pièce à 0 « ne peut pas entrer dans une réparation »).
 function AddPart({ repair }: { repair: RepairDetail }) {
   const seesCost = repairCapabilities(useAdminRole()).seesPartCost;
   const { data: parts } = usePartsQuery("");
+  const { data: categories } = usePartCategoriesQuery();
   const [add, adding] = useAddRepairPartMutation();
-  const [partId, setPartId] = useState("");
-  const [quantity, setQuantity] = useState("1");
+  const [wanted, setWanted] = useState<number | null>(null);
+  const [text, setText] = useState("");
+  // La pièce en cours d'ajout : son bouton est seul grisé, les autres restent utilisables.
+  const [pending, setPending] = useState<number | null>(null);
 
-  const count = Number(quantity);
-  const valid = partId !== "" && Number.isInteger(count) && count >= 1 && count <= 100;
+  const active = activeCategoryId(categories ?? [], wanted);
+  const searching = text.trim() !== "";
+  const shown = visibleParts(parts ?? [], active, text);
+  const categoryName = (id: number) => categories?.find((category) => category.id === id)?.name;
+  const quantityInRepair = (partId: number) => repair.parts.find((line) => line.partId === partId)?.quantity ?? 0;
 
-  async function submit() {
-    if (!valid) return;
+  async function addOne(partId: number) {
+    setPending(partId);
     try {
-      await add({ id: repair.id, partId: Number(partId), quantity: count }).unwrap();
-      setPartId("");
-      setQuantity("1");
+      await add({ id: repair.id, partId, quantity: 1 }).unwrap();
     } catch {
-      // L'erreur RTK Query est affichée sous le bouton ; la sélection reste telle quelle.
+      // L'erreur RTK Query est affichée sous la liste.
+    } finally {
+      setPending(null);
     }
   }
 
   return (
-    <div className="space-y-2 border-t border-line pt-3">
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="block min-w-0 flex-1 text-sm font-semibold">
-          <span className="label">Ajouter une pièce</span>
-          <select className="input" value={partId} onChange={(event) => setPartId(event.target.value)}>
-            <option value="">Choisir une pièce…</option>
-            {parts?.map((part) => (
-              <option key={part.id} value={part.id} disabled={part.stock === 0}>
-                {part.name} · {seesCost ? `achat ${formatPrice(part.purchasePrice)} · vente ${formatPrice(part.salePrice)}` : formatPrice(part.salePrice)} · {part.stock === 0 ? "épuisée" : `${part.stock} en stock`}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-sm font-semibold">
-          <span className="label">Quantité</span>
-          <input className="input w-20" inputMode="numeric" value={quantity} onChange={(event) => setQuantity(event.target.value.replace(/\D/g, ""))} />
-        </label>
-        <button type="button" className="btn btn-primary" disabled={!valid || adding.isLoading} onClick={submit}>
-          {adding.isLoading ? "Ajout…" : "Ajouter"}
-        </button>
-      </div>
+    <div className="space-y-3 border-t border-line pt-3">
+      <h4 className="label">Ajouter une pièce</h4>
+      {categories?.length ? (
+        // Une rangée qui défile sur téléphone, à la ligne dès 768 px (comme la page Pièces).
+        <div role="group" aria-label="Catégories de pièces" className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] md:flex-wrap md:overflow-visible md:pb-0">
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              type="button"
+              className="chip shrink-0 whitespace-nowrap"
+              aria-pressed={!searching && active === category.id}
+              onClick={() => {
+                setWanted(category.id);
+                setText("");
+              }}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <label className="block">
+        <span className="sr-only">Chercher une pièce</span>
+        <input className="input" type="search" autoComplete="off" maxLength={60} placeholder="Chercher une pièce…" value={text} onChange={(event) => setText(event.target.value)} />
+      </label>
+
+      {parts && categories ? (
+        shown.length ? (
+          <ul className="max-h-72 divide-y divide-line overflow-y-auto rounded-lg border border-line">
+            {shown.map((part) => {
+              const inRepair = quantityInRepair(part.id);
+              return (
+                <li key={part.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                  <div className="min-w-0">
+                    {searching ? <p className="text-xs font-semibold uppercase tracking-wide text-blue-ink">{categoryName(part.categoryId)}</p> : null}
+                    <p className="font-semibold leading-snug">{part.name}</p>
+                    <p className="text-xs text-ink-muted">
+                      {seesCost ? `Achat ${formatPrice(part.purchasePrice)} · Vente ${formatPrice(part.salePrice)}` : formatPrice(part.salePrice)} ·{" "}
+                      {part.stock === 0 ? <span className="font-bold text-red">Épuisée</span> : `${part.stock} en stock`}
+                      {inRepair > 0 ? ` · déjà ${inRepair} dans la fiche` : ""}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-small shrink-0"
+                    disabled={part.stock === 0 || pending !== null}
+                    aria-label={`Ajouter ${part.name}`}
+                    onClick={() => addOne(part.id)}
+                  >
+                    {pending === part.id ? "Ajout…" : "+ Ajouter"}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-sm text-ink-muted">{searching ? "Aucune pièce ne correspond à cette recherche." : "Aucune pièce dans cette catégorie."}</p>
+        )
+      ) : (
+        <p className="text-sm text-ink-muted">Chargement…</p>
+      )}
+
       {adding.error ? (
         <p role="alert" className="field-error">
           {errorMessage(adding.error)}
