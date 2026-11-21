@@ -58,6 +58,13 @@ const ordersApi = api.injectEndpoints({
       query: (body) => ({ url: "/repairs/track", method: "POST", body }),
       transformResponse: (body: { data: RepairTracking }) => body.data,
     }),
+    // La réponse du client à son devis (21/11) : accepter ou refuser, avec le numéro et le téléphone, sans connexion.
+    // Rend le suivi à jour.
+    // `total` : le total du devis que le client a lu, obligatoire pour accepter (le magasin a pu corriger le prix).
+    decideRepair: build.mutation<RepairTracking, { number: number; phone: string; decision: "accept" | "refuse"; total?: number }>({
+      query: (body) => ({ url: "/repairs/track/decision", method: "POST", body }),
+      transformResponse: (body: { data: RepairTracking }) => body.data,
+    }),
     // L'avance de la réservation illimitée (18/11) : null quand le magasin ne la propose pas. Le numéro BaridiMob
     // n'est jamais ici : le client ne le reçoit que dans le suivi de sa commande, après l'appel du magasin.
     reservationOffer: build.query<{ unlimitedAdvance: number | null }, void>({
@@ -73,4 +80,12 @@ const ordersApi = api.injectEndpoints({
   }),
 });
 
-export const { useCartPreviewQuery, useCreateOrderMutation, useTrackOrderMutation, useTrackRepairMutation, useStoreHoursQuery, useReservationOfferQuery } = ordersApi;
+export const {
+  useCartPreviewQuery,
+  useCreateOrderMutation,
+  useTrackOrderMutation,
+  useTrackRepairMutation,
+  useDecideRepairMutation,
+  useStoreHoursQuery,
+  useReservationOfferQuery,
+} = ordersApi;

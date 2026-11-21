@@ -11,6 +11,7 @@ export default function ConfirmDialog({
   confirmLabel,
   onConfirm,
   triggerClassName = "btn btn-danger",
+  confirmClassName = "btn btn-danger",
 }: {
   trigger: string;
   title: string;
@@ -18,6 +19,8 @@ export default function ConfirmDialog({
   confirmLabel: string;
   onConfirm: () => void;
   triggerClassName?: string;
+  // Le bouton qui valide : rouge par défaut (supprimer, annuler) ; bleu quand on confirme un oui (accepter un devis).
+  confirmClassName?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   // Un id par boîte : une liste peut en avoir plusieurs (un « Supprimer » par accessoire).
@@ -41,7 +44,7 @@ export default function ConfirmDialog({
           <button type="submit" className="btn btn-secondary">
             Garder
           </button>
-          <button type="submit" className="btn btn-danger" onClick={onConfirm}>
+          <button type="submit" className={confirmClassName} onClick={onConfirm}>
             {confirmLabel}
           </button>
         </form>

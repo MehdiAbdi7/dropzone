@@ -97,3 +97,12 @@ export const repairTrackSchema = z.object({
   number: z.coerce.number().int().min(1).max(2_147_483_647),
   phone: phoneSchema,
 });
+
+// La réponse du client à son devis (21/11), depuis le suivi : accepter fait passer la fiche En réparation, refuser la
+// laisse « À rendre sans réparation ». Même numéro et même téléphone que le suivi. Accepter envoie aussi le TOTAL que le
+// client a lu : le magasin peut corriger le prix tant que la fiche est à « Devis à valider », et le client ne doit
+// accepter que ce qu'il a vu (le serveur compare, dans la transaction de l'accord). Refuser n'a rien à comparer.
+export const repairDecisionSchema = repairTrackSchema
+  .extend({ decision: z.enum(["accept", "refuse"]), total: z.number().int().min(0).max(100_000_000).optional() })
+  .refine((body) => body.decision === "refuse" || body.total !== undefined, { path: ["total"], error: "Indiquez le total du devis que vous avez lu" });
+export type RepairDecision = "accept" | "refuse";

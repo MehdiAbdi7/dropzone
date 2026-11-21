@@ -41,7 +41,8 @@ export const insufficientStock = (name: string, stock: number, needed: number) =
 // nommant la pièce, un stock qui deviendrait négatif. `needed` est ce que l'appelant voulait sortir en tout.
 export async function moveStock(
   tx: Prisma.TransactionClient,
-  input: { partId: number; delta: number; repair: Pick<LockedRepair, "id" | "number">; userId: number },
+  // `userId` null : le client lui-même (il accepte ou refuse son devis depuis le suivi, sans compte).
+  input: { partId: number; delta: number; repair: Pick<LockedRepair, "id" | "number">; userId: number | null },
   needed: number = -input.delta,
 ) {
   const part = await lockPartRow(tx, input.partId);
@@ -63,8 +64,8 @@ export async function moveStock(
   });
 }
 
-// Le changement d'étape, écrit avec son auteur (le suivi du client lira ces dates).
-export async function setStatus(tx: Prisma.TransactionClient, repairId: number, status: Status, userId: number) {
+// Le changement d'étape, écrit avec son auteur (le suivi du client lira ces dates). `userId` null : le client.
+export async function setStatus(tx: Prisma.TransactionClient, repairId: number, status: Status, userId: number | null) {
   await tx.repair.update({ where: { id: repairId }, data: { status } });
   await tx.repairEvent.create({ data: { repairId, status, userId } });
 }

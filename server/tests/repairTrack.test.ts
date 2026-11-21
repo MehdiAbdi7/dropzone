@@ -20,7 +20,7 @@ describe("POST /repairs/track", () => {
     const response = await track({ number: repair.number, phone: "05 50 12 34 56" });
     expect(response.status).toBe(200);
     expect(Object.keys(response.body.data).sort()).toEqual(
-      ["deviceColor", "deviceName", "number", "price", "refused", "returnedOn", "status", "steps", "underWarranty", "warrantyEndsAt"].sort(),
+      ["deviceColor", "deviceName", "number", "price", "quote", "refused", "returnedOn", "status", "steps", "underWarranty", "warrantyEndsAt"].sort(),
     );
     expect(response.body.data).toMatchObject({ number: 1001, deviceName: "iPhone 13", deviceColor: "Bleu", status: "received", refused: false, underWarranty: false });
   });
@@ -35,9 +35,12 @@ describe("POST /repairs/track", () => {
 
     const body = JSON.stringify((await track({ number: repair.number, phone: "0550123456" }).expect(200)).body);
 
-    for (const forbidden of ["NOTE-SECRETE-7731", "Pièce-SECRETE-9921", "unitCost", "partsCost", "purchasePrice", "note", "fullName", "Karim", "0550123456", "userId", "createdById", "parts"]) {
+    // Le nom et le prix de VENTE d'une pièce sont dans le devis (21/11, le client les voit pour accepter) ; tout ce qui
+    // est un coût, une note, un compte ou une identité reste hors de la réponse.
+    for (const forbidden of ["NOTE-SECRETE-7731", "unitCost", "partsCost", "purchasePrice", "3500", "note", "fullName", "Karim", "0550123456", "userId", "createdById", "parts"]) {
       expect(body, forbidden).not.toContain(forbidden);
     }
+    expect(body).toContain("Pièce-SECRETE-9921");
   });
 
   it("un mauvais téléphone et un numéro inconnu donnent la même réponse", async () => {
@@ -71,6 +74,53 @@ describe("POST /repairs/track", () => {
   it("utilise le même limiteur d'essais que le suivi de commande", () => {
     const layers = repairTrackRouter.stack.flatMap((layer) => (layer.route ? layer.route.stack.map((entry) => entry.handle) : []));
     expect(layers).toContain(trackLimiter);
+  });
+});
+
+// Le détail du devis (21/11) : ce que le client doit lire pour accepter ou refuser, la main-d'œuvre à part des pièces.
+describe("le détail du devis", () => {
+  const read = async (number: number) => (await track({ number, phone: "0550123456" }).expect(200)).body.data;
+
+  it("à « Devis à valider » : la main-d'œuvre, chaque pièce (nom, quantité, prix de vente) et le total", async () => {
+    const agent = await adminAgent();
+    const part = await makePart("Batterie iPhone 13", 5, 3_500, 6_000);
+    const repair = await makeRepair(agent, { laborPrice: 1_000 });
+    await addLineOk(agent, repair.id, part.id, 2);
+    await setStatusOk(agent, repair.id, "quote");
+    const data = await read(repair.number);
+    expect(data.quote).toEqual({ labor: 1_000, items: [{ name: "Batterie iPhone 13", quantity: 2, unitPrice: 6_000 }], total: 13_000 });
+    expect(data.price).toBe(13_000);
+    expect(JSON.stringify(data.quote)).not.toMatch(/unitCost|3500|purchase/);
+  });
+
+  it("une main-d'œuvre seule, sans pièce : le devis a une main-d'œuvre et aucune pièce", async () => {
+    const agent = await adminAgent();
+    const repair = await makeRepair(agent, { laborPrice: 2_500 });
+    await setStatusOk(agent, repair.id, "quote");
+    expect((await read(repair.number)).quote).toEqual({ labor: 2_500, items: [], total: 2_500 });
+  });
+
+  it("à « Reçu » : rien, même avec un prix et une pièce déjà saisis (c'est un brouillon)", async () => {
+    const agent = await adminAgent();
+    const repair = await makeRepair(agent, { laborPrice: 1_000 });
+    await addLineOk(agent, repair.id, (await makePart()).id, 1);
+    expect((await read(repair.number)).quote).toBeNull();
+  });
+
+  it("sous garantie ou devis refusé : pas de devis à lire", async () => {
+    const agent = await adminAgent();
+    const warranty = await makeWarrantyRepair(agent);
+    expect((await read(warranty.number)).quote).toBeNull();
+    const refused = await makeRepair(agent, { laborPrice: 3_000 });
+    await setStatusOk(agent, refused.id, "quote");
+    await setStatusOk(agent, refused.id, "to_return");
+    expect((await read(refused.number)).quote).toBeNull();
+  });
+
+  it("une fois accepté, le devis reste lisible (c'est le bon de réparation)", async () => {
+    const agent = await adminAgent();
+    const { repair } = await readyRepair(agent);
+    expect((await read(repair.number)).quote).toMatchObject({ total: 8_000 });
   });
 });
 
