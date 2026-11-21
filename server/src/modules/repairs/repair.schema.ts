@@ -97,3 +97,8 @@ export const repairTrackSchema = z.object({
   number: z.coerce.number().int().min(1).max(2_147_483_647),
   phone: phoneSchema,
 });
+
+// La réponse du client à son devis (21/11), depuis le suivi : accepter fait passer la fiche En réparation, refuser la
+// laisse « À rendre sans réparation ». Même numéro et même téléphone que le suivi.
+export const repairDecisionSchema = repairTrackSchema.extend({ decision: z.enum(["accept", "refuse"]) });
+export type RepairDecision = z.infer<typeof repairDecisionSchema>["decision"];

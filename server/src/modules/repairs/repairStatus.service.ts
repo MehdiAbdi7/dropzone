@@ -10,7 +10,11 @@ import { lockRepair, moveStock, setStatus } from "./repairStock.js";
 // Les étapes d'une fiche et sa suppression (18/11, étape 2). Chaque geste verrouille la fiche : un second envoi du
 // même passage attend le premier, puis voit une étape qui ne le permet plus et se fait refuser.
 
-export async function changeStatus(repairId: number, target: Status, userId: number, method?: PaymentMethod, now: Date = new Date()) {
+// `userId` null : le client qui accepte ou refuse son devis depuis le suivi (sans compte). Il ne rend jamais l'appareil.
+export async function changeStatus(repairId: number, target: Status, userId: number | null, method?: PaymentMethod, now: Date = new Date()) {
+  if (target === "returned" && userId === null) {
+    throw new AppError(403, "Rendre l'appareil est un geste du magasin");
+  }
   await prisma.$transaction(async (tx) => {
     const repair = await lockRepair(tx, repairId);
 
@@ -43,7 +47,7 @@ export async function changeStatus(repairId: number, target: Status, userId: num
     // Le Rendu (étape 3) : l'argent entre dans le journal et la caisse du jour, UNE fois (le verrou de la fiche et
     // l'étape « Prêt » ou « À rendre » l'exigent), et le bénéfice est figé sur la fiche.
     if (target === "returned") {
-      await collect(tx, repair, lines, method, userId, now);
+      await collect(tx, repair, lines, method, userId!, now);
     }
     await setStatus(tx, repairId, target, userId);
   });
@@ -87,7 +91,7 @@ export async function returnConsumedLines(
   tx: Tx,
   repair: { id: number; number: number },
   lines: { id: number; partId: number; quantity: number; consumed: boolean }[],
-  userId: number,
+  userId: number | null,
 ) {
   for (const line of lines.filter((candidate) => candidate.consumed)) {
     await moveStock(tx, { partId: line.partId, delta: line.quantity, repair, userId });
