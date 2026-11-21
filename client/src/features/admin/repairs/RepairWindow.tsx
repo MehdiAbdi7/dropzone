@@ -26,6 +26,8 @@ import {
   REPAIR_STATUS_LABELS,
   actionLabel,
   allowedTargets,
+  answeredByClient,
+  clientDecision,
   confirmText,
   initialRepairStep,
   paidText,
@@ -70,7 +72,9 @@ export default function RepairWindow({ id, onClose }: { id: number | null; onClo
 }
 
 function Body({ id, onClose }: { id: number; onClose: () => void }) {
-  const { data: repair, isError } = useRepairQuery(id);
+  // La fiche se relit toute seule toutes les 15 s tant que la fenêtre est ouverte : quand le client accepte ou refuse son
+  // devis depuis la page Suivi (21/11), la fenêtre se replace sur la nouvelle étape sans qu'on ait à la fermer.
+  const { data: repair, isError } = useRepairQuery(id, { pollingInterval: 15_000 });
 
   if (isError) {
     return (
@@ -103,6 +107,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
   const [selected, setSelected] = useState(() => initialRepairStep(steps));
   const [view, setView] = useState<View>("steps");
   const step = steps[selected];
+  const answer = clientDecision(repair.events);
 
   return (
     <div>
@@ -127,6 +132,14 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
       </header>
 
       <div className="space-y-5 p-5">
+        {/* La réponse du client à son devis, tant que le magasin n'a pas pris la suite : on le voit en ouvrant la fiche. */}
+        {answer ? (
+          <p role="status" className="rounded-lg border border-blue-ink bg-blue-soft p-3 text-sm font-semibold">
+            {answer.decision === "accept"
+              ? `Le client a accepté le devis le ${formatDate(answer.at)} : la réparation peut commencer.`
+              : `Le client a refusé le devis le ${formatDate(answer.at)} : l'appareil est à lui rendre sans réparation.`}
+          </p>
+        ) : null}
         <RepairStepper
           steps={steps}
           selected={view === "steps" ? selected : null}
@@ -295,7 +308,11 @@ function Details({ repair, onDeleted }: { repair: RepairDetail; onDeleted: () =>
           {repair.events.map((event, index) => (
             <li key={`${event.status}-${index}`}>
               <span className="font-semibold">{REPAIR_STATUS_LABELS[event.status]}</span>
-              <span className="text-ink-muted"> · {formatDate(event.createdAt)}</span>
+              <span className="text-ink-muted">
+                {" "}
+                · {formatDate(event.createdAt)}
+                {answeredByClient(event) ? " · par le client" : ""}
+              </span>
             </li>
           ))}
         </ul>

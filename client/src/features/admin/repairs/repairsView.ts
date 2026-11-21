@@ -64,6 +64,21 @@ export function repairStepBadge(status: RepairStatus, underWarranty: boolean): s
   return `${at + 1}/${steps.length} · ${steps[at].label}`;
 }
 
+// Le client répond lui-même à son devis depuis la page Suivi (21/11) : l'événement de l'étape s'écrit SANS auteur
+// (`userId` null), alors qu'un geste du magasin porte toujours le compte qui l'a fait. Seuls l'accord (« En réparation »)
+// et le refus (« À rendre sans réparation ») sont des réponses du client.
+type RepairEventLike = { status: RepairStatus; createdAt: string; userId: number | null };
+
+export const answeredByClient = (event: RepairEventLike): boolean => event.userId === null && (event.status === "in_repair" || event.status === "to_return");
+
+// La réponse du client, tant qu'elle est la DERNIÈRE chose arrivée à la fiche : le magasin le voit en haut de la fenêtre.
+// Dès que le magasin a pris la suite (une pièce de plus, une autre étape), le bandeau s'efface.
+export function clientDecision(events: RepairEventLike[]): { decision: "accept" | "refuse"; at: string } | null {
+  const last = events.at(-1);
+  if (!last || !answeredByClient(last)) return null;
+  return { decision: last.status === "in_repair" ? "accept" : "refuse", at: last.createdAt };
+}
+
 export const repairNumber = (number: number): string => `R-${number}`;
 
 // « R-1001 », « r 1001 » ou « 1001 » : on envoie le numéro seul ; tout autre texte part tel quel (nom, téléphone).
