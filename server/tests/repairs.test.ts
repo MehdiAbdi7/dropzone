@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/db.js";
 import { algiersDate } from "../src/utils/algiersTime.js";
 import { warrantyEndDate } from "../src/modules/repairs/warranty.js";
-import { loginAs, resetDb } from "./helpers.js";
+import { loginAs, partCategoryId, resetDb } from "./helpers.js";
 
 // Les fiches de réparation (18/11, étape 2) : création au comptoir, liste par étape, détail, modification.
 beforeEach(resetDb);
@@ -183,6 +183,20 @@ describe("GET /admin/repairs", () => {
     expect((await agent.get("/admin/repairs").query({ stage: "nimporte" })).status).toBe(400);
   });
 
+  it("les onglets : « new » = Reçu seulement, « ongoing » = tout le reste sauf Rendu", async () => {
+    const agent = await admin();
+    const received = await create(agent);
+    const quote = await create(agent);
+    const toReturn = await create(agent);
+    const returned = await create(agent);
+    await prisma.repair.update({ where: { id: quote.id }, data: { status: "quote" } });
+    await prisma.repair.update({ where: { id: toReturn.id }, data: { status: "to_return" } });
+    await prisma.repair.update({ where: { id: returned.id }, data: { status: "returned", returnedOn: new Date("2026-11-18T00:00:00Z") } });
+    const ids = async (stage: string) => (await agent.get("/admin/repairs").query({ stage }).expect(200)).body.data.map((row: { id: number }) => row.id);
+    expect(await ids("new")).toEqual([received.id]);
+    expect((await ids("ongoing")).sort()).toEqual([quote.id, toReturn.id].sort());
+  });
+
   it("cherche par numéro (R-1001 ou 1001), nom ou téléphone, sans tenir compte des accents", async () => {
     const agent = await admin();
     await create(agent, { fullName: "Éloïse Merabet", phone: "0661000000" });
@@ -199,7 +213,7 @@ describe("GET /admin/repairs", () => {
   it("le total compte les pièces au prix de vente et la main-d'œuvre", async () => {
     const agent = await admin();
     const repair = await create(agent, { laborPrice: 2_000 });
-    const part = await prisma.part.create({ data: { name: "Batterie", purchasePrice: 3_500, salePrice: 6_000, stock: 5 } });
+    const part = await prisma.part.create({ data: { name: "Batterie", categoryId: await partCategoryId(), purchasePrice: 3_500, salePrice: 6_000, stock: 5 } });
     await prisma.repairPart.create({ data: { repairId: repair.id, partId: part.id, name: "Batterie", quantity: 2, unitCost: 3_500, unitPrice: 6_000 } });
     const rows = (await agent.get("/admin/repairs").expect(200)).body.data;
     expect(rows[0]).toMatchObject({ partsCount: 1, total: 14_000 });
@@ -215,7 +229,7 @@ describe("GET /admin/repairs/counts", () => {
     await prisma.repair.update({ where: { id: b.id }, data: { status: "quote" } });
     await prisma.repair.update({ where: { id: c.id }, data: { status: "returned", returnedOn: new Date("2026-11-18T00:00:00Z") } });
     const counts = (await agent.get("/admin/repairs/counts").expect(200)).body.data;
-    expect(counts).toEqual({ open: 2, received: 1, quote: 1, in_repair: 0, ready: 0, to_return: 0, returned: 1 });
+    expect(counts).toEqual({ open: 2, new: 1, ongoing: 1, received: 1, quote: 1, in_repair: 0, ready: 0, to_return: 0, returned: 1 });
   });
 });
 

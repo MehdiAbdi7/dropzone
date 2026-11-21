@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/db.js";
-import { resetDb } from "./helpers.js";
+import { partCategoryId, resetDb } from "./helpers.js";
 
 // Les garde-fous de la base pour les fiches de réparation (18/11, étape 2) : même si le code se trompe, la base
 // refuse une main-d'œuvre négative, une quantité absurde et une garantie sans date de fin. Écrits en SQL brut :
@@ -21,8 +21,9 @@ const addRepair = async (over: RepairOver = {}) => {
 };
 
 const addPart = async (name = "Batterie iPhone 13") => {
+  const categoryId = await partCategoryId();
   const [row] = await prisma.$queryRaw<{ id: number }[]>`
-    INSERT INTO parts (name, purchase_price, sale_price, stock) VALUES (${name}, 3500, 6000, 5) RETURNING id`;
+    INSERT INTO parts (name, category_id, purchase_price, sale_price, stock) VALUES (${name}, ${categoryId}, 3500, 6000, 5) RETURNING id`;
   return row.id;
 };
 

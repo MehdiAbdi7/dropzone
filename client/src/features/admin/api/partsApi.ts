@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import type { PartCategoryRow } from "../parts/partsView";
 import { data } from "./shared";
 
 // Les pièces de l'atelier (18/11, étape 1) : la liste, la création, les arrivages, les corrections de stock et
@@ -7,6 +8,8 @@ import { data } from "./shared";
 export type PartRow = {
   id: number;
   name: string;
+  // La catégorie (Batterie, Afficheur…) : une pièce est toujours rangée dans l'une d'elles.
+  categoryId: number;
   // Le prix d'achat moyen : recalculé à chaque arrivage.
   purchasePrice: number;
   salePrice: number;
@@ -26,8 +29,10 @@ export type PartMovementRow = {
   userId: number | null;
 };
 
-export type PartBody = { name: string; purchasePrice: number; salePrice: number; stock?: number };
-export type PartPatchBody = { name?: string; purchasePrice?: number; salePrice?: number };
+export type PartBody = { name: string; categoryId: number; purchasePrice: number; salePrice: number; stock?: number };
+export type PartPatchBody = { name?: string; categoryId?: number; purchasePrice?: number; salePrice?: number };
+
+export type { PartCategoryRow };
 
 const partsApi = api.injectEndpoints({
   endpoints: (build) => ({
@@ -36,6 +41,27 @@ const partsApi = api.injectEndpoints({
       query: (q) => ({ url: "/admin/parts", params: { q } }),
       transformResponse: data<PartRow[]>,
       providesTags: ["Parts"],
+    }),
+    // Les catégories de pièces (21/11), avec le nombre de pièces de chacune : relues avec les pièces (même étiquette).
+    partCategories: build.query<PartCategoryRow[], void>({
+      query: () => "/admin/part-categories",
+      transformResponse: data<PartCategoryRow[]>,
+      providesTags: ["Parts"],
+    }),
+    createPartCategory: build.mutation<PartCategoryRow, string>({
+      query: (name) => ({ url: "/admin/part-categories", method: "POST", body: { name } }),
+      transformResponse: data<PartCategoryRow>,
+      invalidatesTags: ["Parts"],
+    }),
+    renamePartCategory: build.mutation<PartCategoryRow, { id: number; name: string }>({
+      query: ({ id, name }) => ({ url: `/admin/part-categories/${id}`, method: "PATCH", body: { name } }),
+      transformResponse: data<PartCategoryRow>,
+      invalidatesTags: ["Parts"],
+    }),
+    deletePartCategory: build.mutation<{ ok: true }, number>({
+      query: (id) => ({ url: `/admin/part-categories/${id}`, method: "DELETE" }),
+      transformResponse: data<{ ok: true }>,
+      invalidatesTags: ["Parts"],
     }),
     createPart: build.mutation<PartRow, PartBody>({
       query: (body) => ({ url: "/admin/parts", method: "POST", body }),
@@ -68,6 +94,10 @@ const partsApi = api.injectEndpoints({
 
 export const {
   usePartsQuery,
+  usePartCategoriesQuery,
+  useCreatePartCategoryMutation,
+  useRenamePartCategoryMutation,
+  useDeletePartCategoryMutation,
   useCreatePartMutation,
   useUpdatePartMutation,
   useAddArrivalMutation,

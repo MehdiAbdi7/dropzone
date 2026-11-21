@@ -73,7 +73,7 @@ export type ReplaceDone = {
   notices: string[];
 };
 
-export type RepairCounts =Record<"open" | RepairStatus, number>;
+export type RepairCounts = Record<"open" | "new" | "ongoing" | RepairStatus, number>;
 
 export type WarrantyHit = {
   itemId: number;
@@ -104,7 +104,8 @@ export type RepairPatchBody = Partial<Omit<RepairBody, "laborPrice" | "originIte
   note?: string;
 };
 
-export type RepairStage = "open" | RepairStatus;
+// « new » et « ongoing » : les deux onglets de la page ; les autres étapes restent utilisables (Historique, tests).
+export type RepairStage = "open" | "new" | "ongoing" | RepairStatus;
 
 const repairsApi = api.injectEndpoints({
   endpoints: (build) => ({

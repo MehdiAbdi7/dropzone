@@ -48,6 +48,22 @@ export function repairSteps(status: RepairStatus, underWarranty: boolean, visite
   });
 }
 
+// La pastille sur laquelle la fenêtre s'ouvre : l'étape en cours, la sortie si le devis est refusé, la dernière si la
+// fiche est rendue (comme `initialStep` des commandes).
+export function initialRepairStep(steps: RepairStep[]): number {
+  const current = steps.findIndex((step) => step.state === "current" || step.state === "exit");
+  return current === -1 ? steps.length - 1 : current;
+}
+
+// Le badge placé devant une fiche dans la liste : où elle en est d'un coup d'œil, « 3/5 · En réparation ». Une étape
+// sautée (pas de devis sous garantie) ne compte pas ; un devis refusé n'a pas de position, le nom seul.
+export function repairStepBadge(status: RepairStatus, underWarranty: boolean): string {
+  const steps = repairSteps(status, underWarranty).filter((step) => step.state !== "skipped");
+  const at = steps.findIndex((step) => step.status === status);
+  if (at === -1 || steps[at].state === "exit") return REPAIR_STATUS_LABELS[status];
+  return `${at + 1}/${steps.length} · ${steps[at].label}`;
+}
+
 export const repairNumber = (number: number): string => `R-${number}`;
 
 // « R-1001 », « r 1001 » ou « 1001 » : on envoie le numéro seul ; tout autre texte part tel quel (nom, téléphone).

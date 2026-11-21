@@ -9,17 +9,27 @@ const name = z.string().trim().min(1).max(80).transform((text) => text.replace(/
 const price = z.number().int().min(0).max(10_000_000);
 const stock = z.number().int().min(0).max(1_000_000);
 
+// La catégorie d'une pièce (21/11) : un numéro ; son existence est vérifiée par la clé étrangère de la base.
+const categoryId = z.number().int().positive();
+
+// Le nom d'une catégorie (Batterie, Afficheur…), rangé comme celui d'une pièce.
+export const partCategoryBodySchema = z.object({
+  name: z.string().trim().min(1).max(40).transform((text) => text.replace(/\s+/g, " ")),
+});
+
 export const partBodySchema = z.object({
   name,
+  categoryId,
   purchasePrice: price,
   salePrice: price,
   // Le stock de départ : s'il y en a, il s'écrit comme un arrivage au prix d'achat donné.
   stock: stock.optional(),
 });
 
-// Le nom et les prix seulement : le stock ne change que par un arrivage ou une correction.
+// Le nom, la catégorie et les prix seulement : le stock ne change que par un arrivage ou une correction.
 export const partPatchSchema = z.object({
   name: name.optional(),
+  categoryId: categoryId.optional(),
   purchasePrice: price.optional(),
   salePrice: price.optional(),
 });

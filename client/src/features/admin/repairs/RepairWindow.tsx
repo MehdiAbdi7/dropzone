@@ -21,11 +21,25 @@ import RepairReplaceDialog from "./RepairReplaceDialog";
 import RepairStepper from "./RepairStepper";
 import { canReplace } from "./replaceRules";
 import { RepairBadge } from "./RepairsTable";
-import { REPAIR_STATUS_LABELS, actionLabel, confirmText, allowedTargets, paidText, repairCapabilities, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
+import {
+  REPAIR_STATUS_LABELS,
+  actionLabel,
+  allowedTargets,
+  confirmText,
+  initialRepairStep,
+  paidText,
+  repairCapabilities,
+  repairNumber,
+  repairSteps,
+  repairTotal,
+  warrantyLabel,
+  type RepairStep,
+} from "./repairsView";
 
 // La fenêtre d'une fiche, ouverte au clic sur une ligne de la liste (ou juste après la création). Au centre sur
-// ordinateur, une feuille qui monte du bas sur téléphone (`.order-window`, la même que les commandes). `id` vient
-// de l'adresse (`?reparation=12`) : null = fermée.
+// ordinateur, une feuille qui monte du bas sur téléphone (`.order-window`, la même que les commandes). Comme celle
+// d'une commande (21/11) : elle s'ouvre sur l'étape où en est l'appareil, chaque pastille de la frise se regarde, et
+// les boutons n'existent que sur l'étape en cours. `id` vient de l'adresse (`?reparation=12`) : null = fermée.
 export default function RepairWindow({ id, onClose }: { id: number | null; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const open = id !== null;
@@ -66,7 +80,9 @@ function Body({ id, onClose }: { id: number; onClose: () => void }) {
     );
   }
   if (!repair) return <p className="p-6 text-ink-muted">Chargement…</p>;
-  return <Content repair={repair} onClose={onClose} />;
+  // `key` = l'étape : quand la fiche avance (le bouton vient de servir), la fenêtre se replace sur la nouvelle étape
+  // en cours, au lieu de rester sur l'ancienne.
+  return <Content key={repair.status} repair={repair} onClose={onClose} />;
 }
 
 const Row = ({ label, value }: { label: string; value: string | null }) => (
@@ -76,42 +92,99 @@ const Row = ({ label, value }: { label: string; value: string | null }) => (
   </div>
 );
 
+type View = "steps" | "details";
+
 function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => void }) {
-  // Ce que ce rôle voit et fait (étape 5) : l'API refuse le reste et retire l'argent du client pour le technicien.
-  const role = useAdminRole();
-  const caps = repairCapabilities(role);
-  const targets = allowedTargets(role, repair.nextStatuses, repair.underWarranty);
-  const [editing, setEditing] = useState(false);
-  const [returning, setReturning] = useState(false);
-  const [replacing, setReplacing] = useState(false);
-  const [change, changing] = useChangeRepairStatusMutation();
-  const [remove, removing] = useDeleteRepairMutation();
+  const caps = repairCapabilities(useAdminRole());
   const steps = repairSteps(repair.status, repair.underWarranty, repair.events.map((event) => event.status));
-  const total = caps.seesClientMoney ? repairTotal(repair) : 0;
+  const [selected, setSelected] = useState(() => initialRepairStep(steps));
+  const [view, setView] = useState<View>("steps");
+  const step = steps[selected];
 
   return (
-    <div className="space-y-5 p-4 sm:p-6">
-      <header className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
+    <div>
+      <header className="sticky top-0 z-20 flex items-start justify-between gap-3 border-b border-line border-l-4 border-l-blue bg-surface px-5 py-3">
+        <div className="min-w-0 space-y-0.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-display text-2xl font-bold text-blue-ink">{repairNumber(repair.number)}</h2>
-            <RepairBadge status={repair.status} />
+            <h2 className="font-display text-lg font-bold text-blue-ink">{repairNumber(repair.number)}</h2>
+            <RepairBadge status={repair.status} underWarranty={repair.underWarranty} />
           </div>
           <p className="font-semibold">{repair.deviceName}</p>
-          <p className="text-sm text-ink-muted">{warrantyLabel(repair)}</p>
+          <p className="text-sm text-ink-muted">
+            {repair.fullName} · {warrantyLabel(repair)}
+          </p>
           {caps.seesClientMoney && paidText(repair) ? <p className="text-sm font-semibold">{paidText(repair)}</p> : null}
           {repair.replacementOrderNumber !== null ? (
             <p className="text-sm font-semibold">Appareil remplacé sous garantie (commande {repair.replacementOrderNumber}) : l&apos;appareil en panne est dans les Reprises.</p>
           ) : null}
         </div>
-        <button type="button" className="btn btn-secondary btn-small" onClick={onClose} aria-label="Fermer la fiche">
+        <button type="button" className="icon-btn shrink-0" onClick={onClose} aria-label="Fermer la fiche">
           <CloseIcon />
         </button>
       </header>
 
-      <RepairStepper steps={steps} />
+      <div className="space-y-5 p-5">
+        <RepairStepper
+          steps={steps}
+          selected={view === "steps" ? selected : null}
+          onSelect={(index) => {
+            setSelected(index);
+            setView("steps");
+          }}
+        />
+        <div role="group" aria-label="Vue de la fiche" className="flex gap-2">
+          <button type="button" className="chip" aria-pressed={view === "steps"} onClick={() => setView("steps")}>
+            Étape
+          </button>
+          <button type="button" className="chip" aria-pressed={view === "details"} onClick={() => setView("details")}>
+            Détails
+          </button>
+        </div>
 
-      {targets.length > 0 || canReplace(repair, caps.replacesDevice) ? (
+        {view === "steps" && step ? <StepPanel repair={repair} step={step} steps={steps} /> : null}
+        {view === "details" ? <Details repair={repair} onDeleted={onClose} /> : null}
+      </div>
+    </div>
+  );
+}
+
+// Ce que dit la pastille choisie : les actions et les pièces si c'est l'étape en cours, sinon un constat.
+function StepPanel({ repair, step, steps }: { repair: RepairDetail; step: RepairStep; steps: RepairStep[] }) {
+  if (step.state === "current") return <StepActions repair={repair} />;
+
+  if (step.state === "exit") {
+    return <p>Le devis a été refusé : l&apos;appareil sort du circuit de réparation. Il n&apos;y a plus qu&apos;à le rendre au client, sans réparation.</p>;
+  }
+
+  if (step.state === "skipped") {
+    return <p className="text-ink-muted">Pas de devis : l&apos;appareil est sous garantie, ou le client était d&apos;accord au comptoir.</p>;
+  }
+
+  if (step.state === "done") {
+    const reached = repair.events.find((event) => event.status === step.status);
+    return <p className="text-ink-muted">Étape terminée{reached ? ` le ${formatDate(reached.createdAt)}` : ""}.</p>;
+  }
+
+  // Une étape à venir : on dit où en est la fiche.
+  const current = steps.find((other) => other.state === "current" || other.state === "exit");
+  return <p className="text-ink-muted">{current ? `Pas encore : la fiche est à l'étape « ${current.label} ». Celle-ci viendra ensuite.` : "Cette fiche n'avancera plus."}</p>;
+}
+
+// Les actions de l'étape où en est la fiche, et seulement elles : les passages d'étape permis à ce rôle, le
+// remplacement sous garantie, puis les pièces (qu'on ajoute tant que l'appareil n'est pas Prêt).
+function StepActions({ repair }: { repair: RepairDetail }) {
+  // Ce que ce rôle voit et fait (étape 5) : l'API refuse le reste et retire l'argent du client pour le technicien.
+  const role = useAdminRole();
+  const caps = repairCapabilities(role);
+  const targets = allowedTargets(role, repair.nextStatuses, repair.underWarranty);
+  const [returning, setReturning] = useState(false);
+  const [replacing, setReplacing] = useState(false);
+  const [change, changing] = useChangeRepairStatusMutation();
+  const replaceable = canReplace(repair, caps.replacesDevice);
+
+  return (
+    <div className="space-y-5">
+      {targets.length > 0 || replaceable ? (
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
             {targets.map((status, index) => {
@@ -136,7 +209,7 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
                 </button>
               );
             })}
-            {canReplace(repair, caps.replacesDevice) ? (
+            {replaceable ? (
               <button type="button" className="btn btn-secondary" onClick={() => setReplacing(true)}>
                 Remplacer l&apos;appareil
               </button>
@@ -148,8 +221,29 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
             </p>
           ) : null}
         </div>
-      ) : null}
+      ) : (
+        <p className="text-ink-muted">{REPAIR_STATUS_LABELS[repair.status]} : rien à faire ici pour votre rôle.</p>
+      )}
 
+      <RepairParts repair={repair} />
+
+      <RepairReturnDialog open={returning} repair={repair} onClose={() => setReturning(false)} />
+      <RepairReplaceDialog open={replacing} repair={repair} onClose={() => setReplacing(false)} />
+    </div>
+  );
+}
+
+// L'onglet Détails : le client, la panne, les pièces et le prix, l'historique des étapes, puis le bon de dépôt, la
+// modification et la suppression de la fiche.
+function Details({ repair, onDeleted }: { repair: RepairDetail; onDeleted: () => void }) {
+  const role = useAdminRole();
+  const caps = repairCapabilities(role);
+  const [editing, setEditing] = useState(false);
+  const [remove, removing] = useDeleteRepairMutation();
+  const total = caps.seesClientMoney ? repairTotal(repair) : 0;
+
+  return (
+    <div className="space-y-5">
       <dl className="space-y-1.5 rounded-lg border border-line bg-surface-2 p-3">
         <Row label="Client" value={repair.fullName} />
         <Row label="Téléphone" value={repair.phone} />
@@ -164,11 +258,11 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
       <RepairParts repair={repair} />
 
       {caps.seesClientMoney ? (
-      <section className="space-y-1" aria-label="Prix">
-        <h3 className="text-lg">Prix</h3>
-        <p className="text-sm">Main-d&apos;œuvre : {repair.laborPrice === null ? <span className="text-ink-muted">à fixer</span> : formatPrice(repair.laborPrice)}</p>
-        <p className="font-bold">{repair.underWarranty ? "Sous garantie, gratuit" : `Total pour le client : ${formatPrice(total)}`}</p>
-      </section>
+        <section className="space-y-1" aria-label="Prix">
+          <h3 className="text-lg">Prix</h3>
+          <p className="text-sm">Main-d&apos;œuvre : {repair.laborPrice === null ? <span className="text-ink-muted">à fixer</span> : formatPrice(repair.laborPrice)}</p>
+          <p className="font-bold">{repair.underWarranty ? "Sous garantie, gratuit" : `Total pour le client : ${formatPrice(total)}`}</p>
+        </section>
       ) : null}
 
       <section className="space-y-1" aria-label="Étapes de la fiche">
@@ -191,24 +285,24 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
           </button>
         ) : null}
         {caps.deletesRepair && repair.replacementOrderNumber === null ? (
-        <ConfirmDialog
-          trigger="Supprimer la fiche"
-          triggerClassName="btn btn-danger btn-small"
-          title={`Supprimer ${repairNumber(repair.number)} ?`}
-          confirmLabel="Supprimer"
-          onConfirm={async () => {
-            try {
-              await remove(repair.id).unwrap();
-              onClose();
-            } catch {
-              // L'erreur est affichée sous les boutons.
-            }
-          }}
-        >
-          {repair.status === "returned"
-            ? "La réparation est rendue : l'argent encaissé est rendu par une correction de la caisse du jour (elle doit être ouverte), les pièces sorties reviennent au stock et une trace reste dans l'Historique."
-            : "Les pièces déjà sorties du stock y reviennent. Le journal des pièces garde la trace."}
-        </ConfirmDialog>
+          <ConfirmDialog
+            trigger="Supprimer la fiche"
+            triggerClassName="btn btn-danger btn-small"
+            title={`Supprimer ${repairNumber(repair.number)} ?`}
+            confirmLabel="Supprimer"
+            onConfirm={async () => {
+              try {
+                await remove(repair.id).unwrap();
+                onDeleted();
+              } catch {
+                // L'erreur est affichée sous les boutons.
+              }
+            }}
+          >
+            {repair.status === "returned"
+              ? "La réparation est rendue : l'argent encaissé est rendu par une correction de la caisse du jour (elle doit être ouverte), les pièces sorties reviennent au stock et une trace reste dans l'Historique."
+              : "Les pièces déjà sorties du stock y reviennent. Le journal des pièces garde la trace."}
+          </ConfirmDialog>
         ) : null}
       </div>
       {removing.error ? (
@@ -217,8 +311,6 @@ function Content({ repair, onClose }: { repair: RepairDetail; onClose: () => voi
         </p>
       ) : null}
 
-      <RepairReturnDialog open={returning} repair={repair} onClose={() => setReturning(false)} />
-      <RepairReplaceDialog open={replacing} repair={repair} onClose={() => setReplacing(false)} />
       <RepairEditDialog open={editing} noteOnly={!caps.editsRepair} repair={repair} onClose={() => setEditing(false)} />
     </div>
   );

@@ -82,6 +82,9 @@ export const ACCESS_RULES: AccessRule[] = [
   // Les pièces : le vendeur et le responsable voient la liste (nom, prix de vente, stock) pour établir un devis,
   // sans le prix d'achat ; le technicien le voit, crée une pièce et enregistre un arrivage.
   { method: "GET", path: "/parts", roles: ["technician", "seller", "order_manager"], costFor: ["technician"] },
+  // Les catégories de pièces (21/11) : ceux qui lisent les pièces lisent les catégories ; créer, renommer et supprimer
+  // une catégorie est admin seul (aucune règle).
+  { method: "GET", path: "/part-categories", roles: ["technician", "seller", "order_manager"] },
   { method: "POST", path: "/parts", roles: ["technician"], costFor: ["technician"] },
   { method: "POST", path: "/parts/:id/arrivals", roles: ["technician"], costFor: ["technician"] },
   { method: "GET", path: "/parts/:id/movements", roles: ["technician"], costFor: ["technician"] },

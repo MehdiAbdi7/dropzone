@@ -1,15 +1,18 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/db.js";
-import { resetDb } from "./helpers.js";
+import { partCategoryId, resetDb } from "./helpers.js";
 
 // Les garde-fous de la base pour les pièces de l'atelier (18/11) : même si le code se trompe, la base refuse un
 // stock négatif, un prix négatif, un mouvement de 0 et deux pièces au même nom. Écrits en SQL brut : ils
 // vérifient la migration, pas le client Prisma.
 beforeEach(resetDb);
 
-const addPart = (name: string, over: { purchase?: number; sale?: number; stock?: number } = {}) =>
-  prisma.$executeRaw`INSERT INTO parts (name, purchase_price, sale_price, stock)
-    VALUES (${name}, ${over.purchase ?? 0}, ${over.sale ?? 0}, ${over.stock ?? 0})`;
+// Depuis le 21/11, une pièce a toujours une catégorie (colonne NOT NULL) : on en donne une.
+const addPart = async (name: string, over: { purchase?: number; sale?: number; stock?: number } = {}) => {
+  const categoryId = await partCategoryId();
+  return prisma.$executeRaw`INSERT INTO parts (name, category_id, purchase_price, sale_price, stock)
+    VALUES (${name}, ${categoryId}, ${over.purchase ?? 0}, ${over.sale ?? 0}, ${over.stock ?? 0})`;
+};
 
 describe("la table parts", () => {
   it("accepte une pièce valide", async () => {

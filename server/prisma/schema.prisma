@@ -753,13 +753,27 @@ enum PartMovementKind {
   trade_in_use
 }
 
+// Une catégorie de pièces (Batterie, Afficheur…), créée à la main dans le back-office (21/11). L'unicité du nom sans
+// casse ni espaces est dans la migration. La clé étrangère des pièces (RESTRICT) refuse de supprimer une catégorie
+// qui contient encore des pièces.
+model PartCategory {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  parts     Part[]
+
+  @@map("part_categories")
+}
+
 // Une pièce de l'atelier (batterie, écran…) : ce qu'elle a coûté, à quel prix on la vend, combien il en reste.
 // Les CHECK (stock et prix jamais négatifs) et l'unicité du nom sans casse ni espaces
 // (`lower(btrim(name))`) sont dans la migration : Prisma ne sait pas les décrire. Aucune suppression : le
-// journal doit garder la trace de chaque pièce.
+// journal doit garder la trace de chaque pièce. Toujours rangée dans une catégorie.
 model Part {
   id            Int            @id @default(autoincrement())
   name          String
+  categoryId    Int            @map("category_id")
+  category      PartCategory   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   purchasePrice Int            @map("purchase_price")
   salePrice     Int            @map("sale_price")
   stock         Int            @default(0)

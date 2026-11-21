@@ -1,5 +1,85 @@
 import { describe, expect, it } from "vitest";
-import { arrivalProblem, averageAfterArrival, isOutOfStock, movementLabel, partDraftProblem, partEditProblem, partPatchBody, stockProblem } from "./partsView";
+import {
+  activeCategoryId,
+  arrivalProblem,
+  averageAfterArrival,
+  categoryChoiceProblem,
+  categoryNameProblem,
+  isOutOfStock,
+  movementLabel,
+  partDraftProblem,
+  partEditProblem,
+  partPatchBody,
+  stockProblem,
+  visibleParts,
+} from "./partsView";
+
+// Les catégories de pièces (21/11) : le nom, la catégorie ouverte par défaut, ce que montre la page, le déplacement.
+const categories = [
+  { id: 4, name: "Afficheur", partsCount: 1 },
+  { id: 7, name: "Batterie", partsCount: 2 },
+];
+
+describe("categoryNameProblem", () => {
+  it("accepte un nom de 1 à 40 caractères", () => {
+    expect(categoryNameProblem("Batterie")).toBeNull();
+    expect(categoryNameProblem("x".repeat(40))).toBeNull();
+  });
+
+  it("refuse un nom vide ou trop long, en français", () => {
+    expect(categoryNameProblem("   ")).toBe("Le nom de la catégorie : 1 caractère au minimum.");
+    expect(categoryNameProblem("x".repeat(41))).toBe("Le nom de la catégorie : 40 caractères au maximum.");
+  });
+});
+
+describe("categoryChoiceProblem", () => {
+  it("demande de choisir une catégorie avant de créer une pièce", () => {
+    expect(categoryChoiceProblem(null)).toBe("Choisis la catégorie de la pièce.");
+    expect(categoryChoiceProblem(7)).toBeNull();
+  });
+});
+
+describe("activeCategoryId", () => {
+  it("garde la catégorie demandée si elle existe", () => {
+    expect(activeCategoryId(categories, 7)).toBe(7);
+  });
+
+  it("sinon ouvre la première (la catégorie vient d'être supprimée, ou rien n'est choisi)", () => {
+    expect(activeCategoryId(categories, 99)).toBe(4);
+    expect(activeCategoryId(categories, null)).toBe(4);
+  });
+
+  it("rien quand il n'y a aucune catégorie", () => {
+    expect(activeCategoryId([], 7)).toBeNull();
+  });
+});
+
+describe("visibleParts", () => {
+  const parts = [
+    { id: 1, name: "Batterie iPhone 13", categoryId: 7 },
+    { id: 2, name: "Batterie iPhone 15", categoryId: 7 },
+    { id: 3, name: "Écran iPhone 13", categoryId: 4 },
+  ];
+
+  it("sans recherche : les pièces de la catégorie ouverte", () => {
+    expect(visibleParts(parts, 7, "").map((part) => part.id)).toEqual([1, 2]);
+    expect(visibleParts(parts, 4, "").map((part) => part.id)).toEqual([3]);
+  });
+
+  it("avec une recherche : toutes les catégories (une pièce rangée ailleurs reste trouvable)", () => {
+    expect(visibleParts(parts, 7, "ecran").map((part) => part.id)).toEqual([3]);
+    expect(visibleParts(parts, 4, "iphone 13").map((part) => part.id)).toEqual([1, 3]);
+  });
+});
+
+describe("partPatchBody et la catégorie", () => {
+  const part = { name: "Batterie iPhone 13", purchasePrice: 3_500, salePrice: 6_000, categoryId: 7 };
+
+  it("envoie la catégorie seulement si elle a changé", () => {
+    expect(partPatchBody(part, { ...part, categoryId: 4 })).toEqual({ categoryId: 4 });
+    expect(partPatchBody(part, part)).toEqual({});
+  });
+});
 
 // Les règles de saisie de la page Pièces (18/11) : les mêmes bornes que l'API, dites en français avant l'envoi.
 const draft = { name: "Batterie iPhone 13", purchasePrice: 3_500, salePrice: 6_000, stock: 2 };
