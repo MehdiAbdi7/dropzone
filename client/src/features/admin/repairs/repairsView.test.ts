@@ -1,7 +1,49 @@
 import { describe, expect, it } from "vitest";
 import { movementLabel } from "../parts/partsView";
 import { formatPrice } from "@/lib/format";
-import { actionLabel, allowedTargets, confirmText, initialRepairStep, laborProblem, paidText, quoteReady, parseRepairSearch, repairCapabilities, repairStepBadge, returnProblem, repairDraftProblem, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
+import { actionLabel, allowedTargets, answeredByClient, clientDecision, confirmText, initialRepairStep, laborProblem, paidText, quoteReady, parseRepairSearch, repairCapabilities, repairStepBadge, returnProblem, repairDraftProblem, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
+
+// La réponse du client à son devis, depuis la page Suivi (21/11) : l'événement s'écrit sans auteur (`userId` null). Le
+// magasin doit le voir tout de suite et savoir que c'est le client, pas un collègue, qui a répondu.
+const at = (hour: number) => `2026-11-21T${String(hour).padStart(2, "0")}:00:00.000Z`;
+const staff = (status: "received" | "quote" | "in_repair" | "to_return", hour: number) => ({ status, createdAt: at(hour), userId: 5 });
+const client = (status: "in_repair" | "to_return", hour: number) => ({ status, createdAt: at(hour), userId: null });
+
+describe("answeredByClient", () => {
+  it("reconnaît l'accord et le refus écrits sans auteur", () => {
+    expect(answeredByClient(client("in_repair", 10))).toBe(true);
+    expect(answeredByClient(client("to_return", 10))).toBe(true);
+  });
+
+  it("jamais un geste du magasin, ni une étape qui n'est pas une réponse", () => {
+    expect(answeredByClient(staff("in_repair", 10))).toBe(false);
+    expect(answeredByClient({ status: "quote", createdAt: at(9), userId: null })).toBe(false);
+    expect(answeredByClient({ status: "received", createdAt: at(8), userId: null })).toBe(false);
+  });
+});
+
+describe("clientDecision", () => {
+  it("le client vient d'accepter : l'accord et l'heure", () => {
+    const events = [staff("received", 8), staff("quote", 9), client("in_repair", 10)];
+    expect(clientDecision(events)).toEqual({ decision: "accept", at: at(10) });
+  });
+
+  it("le client vient de refuser", () => {
+    expect(clientDecision([staff("received", 8), staff("quote", 9), client("to_return", 10)])).toEqual({ decision: "refuse", at: at(10) });
+  });
+
+  it("rien quand c'est le magasin qui a enregistré l'accord", () => {
+    expect(clientDecision([staff("received", 8), staff("quote", 9), staff("in_repair", 10)])).toBeNull();
+  });
+
+  it("rien une fois que le magasin a pris la suite (la fiche est revenue au devis, ou une autre étape a suivi)", () => {
+    expect(clientDecision([staff("received", 8), staff("quote", 9), client("in_repair", 10), staff("quote", 11)])).toBeNull();
+  });
+
+  it("rien sans événement", () => {
+    expect(clientDecision([])).toBeNull();
+  });
+});
 
 // Les deux onglets de la liste et la fenêtre par étape (21/11) : où en est une fiche, et sur quelle étape s'ouvre sa fenêtre.
 describe("repairStepBadge", () => {
