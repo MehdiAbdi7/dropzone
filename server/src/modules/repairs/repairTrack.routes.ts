@@ -15,5 +15,5 @@ repairTrackRouter.post("/track", trackLimiter, validate({ body: repairTrackSchem
 });
 
 repairTrackRouter.post("/track/decision", trackLimiter, validate({ body: repairDecisionSchema }), async (req, res) => {
-  res.json({ data: await decideQuote(req.body.number, req.body.phone, req.body.decision) });
+  res.json({ data: await decideQuote(req.body.number, req.body.phone, req.body.decision, req.body.total) });
 });

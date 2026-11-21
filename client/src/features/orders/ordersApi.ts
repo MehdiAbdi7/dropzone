@@ -60,7 +60,8 @@ const ordersApi = api.injectEndpoints({
     }),
     // La réponse du client à son devis (21/11) : accepter ou refuser, avec le numéro et le téléphone, sans connexion.
     // Rend le suivi à jour.
-    decideRepair: build.mutation<RepairTracking, { number: number; phone: string; decision: "accept" | "refuse" }>({
+    // `total` : le total du devis que le client a lu, obligatoire pour accepter (le magasin a pu corriger le prix).
+    decideRepair: build.mutation<RepairTracking, { number: number; phone: string; decision: "accept" | "refuse"; total?: number }>({
       query: (body) => ({ url: "/repairs/track/decision", method: "POST", body }),
       transformResponse: (body: { data: RepairTracking }) => body.data,
     }),

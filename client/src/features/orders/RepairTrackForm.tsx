@@ -35,12 +35,19 @@ export default function RepairTrackForm() {
     }
   }
 
+  // Accepter envoie le total que le client a LU : si le magasin a corrigé le prix entre-temps, le serveur refuse, et la
+  // page relit le suivi pour que le client voie le devis d'aujourd'hui avant de répondre de nouveau.
   async function onDecide(answer: "accept" | "refuse") {
-    if (!found) return;
+    if (!found || !tracking) return;
     try {
-      setTracking(await decide({ ...found, decision: answer }).unwrap());
+      setTracking(await decide({ ...found, decision: answer, ...(answer === "accept" ? { total: tracking.quote?.total } : {}) }).unwrap());
     } catch {
-      // L'erreur est affichée sous le devis.
+      // L'erreur est affichée sous le devis ; le suivi est relu (il a pu changer).
+      try {
+        setTracking(await track(found).unwrap());
+      } catch {
+        // Si la relecture échoue aussi, l'erreur du suivi s'affiche sous le formulaire.
+      }
     }
   }
 

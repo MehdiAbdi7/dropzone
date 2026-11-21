@@ -2,15 +2,17 @@ import { prisma } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
 import type { RepairDecision } from "./repair.schema.js";
 import { hasQuote, quoteTotal, repairAmount, type Status } from "./repairRules.js";
-import { changeStatus } from "./repairStatus.service.js";
+import { changeStatus, QUOTE_CHANGED } from "./repairStatus.service.js";
 
 const NOT_FOUND = "Aucune réparation ne correspond à ce numéro et ce téléphone";
 
 // La réponse du client à son devis (21/11) : accepter fait passer la fiche En réparation (les pièces sortent du stock),
 // refuser la laisse « À rendre sans réparation » (les pièces déjà sorties reviennent). Seule l'étape « Devis à valider »
 // attend une réponse, et une réponse donnée ne se change pas. Le client n'a pas de compte : le numéro et le téléphone
-// le désignent, comme pour le suivi, et l'événement s'écrit sans auteur. Rend le suivi à jour.
-export async function decideQuote(number: number, phone: string, decision: RepairDecision): Promise<RepairTracking> {
+// le désignent, comme pour le suivi, et l'événement s'écrit sans auteur. Accepter n'est valable que pour le total que le
+// client a lu (`seenTotal`) : si le magasin a corrigé le prix entre-temps, l'accord est refusé et le client relit.
+// Rend le suivi à jour.
+export async function decideQuote(number: number, phone: string, decision: RepairDecision, seenTotal?: number): Promise<RepairTracking> {
   const repair = await prisma.repair.findFirst({ where: { number, phone }, select: { id: true, status: true } });
   // Un numéro inconnu et un mauvais téléphone répondent pareil : on ne confirme pas qu'une fiche existe.
   if (!repair) {
@@ -20,9 +22,10 @@ export async function decideQuote(number: number, phone: string, decision: Repai
     throw new AppError(409, "Ce devis n'attend plus de réponse");
   }
   try {
-    await changeStatus(repair.id, decision === "accept" ? "in_repair" : "to_return", null);
+    const accepts = decision === "accept";
+    await changeStatus(repair.id, accepts ? "in_repair" : "to_return", null, undefined, new Date(), accepts ? seenTotal : undefined);
   } catch (error) {
-    if (error instanceof AppError && error.statusCode === 409) {
+    if (error instanceof AppError && error.statusCode === 409 && error.message !== QUOTE_CHANGED) {
       // Le message d'une pièce manquante nomme la pièce et le stock du magasin : pas pour le client. Un passage devenu
       // impossible entre-temps (le magasin a changé la fiche) : le devis n'attend plus de réponse.
       const stock = /^(Stock insuffisant|Pièce épuisée)/.test(error.message);

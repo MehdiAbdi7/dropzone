@@ -4,14 +4,26 @@ import { AppError } from "../../utils/AppError.js";
 import { algiersDate } from "../../utils/algiersTime.js";
 import { requireOpenCashDay } from "../cash/cash.service.js";
 import { getRepair } from "./repair.service.js";
-import { hasQuote, nextStatuses, repairAmount, STATUS_LABELS, type Status } from "./repairRules.js";
+import { hasQuote, nextStatuses, quoteTotal, repairAmount, STATUS_LABELS, type Status } from "./repairRules.js";
 import { lockRepair, moveStock, setStatus } from "./repairStock.js";
+
+// Dit au client que le devis qu'il avait lu n'est plus le bon (le suivi montre le nouveau).
+export const QUOTE_CHANGED = "Le devis a changé : relisez-le avant de répondre.";
 
 // Les étapes d'une fiche et sa suppression (18/11, étape 2). Chaque geste verrouille la fiche : un second envoi du
 // même passage attend le premier, puis voit une étape qui ne le permet plus et se fait refuser.
 
 // `userId` null : le client qui accepte ou refuse son devis depuis le suivi (sans compte). Il ne rend jamais l'appareil.
-export async function changeStatus(repairId: number, target: Status, userId: number | null, method?: PaymentMethod, now: Date = new Date()) {
+// `seenTotal` : le total du devis que le client a lu en acceptant ; s'il n'est plus celui d'aujourd'hui (le magasin a
+// corrigé le prix entre-temps), l'accord est refusé, vérifié sur la fiche verrouillée, donc sans faille entre lecture et accord.
+export async function changeStatus(
+  repairId: number,
+  target: Status,
+  userId: number | null,
+  method?: PaymentMethod,
+  now: Date = new Date(),
+  seenTotal?: number,
+) {
   if (target === "returned" && userId === null) {
     throw new AppError(403, "Rendre l'appareil est un geste du magasin");
   }
@@ -29,6 +41,9 @@ export async function changeStatus(repairId: number, target: Status, userId: num
     // Hors garantie, le client ne peut ni valider ni accepter un prix qui n'existe pas encore.
     if ((target === "quote" || target === "in_repair") && !repair.underWarranty && !hasQuote(repair.laborPrice, lines.length)) {
       throw new AppError(400, "Fixez le devis avant de le proposer au client");
+    }
+    if (seenTotal !== undefined && quoteTotal(repair.laborPrice, lines) !== seenTotal) {
+      throw new AppError(409, QUOTE_CHANGED);
     }
 
     // Les pièces sortent du stock à « En réparation » : toutes, ou aucune (la transaction s'annule au premier manque).
