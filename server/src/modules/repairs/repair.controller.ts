@@ -19,7 +19,7 @@ export async function postRepair(req: Request, res: Response) {
   if (!createAllowed(res.locals.user!.role)) {
     throw new AppError(403, SALES_ONLY);
   }
-  res.status(201).json({ data: await createRepair(req.body, userId(res)) });
+  res.status(201).json({ data: forRole(await createRepair(req.body, userId(res)), res) });
 }
 
 export async function getRepairs(_req: Request, res: Response) {
@@ -53,15 +53,15 @@ export async function patchRepair(req: Request, res: Response) {
 }
 
 export async function postRepairLine(req: Request, res: Response) {
-  res.json({ data: await addLine(Number(req.params.id), req.body, userId(res)) });
+  res.json({ data: forRole(await addLine(Number(req.params.id), req.body, userId(res)), res) });
 }
 
 export async function patchRepairLine(req: Request, res: Response) {
-  res.json({ data: await updateLine(Number(req.params.id), Number(req.params.lineId), req.body.quantity, userId(res)) });
+  res.json({ data: forRole(await updateLine(Number(req.params.id), Number(req.params.lineId), req.body.quantity, userId(res)), res) });
 }
 
 export async function deleteRepairLine(req: Request, res: Response) {
-  res.json({ data: await removeLine(Number(req.params.id), Number(req.params.lineId), userId(res)) });
+  res.json({ data: forRole(await removeLine(Number(req.params.id), Number(req.params.lineId), userId(res)), res) });
 }
 
 export async function postRepairStatus(req: Request, res: Response) {

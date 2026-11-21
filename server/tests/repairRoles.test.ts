@@ -104,6 +104,46 @@ describe("le technicien dans une fiche", () => {
     expect(created.body.data).toMatchObject({ underWarranty: true, nextStatuses: ["in_repair"] });
   });
 
+  // Le prix de vente de l'appareil d'origine ne sert qu'au remplacement (la vente) : il ne sort vers le technicien par
+  // AUCUNE route qui renvoie une fiche (création, pièces, étapes), pas seulement la lecture (relecture de sécurité).
+  it("ne reçoit le prix de vente de l'appareil d'origine par aucune route d'une fiche", async () => {
+    const admin = await adminAgent();
+    const tech = await as("technician");
+    const part = await makePart("Nappe", 5);
+    const order = await prisma.order.create({
+      data: {
+        fullName: "Karim Benali",
+        phone: "0550123456",
+        type: "in_store",
+        status: "picked_up",
+        dailyNumber: 1,
+        businessDate: new Date("2026-11-18"),
+        subtotal: 80_000,
+        shippingFee: 0,
+        total: 80_000,
+        items: { create: [{ sku: "IP13-128", name: "iPhone 13", unitPrice: 80_000, quantity: 1, warrantyMonths: 12 }] },
+      },
+      select: { items: { select: { id: true } } },
+    });
+    const created = await tech.post("/admin/repairs").send({ ...device, originItemId: order.items[0].id });
+    expect(created.status).toBe(201);
+    expect(created.body.data.origin).not.toHaveProperty("unitPrice");
+    const id = created.body.data.id as number;
+    // Contrôle : la vente, elle, le reçoit.
+    const seller = await as("seller");
+    expect((await seller.get(`/admin/repairs/${id}`).expect(200)).body.data.origin).toHaveProperty("unitPrice", 80_000);
+
+    const added = await tech.post(`/admin/repairs/${id}/parts`).send({ partId: part.id, quantity: 1 });
+    expect(added.status).toBe(200);
+    expect(added.body.data.origin).not.toHaveProperty("unitPrice");
+    const line = added.body.data.parts[0];
+    const changed = await tech.patch(`/admin/repairs/${id}/parts/${line.id}`).send({ quantity: 2 });
+    expect(changed.body.data.origin).not.toHaveProperty("unitPrice");
+    const removed = await tech.delete(`/admin/repairs/${id}/parts/${line.id}`);
+    expect(removed.body.data.origin).not.toHaveProperty("unitPrice");
+    expect((await admin.get(`/admin/repairs/${id}`).expect(200)).body.data.origin).toHaveProperty("unitPrice", 80_000);
+  });
+
   it("ne supprime pas une fiche", async () => {
     const admin = await adminAgent();
     const tech = await as("technician");
