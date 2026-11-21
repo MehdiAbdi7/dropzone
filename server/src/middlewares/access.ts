@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import type { Role } from "../generated/prisma/client.js";
 import { AppError } from "../utils/AppError.js";
-import { CLIENT_MONEY_KEYS, TECHNICIAN_COST_KEYS, withoutCosts, withoutKeys } from "../utils/withoutCosts.js";
+import { TECHNICIAN_COST_KEYS, withoutCosts } from "../utils/withoutCosts.js";
 
 // Les droits du back-office (lot 7, 17/11). Trois rôles en escalier : chacun a tout ce que le précédent a.
 // Une seule table dit à partir de quel rôle chaque route est ouverte ; tout ce qui n'y figure pas est pour
@@ -132,15 +132,14 @@ export function adminAccess(req: Request, res: Response, next: NextFunction) {
   }
   // Tout ce qui sort vers un non-admin est nettoyé, ici, une seule fois : une route ouverte demain au vendeur ne
   // peut pas laisser passer un coût par oubli. Le prix d'achat reste pour les rôles que la règle nomme (`costFor`,
-  // le technicien) et pour la recherche de variantes (`showsCost`) ; le bénéfice et la marge jamais. L'argent du
-  // client est retiré des réponses du technicien (il ne voit que l'atelier, pas la vente).
+  // le technicien) et pour la recherche de variantes (`showsCost`) ; le bénéfice et la marge jamais. Le technicien
+  // voit l'argent du client de l'atelier (main-d'œuvre, prix, total) : il fixe le prix de son travail (21/11).
   if (role !== "admin") {
     const rule = ruleFor(req.method, req.path);
     const keepsCosts = rule?.showsCost === true || (rule?.costFor?.includes(role) ?? false);
     const send = res.json.bind(res);
     res.json = (body) => {
-      let clean = keepsCosts ? (rule?.showsCost ? body : withoutCosts(body, TECHNICIAN_COST_KEYS)) : withoutCosts(body);
-      if (role === "technician") clean = withoutKeys(clean, CLIENT_MONEY_KEYS);
+      const clean = keepsCosts ? (rule?.showsCost ? body : withoutCosts(body, TECHNICIAN_COST_KEYS)) : withoutCosts(body);
       return send(clean);
     };
   }

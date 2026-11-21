@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/db.js";
-import { CLIENT_MONEY_KEYS } from "../src/utils/withoutCosts.js";
 import { loginAs, partCategoryId, resetDb } from "./helpers.js";
 import { addLineOk, adminAgent, device, makePart, makeRepair, makeWarrantyRepair, openCash, readyRepair, setStatusOk, type Agent } from "./repairHelpers.js";
 
@@ -30,72 +29,58 @@ describe("le technicien dans une fiche", () => {
     expect((await tech.post(`/admin/repairs/${repair.id}/status`).send({ status: "ready" })).status).toBe(200);
   });
 
-  it("ne passe pas En réparation hors garantie : l'accord du client est enregistré par la vente, aucune pièce ne sort", async () => {
+  // Décision de Mehdi (21/11) : le technicien a toutes les infos de son travail et fixe le prix de la réparation. Le
+  // « oui » du client hors garantie, le devis et son refus sont donc aussi à lui.
+  it("hors garantie, enregistre l'accord du client : En réparation, et les pièces sortent du stock", async () => {
     const admin = await adminAgent();
     const tech = await as("technician");
     const part = await makePart();
     const repair = await makeRepair(admin);
     await addLineOk(admin, repair.id, part.id, 1);
-    const response = await tech.post(`/admin/repairs/${repair.id}/status`).send({ status: "in_repair" });
-    expect(response.status).toBe(403);
-    expect(response.body.error.message).toBe("Ce geste est réservé à la vente");
-    // Revenu au devis par une pièce de plus, il ne le revalide pas non plus.
-    await setStatusOk(admin, repair.id, "in_repair");
-    await addLineOk(admin, repair.id, (await makePart("Nappe", 4)).id, 1);
-    expect((await admin.get(`/admin/repairs/${repair.id}`).expect(200)).body.data.status).toBe("quote");
-    expect((await tech.post(`/admin/repairs/${repair.id}/status`).send({ status: "in_repair" })).status).toBe(403);
-    // La vente, elle, peut.
-    const seller = await as("seller");
-    expect((await seller.post(`/admin/repairs/${repair.id}/status`).send({ status: "in_repair" })).status).toBe(200);
+    expect((await tech.post(`/admin/repairs/${repair.id}/status`).send({ status: "in_repair" })).status).toBe(200);
+    expect((await admin.get(`/admin/repairs/${repair.id}`).expect(200)).body.data.status).toBe("in_repair");
   });
 
-  it("ne propose pas le devis, ne refuse pas, ne rend jamais l'appareil (même avec un moyen de paiement)", async () => {
+  it("propose le devis, le refuse (à rendre sans réparation), mais ne rend jamais l'appareil (même avec un moyen de paiement)", async () => {
     const admin = await adminAgent();
     await openCash(admin);
     const tech = await as("technician");
     const first = await makeRepair(admin);
-    expect((await tech.post(`/admin/repairs/${first.id}/status`).send({ status: "quote" })).status).toBe(403);
+    expect((await tech.post(`/admin/repairs/${first.id}/status`).send({ status: "quote" })).status).toBe(200);
+    expect((await tech.post(`/admin/repairs/${first.id}/status`).send({ status: "to_return" })).status).toBe(200);
     const { repair } = await readyRepair(admin);
     const returned = await tech.post(`/admin/repairs/${repair.id}/status`).send({ status: "returned", method: "cash" });
     expect(returned.status).toBe(403);
     expect(returned.body.error.message).toBe("Ce geste est réservé à la vente");
-    const refused = await makeRepair(admin);
-    await setStatusOk(admin, refused.id, "quote");
-    expect((await tech.post(`/admin/repairs/${refused.id}/status`).send({ status: "to_return" })).status).toBe(403);
     expect((await admin.get(`/admin/repairs/${repair.id}`).expect(200)).body.data.status).toBe("ready");
   });
 
-  it("ne modifie que sa note : jamais la main-d'œuvre, même mêlée à une note", async () => {
+  it("fixe la main-d'œuvre et modifie toute la fiche", async () => {
     const admin = await adminAgent();
     const tech = await as("technician");
     const repair = await makeRepair(admin, { laborPrice: 1_000 });
     expect((await tech.patch(`/admin/repairs/${repair.id}`).send({ note: "Vitre arrière aussi" })).status).toBe(200);
-    expect((await tech.patch(`/admin/repairs/${repair.id}`).send({ note: "x", laborPrice: 0 })).status).toBe(403);
-    expect((await tech.patch(`/admin/repairs/${repair.id}`).send({ laborPrice: 0 })).status).toBe(403);
-    expect((await tech.patch(`/admin/repairs/${repair.id}`).send({ deviceName: "Autre" })).status).toBe(403);
+    expect((await tech.patch(`/admin/repairs/${repair.id}`).send({ note: "x", laborPrice: 2_500 })).status).toBe(200);
+    expect((await tech.patch(`/admin/repairs/${repair.id}`).send({ deviceName: "Autre" })).status).toBe(200);
     const detail = (await admin.get(`/admin/repairs/${repair.id}`).expect(200)).body.data;
-    expect(detail).toMatchObject({ laborPrice: 1_000, note: "Vitre arrière aussi", deviceName: "iPhone 13" });
+    expect(detail).toMatchObject({ laborPrice: 2_500, note: "x", deviceName: "Autre" });
   });
 
-  it("crée une fiche : appareil, client, panne ; la réponse n'a aucune clé d'argent du client", async () => {
+  it("crée une fiche : appareil, client, panne ; la réponse porte le prix de la fiche", async () => {
     const tech = await as("technician");
-    const created = await tech.post("/admin/repairs").send(device);
+    const created = await tech.post("/admin/repairs").send({ ...device, laborPrice: 1_500 });
     expect(created.status).toBe(201);
-    expect(created.body.data).toMatchObject({ number: 1001, status: "received", deviceName: "iPhone 13" });
-    for (const key of CLIENT_MONEY_KEYS) expect(keysOf(created.body).has(key), key).toBe(false);
-    // La fiche créée a bien reçu la note et l'étape Reçu, et le technicien la relit.
+    expect(created.body.data).toMatchObject({ number: 1001, status: "received", deviceName: "iPhone 13", laborPrice: 1_500 });
     expect((await tech.get(`/admin/repairs/${created.body.data.id}`)).status).toBe(200);
   });
 
-  it("ne fixe pas ce que le client paiera à la création : ni main-d'œuvre, ni « hors garantie forcé »", async () => {
+  it("fixe à la création le prix et « hors garantie forcé »", async () => {
     const tech = await as("technician");
-    const withLabor = await tech.post("/admin/repairs").send({ ...device, laborPrice: 0 });
-    expect(withLabor.status).toBe(403);
-    expect(withLabor.body.error.message).toBe("Ce geste est réservé à la vente");
-    expect((await tech.post("/admin/repairs").send({ ...device, forceOutOfWarranty: true })).status).toBe(403);
+    expect((await tech.post("/admin/repairs").send({ ...device, laborPrice: 0 })).status).toBe(201);
+    expect((await tech.post("/admin/repairs").send({ ...device, forceOutOfWarranty: true })).status).toBe(201);
   });
 
-  it("cherche la garantie de l'appareil et la rattache à la fiche, sans voir d'argent", async () => {
+  it("cherche la garantie de l'appareil et la rattache à la fiche", async () => {
     const tech = await as("technician");
     const order = await prisma.order.create({
       data: {
@@ -114,10 +99,49 @@ describe("le technicien dans une fiche", () => {
     });
     const hits = await tech.get("/admin/repairs/warranty").query({ phone: "0550123456" }).expect(200);
     expect(hits.body.data[0]).toMatchObject({ itemId: order.items[0].id, underWarranty: true });
-    for (const key of CLIENT_MONEY_KEYS) expect(keysOf(hits.body).has(key), key).toBe(false);
     const created = await tech.post("/admin/repairs").send({ ...device, originItemId: order.items[0].id });
     expect(created.status).toBe(201);
     expect(created.body.data).toMatchObject({ underWarranty: true, nextStatuses: ["in_repair"] });
+  });
+
+  // Le prix de vente de l'appareil d'origine ne sert qu'au remplacement (la vente) : il ne sort vers le technicien par
+  // AUCUNE route qui renvoie une fiche (création, pièces, étapes), pas seulement la lecture (relecture de sécurité).
+  it("ne reçoit le prix de vente de l'appareil d'origine par aucune route d'une fiche", async () => {
+    const admin = await adminAgent();
+    const tech = await as("technician");
+    const part = await makePart("Nappe", 5);
+    const order = await prisma.order.create({
+      data: {
+        fullName: "Karim Benali",
+        phone: "0550123456",
+        type: "in_store",
+        status: "picked_up",
+        dailyNumber: 1,
+        businessDate: new Date("2026-11-18"),
+        subtotal: 80_000,
+        shippingFee: 0,
+        total: 80_000,
+        items: { create: [{ sku: "IP13-128", name: "iPhone 13", unitPrice: 80_000, quantity: 1, warrantyMonths: 12 }] },
+      },
+      select: { items: { select: { id: true } } },
+    });
+    const created = await tech.post("/admin/repairs").send({ ...device, originItemId: order.items[0].id });
+    expect(created.status).toBe(201);
+    expect(created.body.data.origin).not.toHaveProperty("unitPrice");
+    const id = created.body.data.id as number;
+    // Contrôle : la vente, elle, le reçoit.
+    const seller = await as("seller");
+    expect((await seller.get(`/admin/repairs/${id}`).expect(200)).body.data.origin).toHaveProperty("unitPrice", 80_000);
+
+    const added = await tech.post(`/admin/repairs/${id}/parts`).send({ partId: part.id, quantity: 1 });
+    expect(added.status).toBe(200);
+    expect(added.body.data.origin).not.toHaveProperty("unitPrice");
+    const line = added.body.data.parts[0];
+    const changed = await tech.patch(`/admin/repairs/${id}/parts/${line.id}`).send({ quantity: 2 });
+    expect(changed.body.data.origin).not.toHaveProperty("unitPrice");
+    const removed = await tech.delete(`/admin/repairs/${id}/parts/${line.id}`);
+    expect(removed.body.data.origin).not.toHaveProperty("unitPrice");
+    expect((await admin.get(`/admin/repairs/${id}`).expect(200)).body.data.origin).toHaveProperty("unitPrice", 80_000);
   });
 
   it("ne supprime pas une fiche", async () => {
@@ -139,7 +163,7 @@ describe("le technicien dans une fiche", () => {
     expect((await tech.delete(`/admin/repairs/${repair.id}/parts/${line.id}`)).status).toBe(200);
   });
 
-  it("ne reçoit AUCUNE clé d'argent du client, à toute profondeur, mais voit le prix d'achat", async () => {
+  it("reçoit l'argent du client ET le prix d'achat de son travail, jamais le bénéfice ni la marge", async () => {
     const admin = await adminAgent();
     await openCash(admin);
     const tech = await as("technician");
@@ -156,12 +180,14 @@ describe("le technicien dans une fiche", () => {
       (await tech.get(`/admin/repairs/${open.id}`).expect(200)).body,
       (await tech.get("/admin/repairs/counts").expect(200)).body,
     ];
+    // Le bénéfice et la marge ne sortent jamais vers un non-admin ; le reste est à lui.
     for (const body of bodies) {
-      for (const key of CLIENT_MONEY_KEYS) expect(keysOf(body).has(key), key).toBe(false);
+      for (const key of ["profit", "margin"]) expect(keysOf(body).has(key), key).toBe(false);
     }
     const detail = bodies[3].data;
-    expect(detail.parts[0]).toMatchObject({ unitCost: 700 });
-    expect(bodies[2].data.partsCost).toBe(3_500);
+    expect(detail).toMatchObject({ laborPrice: 500, total: 2_000 });
+    expect(detail.parts[0]).toMatchObject({ unitCost: 700, unitPrice: 1_500 });
+    expect(bodies[2].data).toMatchObject({ partsCost: 3_500, paidAmount: expect.any(Number) });
   });
 });
 

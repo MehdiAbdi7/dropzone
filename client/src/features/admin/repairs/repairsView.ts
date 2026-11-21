@@ -89,11 +89,21 @@ export function repairDraftProblem(draft: RepairDraft): string | null {
   const issue = draft.issue.trim();
   if (issue.length < 3) return "La panne décrite par le client : 3 caractères au minimum.";
   if (issue.length > 500) return "La panne : 500 caractères au maximum.";
-  if (draft.laborPrice !== null && !(Number.isInteger(draft.laborPrice) && draft.laborPrice >= 0 && draft.laborPrice <= MAX_PRICE)) {
+  return laborProblem(draft.laborPrice);
+}
+
+// La main-d'œuvre seule (le champ du panneau « Reçu » et « Devis à valider ») : vide (`null`) = pas encore fixée ; `NaN`
+// vient d'un champ dont le texte n'est pas un nombre.
+export function laborProblem(laborPrice: number | null): string | null {
+  if (laborPrice !== null && !(Number.isInteger(laborPrice) && laborPrice >= 0 && laborPrice <= MAX_PRICE)) {
     return "La main-d'œuvre : un nombre entier de dinars, de 0 à 10 000 000.";
   }
   return null;
 }
+
+// Le devis est prêt dès qu'il y a une main-d'œuvre (même 0 : « la réparation est gratuite ») ou une pièce : la même
+// règle que l'API (hasQuote), qui refuse sinon de le proposer au client.
+export const quoteReady = (repair: { laborPrice: number | null; parts: unknown[] }): boolean => repair.laborPrice !== null || repair.parts.length > 0;
 
 const dayMonthYear = (day: string) => day.split("-").reverse().join("/");
 
@@ -198,17 +208,17 @@ export function repairCapabilities(role: Role): RepairCapabilities {
     seesPartJournal: false,
   };
   if (role === "admin") return Object.fromEntries(Object.keys(none).map((key) => [key, true])) as RepairCapabilities;
-  // Le technicien crée une fiche (décision de Mehdi, 19/11) sans fixer le prix : `editsRepair` reste faux, donc pas de
-  // main-d'œuvre, pas de catalogue (qui montre les prix de vente), pas de « hors garantie forcé ».
-  if (role === "technician") return { ...none, createsRepair: true, createsPart: true, seesPartCost: true, seesPartJournal: true };
+  // Le technicien (décision de Mehdi, 21/11 : chaque rôle a toutes les infos de sa page) fait toute la réparation : il
+  // crée et modifie la fiche, fixe le prix, voit l'argent du client et le prix d'achat des pièces. Il ne supprime pas
+  // une fiche, ne remplace pas un appareil (la caisse) et ne gère pas le stock (modifier une pièce, corriger).
+  if (role === "technician") return { ...none, createsRepair: true, editsRepair: true, seesClientMoney: true, createsPart: true, seesPartCost: true, seesPartJournal: true };
   if (role === "seller" || role === "order_manager") return { ...none, createsRepair: true, editsRepair: true, seesClientMoney: true, replacesDevice: true };
   return none;
 }
 
-// Les passages d'étape proposés à ce rôle (comme canMoveTo côté API) : le technicien n'a que Prêt, et En réparation
-// sous garantie ; hors garantie, l'accord du client est enregistré par la vente. Proposer le devis, le refuser et
-// rendre l'appareil sont à la vente.
-export function allowedTargets(role: Role, targets: RepairStatus[], underWarranty: boolean): RepairStatus[] {
+// Les passages d'étape proposés à ce rôle (comme canMoveTo côté API) : le technicien les a tous sauf Rendre l'appareil,
+// qui encaisse dans la caisse du jour et reste à la vente.
+export function allowedTargets(role: Role, targets: RepairStatus[]): RepairStatus[] {
   if (role !== "technician") return targets;
-  return targets.filter((target) => target === "ready" || (target === "in_repair" && underWarranty));
+  return targets.filter((target) => target !== "returned");
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { movementLabel } from "../parts/partsView";
 import { formatPrice } from "@/lib/format";
-import { actionLabel, allowedTargets, confirmText, initialRepairStep, paidText, parseRepairSearch, repairCapabilities, repairStepBadge, returnProblem, repairDraftProblem, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
+import { actionLabel, allowedTargets, confirmText, initialRepairStep, laborProblem, paidText, quoteReady, parseRepairSearch, repairCapabilities, repairStepBadge, returnProblem, repairDraftProblem, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
 
 // Les deux onglets de la liste et la fenêtre par étape (21/11) : où en est une fiche, et sur quelle étape s'ouvre sa fenêtre.
 describe("repairStepBadge", () => {
@@ -242,31 +242,53 @@ describe("le texte du Rendu", () => {
   });
 });
 
-// L'atelier selon le rôle (étape 5) : le technicien avance la réparation, la vente fait le devis et le Rendu.
+// L'atelier selon le rôle (étape 5, refait le 21/11) : le technicien fait toute la réparation et fixe le prix ; seul
+// le Rendu (la caisse) reste à la vente.
 describe("allowedTargets", () => {
   const all = ["quote", "in_repair", "to_return", "ready", "returned"] as const;
 
-  it("le technicien sous garantie ne garde que En réparation et Prêt", () => {
-    expect(allowedTargets("technician", [...all], true)).toEqual(["in_repair", "ready"]);
-    expect(allowedTargets("technician", ["quote", "to_return"], true)).toEqual([]);
-  });
-
-  it("le technicien hors garantie ne garde que Prêt : l'accord du client est enregistré par la vente", () => {
-    expect(allowedTargets("technician", [...all], false)).toEqual(["ready"]);
-    expect(allowedTargets("technician", ["in_repair"], false)).toEqual([]);
+  it("le technicien garde tout sauf Rendre l'appareil, sous garantie ou non", () => {
+    expect(allowedTargets("technician", [...all])).toEqual(["quote", "in_repair", "to_return", "ready"]);
+    expect(allowedTargets("technician", ["returned"])).toEqual([]);
   });
 
   it("le vendeur, le responsable et l'admin gardent tout", () => {
-    for (const role of ["seller", "order_manager", "admin"] as const) expect(allowedTargets(role, [...all], false), role).toEqual([...all]);
+    for (const role of ["seller", "order_manager", "admin"] as const) expect(allowedTargets(role, [...all]), role).toEqual([...all]);
+  });
+});
+
+describe("quoteReady", () => {
+  it("le devis est prêt dès qu'il y a une main-d'œuvre (même 0) ou une pièce", () => {
+    expect(quoteReady({ laborPrice: 1_500, parts: [] })).toBe(true);
+    expect(quoteReady({ laborPrice: 0, parts: [] })).toBe(true);
+    expect(quoteReady({ laborPrice: null, parts: [{}] })).toBe(true);
+  });
+
+  it("sans prix ni pièce, il n'est pas prêt", () => {
+    expect(quoteReady({ laborPrice: null, parts: [] })).toBe(false);
+  });
+});
+
+describe("laborProblem", () => {
+  it("accepte vide (pas encore fixé) et un entier de dinars", () => {
+    expect(laborProblem(null)).toBeNull();
+    expect(laborProblem(0)).toBeNull();
+    expect(laborProblem(10_000_000)).toBeNull();
+  });
+
+  it("refuse un texte, une virgule, un négatif et un montant trop grand", () => {
+    for (const bad of [Number.NaN, 12.5, -1, 10_000_001]) {
+      expect(laborProblem(bad), String(bad)).toBe("La main-d'œuvre : un nombre entier de dinars, de 0 à 10 000 000.");
+    }
   });
 });
 
 describe("repairCapabilities", () => {
-  it("le technicien : crée une fiche et gère les pièces avec leur prix d'achat, pas l'argent du client ni le devis", () => {
+  it("le technicien : toute la réparation, le prix du client et le prix d'achat des pièces ; ni suppression, ni remplacement, ni stock", () => {
     expect(repairCapabilities("technician")).toEqual({
       createsRepair: true,
-      editsRepair: false,
-      seesClientMoney: false,
+      editsRepair: true,
+      seesClientMoney: true,
       deletesRepair: false,
       replacesDevice: false,
       createsPart: true,

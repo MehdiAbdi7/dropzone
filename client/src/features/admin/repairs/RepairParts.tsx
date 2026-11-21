@@ -35,7 +35,15 @@ export default function RepairParts({ repair }: { repair: RepairDetail }) {
             key={line.id}
             line={line}
             editable={editable}
-            priceText={caps.seesClientMoney ? `${formatPrice(line.unitPrice)} l'unité` : caps.seesPartCost ? `Achat : ${formatPrice(line.unitCost)} l'unité` : ""}
+            priceText={
+              caps.seesClientMoney && caps.seesPartCost
+                ? `Achat ${formatPrice(line.unitCost)} · Vente ${formatPrice(line.unitPrice)} l'unité`
+                : caps.seesClientMoney
+                  ? `${formatPrice(line.unitPrice)} l'unité`
+                  : caps.seesPartCost
+                    ? `Achat : ${formatPrice(line.unitCost)} l'unité`
+                    : ""
+            }
             busy={updating.isLoading || removing.isLoading}
             onQuantity={(quantity) => update({ id: repair.id, lineId: line.id, quantity })}
             onRemove={() => remove({ id: repair.id, lineId: line.id })}
