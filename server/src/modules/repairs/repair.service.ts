@@ -177,9 +177,17 @@ export async function createRepair(input: RepairInput, userId: number, now: Date
 // « R-1001 », « r 1001 » ou « 1001 » : le numéro d'une fiche.
 const asNumber = (text: string) => /^(?:r[-\s]?)?(\d+)$/i.exec(text.trim())?.[1];
 
+// Les étapes qui regroupent plusieurs états ; toute autre étape est un état.
+function stageWhere(stage: RepairListQuery["stage"]): Prisma.RepairWhereInput {
+  if (stage === "open") return { status: { not: "returned" } };
+  if (stage === "new") return { status: "received" };
+  if (stage === "ongoing") return { status: { notIn: ["received", "returned"] } };
+  return { status: stage };
+}
+
 export async function listRepairs(query: RepairListQuery) {
   const repairs = await prisma.repair.findMany({
-    where: query.stage === "open" ? { status: { not: "returned" } } : { status: query.stage },
+    where: stageWhere(query.stage),
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     select: ROW_SELECT,
   });
@@ -198,10 +206,14 @@ export async function listRepairs(query: RepairListQuery) {
 
 export async function countRepairs() {
   const groups = await prisma.repair.groupBy({ by: ["status"], _count: { _all: true } });
-  const counts = { open: 0, received: 0, quote: 0, in_repair: 0, ready: 0, to_return: 0, returned: 0 };
+  const counts = { open: 0, new: 0, ongoing: 0, received: 0, quote: 0, in_repair: 0, ready: 0, to_return: 0, returned: 0 };
   for (const group of groups) {
-    counts[group.status] = group._count._all;
-    if (group.status !== "returned") counts.open += group._count._all;
+    const count = group._count._all;
+    counts[group.status] = count;
+    if (group.status === "returned") continue;
+    counts.open += count;
+    if (group.status === "received") counts.new += count;
+    else counts.ongoing += count;
   }
   return counts;
 }

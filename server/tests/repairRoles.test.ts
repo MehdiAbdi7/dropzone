@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../src/config/db.js";
 import { CLIENT_MONEY_KEYS } from "../src/utils/withoutCosts.js";
-import { loginAs, resetDb } from "./helpers.js";
+import { loginAs, partCategoryId, resetDb } from "./helpers.js";
 import { addLineOk, adminAgent, device, makePart, makeRepair, makeWarrantyRepair, openCash, readyRepair, setStatusOk, type Agent } from "./repairHelpers.js";
 
 // Qui fait quoi dans l'atelier (étape 5, cahier §11 et §14), essayé avec de vrais comptes.
@@ -168,7 +168,7 @@ describe("le technicien dans une fiche", () => {
 describe("les pièces et le technicien", () => {
   it("voit la liste avec le prix d'achat, crée une pièce, enregistre un arrivage et lit le journal", async () => {
     const tech = await as("technician");
-    const created = await tech.post("/admin/parts").send({ name: "Batterie iPhone 13", purchasePrice: 3_500, salePrice: 6_000, stock: 2 });
+    const created = await tech.post("/admin/parts").send({ name: "Batterie iPhone 13", categoryId: await partCategoryId(), purchasePrice: 3_500, salePrice: 6_000, stock: 2 });
     expect(created.status).toBe(201);
     const id = created.body.data.id as number;
     expect((await tech.get("/admin/parts").expect(200)).body.data[0]).toMatchObject({ purchasePrice: 3_500, salePrice: 6_000 });
@@ -222,7 +222,7 @@ describe("le vendeur et le responsable commande", () => {
   it.each(roles)("le %s ne gère pas le stock : 403 sur la création d'une pièce, un arrivage, le journal, la modification", async (role) => {
     const agent = await as(role);
     const part = await makePart();
-    expect((await agent.post("/admin/parts").send({ name: "X", purchasePrice: 1, salePrice: 2 })).status).toBe(403);
+    expect((await agent.post("/admin/parts").send({ name: "X", categoryId: part.categoryId, purchasePrice: 1, salePrice: 2 })).status).toBe(403);
     expect((await agent.post(`/admin/parts/${part.id}/arrivals`).send({ quantity: 1, unitCost: 1 })).status).toBe(403);
     expect((await agent.get(`/admin/parts/${part.id}/movements`)).status).toBe(403);
     expect((await agent.patch(`/admin/parts/${part.id}`).send({ salePrice: 1 })).status).toBe(403);

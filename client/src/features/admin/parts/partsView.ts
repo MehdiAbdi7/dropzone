@@ -28,17 +28,51 @@ export function partEditProblem(draft: { name: string; purchasePrice: number; sa
 
 // Ce que « Modifier » envoie : SEULEMENT ce qui a changé. Le prix d'achat est une moyenne que chaque arrivage
 // recalcule ; l'envoyer à chaque enregistrement écraserait un arrivage fait pendant que la fenêtre était ouverte,
-// sans aucune trace dans le journal. `{}` : rien n'a changé.
+// sans aucune trace dans le journal. `{}` : rien n'a changé. La catégorie (21/11) change une pièce de rayon.
 export function partPatchBody(
-  part: { name: string; purchasePrice: number; salePrice: number },
-  draft: { name: string; purchasePrice: number; salePrice: number },
-): { name?: string; purchasePrice?: number; salePrice?: number } {
+  part: { name: string; purchasePrice: number; salePrice: number; categoryId?: number },
+  draft: { name: string; purchasePrice: number; salePrice: number; categoryId?: number },
+): { name?: string; purchasePrice?: number; salePrice?: number; categoryId?: number } {
   const name = draft.name.trim();
   return {
     ...(name !== part.name ? { name } : {}),
+    ...(draft.categoryId !== undefined && draft.categoryId !== part.categoryId ? { categoryId: draft.categoryId } : {}),
     ...(draft.purchasePrice !== part.purchasePrice ? { purchasePrice: draft.purchasePrice } : {}),
     ...(draft.salePrice !== part.salePrice ? { salePrice: draft.salePrice } : {}),
   };
+}
+
+// Les catégories de pièces (21/11) : Batterie, Afficheur… Les bornes sont celles de l'API (part.schema.ts).
+export type PartCategoryRow = { id: number; name: string; partsCount: number };
+
+export function categoryNameProblem(name: string): string | null {
+  const length = name.trim().length;
+  if (length < 1) return "Le nom de la catégorie : 1 caractère au minimum.";
+  if (length > 40) return "Le nom de la catégorie : 40 caractères au maximum.";
+  return null;
+}
+
+// Créer une pièce commence par le choix de sa catégorie.
+export function categoryChoiceProblem(categoryId: number | null): string | null {
+  return categoryId === null ? "Choisis la catégorie de la pièce." : null;
+}
+
+// La catégorie ouverte sur la page : celle qu'on a choisie si elle existe encore, sinon la première (la catégorie vient
+// d'être supprimée, ou rien n'est choisi). Aucune catégorie : rien.
+export function activeCategoryId(categories: { id: number }[], wanted: number | null): number | null {
+  if (wanted !== null && categories.some((category) => category.id === wanted)) return wanted;
+  return categories[0]?.id ?? null;
+}
+
+// Sans accents ni majuscules : « ecran » trouve « Écran iPhone 13 » (comme la recherche de l'API).
+const normalize = (text: string) => text.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+
+// Ce que montre la page : les pièces de la catégorie ouverte ; dès qu'on tape une recherche, celles de TOUTES les
+// catégories (une pièce rangée ailleurs reste trouvable).
+export function visibleParts<T extends { name: string; categoryId: number }>(parts: T[], categoryId: number | null, search: string): T[] {
+  const needle = normalize(search.trim());
+  if (needle) return parts.filter((part) => normalize(part.name).includes(needle));
+  return parts.filter((part) => part.categoryId === categoryId);
 }
 
 export function arrivalProblem(draft: { quantity: number; unitCost: number }): string | null {

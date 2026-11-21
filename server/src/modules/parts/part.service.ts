@@ -7,20 +7,21 @@ import { weightedAveragePrice } from "./partMath.js";
 // Les pièces de l'atelier (18/11, étape 1) : un stock avec son journal. Le stock ne change que par un
 // arrivage ou une correction, chacun dans UNE transaction sur la ligne verrouillée : deux arrivages en même
 // temps s'additionnent au lieu de s'écraser, et chaque mouvement garde le stock juste après lui.
-const PART = { id: true, name: true, purchasePrice: true, salePrice: true, stock: true, createdAt: true, updatedAt: true } as const;
+const PART = { id: true, name: true, categoryId: true, purchasePrice: true, salePrice: true, stock: true, createdAt: true, updatedAt: true } as const;
 
 // Sans accents ni majuscules : « écran » trouve « Écran iPhone 13 ». La liste est courte, le filtre se fait
 // ici plutôt qu'en SQL.
 const normalize = (text: string) => text.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
 
-// L'index unique `lower(btrim(name))` de la migration refuse deux pièces au même nom : l'erreur de la base
-// devient un message qui dit quoi faire.
+// L'index unique `lower(btrim(name))` de la migration refuse deux pièces au même nom, et la clé étrangère refuse une
+// catégorie qui n'existe pas : les erreurs de la base deviennent un message qui dit quoi faire.
 async function nameConflict<T>(action: () => Promise<T>): Promise<T> {
   try {
     return await action();
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      throw new AppError(409, "Une pièce porte déjà ce nom");
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") throw new AppError(409, "Une pièce porte déjà ce nom");
+      if (error.code === "P2003") throw new AppError(400, "Cette catégorie n'existe pas");
     }
     throw error;
   }
@@ -34,7 +35,7 @@ export async function listParts(q: string) {
     .sort((a, b) => normalize(a.name).localeCompare(normalize(b.name)));
 }
 
-export async function createPart(input: { name: string; purchasePrice: number; salePrice: number; stock?: number }, userId: number) {
+export async function createPart(input: { name: string; categoryId: number; purchasePrice: number; salePrice: number; stock?: number }, userId: number) {
   const { stock = 0, ...data } = input;
   return nameConflict(() =>
     prisma.$transaction(async (tx) => {

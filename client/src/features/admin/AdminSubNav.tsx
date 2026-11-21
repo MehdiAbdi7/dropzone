@@ -24,14 +24,16 @@ export default function AdminSubNav() {
   if (tabs.length < 2) return null;
 
   return (
-    <nav aria-label={section.label} className="mb-6 flex flex-wrap items-center gap-2 border-b border-line pb-3">
-      <span className="mr-2 font-display text-sm font-bold text-ink-muted">{section.label}</span>
+    // Sur téléphone, une seule rangée qui défile sur le côté (les onglets ne s'empilent plus sur deux lignes) ; dès
+    // 768 px, ils passent à la ligne comme avant.
+    <nav aria-label={section.label} className="mb-6 flex items-center gap-2 overflow-x-auto border-b border-line pb-3 [scrollbar-width:none] md:flex-wrap md:overflow-visible">
+      <span className="mr-2 hidden shrink-0 whitespace-nowrap font-display text-sm font-bold text-ink-muted md:inline">{section.label}</span>
       {tabs.map((tab) => (
         <Link
           key={tab.href}
           href={tab.href}
           aria-current={current?.href === tab.href ? "page" : undefined}
-          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${
+          className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold ${
             current?.href === tab.href ? "bg-blue text-on-brand" : "bg-surface-2 text-ink hover:text-blue-ink"
           }`}
         >

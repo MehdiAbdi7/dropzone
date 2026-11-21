@@ -1,7 +1,46 @@
 import { describe, expect, it } from "vitest";
 import { movementLabel } from "../parts/partsView";
 import { formatPrice } from "@/lib/format";
-import { actionLabel, allowedTargets, confirmText, paidText, parseRepairSearch, repairCapabilities, returnProblem, repairDraftProblem, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
+import { actionLabel, allowedTargets, confirmText, initialRepairStep, paidText, parseRepairSearch, repairCapabilities, repairStepBadge, returnProblem, repairDraftProblem, repairNumber, repairSteps, repairTotal, warrantyLabel } from "./repairsView";
+
+// Les deux onglets de la liste et la fenêtre par étape (21/11) : où en est une fiche, et sur quelle étape s'ouvre sa fenêtre.
+describe("repairStepBadge", () => {
+  it("dit la position dans le circuit : « 1/5 · Reçu »", () => {
+    expect(repairStepBadge("received", false)).toBe("1/5 · Reçu");
+    expect(repairStepBadge("in_repair", false)).toBe("3/5 · En réparation");
+  });
+
+  it("sous garantie, l'étape Devis sautée ne compte pas", () => {
+    expect(repairStepBadge("in_repair", true)).toBe("2/4 · En réparation");
+    expect(repairStepBadge("ready", true)).toBe("3/4 · Prêt");
+  });
+
+  it("une fiche rendue est à la dernière étape", () => {
+    expect(repairStepBadge("returned", false)).toBe("5/5 · Rendu");
+  });
+
+  it("un devis refusé : le nom seul, comme une sortie de commande", () => {
+    expect(repairStepBadge("to_return", false)).toBe("À rendre sans réparation");
+  });
+});
+
+describe("initialRepairStep", () => {
+  it("s'ouvre sur l'étape en cours", () => {
+    expect(initialRepairStep(repairSteps("in_repair", false))).toBe(2);
+  });
+
+  it("sous garantie, c'est la place dans la frise entière (le devis sauté garde sa pastille)", () => {
+    expect(initialRepairStep(repairSteps("in_repair", true))).toBe(2);
+  });
+
+  it("sur la sortie quand le devis est refusé", () => {
+    expect(initialRepairStep(repairSteps("to_return", false))).toBe(2);
+  });
+
+  it("sur la dernière étape quand la fiche est rendue", () => {
+    expect(initialRepairStep(repairSteps("returned", false))).toBe(4);
+  });
+});
 
 // La logique de la page Réparations (18/11, étape 2) : la frise, le numéro, la recherche, la saisie, la garantie.
 const states = (status: Parameters<typeof repairSteps>[0], underWarranty = false) => repairSteps(status, underWarranty).map((step) => step.state);

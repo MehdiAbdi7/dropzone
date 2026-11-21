@@ -1,13 +1,14 @@
 import type { RepairRow } from "@/features/admin/api/repairsApi";
 import { formatPrice } from "@/lib/format";
-import { REPAIR_STATUS_LABELS, repairNumber, type RepairStatus } from "./repairsView";
+import { repairNumber, repairStepBadge, type RepairStatus } from "./repairsView";
 
 // Ce qui attend une réponse du magasin ressort en rouge, ce qui est fini en bleu, le reste en gris.
 const NEEDS_ACTION: RepairStatus[] = ["received", "quote", "ready"];
 
-export function RepairBadge({ status }: { status: RepairStatus }) {
+// Le badge d'une fiche : sa place dans le circuit (« 3/5 · En réparation »), comme sur les commandes.
+export function RepairBadge({ status, underWarranty }: { status: RepairStatus; underWarranty: boolean }) {
   const tone = NEEDS_ACTION.includes(status) ? "bg-red-soft text-red" : status === "returned" ? "bg-blue-soft text-blue-ink" : "bg-surface-2 text-ink-muted";
-  return <span className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${tone}`}>{REPAIR_STATUS_LABELS[status]}</span>;
+  return <span className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${tone}`}>{repairStepBadge(status, underWarranty)}</span>;
 }
 
 // Le prix d'une fiche dans la liste : « Sous garantie » ou le devis quand il existe (rien tant qu'il n'est pas fixé).
@@ -35,7 +36,7 @@ export default function RepairsTable({
           <li key={repair.id}>
             <button type="button" onClick={() => onOpen(repair.id)} className="card flex w-full items-center gap-3 p-3 text-left">
               <span className="min-w-0 flex-1 space-y-0.5">
-                <RepairBadge status={repair.status} />
+                <RepairBadge status={repair.status} underWarranty={repair.underWarranty} />
                 <span className="block font-display font-bold text-blue-ink">{repairNumber(repair.number)}</span>
                 <span className="block truncate text-sm font-semibold">{repair.deviceName}</span>
                 <span className="block truncate text-xs text-ink-muted">{repair.fullName}</span>
@@ -72,7 +73,7 @@ export default function RepairsTable({
                   </button>
                 </td>
                 <td>
-                  <RepairBadge status={repair.status} />
+                  <RepairBadge status={repair.status} underWarranty={repair.underWarranty} />
                 </td>
                 <td>{repair.deviceName}</td>
                 <td>{repair.fullName}</td>

@@ -2,17 +2,20 @@
 
 import { Suspense, useState } from "react";
 import { useAdminRole } from "@/features/admin/AdminRoleContext";
-import { useRepairCountsQuery, useRepairsQuery, type RepairStage } from "@/features/admin/api/repairsApi";
+import { useRepairCountsQuery, useRepairsQuery } from "@/features/admin/api/repairsApi";
 import RepairCreateForm from "@/features/admin/repairs/RepairCreateForm";
 import RepairWindow from "@/features/admin/repairs/RepairWindow";
 import RepairsTable from "@/features/admin/repairs/RepairsTable";
-import { REPAIR_STATUS_LABELS, parseRepairSearch, repairCapabilities } from "@/features/admin/repairs/repairsView";
+import RepairsTabs, { type RepairsTab } from "@/features/admin/repairs/RepairsTabs";
+import { parseRepairSearch, repairCapabilities } from "@/features/admin/repairs/repairsView";
 import { useRepairWindow } from "@/features/admin/repairs/useRepairWindow";
 import { errorMessage } from "@/lib/errors";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 
 // Les réparations de l'atelier (18/11, étape 2) : les appareils confiés au magasin, de « Reçu » à « Rendu ».
-// Une chip par étape avec son nombre ; un clic sur une fiche ouvre sa fenêtre (frise, pièces, bon de dépôt).
+// Depuis le 21/11, deux onglets comme les commandes (Nouvelles, En cours) à la place d'une pastille par étape ; un
+// clic sur une fiche ouvre sa fenêtre, qui s'ouvre sur l'étape où en est l'appareil. Les fiches rendues sont dans
+// l'Historique.
 export default function RepairsPage() {
   return (
     <Suspense>
@@ -21,25 +24,15 @@ export default function RepairsPage() {
   );
 }
 
-const STAGES: { stage: RepairStage; label: string }[] = [
-  { stage: "open", label: "En cours" },
-  { stage: "received", label: REPAIR_STATUS_LABELS.received },
-  { stage: "quote", label: REPAIR_STATUS_LABELS.quote },
-  { stage: "in_repair", label: REPAIR_STATUS_LABELS.in_repair },
-  { stage: "ready", label: REPAIR_STATUS_LABELS.ready },
-  { stage: "to_return", label: "À rendre" },
-  { stage: "returned", label: REPAIR_STATUS_LABELS.returned },
-];
-
 function RepairsList() {
-  const [stage, setStage] = useState<RepairStage>("open");
+  const [tab, setTab] = useState<RepairsTab>("new");
   const [text, setText] = useState("");
   const [creating, setCreating] = useState(false);
   const caps = repairCapabilities(useAdminRole());
   const repairWindow = useRepairWindow();
   // La recherche attend une pause dans la saisie : chaque touche relancerait la requête.
   const search = useDebouncedValue(parseRepairSearch(text));
-  const { data, error, isFetching } = useRepairsQuery({ stage, q: search }, { pollingInterval: 30_000 });
+  const { data, error, isFetching } = useRepairsQuery({ stage: tab, q: search }, { pollingInterval: 30_000 });
   const { data: counts } = useRepairCountsQuery(undefined, { pollingInterval: 30_000 });
 
   return (
@@ -56,14 +49,7 @@ function RepairsList() {
         ) : null}
       </div>
 
-      <div role="group" aria-label="Étape des réparations" className="flex flex-wrap gap-2">
-        {STAGES.map((item) => (
-          <button key={item.stage} type="button" className="chip" aria-pressed={stage === item.stage} onClick={() => setStage(item.stage)}>
-            {item.label}
-            {counts ? <span className="ml-2 text-xs text-ink-muted">{counts[item.stage]}</span> : null}
-          </button>
-        ))}
-      </div>
+      <RepairsTabs tab={tab} onChange={setTab} newCount={counts?.new} ongoingCount={counts?.ongoing} />
 
       <label className="block max-w-md">
         <span className="sr-only">Chercher une réparation</span>
@@ -87,7 +73,7 @@ function RepairsList() {
           repairs={data}
           busy={isFetching}
           showMoney={caps.seesClientMoney}
-          empty={search ? "Aucune réparation ne correspond à cette recherche." : "Aucune réparation à cette étape."}
+          empty={search ? "Aucune réparation ne correspond à cette recherche." : tab === "new" ? "Aucun appareil à regarder pour l'instant." : "Aucune réparation en cours."}
           onOpen={repairWindow.open}
         />
       )}

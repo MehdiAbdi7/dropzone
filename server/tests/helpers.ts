@@ -11,7 +11,7 @@ export const PASSWORD = "motdepasse123";
 export async function resetDb() {
   await prisma.$executeRaw`TRUNCATE order_items, orders, users, variant_gifts, product_images,
     product_variants, "_ProductCompatibleModels", "_VariantCompatibleModels", products, accessory_makers, series, brands, choices, device_models, categories, import_records,
-    daily_counters, cash_days, cash_reopenings, money_movements, order_events, invoice_counters, parts, part_movements, repairs, repair_parts, repair_events
+    daily_counters, cash_days, cash_reopenings, money_movements, order_events, invoice_counters, part_categories, parts, part_movements, repairs, repair_parts, repair_events
     RESTART IDENTITY CASCADE`;
   // Les réglages du magasin ont une seule ligne (id = 1), créée par la migration : on remet ses
   // valeurs de départ au lieu de la supprimer.
@@ -22,6 +22,12 @@ export async function resetDb() {
   // Les listes fixes (Stockage, Couleurs…) viennent de la migration et restent ; les listes
   // personnalisées d'un test ne doivent pas fuiter dans le suivant.
   await prisma.$executeRaw`DELETE FROM choice_lists WHERE "group" IS NULL`;
+}
+
+// Une catégorie de pièces (21/11) : une pièce est toujours rangée dans l'une d'elles. Rend son numéro, la crée au besoin.
+export async function partCategoryId(name = "Batterie") {
+  const found = await prisma.partCategory.findFirst({ where: { name }, select: { id: true } });
+  return found?.id ?? (await prisma.partCategory.create({ data: { name }, select: { id: true } })).id;
 }
 
 // Un petit catalogue : un iPhone vendu neuf et en reconditionné (dont une affaire

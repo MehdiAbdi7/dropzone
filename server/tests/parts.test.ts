@@ -2,13 +2,17 @@ import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 import app from "../src/app.js";
 import { prisma } from "../src/config/db.js";
-import { loginAs, resetDb } from "./helpers.js";
+import { loginAs, partCategoryId, resetDb } from "./helpers.js";
 
 // Les pièces de l'atelier (18/11, étape 1) : le stock, les arrivages (prix d'achat moyen) et les corrections.
-beforeEach(resetDb);
+// Depuis le 21/11, une pièce est rangée dans une catégorie : celle de `battery` est créée avant chaque test.
+let battery = { name: "Batterie iPhone 13", categoryId: 0, purchasePrice: 3_500, salePrice: 6_000 };
+beforeEach(async () => {
+  await resetDb();
+  battery = { ...battery, categoryId: await partCategoryId() };
+});
 
 const admin = async () => (await loginAs("admin", `admin${Math.random()}@test.dz`)).agent;
-const battery = { name: "Batterie iPhone 13", purchasePrice: 3_500, salePrice: 6_000 };
 
 async function createPart(agent: Awaited<ReturnType<typeof admin>>, over: Record<string, unknown> = {}) {
   const response = await agent.post("/admin/parts").send({ ...battery, ...over });
@@ -176,7 +180,7 @@ describe("GET /admin/parts", () => {
 describe("les droits des pièces", () => {
   const routes: [string, string, object][] = [
     ["get", "/admin/parts", {}],
-    ["post", "/admin/parts", battery],
+    ["post", "/admin/parts", { ...battery, categoryId: 1 }],
     ["patch", "/admin/parts/1", { name: "X" }],
     ["post", "/admin/parts/1/arrivals", { quantity: 1, unitCost: 1 }],
     ["post", "/admin/parts/1/corrections", { stock: 1 }],

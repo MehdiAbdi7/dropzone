@@ -1,6 +1,6 @@
 import { expect } from "vitest";
 import { prisma } from "../src/config/db.js";
-import { loginAs } from "./helpers.js";
+import { loginAs, partCategoryId } from "./helpers.js";
 
 // Les gestes communs des tests de l'atelier : un admin connecté, une pièce en stock, une fiche, une ligne, une étape.
 export const adminAgent = async () => (await loginAs("admin", `admin${Math.random()}@test.dz`)).agent;
@@ -25,8 +25,8 @@ export type RepairBody = {
 };
 
 // Une pièce en stock directement en base (l'API des pièces est testée à part).
-export const makePart = (name = "Batterie iPhone 13", stock = 5, purchasePrice = 3_500, salePrice = 6_000) =>
-  prisma.part.create({ data: { name, purchasePrice, salePrice, stock }, select: { id: true, name: true } });
+export const makePart = async (name = "Batterie iPhone 13", stock = 5, purchasePrice = 3_500, salePrice = 6_000) =>
+  prisma.part.create({ data: { name, categoryId: await partCategoryId(), purchasePrice, salePrice, stock }, select: { id: true, name: true, categoryId: true } });
 
 export const stockOf = async (partId: number) => (await prisma.part.findUniqueOrThrow({ where: { id: partId }, select: { stock: true } })).stock;
 

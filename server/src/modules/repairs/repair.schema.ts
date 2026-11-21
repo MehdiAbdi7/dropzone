@@ -71,10 +71,11 @@ export const replaceBodySchema = z.object({
 });
 export type ReplaceInput = z.infer<typeof replaceBodySchema>;
 
-export const REPAIR_STAGES =["open", "received", "quote", "in_repair", "ready", "to_return", "returned"] as const;
+export const REPAIR_STAGES = ["open", "new", "ongoing", "received", "quote", "in_repair", "ready", "to_return", "returned"] as const;
 
 export const repairListQuerySchema = z.object({
-  // « open » : tout sauf les fiches rendues.
+  // « open » : tout sauf les fiches rendues. Les deux onglets de la page (comme « Nouvelles » et « En cours » des
+  // commandes) : « new » = les appareils juste reçus, « ongoing » = les autres fiches pas encore rendues.
   stage: z.enum(REPAIR_STAGES).default("open"),
   q: z.string().trim().max(60).default(""),
 });
