@@ -16,59 +16,39 @@ export function SectionHeading({ number, title, description }: { number: string;
   );
 }
 
-// Une carte de la page : son titre, un résumé de ce qui est rempli, et le bouton qui ouvre la fenêtre.
-export function SummaryCard({
-  step,
+// Une tuile de la fiche produit (23/11) : un bouton compact qui résume une partie de la fiche et ouvre sa fenêtre.
+// `state` : « done » rempli (point bleu), « todo » à compléter (point orange), « optional » facultatif (point gris).
+export function SheetTile({
   title,
-  description,
   status,
-  complete,
-  action,
-  onEdit,
-  className = "",
-  children,
+  state,
+  preview,
+  onClick,
 }: {
-  step: string;
   title: string;
-  description: string;
   status: string;
-  complete: boolean;
-  action: string;
-  onEdit: () => void;
-  className?: string;
-  children: ReactNode;
+  state: "done" | "todo" | "optional";
+  preview: ReactNode;
+  onClick: () => void;
 }) {
+  const dot = state === "done" ? "bg-blue" : state === "todo" ? "bg-amber" : "bg-line";
   return (
-    <section className={`card flex flex-col gap-3 p-4 sm:p-5 ${className}`}>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-soft text-xs font-bold text-blue-ink">{step}</span>
-          <div className="min-w-0">
-            <h2 className="text-lg">{title}</h2>
-            <p className="text-sm text-ink-muted">{description}</p>
-          </div>
-        </div>
-        <button type="button" className="btn btn-secondary btn-small" onClick={onEdit}>
-          {action}
-        </button>
-      </div>
-      <div className="flex items-center gap-2 border-t border-line pt-3">
-        <span
-          className={`size-2 rounded-full ${status === "Facultatif" ? "bg-line" : complete ? "bg-blue" : "bg-amber"}`}
-          aria-hidden="true"
-        />
-        <span className="text-xs font-semibold text-ink-muted">{status}</span>
-      </div>
-      <div className="min-w-0">{children}</div>
-    </section>
-  );
-}
-
-export function SummaryLine({ label, value, missing = false }: { label: string; value: string; missing?: boolean }) {
-  return (
-    <div className="flex gap-2">
-      <dt className="shrink-0 text-ink-muted">{label} :</dt>
-      <dd className={`min-w-0 truncate font-semibold ${missing ? "text-red" : ""}`}>{value}</dd>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className="card flex min-w-0 items-center gap-3 p-3 text-left transition-[border-color,transform] hover:-translate-y-0.5 hover:border-blue-ink"
+    >
+      <span className="relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2 text-blue-ink">{preview}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-display text-sm font-bold">{title}</span>
+        <span className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-muted">
+          <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${dot}`} />
+          <span className="truncate">{status}</span>
+        </span>
+      </span>
+      <span aria-hidden="true" className="text-ink-muted">
+        ›
+      </span>
+    </button>
   );
 }
