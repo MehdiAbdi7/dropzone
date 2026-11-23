@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { STATUS_LABELS } from "@/config/catalog";
 import { useDeleteOrderMutation, type AdminOrder } from "@/features/admin/api/ordersApi";
@@ -10,6 +9,7 @@ import OrderEvents from "./OrderEvents";
 import { AmountsCard, ArticlesCard, ClientCard } from "./OrderInfo";
 import OrderMoney from "./OrderMoney";
 import OrderTradeIn from "./OrderTradeIn";
+import { OpenCashButton } from "@/features/admin/cash/CashDialogContext";
 
 // L'onglet « Détails » de la fenêtre d'une commande : le client, les montants, les articles, l'argent,
 // les traces, et les deux actions qui valent à n'importe quelle étape : modifier (après coup, avec
@@ -58,9 +58,7 @@ export default function OrderDetails({ order, onEdit, onDeleted }: { order: Admi
           {errorMessage(deleteState.error).includes("journée de caisse") ? (
             <>
               {" "}
-              <Link href="/admin/caisse" className="underline">
-                Ouvrir la caisse
-              </Link>
+              <OpenCashButton className="underline">Ouvrir la caisse</OpenCashButton>
             </>
           ) : null}
         </p>

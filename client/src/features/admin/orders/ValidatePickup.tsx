@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { PAYMENT_METHOD_LABELS } from "@/config/catalog";
 import { useValidatePickupMutation } from "@/features/admin/api/ordersApi";
@@ -9,6 +8,7 @@ import { formatPrice } from "@/lib/format";
 import type { PaymentMethod } from "@/types/api";
 import NegotiatePrices from "./NegotiatePrices";
 import { negotiationState, type NegotiableItem } from "./negotiation";
+import { OpenCashButton } from "@/features/admin/cash/CashDialogContext";
 
 const METHODS = Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[];
 
@@ -69,9 +69,7 @@ export default function ValidatePickup({
           {errorMessage(error).includes("journée de caisse") ? (
             <>
               {" "}
-              <Link href="/admin/caisse" className="underline">
-                Ouvrir la caisse
-              </Link>
+              <OpenCashButton className="underline">Ouvrir la caisse</OpenCashButton>
             </>
           ) : null}
         </p>

@@ -9,14 +9,14 @@ const params = (query = "") => new URLSearchParams(query);
 describe("bottomBarFor", () => {
   const keys = (role: Parameters<typeof bottomBarFor>[0]) => bottomBarFor(role).items.map((item) => item.key);
 
-  it("le vendeur : Caisse, Ventes au milieu, Réglages", () => {
-    expect(keys("seller")).toEqual(["caisse", "atelier", "vente", "reglages"]);
+  it("le vendeur : Réparations, Ventes au milieu, Réglages (la caisse est dans la barre du haut)", () => {
+    expect(keys("seller")).toEqual(["atelier", "vente", "reglages"]);
     expect(bottomBarFor("seller").featured).toBe("vente");
     expect(bottomBarFor("seller").more).toEqual([]);
   });
 
-  it("le responsable commande : Ventes, Commandes au milieu, Caisse", () => {
-    expect(keys("order_manager")).toEqual(["vente", "caisse", "commandes", "atelier"]);
+  it("le responsable commande : Ventes, Commandes au milieu, Réparations", () => {
+    expect(keys("order_manager")).toEqual(["vente", "commandes", "atelier"]);
     expect(bottomBarFor("order_manager").featured).toBe("commandes");
     expect(bottomBarFor("order_manager").more).toEqual([]);
   });
@@ -47,12 +47,12 @@ describe("activeBottomKey", () => {
   it("allume l'entrée de la section affichée, et Réglages pour la page des réglages", () => {
     expect(activeBottomKey("/admin/vente")).toBe("vente");
     expect(activeBottomKey("/admin/echange")).toBe("vente");
-    expect(activeBottomKey("/admin/caisse")).toBe("caisse");
     expect(activeBottomKey("/admin/reglages")).toBe("reglages");
   });
 
-  it("n'allume rien pour une page sans entrée (la facture)", () => {
+  it("n'allume rien pour une page sans entrée (la facture), ni pour l'ancienne adresse de la caisse", () => {
     expect(activeBottomKey("/admin/facture/12")).toBeUndefined();
+    expect(activeBottomKey("/admin/caisse")).toBeUndefined();
   });
 });
 
@@ -60,12 +60,12 @@ describe("activeBottomKey", () => {
 describe("visibleSections", () => {
   const keys = (role: Parameters<typeof visibleSections>[0]) => visibleSections(role).map((section) => section.key);
 
-  it("le vendeur : la vente (avec l'échange), la caisse et les réparations", () => {
-    expect(keys("seller")).toEqual(["vente", "caisse", "atelier"]);
+  it("le vendeur : la vente (avec l'échange) et les réparations", () => {
+    expect(keys("seller")).toEqual(["vente", "atelier"]);
   });
 
   it("le responsable commande : le vendeur, plus les commandes", () => {
-    expect(keys("order_manager")).toEqual(["vente", "caisse", "commandes", "atelier"]);
+    expect(keys("order_manager")).toEqual(["vente", "commandes", "atelier"]);
   });
 
   it("l'admin : toutes les sections", () => {
@@ -78,11 +78,10 @@ describe("visibleSections", () => {
 });
 
 describe("les sections du back-office", () => {
-  it("dix sections : la vente au magasin et la caisse sont des pages à part, l'atelier suit le catalogue, les comptes sont au menu ☰", () => {
+  it("neuf sections : la caisse n'en est plus une (c'est une fenêtre de la barre du haut), l'atelier suit le catalogue, les comptes sont au menu ☰", () => {
     expect(SECTIONS.map((section) => section.key)).toEqual([
       "accueil",
       "vente",
-      "caisse",
       "commandes",
       "catalogue",
       "atelier",
@@ -107,7 +106,6 @@ describe("les sections du back-office", () => {
     const cases: [string, string][] = [
       ["/admin", "accueil"],
       ["/admin/vente", "vente"],
-      ["/admin/caisse", "caisse"],
       ["/admin/livraisons", "commandes"],
       ["/admin/commandes", "commandes"],
       ["/admin/commandes/12", "commandes"],
@@ -136,8 +134,8 @@ describe("les sections du back-office", () => {
     expect(sectionFor("/admin/inconnue")).toBeUndefined();
   });
 
-  it("la caisse n'a pas de sous-onglets", () => {
-    expect(sectionFor("/admin/caisse")?.tabs).toBeUndefined();
+  it("la caisse n'est plus une section : c'est une fenêtre de la barre du haut", () => {
+    expect(sectionFor("/admin/caisse")).toBeUndefined();
   });
 
   // Lot 5 : la vente et l'échange sont les deux gestes du comptoir, dans la même section.
@@ -202,8 +200,8 @@ describe("les sections du back-office", () => {
 describe("où s'affiche chaque section", () => {
   const keys = (sections: { key: string }[]) => sections.map((section) => section.key);
 
-  it("le menu ☰ prend la Caisse, la Personnalisation et les Comptes", () => {
-    expect(keys(MENU_SECTIONS)).toEqual(["caisse", "personnalisation", "comptes"]);
+  it("le menu ☰ prend la Personnalisation et les Comptes", () => {
+    expect(keys(MENU_SECTIONS)).toEqual(["personnalisation", "comptes"]);
   });
 
   it("la barre latérale garde les sept autres, dans l'ordre de travail", () => {
