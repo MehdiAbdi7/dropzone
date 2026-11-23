@@ -1,7 +1,7 @@
 import { prisma } from "../../config/db.js";
 import type { Condition, Prisma } from "../../generated/prisma/client.js";
 import { AppError } from "../../utils/AppError.js";
-import { lowestInStock } from "../products/product.service.js";
+import { SELLABLE, lowestInStock } from "../products/product.service.js";
 
 type VariantLite = { condition: Condition; price: number; stock: number; options: Prisma.JsonValue };
 type Color = { name: string; inStock: boolean };
@@ -94,7 +94,7 @@ const SERIES_SELECT = {
           slug: true,
           specs: true,
           images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
-          variants: { orderBy: { id: "asc" }, select: { condition: true, price: true, stock: true, options: true } },
+          variants: { where: SELLABLE, orderBy: { id: "asc" }, select: { condition: true, price: true, stock: true, options: true } },
         },
       },
     },

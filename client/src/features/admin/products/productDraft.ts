@@ -8,6 +8,8 @@ import type { AdminProduct, ProductBody } from "@/features/admin/api/productsApi
 export type VariantDraft = {
   key: string; // identifiant local pour la liste React (une nouvelle variante n'a pas encore d'id)
   id?: number;
+  // Brouillon ou publiée (23/11) : une variante en brouillon n'est vendue nulle part.
+  status: ProductStatus;
   sku: string;
   condition: Condition;
   options: Options;
@@ -69,6 +71,8 @@ const defaultWarrantyText = (kind: ProductKind | undefined, condition: Condition
 export function emptyVariant(condition: Condition = "new", kind?: ProductKind): VariantDraft {
   return {
     key: newKey(),
+    // Une nouvelle variante est publiée ; le gérant peut la mettre en brouillon dans sa fenêtre.
+    status: "published",
     sku: "",
     condition,
     options: {},
@@ -169,7 +173,8 @@ export function emptyDraft(prefill?: {
     makerId: prefill?.makerId ?? null,
     compatibleModelIds: [],
     specs: [],
-    status: "draft",
+    // Le produit est toujours visible (23/11) : le brouillon se règle sur chaque variante.
+    status: "published",
     variants: [emptyVariant()],
   };
 }
@@ -189,6 +194,7 @@ export function draftFromProduct(product: AdminProduct): ProductDraft {
     variants: product.variants.map((variant) => ({
       key: newKey(),
       id: variant.id,
+      status: variant.status ?? "published",
       sku: variant.sku,
       condition: variant.condition,
       options: variant.options,
@@ -234,7 +240,8 @@ export function bodyFromDraft(draft: ProductDraft): ProductBody {
     specs: Object.fromEntries(
       draft.specs.filter((row) => row.key.trim() && row.value.trim()).map((row) => [row.key.trim(), row.value.trim()]),
     ),
-    status: draft.status,
+    // Le produit part toujours publié (23/11) : sans variante publiée, la boutique le montre « indisponible ».
+    status: "published",
     variants: draft.variants.map(variantBody),
   };
 }
@@ -246,6 +253,7 @@ export function variantBody(variant: VariantDraft): ProductBody["variants"][numb
   return {
     id: variant.id,
     sku: variant.sku,
+    status: variant.status,
     condition: variant.condition,
     // Une option non choisie n'est pas envoyée.
     options: Object.fromEntries(Object.entries(variant.options).filter(([, value]) => value)),

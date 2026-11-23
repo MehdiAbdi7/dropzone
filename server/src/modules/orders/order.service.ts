@@ -96,7 +96,8 @@ export async function priceCart(db: Tx, items: CartItemInput[], fulfillment: Ful
 
   for (const [sku, quantity] of quantities) {
     const variant = bySku.get(sku);
-    if (!variant || variant.product.status !== "published") {
+    // Une variante en brouillon (23/11) ne se vend nulle part : boutique, comptoir, téléphone et échange passent ici.
+    if (!variant || variant.product.status !== "published" || variant.status !== "published") {
       unavailable.push(sku);
       continue;
     }

@@ -226,7 +226,7 @@ describe("invalidWarranty : la garantie de 1 à 36 mois, comme l'API", () => {
 describe("emptyDraft prérempli depuis le Catalogue", () => {
   it("met la catégorie, la marque, le modèle et son nom", () => {
     const draft = emptyDraft({ categoryId: 1, brandId: 2, deviceModelId: 3, name: "iPhone 18 Pro" });
-    expect(draft).toMatchObject({ categoryId: 1, brandId: 2, deviceModelId: 3, name: "iPhone 18 Pro", status: "draft" });
+    expect(draft).toMatchObject({ categoryId: 1, brandId: 2, deviceModelId: 3, name: "iPhone 18 Pro", status: "published" });
     expect(draft.variants).toHaveLength(1);
   });
 
@@ -322,5 +322,18 @@ describe("Prix d'achat d'une variante", () => {
 
   it("une nouvelle variante n'a pas de prix d'achat", () => {
     expect(emptyVariant().purchasePrice).toBe("");
+  });
+});
+
+// Le brouillon par variante (23/11) : chaque variante envoie son statut, le produit est toujours publié.
+describe("statut des variantes", () => {
+  it("une nouvelle variante est publiée, et peut passer en brouillon", () => {
+    const variant = emptyVariant("new", "phone");
+    expect(variant.status).toBe("published");
+    expect(variantBody({ ...variant, status: "draft" }).status).toBe("draft");
+  });
+
+  it("le produit part toujours publié, quel que soit l'ancien statut", () => {
+    expect(bodyFromDraft({ ...emptyDraft(), status: "draft" }).status).toBe("published");
   });
 });

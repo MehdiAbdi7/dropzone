@@ -147,15 +147,26 @@ function ColorBlock({
 function VariantRow({ variant, onEdit }: { variant: VariantDraft; onEdit: () => void }) {
   const options = optionsWithoutColor(variant);
   const noOption = Object.keys(variant.options).length === 0;
+  // Une variante en brouillon (23/11) : un badge gris et une ligne atténuée, elle n'est pas en vente.
+  const isDraft = variant.status === "draft";
   const problems = variantProblems(variant);
   return (
     <button
       type="button"
       onClick={onEdit}
-      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-2 sm:px-4"
+      className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 text-left transition-colors hover:bg-surface-2 sm:px-4 ${
+        isDraft ? "bg-surface-2/60" : "bg-surface"
+      }`}
     >
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold">{options || (noOption ? "Options à choisir" : "Sans autre option")}</span>
+      <span className={`min-w-0 ${isDraft ? "opacity-70" : ""}`}>
+        <span className="flex min-w-0 items-center gap-2">
+          {isDraft ? (
+            <span className="shrink-0 rounded-full border border-dashed border-ink-muted px-2 py-px text-[11px] font-bold uppercase tracking-wide text-ink-muted">
+              Brouillon
+            </span>
+          ) : null}
+          <span className="truncate text-sm font-semibold">{options || (noOption ? "Options à choisir" : "Sans autre option")}</span>
+        </span>
         <span className="block truncate text-xs text-ink-muted">
           {variant.sku || "SKU à écrire"}
           {variant.reference ? ` · Réf. ${variant.reference}` : ""}

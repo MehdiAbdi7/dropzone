@@ -1,6 +1,6 @@
 import { prisma } from "../../config/db.js";
 import { Prisma, type Condition } from "../../generated/prisma/client.js";
-import { buildConditionReport } from "./product.service.js";
+import { SELLABLE, buildConditionReport } from "./product.service.js";
 import { variantImage } from "./variantImage.js";
 
 // Le sélecteur de variantes du comptoir (16/11, lot 3) : le vendeur tape quelques mots ou un SKU
@@ -141,7 +141,8 @@ export async function searchVariants({
     WHERE ${Prisma.join(conditions, " AND ")}
     LIMIT 3000`;
   const variants = await prisma.productVariant.findMany({
-    where: { id: { in: matches.map((row) => row.id) } },
+    // Une variante en brouillon n'est pas à vendre (23/11) : le comptoir ne la propose pas.
+    where: { id: { in: matches.map((row) => row.id) }, ...SELLABLE },
     include: {
       gifts: { select: { quantity: true, giftVariant: { select: { product: { select: { name: true } } } } } },
       product: {

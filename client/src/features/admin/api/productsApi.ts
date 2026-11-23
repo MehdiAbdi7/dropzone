@@ -44,6 +44,8 @@ export type AdminVariant = {
   gifts: { giftVariantId: number; quantity: number }[];
   // Les téléphones de la variante d'un accessoire (une taille de verre, refonte du 12/11).
   compatibleModelIds: number[];
+  // Brouillon ou publiée (23/11) : absent d'une API pas encore déployée (= publiée).
+  status?: ProductStatus;
 };
 
 export type AdminProduct = {

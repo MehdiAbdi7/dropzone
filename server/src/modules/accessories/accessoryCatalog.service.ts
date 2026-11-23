@@ -1,6 +1,6 @@
 import { prisma } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
-import { lowestInStock } from "../products/product.service.js";
+import { SELLABLE, lowestInStock } from "../products/product.service.js";
 
 // Le catalogue d'une catégorie d'accessoires en un appel (12/11) : la page Accessoires de la
 // Boutique filtre par type (Chargeurs, Coques…) et par marque (Anker…) sur place.
@@ -30,7 +30,7 @@ export async function getAccessoryCatalog(categorySlug: string) {
           slug: true,
           makerId: true,
           images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
-          variants: { where: { condition: "new" }, orderBy: { id: "asc" }, select: { options: true, price: true, stock: true } },
+          variants: { where: { condition: "new", ...SELLABLE }, orderBy: { id: "asc" }, select: { options: true, price: true, stock: true } },
         },
       },
     },
