@@ -7,7 +7,7 @@ import { paginate, paginationMeta } from "../../utils/pagination.js";
 import { slugify } from "../../utils/slugify.js";
 import type { AdminProductListQuery, ProductBody } from "./product.schema.js";
 import { addMissingModelColors, alignVariantColors, variantColors } from "../models/modelColors.js";
-import { DEVICE_KINDS, computeMinNewPrice, computeMinPrice, refreshMinPrice } from "./product.service.js";
+import { DEVICE_KINDS, SELLABLE, computeMinNewPrice, computeMinPrice, refreshMinPrice } from "./product.service.js";
 
 const MAX_IMAGES = 6;
 
@@ -195,11 +195,12 @@ async function checkRules(input: ProductBody, productId?: number) {
   if (giftIds.length > 0) {
     const gifts = await prisma.productVariant.findMany({
       where: { id: { in: giftIds } },
-      select: { id: true, productId: true, condition: true, product: { select: { category: { select: { kind: true } } } } },
+      select: { id: true, productId: true, condition: true, status: true, product: { select: { category: { select: { kind: true } } } } },
     });
     const valid = gifts.filter(
       (gift) =>
         gift.condition === "new" &&
+        gift.status === "published" &&
         gift.product.category.kind === "accessory" &&
         gift.productId !== productId,
     );
@@ -386,7 +387,8 @@ export async function removeImage(productId: number, imageId: number) {
 // Les variantes qu'on peut offrir dans une affaire : les accessoires neufs.
 export async function listGiftOptions() {
   const variants = await prisma.productVariant.findMany({
-    where: { condition: "new", product: { category: { kind: "accessory" } } },
+    // Un accessoire en brouillon (23/11) n'est pas proposé comme cadeau : il ne serait pas offert à la commande.
+    where: { condition: "new", ...SELLABLE, product: { category: { kind: "accessory" } } },
     orderBy: [{ product: { name: "asc" } }, { price: "asc" }],
     select: { id: true, sku: true, options: true, price: true, stock: true, product: { select: { name: true } } },
   });
