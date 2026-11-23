@@ -1,10 +1,14 @@
+import { swatchOf, type Palette } from "@/config/colors";
 import { formatPrice } from "@/lib/format";
+import { usePalette } from "../usePalette";
 import type { VariantDraft } from "./productDraft";
-import { variantGroups, variantProblems, type VariantGroup } from "./variantGroups";
+import { byColor, optionsWithoutColor, variantGroups, variantProblems, type ColorGroup, type VariantGroup } from "./variantGroups";
 
 // Les variantes de la fiche (refaites le 23/11) : le neuf scellé et l'occasion dans deux listes séparées, chacune avec
 // son stock total et son bouton d'ajout. Une ligne courte par variante (options, SKU, prix, stock, ce qui manque) ; un
 // clic ouvre sa fenêtre. Un accessoire ne se vend que neuf : pas de liste Occasion.
+// Dans chaque liste, les variantes sont regroupées par couleur (23/11) : un en-tête avec la pastille de la teinte (celle
+// réglée dans Listes), le nom et le stock de la couleur ; la ligne ne dit plus que les autres options.
 export default function VariantList({
   variants,
   canAddRefurbished,
@@ -17,6 +21,7 @@ export default function VariantList({
   onEdit: (key: string) => void;
 }) {
   const { fresh, used } = variantGroups(variants);
+  const palette = usePalette();
   return (
     <div id="variantes" className={`grid scroll-mt-6 gap-4 ${canAddRefurbished ? "xl:grid-cols-2" : ""}`}>
       <VariantGroupCard
@@ -28,6 +33,7 @@ export default function VariantList({
         stockText={(stock) => `${stock} en stock`}
         onAdd={() => onAdd("new")}
         onEdit={onEdit}
+        palette={palette}
       />
       {canAddRefurbished ? (
         <VariantGroupCard
@@ -39,6 +45,7 @@ export default function VariantList({
           stockText={(stock) => `${stock} appareil${stock > 1 ? "s" : ""}`}
           onAdd={() => onAdd("refurbished")}
           onEdit={onEdit}
+          palette={palette}
         />
       ) : null}
     </div>
@@ -54,6 +61,7 @@ function VariantGroupCard({
   stockText,
   onAdd,
   onEdit,
+  palette,
 }: {
   tone: "new" | "used";
   title: string;
@@ -63,6 +71,7 @@ function VariantGroupCard({
   stockText: (stock: number) => string;
   onAdd: () => void;
   onEdit: (key: string) => void;
+  palette: Palette;
 }) {
   const id = `variantes-${tone}`;
   return (
@@ -86,21 +95,58 @@ function VariantGroupCard({
       {group.variants.length === 0 ? (
         <p className="rounded-lg border border-dashed border-line p-4 text-sm text-ink-muted">{empty}</p>
       ) : (
-        <ul className="divide-y divide-line overflow-hidden rounded-xl border border-line">
-          {group.variants.map((variant) => (
-            <li key={variant.key}>
-              <VariantRow variant={variant} onEdit={() => onEdit(variant.key)} />
-            </li>
+        <div className="space-y-3">
+          {byColor(group.variants).map((colorGroup) => (
+            <ColorBlock key={colorGroup.color ?? "sans-couleur"} group={colorGroup} palette={palette} stockText={stockText} onEdit={onEdit} />
           ))}
-        </ul>
+        </div>
       )}
     </section>
   );
 }
 
-// Une ligne cliquable : sur téléphone, le prix et le stock passent sous les options.
+// Les variantes d'une couleur : l'en-tête (pastille, nom, stock), puis une ligne par variante. Une couleur sans teinte
+// réglée dans Listes a une pastille vide en pointillés : on ne devine pas la teinte.
+function ColorBlock({
+  group,
+  palette,
+  stockText,
+  onEdit,
+}: {
+  group: ColorGroup;
+  palette: Palette;
+  stockText: (stock: number) => string;
+  onEdit: (key: string) => void;
+}) {
+  const hex = group.color ? swatchOf(group.color, palette) : null;
+  return (
+    <div className="overflow-hidden rounded-xl border border-line">
+      <div className="flex items-center gap-2.5 bg-surface-2 px-3 py-2 sm:px-4">
+        <span
+          aria-hidden="true"
+          className={`size-5 shrink-0 rounded-full border ${hex ? "border-ink-muted/60 shadow-sm" : "border-dashed border-ink-muted"}`}
+          style={hex ? { background: hex } : undefined}
+        />
+        <span className="min-w-0 truncate font-display text-sm font-bold">{group.color ?? "Sans couleur"}</span>
+        <span className="ml-auto shrink-0 text-xs text-ink-muted">
+          {group.variants.length} variante{group.variants.length > 1 ? "s" : ""} · {stockText(group.stock)}
+        </span>
+      </div>
+      <ul className="divide-y divide-line border-t border-line">
+        {group.variants.map((variant) => (
+          <li key={variant.key}>
+            <VariantRow variant={variant} onEdit={() => onEdit(variant.key)} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// Une ligne cliquable : les options autres que la couleur (déjà dans l'en-tête), le SKU, le prix et le stock.
 function VariantRow({ variant, onEdit }: { variant: VariantDraft; onEdit: () => void }) {
-  const options = Object.values(variant.options).filter(Boolean).join(" · ");
+  const options = optionsWithoutColor(variant);
+  const noOption = Object.keys(variant.options).length === 0;
   const problems = variantProblems(variant);
   return (
     <button
@@ -109,7 +155,7 @@ function VariantRow({ variant, onEdit }: { variant: VariantDraft; onEdit: () => 
       className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 bg-surface px-3 py-2.5 text-left transition-colors hover:bg-surface-2 sm:px-4"
     >
       <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold">{options || "Options à choisir"}</span>
+        <span className="block truncate text-sm font-semibold">{options || (noOption ? "Options à choisir" : "Sans autre option")}</span>
         <span className="block truncate text-xs text-ink-muted">
           {variant.sku || "SKU à écrire"}
           {variant.reference ? ` · Réf. ${variant.reference}` : ""}
