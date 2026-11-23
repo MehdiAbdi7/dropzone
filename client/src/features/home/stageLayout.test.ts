@@ -82,7 +82,7 @@ describe("emplacements en plus", () => {
     expect(clampBox(extraBox(7))).toEqual(extraBox(7));
   });
 
-  it("existe aussi dans le bandeau des affaires", () => {
+  it("existe aussi dans le bandeau des occasions", () => {
     const devices = dealDevices({ ...empty, deal: { ...empty.deal, "extra-1": photo("https://x/a.webp") } });
     expect(devices.map((device) => device.slot)).toEqual(["left", "center", "right", "extra-1"]);
   });

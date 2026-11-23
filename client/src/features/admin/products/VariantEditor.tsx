@@ -95,7 +95,7 @@ export default function VariantEditor({
             VARIANTE {String(index + 1).padStart(2, "0")}
           </p>
           <p className="mt-1 font-display text-lg font-bold">
-            {refurbished ? "Affaire" : "Neuf scellé"}
+            {refurbished ? "Occasion" : "Neuf scellé"}
             {variant.id ? null : <span className="ml-2 text-sm font-semibold text-blue-ink">· nouvelle</span>}
           </p>
         </div>
@@ -204,7 +204,7 @@ export default function VariantEditor({
                 onChange={(event) => set({ purchasePrice: event.target.value.replace(/\D/g, "") })}
               />
             </Field>
-            <Field id={id("stock")} label={refurbished ? "Stock de cette affaire" : "Stock"}>
+            <Field id={id("stock")} label={refurbished ? "Stock de cette occasion" : "Stock"}>
               <input
                 id={id("stock")}
                 className="input"

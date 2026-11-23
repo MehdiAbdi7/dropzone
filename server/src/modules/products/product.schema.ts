@@ -117,7 +117,7 @@ export function checkRefurbishedSheet(
   ctx: z.RefinementCtx,
 ) {
   if (sheet.withBox === null) {
-    ctx.addIssue({ code: "custom", path: ["withBox"], message: "Dites si l'affaire a sa boîte d'origine" });
+    ctx.addIssue({ code: "custom", path: ["withBox"], message: "Dites si l'occasion a sa boîte d'origine" });
   }
   if (sheet.compatibleParts.some((part) => !sheet.replacedParts.includes(part))) {
     ctx.addIssue({

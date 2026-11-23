@@ -104,7 +104,7 @@ export default function CatalogColorPage() {
               + Ajouter un neuf scellé
             </button>
             <button type="button" className="btn btn-secondary btn-small" onClick={() => setAdding("refurbished")}>
-              + Ajouter une affaire
+              + Ajouter une occasion
             </button>
           </div>
         </div>

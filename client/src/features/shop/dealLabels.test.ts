@@ -17,7 +17,7 @@ describe("partOrigin", () => {
 });
 
 describe("boxLabel", () => {
-  it("dit si l'affaire a sa boîte", () => {
+  it("dit si l'occasion a sa boîte", () => {
     expect(boxLabel(true)).toBe("Avec sa boîte d'origine");
     expect(boxLabel(false)).toBe("Sans boîte");
   });

@@ -63,7 +63,7 @@ describe("releaseExpiredReservations", () => {
     expect(await stockOf("IP-NEW-256")).toBe(before);
   });
 
-  it("remet à jour le prix « dès » du produit d'une affaire libérée", async () => {
+  it("remet à jour le prix « dès » du produit d'une occasion libérée", async () => {
     await reserveToday("IP-R-DEAL");
     await releaseExpiredReservations(at("2026-11-14T20:01"));
     const deal = await prisma.productVariant.findUniqueOrThrow({ where: { sku: "IP-R-DEAL" }, include: { product: true } });

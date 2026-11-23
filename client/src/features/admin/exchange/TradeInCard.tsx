@@ -141,7 +141,7 @@ function PublishForm({ tradeIn, onDone }: { tradeIn: TradeInRow; onDone: () => v
   return (
     <form onSubmit={submit} className="space-y-4">
       <p className="text-sm text-ink-muted">
-        Prix d&apos;achat de l&apos;affaire : {formatPrice(cost)}
+        Prix d&apos;achat de l&apos;occasion : {formatPrice(cost)}
         {tradeIn.repairCost > 0 ? ` (reprise ${formatPrice(tradeIn.price)} + remise en état ${formatPrice(tradeIn.repairCost)})` : ""}.
       </p>
       <label className="block text-sm font-semibold">

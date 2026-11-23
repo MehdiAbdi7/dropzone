@@ -23,7 +23,7 @@ export default function ProductGrid({
             product={product}
             href={
               linkTo === "refurbished"
-                ? `/produits/${product.slug}/affaire`
+                ? `/produits/${product.slug}/occasion`
                 : undefined
             }
             sizes={

@@ -13,7 +13,7 @@ function StockPills({ newStock, dealCount }: { newStock: number; dealCount: numb
       ) : null}
       {dealCount > 0 ? (
         <span className="badge bg-red-soft text-red">
-          {dealCount} affaire{dealCount > 1 ? "s" : ""}
+          {dealCount} occasion{dealCount > 1 ? "s" : ""}
         </span>
       ) : null}
     </div>

@@ -41,7 +41,7 @@ export async function replaceAccessories(db: Tx): Promise<ReplaceReport> {
   });
   if (gifts.length > 0) {
     const lines = gifts.map((gift) => `${gift.variant.product.name} (${gift.variant.sku}) offre ${gift.giftVariant.product.name}`);
-    throw new Error(`Des affaires offrent un produit à supprimer, rien n'est fait :\n${lines.join("\n")}`);
+    throw new Error(`Des occasions offrent un produit à supprimer, rien n'est fait :\n${lines.join("\n")}`);
   }
 
   await db.product.deleteMany({ where: { id: { in: old.map((product) => product.id) } } });

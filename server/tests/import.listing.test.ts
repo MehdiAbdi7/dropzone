@@ -138,7 +138,7 @@ describe("parseListing : une annonce du relevé", () => {
     });
   });
 
-  it("fait d'un « quasi-neuf » une affaire, avec ces mots dans les détails", () => {
+  it("fait d'un « quasi-neuf » une occasion, avec ces mots dans les détails", () => {
     expect(
       parsed({ type: "pc", modele: "Dell Precision 5690", cpu: "Core Ultra 5 135H", ram: "16 Go LPDDR5X 7467", stockage: "512 Go SSD NVMe", ecran: "16", gpu: "Arc", prix_da: "168000", garantie: "3 mois", sim: "quasi-neuf" }),
     ).toMatchObject({ condition: "refurbished", details: "Quasi neuf", options: { Processeur: "Intel Core Ultra 5 135H", RAM: "16 Go", "Carte graphique": "Arc" } });

@@ -22,7 +22,7 @@ export default function ProductCard({
   href?: string;
   tabIndex?: -1;
 }) {
-  const arrivalStep = product.hasRefurbished ? "affaire" : product.hasNew ? "neuf" : null;
+  const arrivalStep = product.hasRefurbished ? "occasion" : product.hasNew ? "neuf" : null;
   const productHref =
     href ??
     (product.arrivalVariantId && arrivalStep

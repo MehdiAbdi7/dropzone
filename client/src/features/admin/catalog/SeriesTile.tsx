@@ -46,7 +46,7 @@ export default function SeriesTile({ series, palette }: { series: AdminSeriesTil
           {series.newStock > 0 ? <span className="rounded-full bg-[#1f5fd6] px-1.5 py-0.5 text-white sm:px-2">{series.newStock} neufs</span> : null}
           {series.dealCount > 0 ? (
             <span className="rounded-full bg-[#d61f45] px-1.5 py-0.5 text-white sm:px-2">
-              {series.dealCount} affaire{series.dealCount > 1 ? "s" : ""}
+              {series.dealCount} occasion{series.dealCount > 1 ? "s" : ""}
             </span>
           ) : null}
           {series.coverUrl ? null : <span className="rounded-full bg-[#ffb547] px-1.5 py-0.5 text-black sm:px-2">Pas d&apos;image</span>}

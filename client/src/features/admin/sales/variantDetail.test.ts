@@ -23,7 +23,7 @@ const deal = makeHit({
   gifts: [{ name: "Chargeur 20W", quantity: 1 }],
 });
 
-describe("variantDetailRows : une affaire", () => {
+describe("variantDetailRows : une occasion", () => {
   const rows = variantDetailRows(deal);
 
   it("dit l'état de l'appareil : note, batterie, pièces changées, défauts, limitations, boîte", () => {

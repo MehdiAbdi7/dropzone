@@ -157,7 +157,7 @@ describe("POST /admin/models/:id/variants", () => {
       minPrice: 199000,
     });
     expect(product.description).toBe(
-      "iPhone 15 Pro chez DropZone : neuf scellé ou affaire testée, garantie et livraison dans 58 wilayas.",
+      "iPhone 15 Pro chez DropZone : neuf scellé ou d'occasion testé, garantie et livraison dans 58 wilayas.",
     );
     expect((await request(app).get(`/products/${product.slug}`)).status).toBe(200);
   });
@@ -171,12 +171,12 @@ describe("POST /admin/models/:id/variants", () => {
     expect(response.body.error.message).toBe("Rangez d'abord ce modèle dans une série");
   });
 
-  it("refuse une affaire sans dire sa boîte", async () => {
+  it("refuse une occasion sans dire sa boîte", async () => {
     const response = await admin
       .post(`/admin/models/${catalog.iphone.id}/variants`)
       .send({ ...newUnit("Titane bleu"), condition: "refurbished", stock: 1, warrantyMonths: 6 });
     expect(response.status).toBe(400);
-    expect(JSON.stringify(response.body.error)).toContain("Dites si l'affaire a sa boîte d'origine");
+    expect(JSON.stringify(response.body.error)).toContain("Dites si l'occasion a sa boîte d'origine");
   });
 
   it("ajoute au modèle une couleur nouvelle", async () => {

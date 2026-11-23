@@ -229,7 +229,7 @@ export const PRODUCTS: SeedProduct[] = [
     category: "smartphones",
     model: "Apple|iPhone 15 Pro Max",
     description:
-      "Le plus grand iPhone de la gamme 15 : châssis en titane, puce A17 Pro et zoom optique 5x. Disponible en neuf scellé ou en affaire, chaque affaire testée et décrite pièce par pièce.",
+      "Le plus grand iPhone de la gamme 15 : châssis en titane, puce A17 Pro et zoom optique 5x. Disponible en neuf scellé ou d'occasion, chaque occasion testée et décrite pièce par pièce.",
     specs: {
       Écran: "6,7 pouces Super Retina XDR, 120 Hz",
       Puce: "A17 Pro",
@@ -316,7 +316,7 @@ export const PRODUCTS: SeedProduct[] = [
     category: "smartphones",
     model: "Apple|iPhone 14 Pro",
     description:
-      "Dynamic Island, écran toujours allumé et capteur principal de 48 Mpx. Uniquement en affaire : chaque appareil a sa propre fiche d'état.",
+      "Dynamic Island, écran toujours allumé et capteur principal de 48 Mpx. Uniquement d'occasion : chaque appareil a sa propre fiche d'état.",
     specs: {
       Écran: "6,1 pouces Super Retina XDR, 120 Hz",
       Puce: "A16 Bionic",

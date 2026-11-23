@@ -65,17 +65,17 @@ export default function HomePage() {
             >
               Le bon appareil.
               <span className="text-gradient mx-auto block w-fit pb-1 sm:mx-0">
-                Neuf scellé ou en affaire.
+                Neuf scellé ou d&apos;occasion.
               </span>
             </h1>
             <p className="mx-auto max-w-lg text-base text-ink-muted sm:mx-0 sm:text-lg">
               {/* Sur mobile, une phrase : le détail de la fiche est expliqué plus bas dans la page. */}
               <span className="sm:hidden">
-                Chaque affaire est testée et décrite pièce par pièce.
+                Chaque occasion est testée et décrite pièce par pièce.
               </span>
               <span className="hidden sm:inline">
                 Smartphones, PC portables et tablettes importés d&apos;Europe.
-                Chaque affaire est testée et décrite pièce par pièce : note,
+                Chaque occasion est testée et décrite pièce par pièce : note,
                 batterie, pièces changées et boîte.
               </span>
             </p>
@@ -237,7 +237,7 @@ export default function HomePage() {
                   <span className="rule-gradient w-6 -scale-x-100 sm:w-10" aria-hidden="true" />
                 </div>
                 <p className="mt-1 text-ink-muted">
-                  Les derniers arrivages, neufs scellés et affaires.
+                  Les derniers arrivages, neufs scellés et occasions.
                 </p>
               </div>
               <Link
@@ -258,7 +258,7 @@ export default function HomePage() {
       </Reveal>
 
       {/* 5. Le bandeau des affaires : affiché avec sa roue pendant l'attente, retiré s'il n'y
-          a finalement aucune affaire en stock. */}
+          a finalement aucune occasion en stock. */}
       <Reveal>
         <Suspense
           fallback={

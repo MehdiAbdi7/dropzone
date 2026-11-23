@@ -134,7 +134,7 @@ export async function updateTradeIn(id: number, input: UpdateTradeInInput) {
     }
     // Une reprise déjà en vente est devenue une affaire du catalogue : on la modifie là-bas.
     if (row.listed_at) {
-      throw new AppError(409, "Cette reprise est déjà en vente : modifiez l'affaire dans le Catalogue");
+      throw new AppError(409, "Cette reprise est déjà en vente : modifiez l'occasion dans le Catalogue");
     }
     const { color, repairCost, ...sheet } = input;
     await tx.tradeIn.update({ where: { id }, data: { color, repairCost, sheet } });

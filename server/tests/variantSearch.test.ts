@@ -44,7 +44,7 @@ describe("GET /admin/variants", () => {
     expect(sold).not.toContain("IP-R-SOLD");
   });
 
-  it("donne la fiche d'état d'une affaire", async () => {
+  it("donne la fiche d'état d'une occasion", async () => {
     const hit = (await search("IP-R-DEAL")).body.data[0];
     expect(hit.condition).toBe("refurbished");
     expect(hit.conditionReport).toContain("Batterie 95 %");
@@ -57,7 +57,7 @@ describe("GET /admin/variants", () => {
     expect((await search("iphone", "&limit=2")).body.data).toHaveLength(2);
   });
 
-  it("donne la fiche d'une affaire (18/11 : le bouton Détail de la vente)", async () => {
+  it("donne la fiche d'une occasion (18/11 : le bouton Détail de la vente)", async () => {
     const hit = (await search("IP-R-DEAL")).body.data[0];
     expect(hit.batteryHealth).toBe(95);
     for (const list of ["replacedParts", "compatibleParts", "defects", "limitations"]) {
@@ -71,7 +71,7 @@ describe("GET /admin/variants", () => {
     expect(hit.purchasePrice).toBe(200_000);
   });
 
-  it("liste les cadeaux offerts avec une affaire", async () => {
+  it("liste les cadeaux offerts avec une occasion", async () => {
     // Le catalogue de test offre déjà un cadeau avec cette affaire : on compare avec ce que la base dit.
     const links = await prisma.variantGift.findMany({
       where: { variant: { sku: "IP-R-DEAL" } },
@@ -164,7 +164,7 @@ describe("GET /admin/variants", () => {
       expect(skusOf(await search("coque", "&category=accessoires"))).toEqual(["COQ-IP15PM"]);
     });
 
-    it("filtre par état (neuf ou affaire)", async () => {
+    it("filtre par état (neuf ou occasion)", async () => {
       expect(skusOf(await search("", "&condition=refurbished")).sort()).toEqual(["IP-R-DEAL", "IP-R-WIFI"]);
       expect((await search("", "&condition=new")).body.meta.total).toBe(3);
       expect((await search("", "&condition=autre")).status).toBe(400);

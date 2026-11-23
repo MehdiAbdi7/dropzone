@@ -42,7 +42,7 @@
 }
 
 /* Sombre : le noir du logo, des surfaces teintées du bleu de la marque.
-   `.brand-dark` redéclare ces variables sur un bloc (en-tête, garanties, affaires,
+   `.brand-dark` redéclare ces variables sur un bloc (en-tête, garanties, occasions,
    pied de page) : il reste sombre dans les deux thèmes, et les classes
    bg-surface, text-ink… de ses enfants suivent toutes seules. */
 [data-theme="dark"],

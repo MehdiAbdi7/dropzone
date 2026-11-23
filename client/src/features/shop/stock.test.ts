@@ -129,7 +129,7 @@ describe("initialSelection et selectOption", () => {
 });
 
 describe("conditionSummary", () => {
-  it("résume le neuf scellé et les affaires en stock", () => {
+  it("résume le neuf scellé et les occasions en stock", () => {
     const variants = [
       ...iphone18ProMax,
       variant(

@@ -13,7 +13,7 @@ beforeEach(async () => {
 });
 
 describe("POST /orders/preview", () => {
-  it("ajoute l'article offert de l'affaire, à 0 DA, et calcule les totaux", async () => {
+  it("ajoute l'article offert de l'occasion, à 0 DA, et calcule les totaux", async () => {
     const response = await request(app)
       .post("/orders/preview")
       .send({ items: [{ sku: "IP-R-DEAL", quantity: 1 }] });
@@ -50,7 +50,7 @@ describe("POST /orders/preview", () => {
     expect(response.body.data.lines[0].problem).toBe("Il n'en reste que 1");
   });
 
-  it("permet de commander plusieurs unités d'une affaire quand le stock le permet", async () => {
+  it("permet de commander plusieurs unités d'une occasion quand le stock le permet", async () => {
     await prisma.productVariant.update({ where: { sku: "IP-R-DEAL" }, data: { stock: 3 } });
     const response = await request(app)
       .post("/orders/preview")
@@ -63,7 +63,7 @@ describe("POST /orders/preview", () => {
     expect(await stockOf("IP-R-DEAL")).toBe(1);
   });
 
-  it("garde la boîte, l'origine des pièces et les détails d'une affaire jusqu'à la commande", async () => {
+  it("garde la boîte, l'origine des pièces et les détails d'une occasion jusqu'à la commande", async () => {
     const phone = await prisma.product.findUniqueOrThrow({ where: { slug: "iphone-15-pro-max" } });
     await prisma.productVariant.create({
       data: {

@@ -2,19 +2,20 @@ import type { ReactNode } from "react";
 import ProductImage from "@/components/ui/ProductImage";
 import type { ProductDetail } from "@/types/api";
 import Breadcrumb, { type Crumb } from "./Breadcrumb";
-import { colorHref } from "./colors";
 import { findLibraryLogo } from "../../config/brandLogos";
 import Image from "next/image";
 
 // Le haut commun des pages d'un produit : le fil d'Ariane complet
 // (Boutique › Smartphones › iPhone › iPhone 18 Pro Max › Neuf), la photo à gauche,
 // la marque et le nom à droite, puis le contenu de l'étape (`children`).
-// Le fil d'Ariane d'un produit, partagé avec l'affiche de choix (05/11) :
-// Boutique › Smartphones › iPhone › iPhone 18 › iPhone 18 Pro › Glacier › Neuf scellé.
+// Le fil d'Ariane d'un produit, partagé avec l'affiche de choix (05/11, ordre inversé le 23/11) :
+// Boutique › Smartphones › iPhone › iPhone 18 › iPhone 18 Pro › Neuf scellé › Glacier. `stepHref` : l'étape mène à
+// son choix des couleurs.
 export function productCrumbs(
   product: ProductDetail,
   color: string | null,
   step?: string,
+  stepHref?: string,
 ): Crumb[] {
   const category = `/boutique/${product.category.slug}`;
   return [
@@ -44,15 +45,9 @@ export function productCrumbs(
     color || step
       ? { label: product.name, href: `/produits/${product.slug}` }
       : { label: product.name },
-    // Sur l'étape Neuf ou Affaire, la couleur ramène au choix Neuf / Affaire de cette couleur.
-    ...(color
-      ? [
-          step
-            ? { label: color, href: colorHref(product.slug, color) }
-            : { label: color },
-        ]
-      : []),
-    ...(step ? [{ label: step }] : []),
+    // Une couleur choisie : l'étape ramène au choix des couleurs de cet état.
+    ...(step ? [color && stepHref ? { label: step, href: stepHref } : { label: step }] : []),
+    ...(color ? [{ label: color }] : []),
   ];
 }
 
@@ -61,18 +56,20 @@ export function productCrumbs(
 export default function ProductHeader({
   product,
   step,
+  stepHref,
   color,
   image,
   children,
 }: {
   product: ProductDetail;
   step?: string;
+  stepHref?: string;
   color?: string | null;
   image?: string | null;
   children: ReactNode;
 }) {
-  const crumbs = productCrumbs(product, color ?? null, step);
-  const title = [color, step].filter(Boolean).join(" · ");
+  const crumbs = productCrumbs(product, color ?? null, step, stepHref);
+  const title = [step, color].filter(Boolean).join(" · ");
 
   const brandLogo = findLibraryLogo(product.brand?.name ?? "");
 

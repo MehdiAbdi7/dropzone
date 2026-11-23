@@ -48,24 +48,24 @@ describe("La base du vrai catalogue", () => {
     productId = (await prisma.product.findUniqueOrThrow({ where: { slug: "iphone-15-pro-max" } })).id;
   });
 
-  const affaire = (sku: string, extra: Record<string, unknown> = {}) =>
+  const occasion = (sku: string, extra: Record<string, unknown> = {}) =>
     prisma.productVariant.create({
       data: { productId, sku, price: 100000, stock: 1, condition: "refurbished", ...extra },
     });
 
-  it("accepte une affaire sans note, sans batterie et sans boîte connue (annonce importée)", async () => {
-    const variant = await affaire("IG-SANS-NOTE", { grade: null, batteryHealth: null, withBox: null });
+  it("accepte une occasion sans note, sans batterie et sans boîte connue (annonce importée)", async () => {
+    const variant = await occasion("IG-SANS-NOTE", { grade: null, batteryHealth: null, withBox: null });
     expect(variant).toMatchObject({ grade: null, batteryHealth: null, withBox: null });
   });
 
   // Un arrivage peut apporter plusieurs appareils identiques (même état, même couleur) :
   // une seule fiche avec leur nombre (décision de Mehdi, 10/11). La base garde un plafond.
-  it("accepte une affaire en plusieurs exemplaires", async () => {
-    await expect(affaire("IG-DEUX", { stock: 3 })).resolves.toMatchObject({ stock: 3 });
+  it("accepte une occasion en plusieurs exemplaires", async () => {
+    await expect(occasion("IG-DEUX", { stock: 3 })).resolves.toMatchObject({ stock: 3 });
   });
 
   it("refuse un stock au-delà du plafond de la base", async () => {
-    await expect(affaire("IG-TROP", { stock: 10001 })).rejects.toThrow();
+    await expect(occasion("IG-TROP", { stock: 10001 })).rejects.toThrow();
   });
 
   it("refuse une boîte sur un neuf scellé", async () => {
@@ -75,22 +75,22 @@ describe("La base du vrai catalogue", () => {
   });
 
   it("borne la garantie entre 1 et 36 mois", async () => {
-    await expect(affaire("IG-G0", { warrantyMonths: 0 })).rejects.toThrow();
-    await expect(affaire("IG-G37", { warrantyMonths: 37 })).rejects.toThrow();
-    const variant = await affaire("IG-G12", { warrantyMonths: 12 });
+    await expect(occasion("IG-G0", { warrantyMonths: 0 })).rejects.toThrow();
+    await expect(occasion("IG-G37", { warrantyMonths: 37 })).rejects.toThrow();
+    const variant = await occasion("IG-G12", { warrantyMonths: 12 });
     expect(variant.warrantyMonths).toBe(12);
   });
 
   it("garde une référence unique, mais permet plusieurs variantes sans référence", async () => {
-    await affaire("IG-REF-1", { reference: "51057" });
-    await expect(affaire("IG-REF-2", { reference: "51057" })).rejects.toMatchObject({ code: "P2002" });
-    await affaire("IG-SANS-REF-1");
-    await affaire("IG-SANS-REF-2");
+    await occasion("IG-REF-1", { reference: "51057" });
+    await expect(occasion("IG-REF-2", { reference: "51057" })).rejects.toMatchObject({ code: "P2002" });
+    await occasion("IG-SANS-REF-1");
+    await occasion("IG-SANS-REF-2");
     expect(await prisma.productVariant.count({ where: { reference: null, sku: { startsWith: "IG-SANS-REF" } } })).toBe(2);
   });
 
   it("range l'origine d'un appareil", async () => {
-    const variant = await affaire("IG-ORIGINE", { origin: "Europe" });
+    const variant = await occasion("IG-ORIGINE", { origin: "Europe" });
     expect(variant.origin).toBe("Europe");
   });
 

@@ -50,7 +50,7 @@ describe("settledText", () => {
 });
 
 describe("emptyTradeIn", () => {
-  it("part d'une affaire sans modèle ni prix, avec la garantie de DropZone", () => {
+  it("part d'une occasion sans modèle ni prix, avec la garantie de DropZone", () => {
     const empty = emptyTradeIn("phone");
     expect(empty).toMatchObject({ kind: "phone", model: null, price: "" });
     expect(empty.variant.condition).toBe("refurbished");

@@ -300,7 +300,7 @@ export async function deleteOrder(id: number, userId: number, now: Date = new Da
       if (tradeIn?.listedVariantId && (await tx.productVariant.findUnique({ where: { id: tradeIn.listedVariantId }, select: { id: true } }))) {
         throw new AppError(
           409,
-          "La reprise de cet échange est déjà en vente : retirez l'affaire du catalogue avant de supprimer l'échange",
+          "La reprise de cet échange est déjà en vente : retirez l'occasion du catalogue avant de supprimer l'échange",
         );
       }
     }

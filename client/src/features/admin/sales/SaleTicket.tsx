@@ -247,7 +247,7 @@ export default function SaleTicket(props: Props) {
 
       {gifts.length > 0 ? (
         <p className="rounded-md bg-surface-2 p-3 text-sm">
-          Offert avec cette affaire : {gifts.map((gift) => `${gift.quantity} × ${gift.name}`).join(", ")}. Le stock du cadeau
+          Offert avec cette occasion : {gifts.map((gift) => `${gift.quantity} × ${gift.name}`).join(", ")}. Le stock du cadeau
           baisse aussi.
         </p>
       ) : null}

@@ -39,7 +39,7 @@ export type ReplacementTradeInInput = z.infer<typeof replacementTradeInSchema>;
 function checkTradeInSheet(tradeIn: Parameters<typeof checkRefurbishedSheet>[0] & { warrantyMonths: number | null }, ctx: z.RefinementCtx) {
   checkRefurbishedSheet(tradeIn, ctx);
   if (tradeIn.warrantyMonths === null) {
-    ctx.addIssue({ code: "custom", path: ["warrantyMonths"], message: "Indiquez la garantie de l'affaire, en mois" });
+    ctx.addIssue({ code: "custom", path: ["warrantyMonths"], message: "Indiquez la garantie de l'occasion, en mois" });
   }
 }
 

@@ -44,7 +44,7 @@ const product = (overrides: Partial<ProductDetail> = {}) =>
 
 describe("colorColumns", () => {
   it("donne une colonne par couleur, dans l'ordre, avec la lueur de sa couleur", () => {
-    const columns = colorColumns(product());
+    const columns = colorColumns(product(), "new");
     expect(columns.map((c) => [c.title, c.glow])).toEqual([
       ["Argent", "Argent"],
       ["Orange cosmique", "Orange cosmique"],
@@ -52,38 +52,73 @@ describe("colorColumns", () => {
     ]);
   });
 
-  it("grise une couleur sans stock, sans lien", () => {
-    const [argent, , bleu] = colorColumns(product());
-    expect(argent).toMatchObject({ href: null, price: null, lines: ["Indisponible"] });
+  // 23/11 : la couleur se choisit après « Neuf scellé » ou « Occasion ». Une couleur sans stock dans cet état est
+  // grisée, même si elle en a dans l'autre.
+  it("grise une couleur sans neuf en stock, sans lien", () => {
+    const [argent, , bleu] = colorColumns(product(), "new");
+    expect(argent).toMatchObject({ href: null, price: null, lines: ["Pas de neuf dans cette couleur"] });
     expect(bleu.href).toBeNull();
   });
 
-  it("donne les prix « dès » du neuf et de l'affaire de la couleur", () => {
-    const orange = colorColumns(product())[1];
+  it("donne le prix « dès » et le stock du neuf de la couleur, et mène au neuf de cette couleur", () => {
+    const orange = colorColumns(product(), "new")[1];
     expect(orange).toMatchObject({
-      href: "/produits/iphone-17-pro-max?couleur=Orange%20cosmique",
-      // Les prix sont dans les lignes : pas de prix en double (relecture du 05/11).
+      href: "/produits/iphone-17-pro-max/neuf?couleur=Orange%20cosmique",
+      // Le prix est dans les lignes : pas de prix en double (relecture du 05/11).
       price: null,
-      lines: [`Neuf scellé dès ${formatPrice(352000)}`, `Affaire dès ${formatPrice(310000)}`],
+      lines: [`Neuf scellé dès ${formatPrice(352000)}`, "4 en stock"],
     });
+  });
+
+  it("après Occasion : le prix « dès » et le nombre d'occasions de la couleur, et mène aux occasions de cette couleur", () => {
+    const [argent, orange] = colorColumns(product(), "refurbished");
+    expect(orange).toMatchObject({
+      href: "/produits/iphone-17-pro-max/occasion?couleur=Orange%20cosmique",
+      price: null,
+      lines: [`Occasion dès ${formatPrice(310000)}`, "1 appareil"],
+    });
+    expect(argent).toMatchObject({ href: null, lines: ["Pas d'occasion dans cette couleur"] });
+  });
+
+  it("après Neuf scellé, ne compte jamais une occasion dans la couleur", () => {
+    const orange = colorColumns(product({ variants: [product().variants[2]!] }), "new")[1];
+    expect(orange).toMatchObject({ href: null, lines: ["Pas de neuf dans cette couleur"] });
   });
 
   // 06/11 : la photo du modèle montrait la même image sur toutes les couleurs. Une couleur
   // sans sa photo garde l'icône, le gérant envoie la sienne depuis la variante.
   it("prend la photo de la couleur, sinon l'icône (jamais la photo du modèle)", () => {
-    const [argent, orange] = colorColumns(product());
+    const [argent, orange] = colorColumns(product(), "new");
     expect(orange.image).toBe("https://x/orange.webp");
     expect(argent.image).toBe("/products/phone.svg");
   });
 
-  it("garde la photo du modèle à l'étape Neuf / Affaire d'un produit sans couleurs", () => {
-    expect(conditionColumns(product(), null)[0].image).toBe("https://x/modele.webp");
+  // 23/11 (demande de Mehdi) : la première étape, Neuf scellé ou Occasion, montre la photo du modèle sur les deux cartes.
+  it("met la photo du modèle sur les deux cartes Neuf scellé et Occasion", () => {
+    const [fresh, deal] = conditionColumns(product(), null);
+    expect(fresh.image).toBe("https://x/modele.webp");
+    expect(deal.image).toBe("https://x/modele.webp");
+  });
+
+  it("sans photo du produit, prend celle de la couleur de l'affiche, puis d'une autre couleur, puis l'icône", () => {
+    expect(conditionColumns(product({ images: [] }), null)[0].image).toBe("https://x/orange.webp");
+    expect(conditionColumns(product({ images: [], posterColor: "Argent" }), null)[0].image).toBe("https://x/orange.webp");
+    expect(conditionColumns(product({ images: [], colors: [{ name: "Argent", photoUrl: null }] }), null)[0].image).toBe("/products/phone.svg");
+  });
+
+  it("garde la photo de la couleur d'un ancien lien avec une couleur", () => {
     expect(conditionColumns(product(), "Argent")[0].image).toBe("/products/phone.svg");
   });
 });
 
 describe("conditionColumns", () => {
-  it("donne Neuf scellé puis Affaire, comptés dans la couleur, sur sa lueur et sa photo", () => {
+  it("donne Neuf scellé puis Occasion, sans couleur choisie : tout le stock du modèle", () => {
+    const [fresh, deal] = conditionColumns(product(), null);
+    expect(fresh).toMatchObject({ lines: ["4 en stock", "Garantie 12 mois"], href: "/produits/iphone-17-pro-max/neuf" });
+    expect(deal).toMatchObject({ lines: ["1 appareil", "Garantie 6 mois"], href: "/produits/iphone-17-pro-max/occasion" });
+  });
+
+  it("donne Neuf scellé puis Occasion, comptés dans la couleur d'un ancien lien, sur sa lueur et sa photo", () => {
     const [fresh, deal] = conditionColumns(product(), "Orange cosmique");
     expect(fresh).toMatchObject({
       badge: "new",
@@ -99,14 +134,14 @@ describe("conditionColumns", () => {
       title: "Testé et décrit pièce par pièce",
       price: { prefix: "À partir de ", value: 310000 },
       lines: ["1 appareil", "Garantie 6 mois"],
-      href: "/produits/iphone-17-pro-max/affaire?couleur=Orange%20cosmique",
+      href: "/produits/iphone-17-pro-max/occasion?couleur=Orange%20cosmique",
     });
   });
 
   it("grise une colonne sans stock dans la couleur", () => {
     const [fresh, deal] = conditionColumns(product(), "Argent");
     expect(fresh).toMatchObject({ href: null, price: null, lines: ["Aucun neuf scellé en stock"] });
-    expect(deal).toMatchObject({ href: null, price: null, lines: ["Aucune affaire en stock"] });
+    expect(deal).toMatchObject({ href: null, price: null, lines: ["Aucune occasion en stock"] });
   });
 
   it("prend la lueur du modèle sans couleur choisie", () => {

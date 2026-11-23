@@ -44,7 +44,7 @@ export function AmountsCard({ order }: { order: AdminOrder }) {
         <p>Ce que le magasin donne : {formatPrice(order.subtotal)}</p>
         <p>Téléphone repris : {formatPrice(order.tradeIn.price)}</p>
         <p className="font-display text-lg font-bold">{settledText(exchangeDifference(order.total, order.tradeIn.price))}</p>
-        {order.limitationsAccepted ? <p className="mt-2 font-semibold text-red">Le client a accepté les limitations des affaires.</p> : null}
+        {order.limitationsAccepted ? <p className="mt-2 font-semibold text-red">Le client a accepté les limitations des occasions.</p> : null}
       </section>
     );
   }
@@ -63,7 +63,7 @@ export function AmountsCard({ order }: { order: AdminOrder }) {
             : "À encaisser"}{" "}
         : {formatPrice(order.total)}
       </p>
-      {order.limitationsAccepted ? <p className="mt-2 font-semibold text-red">Le client a accepté les limitations des affaires.</p> : null}
+      {order.limitationsAccepted ? <p className="mt-2 font-semibold text-red">Le client a accepté les limitations des occasions.</p> : null}
     </section>
   );
 }
@@ -116,7 +116,7 @@ export function CallSheet({ order }: { order: AdminOrder }) {
         </a>
         <p>{delivery ? `${order.address}, ${order.commune}, ${order.wilaya}` : receptionLabel(order)}</p>
         {order.note ? <p className="rounded-md bg-surface-2 p-2">Remarque du client : {order.note}</p> : null}
-        {order.limitationsAccepted ? <p className="font-semibold text-red">Le client a accepté les limitations des affaires.</p> : null}
+        {order.limitationsAccepted ? <p className="font-semibold text-red">Le client a accepté les limitations des occasions.</p> : null}
       </section>
       <ArticlesCard order={order} />
       <p className="flex flex-wrap items-baseline justify-between gap-2 px-1 text-sm">

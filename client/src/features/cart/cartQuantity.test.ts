@@ -18,7 +18,7 @@ describe("quantityLimit", () => {
     expect(quantityLimit(variant(25), 0)).toBe(10);
   });
 
-  it("limite une affaire au stock disponible", () => {
+  it("limite une occasion au stock disponible", () => {
     expect(quantityLimit(variant(1, "refurbished"), 0)).toBe(1);
     expect(quantityLimit(variant(1, "refurbished"), 1)).toBe(0);
     expect(quantityLimit(variant(4, "refurbished"), 0)).toBe(4);
