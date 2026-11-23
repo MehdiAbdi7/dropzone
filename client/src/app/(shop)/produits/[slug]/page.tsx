@@ -5,8 +5,8 @@ import { DEVICE_KINDS } from "@/config/catalog";
 import ProductGrid from "@/features/products/ProductGrid";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import ChoicePoster from "@/features/shop/ChoicePoster";
-import { colorColumns, conditionColumns } from "@/features/shop/choiceColumns";
-import { productStep } from "@/features/shop/colors";
+import { conditionColumns } from "@/features/shop/choiceColumns";
+import { pickColor } from "@/features/shop/colors";
 import NewPicker from "@/features/shop/NewPicker";
 import ProductFacts from "@/features/shop/ProductFacts";
 import ProductHeader, { productCrumbs } from "@/features/shop/ProductHeader";
@@ -42,9 +42,10 @@ export async function generateMetadata({ params }: PageProps<"/produits/[slug]">
   };
 }
 
-// La page d'un produit. Appareil : l'affiche de choix (05/11), d'abord la couleur, puis
-// Neuf scellé ou Affaire dans cette couleur (`?couleur=Glacier`), au style de l'affiche de la
-// série, avec les caractéristiques dessous. Accessoire (vendu neuf) : le choix des options et
+// La page d'un produit. Appareil : l'affiche de choix (05/11), Neuf scellé ou Occasion d'abord (ordre inversé le
+// 23/11 : le client choisit d'abord son budget), avec la photo du modèle ; la couleur se choisit ensuite, sur la page
+// Neuf ou Occasion. Un ancien lien `?couleur=Glacier` montre encore le choix dans cette couleur. Au style de l'affiche
+// de la série, avec les caractéristiques dessous. Accessoire (vendu neuf) : le choix des options et
 // l'achat, directement.
 export default async function ProductPage({ params, searchParams }: PageProps<"/produits/[slug]">) {
   const { slug } = await params;
@@ -70,7 +71,6 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   }
   const isDevice = DEVICE_KINDS.includes(product.category.kind);
   const search = await searchParams;
-  const step = productStep(product, search.couleur);
   // Les options d'une colonne d'affiche d'accessoire (« ?Puissance=45%20W »), choisies d'avance.
   const requested = Object.fromEntries(
     Object.entries(search).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
@@ -109,23 +109,19 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
     );
   }
 
-  const color = step.kind === "conditions" ? step.color : null;
+  const color = pickColor(product.colors, search.couleur);
   return (
     <div className="container-page space-y-4 py-4">
       <Breadcrumb items={productCrumbs(product, color)} />
-      {step.kind === "colors" ? (
-        <ChoicePoster kicker="CHOISISSEZ LA COULEUR" title={product.name} columns={colorColumns(product)} palette={palette} />
-      ) : (
-        <ChoicePoster
-          kicker="NEUF SCELLÉ OU AFFAIRE"
-          title={color ? `${product.name} · ${color}` : product.name}
-          columns={conditionColumns(product, color)}
-          palette={palette}
-        />
-      )}
+      <ChoicePoster
+        kicker="NEUF SCELLÉ OU OCCASION"
+        title={color ? `${product.name} · ${color}` : product.name}
+        columns={conditionColumns(product, color)}
+        palette={palette}
+      />
       {color ? (
         <Link href={`/produits/${product.slug}`} className="inline-block text-sm text-blue-ink underline">
-          Choisir une autre couleur
+          Voir toutes les couleurs
         </Link>
       ) : null}
       <ProductFacts product={product} />

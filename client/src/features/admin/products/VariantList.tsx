@@ -28,13 +28,13 @@ export default function VariantList({
           </button>
           {canAddRefurbished ? (
             <button type="button" className="btn btn-secondary btn-small" onClick={() => onAdd("refurbished")}>
-              + Affaire
+              + Occasion
             </button>
           ) : null}
         </div>
       </div>
       {variants.length === 0 ? (
-        <p className="text-sm text-ink-muted">Aucune variante : ajoute un neuf scellé ou une affaire.</p>
+        <p className="text-sm text-ink-muted">Aucune variante : ajoute un neuf scellé ou une occasion.</p>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
           {variants.map((variant) => {

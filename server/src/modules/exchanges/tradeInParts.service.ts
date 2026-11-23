@@ -25,7 +25,7 @@ export async function dismantleTradeIn(id: number, parts: { partId: number; quan
   return prisma.$transaction(async (tx) => {
     const tradeIn = await lockTradeIn(tx, id);
     if (tradeIn.listed_at) {
-      throw new AppError(409, "Cette reprise est déjà en vente : retirez l'affaire du catalogue d'abord");
+      throw new AppError(409, "Cette reprise est déjà en vente : retirez l'occasion du catalogue d'abord");
     }
     if (tradeIn.price !== 0 || tradeIn.repair_cost !== 0) {
       throw new AppError(409, "Seule une reprise à 0 DA, sans remise en état commencée, se démonte pour pièces");

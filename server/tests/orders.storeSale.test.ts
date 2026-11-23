@@ -76,7 +76,7 @@ describe("POST /admin/sales", () => {
     expect(movement).toMatchObject({ amount: 240_000, method: "card" });
   });
 
-  it("ajoute le cadeau d'une affaire à 0 DA et fait baisser son stock", async () => {
+  it("ajoute le cadeau d'une occasion à 0 DA et fait baisser son stock", async () => {
     const { agent } = await counter();
     const charger = await stockOf("CHG-20W");
     const response = await agent.post("/admin/sales").send(sale({ lines: [{ sku: "IP-R-DEAL", quantity: 1 }] }));

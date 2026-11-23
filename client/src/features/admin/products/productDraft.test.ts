@@ -49,7 +49,7 @@ const deal = (patch: Partial<VariantDraft> = {}): VariantDraft => ({
 const sent = (variant: VariantDraft) => bodyFromDraft({ ...emptyDraft(), variants: [variant] }).variants[0];
 
 describe("missingPartOrigins", () => {
-  it("donne les pièces changées d'une affaire sans choix « d'origine » ou « compatible »", () => {
+  it("donne les pièces changées d'une occasion sans choix « d'origine » ou « compatible »", () => {
     expect(missingPartOrigins(deal({ partOrigins: { Écran: "compatible" } }))).toEqual(["Batterie"]);
     expect(missingPartOrigins(deal())).toEqual([]);
   });
@@ -60,7 +60,7 @@ describe("missingPartOrigins", () => {
 });
 
 describe("bodyFromDraft", () => {
-  it("envoie la boîte, les pièces compatibles et les détails d'une affaire", () => {
+  it("envoie la boîte, les pièces compatibles et les détails d'une occasion", () => {
     expect(sent(deal({ withBox: true, details: "Comme neuf" }))).toMatchObject({
       withBox: true,
       compatibleParts: ["Écran"],
@@ -68,7 +68,7 @@ describe("bodyFromDraft", () => {
     });
   });
 
-  it("n'envoie ni boîte, ni pièces compatibles, ni détails pour une affaire repassée en neuf scellé", () => {
+  it("n'envoie ni boîte, ni pièces compatibles, ni détails pour une occasion repassée en neuf scellé", () => {
     expect(sent({ ...deal({ withBox: true, details: "Comme neuf" }), condition: "new" })).toMatchObject({
       withBox: null,
       compatibleParts: [],
@@ -133,7 +133,7 @@ describe("La garantie proposée par le formulaire", () => {
     expect(emptyVariant().warrantyMonths).toBe("");
   });
 
-  it("suit l'état quand le gérant passe de Neuf scellé à Affaire", () => {
+  it("suit l'état quand le gérant passe de Neuf scellé à Occasion", () => {
     const changed = withCondition(emptyVariant("new", "phone"), "phone", "refurbished");
     expect(changed).toMatchObject({ condition: "refurbished", stock: "1", warrantyMonths: "6" });
   });
@@ -143,7 +143,7 @@ describe("La garantie proposée par le formulaire", () => {
     expect(withCondition(typed, "phone", "refurbished").warrantyMonths).toBe("24");
   });
 
-  it("permet de saisir plusieurs unités pour une même affaire", () => {
+  it("permet de saisir plusieurs unités pour une même occasion", () => {
     const changed = withCondition({ ...emptyVariant("new", "phone"), stock: "4" }, "phone", "refurbished");
     expect(changed.stock).toBe("4");
     expect(sent(deal({ stock: "4" })).stock).toBe(4);
@@ -162,7 +162,7 @@ describe("Origine et référence", () => {
   });
 });
 
-describe("missingBox : la boîte d'une affaire importée, à corriger", () => {
+describe("missingBox : la boîte d'une occasion importée, à corriger", () => {
   const imported = (condition: "new" | "refurbished") =>
     draftFromProduct({
       name: "Dell Latitude 5440",
@@ -197,13 +197,13 @@ describe("missingBox : la boîte d'une affaire importée, à corriger", () => {
       ],
     } as unknown as AdminProduct).variants[0];
 
-  it("signale une affaire dont l'annonce ne disait rien de la boîte", () => {
+  it("signale une occasion dont l'annonce ne disait rien de la boîte", () => {
     const variant = imported("refurbished");
     expect(variant).toMatchObject({ withBox: null, warrantyMonths: "3", origin: "Europe", reference: "41240" });
     expect(missingBox(variant)).toBe(true);
   });
 
-  it("ne demande rien pour un neuf scellé, ni pour une affaire dont la boîte est choisie", () => {
+  it("ne demande rien pour un neuf scellé, ni pour une occasion dont la boîte est choisie", () => {
     expect(missingBox(imported("new"))).toBe(false);
     expect(missingBox(deal({ withBox: false }))).toBe(false);
   });
@@ -243,7 +243,7 @@ describe("unitDraft", () => {
     expect(draft).toMatchObject({ condition: "new", warrantyMonths: "12", stock: "" });
   });
 
-  it("prépare une affaire unique avec sa garantie", () => {
+  it("prépare une occasion unique avec sa garantie", () => {
     expect(unitDraft("phone", "refurbished", "Glacier")).toMatchObject({
       condition: "refurbished",
       stock: "1",

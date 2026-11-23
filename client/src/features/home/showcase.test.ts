@@ -22,7 +22,7 @@ const unit = (sku: string, patch: Partial<Variant> = {}): Variant => ({
 
 const gift = { sku: "CHG", name: "Chargeur", options: {}, price: 2500, quantity: 1, image: null, available: true };
 
-describe("showcaseUnit : l'affaire montrée en vitrine sur l'accueil", () => {
+describe("showcaseUnit : l'occasion montrée en vitrine sur l'accueil", () => {
   it("préfère une fiche complète (note, batterie, boîte) avec un article offert et sans limitation", () => {
     const variants = [
       unit("IMPORTEE", { grade: null, batteryHealth: null, withBox: null, gifts: [gift] }),
@@ -43,7 +43,7 @@ describe("showcaseUnit : l'affaire montrée en vitrine sur l'accueil", () => {
     expect(showcaseUnit(variants)?.sku).toBe("IMPORTEE");
   });
 
-  it("ignore les neufs scellés et ne renvoie rien sans affaire", () => {
+  it("ignore les neufs scellés et ne renvoie rien sans occasion", () => {
     expect(showcaseUnit([unit("NEUF", { condition: "new" })])).toBeNull();
   });
 });

@@ -364,7 +364,7 @@ export default function CheckoutForm({ user }: { user: User | null }) {
         {needsLimitations ? (
           <section aria-labelledby="limits" className="space-y-3 rounded-lg border border-red bg-red-soft p-4">
             <h2 id="limits" className="text-lg text-red">
-              Limitations des affaires
+              Limitations des occasions
             </h2>
             <ul className="list-disc space-y-1 pl-5 text-sm">
               {preview.limitations.map((item) => (
@@ -375,7 +375,7 @@ export default function CheckoutForm({ user }: { user: User | null }) {
             </ul>
             <label className="flex items-start gap-3 text-sm font-semibold">
               <input type="checkbox" {...register("acceptLimitations")} className="mt-1 size-5 accent-[var(--red)]" />
-              J&apos;ai compris les limitations des affaires de ma commande.
+              J&apos;ai compris les limitations des occasions de ma commande.
             </label>
             {errors.acceptLimitations ? <p className="field-error">{errors.acceptLimitations.message}</p> : null}
           </section>

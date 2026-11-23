@@ -91,7 +91,7 @@ export default function DashboardPage() {
           { label: "Encaissé aujourd'hui", value: formatPrice(cash.cashedToday), hint: "tous moyens de paiement" },
           { label: "Ventes du jour", value: formatPrice(stats.revenueToday), hint: `${stats.ordersToday} commande(s), hors réservations` },
           { label: "Ventes du mois", value: formatPrice(stats.revenueMonth), hint: "hors annulations et réservations" },
-          { label: "Affaires en stock", value: String(stats.refurbishedAvailable), hint: `${stats.refurbishedSold} vendues depuis le début` },
+          { label: "Occasions en stock", value: String(stats.refurbishedAvailable), hint: `${stats.refurbishedSold} vendues depuis le début` },
         ].map((item) => (
           <div key={item.label} className="card p-3 sm:p-4">
             <dt className="text-sm text-ink-muted">{item.label}</dt>

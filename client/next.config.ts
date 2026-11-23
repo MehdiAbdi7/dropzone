@@ -35,7 +35,14 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/produits/:slug/reconditionne",
-        destination: "/produits/:slug/affaire",
+        destination: "/produits/:slug/occasion",
+        permanent: true,
+      },
+      // « Affaire » renommé « Occasion » le 23/11 : les anciens liens (stories, favoris) arrivent au bon endroit, avec
+      // leur `?couleur=`.
+      {
+        source: "/produits/:slug/affaire",
+        destination: "/produits/:slug/occasion",
         permanent: true,
       },
     ];

@@ -62,7 +62,7 @@ export default function ConditionSheet({
     <section className="space-y-5 bg-red-soft/50 p-4 sm:p-5">
       <SectionHeading
         number={number}
-        title="Fiche d’état de l’affaire"
+        title="Fiche d’état de l’occasion"
         description="Détaille l'état réel et le contenu de l'appareil."
       />
       <div className="grid gap-4 rounded-lg border border-line bg-surface p-4 sm:grid-cols-2">

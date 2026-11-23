@@ -165,7 +165,7 @@ export default function CatalogAccessoryTypePage() {
                           }}
                         >
                           Le produit, ses photos et ses variantes disparaissent. Les commandes passées gardent leurs lignes.
-                          S&apos;il était offert avec une affaire, il n&apos;y est plus offert.
+                          S&apos;il était offert avec une occasion, il n&apos;y est plus offert.
                         </ConfirmDialog>
                       </div>
                     </li>

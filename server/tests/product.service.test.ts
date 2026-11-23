@@ -84,7 +84,7 @@ describe("buildConditionReport", () => {
     expect(buildConditionReport(sealed)).toBeNull();
   });
 
-  it("résume une affaire sans boîte, avec l'origine de chaque pièce changée", () => {
+  it("résume une occasion sans boîte, avec l'origine de chaque pièce changée", () => {
     const report = buildConditionReport({
       ...deal,
       grade: 9,

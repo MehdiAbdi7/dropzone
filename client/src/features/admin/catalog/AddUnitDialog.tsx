@@ -49,7 +49,7 @@ export default function AddUnitDialog({
     }
   }
 
-  const title = condition === "refurbished" ? `Ajouter une affaire, ${color}` : `Ajouter un neuf scellé, ${color}`;
+  const title = condition === "refurbished" ? `Ajouter une occasion, ${color}` : `Ajouter un neuf scellé, ${color}`;
   return (
     <EditDialog open={condition !== null} title={title} onClose={close} closeLabel="Annuler">
       {current ? (

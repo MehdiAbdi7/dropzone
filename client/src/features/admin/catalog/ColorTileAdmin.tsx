@@ -33,7 +33,7 @@ export default function ColorTileAdmin({
       <p className="text-center text-sm text-ink-muted">
         {empty
           ? "Rien en stock"
-          : `${newStock} neuf${newStock > 1 ? "s" : ""} · ${refurbishedCount} affaire${refurbishedCount > 1 ? "s" : ""}`}
+          : `${newStock} neuf${newStock > 1 ? "s" : ""} · ${refurbishedCount} occasion${refurbishedCount > 1 ? "s" : ""}`}
       </p>
     </Link>
   );

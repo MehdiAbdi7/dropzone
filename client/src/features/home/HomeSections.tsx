@@ -58,7 +58,7 @@ export function DealsBanner({ stage }: { stage: ReactNode }) {
       <div className="brand-dark hero-glow relative grid items-center gap-6 overflow-hidden rounded-[var(--radius-block)] border border-line px-6 py-8 sm:px-10 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] md:py-6">
         <div className="relative z-10 space-y-4 text-center md:text-left">
           <p className="text-sm font-bold tracking-[0.14em] text-red uppercase">
-            Les affaires du moment
+            Les occasions du moment
           </p>
           <h2
             id="deals-title"
@@ -69,11 +69,11 @@ export function DealsBanner({ stage }: { stage: ReactNode }) {
           </h2>
           <p className="mx-auto max-w-md text-ink-muted md:mx-0">
             Note, batterie, pièces d&apos;origine ou compatibles, avec ou sans
-            boîte : chaque affaire a sa radiographie, et certaines ont des
+            boîte : chaque occasion a sa radiographie, et certaines ont des
             accessoires offerts.
           </p>
           <Link href="/boutique" className="btn btn-primary">
-            Voir les affaires
+            Voir les occasions
             <ArrowRightIcon size={18} />
           </Link>
         </div>
@@ -134,7 +134,7 @@ export async function AffairShowcase() {
               href={`/produits/${showcase.slug}`}
               className="font-semibold text-ink underline"
             >
-              {showcase.name} en affaire
+              {showcase.name} d&apos;occasion
             </Link>
           </p>
           <ConditionReport
@@ -165,7 +165,7 @@ export function AffairSheet({ example }: { example: ReactNode | null }) {
         <div className="flex items-center justify-center gap-3">
           <span className="rule-gradient w-6 sm:w-16" aria-hidden="true" />
           <h2 id="families-title" className="text-2xl sm:text-3xl">
-            Ce que dit la fiche d&apos;une affaire
+            Ce que dit la fiche d&apos;une occasion
           </h2>
           <span className="rule-gradient w-6 -scale-x-100 sm:w-16" aria-hidden="true" />
         </div>

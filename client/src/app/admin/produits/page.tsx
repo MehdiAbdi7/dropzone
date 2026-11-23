@@ -222,7 +222,7 @@ export default function AdminProductsPage() {
                   </span>
                   <span className="mt-1 block truncate text-xs text-ink-muted">{product.category.name}</span>
                   <span className="mt-1 block text-xs text-ink-muted">
-                    {product.newStock} neuf{product.newStock > 1 ? "s" : ""} · {product.refurbishedAvailable} affaire
+                    {product.newStock} neuf{product.newStock > 1 ? "s" : ""} · {product.refurbishedAvailable} occasion
                     {product.refurbishedAvailable > 1 ? "s" : ""}
                   </span>
                   <span className="mt-1 block text-sm font-semibold">
@@ -243,7 +243,7 @@ export default function AdminProductsPage() {
                 <th scope="col">Catégorie</th>
                 <th scope="col">Statut</th>
                 <th scope="col">Neufs en stock</th>
-                <th scope="col">Affaires</th>
+                <th scope="col">Occasions</th>
                 <th scope="col">Prix neuf</th>
               </tr>
             </thead>

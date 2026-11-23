@@ -111,7 +111,7 @@ export default function SeriesModelRow({
                 </p>
               </div>
               <div className="rounded-lg border border-red/15 bg-red-soft/40 px-2.5 py-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-red">Affaires</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-red">Occasions</p>
                 <p className="mt-0.5 text-sm font-bold text-red">
                   {product.dealCount} <span className="font-medium">{product.dealCount > 1 ? "disponibles" : "disponible"}</span>
                 </p>

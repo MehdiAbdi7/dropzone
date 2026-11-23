@@ -53,12 +53,12 @@ export default function ShopPicker({
 
   function pick(hit: VariantHit) {
     onPick?.(hit);
-    setAdded({ sku: hit.sku, name: `${hit.productName}${hit.condition === "new" ? "" : " (affaire)"}` });
+    setAdded({ sku: hit.sku, name: `${hit.productName}${hit.condition === "new" ? "" : " (occasion)"}` });
   }
   // Le « − » d'une carte : le message du haut dit ce qui reste dans le ticket, ou « retiré ».
   function remove(hit: VariantHit) {
     onRemove?.(hit);
-    setAdded({ sku: hit.sku, name: `${hit.productName}${hit.condition === "new" ? "" : " (affaire)"}` });
+    setAdded({ sku: hit.sku, name: `${hit.productName}${hit.condition === "new" ? "" : " (occasion)"}` });
   }
   const onRemoveCard = onRemove ? remove : undefined;
 
@@ -288,7 +288,7 @@ function Models({
               <span className={`text-sm leading-snug font-semibold ${available ? "" : "line-through"}`}>{model.name}</span>
               <span className="mt-auto space-y-0.5 text-xs text-ink-muted">
                 {model.newFrom !== null ? <span className="block">Neuf dès {formatPrice(model.newFrom)}</span> : null}
-                {model.dealFrom !== null ? <span className="block">Affaire dès {formatPrice(model.dealFrom)}</span> : null}
+                {model.dealFrom !== null ? <span className="block">Occasion dès {formatPrice(model.dealFrom)}</span> : null}
               </span>
             </button>
           </li>

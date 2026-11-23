@@ -76,7 +76,7 @@ describe("GET /products", () => {
     expect(response.body.pagination).toEqual({ page: 1, limit: 12, total: 3, pages: 1 });
   });
 
-  it("filtre les affaires disponibles, sous le nouveau nom comme sous l'ancien", async () => {
+  it("filtre les occasions disponibles, sous le nouveau nom comme sous l'ancien", async () => {
     const response = await request(app).get("/products?condition=affaire");
     expect(response.body.data).toHaveLength(1);
     expect(response.body.data[0]).toMatchObject({
@@ -94,7 +94,7 @@ describe("GET /products", () => {
 
   // La vitrine de l'accueil : une affaire dont la fiche dit vraiment la note et la batterie
   // (les annonces importées n'en disent souvent rien).
-  it("filtre les affaires à fiche complète, note et batterie connues", async () => {
+  it("filtre les occasions à fiche complète, note et batterie connues", async () => {
     // Un modèle à lui : un produit au plus par modèle d'appareil.
     const galaxyModel = await prisma.deviceModel.create({
       data: { brand: "Samsung", name: "Galaxy S24 importé", slug: "samsung-galaxy-s24-importe", kind: "phone" },
@@ -260,8 +260,8 @@ describe("Le parcours de la Boutique", () => {
   });
 });
 
-describe("Neuf scellé et affaires", () => {
-  it("donne la boîte, les pièces compatibles et les détails d'une affaire dans la fiche", async () => {
+describe("Neuf scellé et occasions", () => {
+  it("donne la boîte, les pièces compatibles et les détails d'une occasion dans la fiche", async () => {
     await prisma.productVariant.update({
       where: { sku: "IP-R-DEAL" },
       data: { replacedParts: ["Écran", "Batterie"], compatibleParts: ["Écran"], withBox: true, details: "Comme neuf" },
@@ -287,7 +287,7 @@ describe("Neuf scellé et affaires", () => {
   // Les CHECK des migrations : la base refuse même si le code a un bug.
   // Depuis le vrai catalogue (partie B), une affaire peut ne rien dire de sa boîte
   // (« Boîte non précisée », annonce importée) ; un neuf scellé, jamais.
-  it("la base refuse une boîte sur un neuf scellé, mais accepte une affaire sans boîte connue", async () => {
+  it("la base refuse une boîte sur un neuf scellé, mais accepte une occasion sans boîte connue", async () => {
     await expect(
       prisma.productVariant.update({ where: { sku: "IP-NEW-256" }, data: { withBox: false } }),
     ).rejects.toThrow();

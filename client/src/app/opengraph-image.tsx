@@ -28,7 +28,7 @@ export default function OpengraphImage() {
         </div>
         <div style={{ fontSize: 110, fontWeight: 800, marginTop: 20 }}>{STORE_INFO.name}</div>
         <div style={{ fontSize: 44, marginTop: 16, color: "#e5e5e5" }}>
-          Neuf scellé ou en affaire.
+          Neuf scellé ou d&apos;occasion.
         </div>
         <div style={{ fontSize: 30, marginTop: 48, color: "#a3a3a3" }}>
           Livraison dans les 58 wilayas · Paiement à la livraison

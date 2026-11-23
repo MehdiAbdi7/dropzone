@@ -108,7 +108,7 @@ function SeriesView({ data }: { data: AdminSeriesPage }) {
                 <p className="mt-0.5 text-sm font-bold text-blue-ink">{newStock} en stock</p>
               </div>
               <div className="rounded-lg bg-red-soft/40 px-2.5 py-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-red">Affaires</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-red">Occasions</p>
                 <p className="mt-0.5 text-sm font-bold text-red">{dealCount} disponible{dealCount === 1 ? "" : "s"}</p>
               </div>
             </div>

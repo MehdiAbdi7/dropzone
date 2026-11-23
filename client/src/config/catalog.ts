@@ -115,7 +115,7 @@ export const KIND_LABELS: Record<ProductKind, string> = {
 
 export const CONDITION_LABELS: Record<Condition, string> = {
   new: "Neuf scellé",
-  refurbished: "Affaire",
+  refurbished: "Occasion",
 };
 
 // Les trois familles de la fiche d'état d'une affaire.

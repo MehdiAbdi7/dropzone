@@ -16,14 +16,14 @@ export function pickColor(colors: ProductDetail["colors"], param: string | strin
   return colors.some((color) => color.name === param) ? param : null;
 }
 
-export function colorHref(slug: string, color: string, step?: "neuf" | "affaire"): string {
+export function colorHref(slug: string, color: string, step?: "neuf" | "occasion"): string {
   return `/produits/${slug}${step ? `/${step}` : ""}?couleur=${encodeURIComponent(color)}`;
 }
 
-// Où en est le client sur la page d'un modèle : un appareil qui a des couleurs commence par
-// l'étape Couleur (même avec une seule couleur, comme Neuf / Affaire qu'on ne saute jamais) ;
-// une couleur valide dans l'adresse passe à Neuf scellé ou Affaire. Un modèle sans couleurs
-// et un accessoire vont directement à la suite, comme avant.
+// L'étape Couleur des pages Neuf et Occasion (23/11 : le client choisit d'abord Neuf scellé ou Occasion, sur la page
+// du modèle). Un appareil qui a des couleurs passe par l'étape Couleur (même avec une seule couleur, comme Neuf /
+// Occasion qu'on ne saute jamais) ; une couleur valide dans l'adresse passe aux appareils de cette couleur. Un modèle
+// sans couleurs et un accessoire vont directement à la suite.
 export function productStep(
   product: Pick<ProductDetail, "category" | "colors">,
   couleur: string | string[] | undefined,

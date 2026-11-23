@@ -39,7 +39,7 @@ export const TOP_GUARANTEES: Guarantee[] = [
   },
   {
     icon: <ClipboardCheckIcon />,
-    title: "Affaires décrites",
+    title: "Occasions décrites",
     text: "Note, batterie, pièces et défauts",
   },
 ];

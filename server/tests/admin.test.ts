@@ -73,7 +73,7 @@ describe("Produits", () => {
     expect(response.status).toBe(400);
   });
 
-  it("accepte plusieurs unités d'une même affaire en stock", async () => {
+  it("accepte plusieurs unités d'une même occasion en stock", async () => {
     const response = await admin
       .post("/admin/products")
       .send({ ...body(), variants: [{ ...refurbished, stock: 2 }] });
@@ -109,7 +109,7 @@ describe("Produits", () => {
     expect(response.status).toBe(400);
   });
 
-  it("refuse une affaire sans dire si elle a sa boîte", async () => {
+  it("refuse une occasion sans dire si elle a sa boîte", async () => {
     const response = await admin.post("/admin/products").send({
       ...body(),
       variants: [{ ...refurbished, withBox: null }],
@@ -125,7 +125,7 @@ describe("Produits", () => {
     expect(response.status).toBe(400);
   });
 
-  it("range la boîte, les pièces compatibles et les détails d'une affaire (détails vides = aucun)", async () => {
+  it("range la boîte, les pièces compatibles et les détails d'une occasion (détails vides = aucun)", async () => {
     const created = await admin.post("/admin/products").send({
       ...body(),
       variants: [
@@ -170,7 +170,7 @@ describe("Produits", () => {
 
   // ---------- Le vrai catalogue : garantie, origine, référence ----------
 
-  it("crée une affaire sans note ni batterie, avec sa garantie, son origine et sa référence", async () => {
+  it("crée une occasion sans note ni batterie, avec sa garantie, son origine et sa référence", async () => {
     const created = await admin.post("/admin/products").send({
       ...body(),
       variants: [{ ...refurbished, grade: null, batteryHealth: null, origin: "Europe", reference: "51057" }],

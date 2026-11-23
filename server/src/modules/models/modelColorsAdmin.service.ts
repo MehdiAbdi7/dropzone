@@ -166,7 +166,7 @@ export async function addUnit(id: number, input: UnitBody, outer?: Tx) {
         data: {
           name: model.name,
           slug: await uniqueSlug(model.name),
-          description: `${model.name} chez DropZone : neuf scellé ou affaire testée, garantie et livraison dans 58 wilayas.`,
+          description: `${model.name} chez DropZone : neuf scellé ou d'occasion testé, garantie et livraison dans 58 wilayas.`,
           categoryId: series.brand.categoryId,
           deviceModelId: model.id,
           brandId: series.brandId,

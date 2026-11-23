@@ -74,8 +74,8 @@ describe("colorHref", () => {
     expect(colorHref("iphone-17-pro", "Orange cosmique", "neuf")).toBe(
       "/produits/iphone-17-pro/neuf?couleur=Orange%20cosmique",
     );
-    expect(colorHref("iphone-8", "(PRODUCT)RED", "affaire")).toBe(
-      "/produits/iphone-8/affaire?couleur=(PRODUCT)RED",
+    expect(colorHref("iphone-8", "(PRODUCT)RED", "occasion")).toBe(
+      "/produits/iphone-8/occasion?couleur=(PRODUCT)RED",
     );
   });
 });
@@ -93,7 +93,7 @@ describe("productStep", () => {
     ).toEqual({ kind: "colors" });
   });
 
-  it("passe à Neuf ou Affaire avec une couleur du modèle", () => {
+  it("passe au choix du neuf avec une couleur du modèle", () => {
     expect(
       productStep(product("phone", ["Noir", "Glacier"]), "Glacier"),
     ).toEqual({ kind: "conditions", color: "Glacier" });

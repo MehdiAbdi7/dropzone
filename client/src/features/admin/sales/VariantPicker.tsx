@@ -22,7 +22,7 @@ type ConditionFilter = "new" | "refurbished" | undefined;
 const CONDITION_FILTERS: { value: ConditionFilter; label: string }[] = [
   { value: undefined, label: "Tous les états" },
   { value: "new", label: "Neuf" },
-  { value: "refurbished", label: "Affaire" },
+  { value: "refurbished", label: "Occasion" },
 ];
 
 export default function VariantPicker({

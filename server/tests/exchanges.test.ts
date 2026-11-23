@@ -113,7 +113,7 @@ describe("POST /admin/exchanges", () => {
     expect(await stockOf("IP-NEW-256")).toBe(before);
   });
 
-  it("refuse un modèle repris qui n'a ni fiche ni série (l'affaire ne pourrait pas être publiée)", async () => {
+  it("refuse un modèle repris qui n'a ni fiche ni série (l'occasion ne pourrait pas être publiée)", async () => {
     const { agent } = await counter();
     const response = await agent.post("/admin/exchanges").send(exchange({ tradeIn: tradeIn({ deviceModelId: catalog.galaxy.id }) }));
     expect(response.status).toBe(400);
@@ -188,7 +188,7 @@ describe("Les reprises à mettre en vente", () => {
     expect(await prisma.productVariant.count({ where: { sku: { startsWith: "REP-" } } })).toBe(0);
   });
 
-  it("la mise en vente crée l'affaire dans la fiche du modèle, au prix de revente, prix d'achat = prix de reprise", async () => {
+  it("la mise en vente crée l'occasion dans la fiche du modèle, au prix de revente, prix d'achat = prix de reprise", async () => {
     const agent = await makeExchange();
     const [pending] = (await agent.get("/admin/trade-ins")).body.data;
     const response = await agent.post(`/admin/trade-ins/${pending.id}/publish`).send({ price: 175_000 });

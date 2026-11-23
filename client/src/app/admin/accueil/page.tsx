@@ -89,7 +89,7 @@ function HomeSection() {
         </li>
         <li>
           <PersonalizationCard
-            title="Le socle du bandeau des affaires"
+            title="Le socle du bandeau des occasions"
             meta={count(photos.deal)}
             preview={<div className="brand-dark absolute inset-0"><DeviceStage id="card-deal" devices={dealDevices(photos)} /></div>}
             onOpen={() => setOpen("deal")}
@@ -108,11 +108,11 @@ function HomeSection() {
           labels={photos.labels.hero}
         />
       </EditDialog>
-      <EditDialog open={open === "deal"} title="Le socle du bandeau des affaires" onClose={() => setOpen(null)}>
+      <EditDialog open={open === "deal"} title="Le socle du bandeau des occasions" onClose={() => setOpen(null)}>
         <p className="text-sm text-ink-muted">{STAGE_HELP}</p>
         <StageSection
           stage="deal"
-          hint="Affiché seulement quand une affaire est en stock. Un emplacement nommé vide garde son dessin (en transparence ici)."
+          hint="Affiché seulement quand une occasion est en stock. Un emplacement nommé vide garde son dessin (en transparence ici)."
           editor={<DealEditor photos={photos} />}
           named={DEAL_SLOTS.map(({ slot }) => slot)}
           photos={photos.deal}

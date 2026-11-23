@@ -56,7 +56,7 @@ export function tradeInProblem(draft: TradeInDraft): string | null {
   }
   if (missingBox(draft.variant)) return "Dites si le téléphone repris a sa boîte d'origine.";
   if (draft.variant.warrantyMonths.trim() === "" || invalidWarranty(draft.variant)) {
-    return "Indiquez la garantie de l'affaire, de 1 à 36 mois.";
+    return "Indiquez la garantie de l'occasion, de 1 à 36 mois.";
   }
   const unknownParts = missingPartOrigins(draft.variant);
   if (unknownParts.length > 0) {

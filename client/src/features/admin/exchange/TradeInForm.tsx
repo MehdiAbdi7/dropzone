@@ -50,7 +50,7 @@ export default function TradeInForm({
       <legend className="sr-only">Le téléphone du client</legend>
       <div className="divide-y divide-line">
         <section className="space-y-4 p-4 sm:p-5">
-          <SectionHeading number="01" title="Son appareil" description="Un modèle de notre catalogue : l'affaire sera mise en vente sous lui." />
+          <SectionHeading number="01" title="Son appareil" description="Un modèle de notre catalogue : l'occasion sera mise en vente sous lui." />
           <fieldset>
             <legend className="label">Sorte d&apos;appareil</legend>
             <div className="flex flex-wrap gap-2">
@@ -122,7 +122,7 @@ export default function TradeInForm({
             <SectionHeading
               number="02"
               title="Remise en état"
-              description="Batterie neuve, écran changé… : ce que cela a coûté s'ajoute au prix d'achat de l'affaire."
+              description="Batterie neuve, écran changé… : ce que cela a coûté s'ajoute au prix d'achat de l'occasion."
             />
             <p className="text-sm">Repris à {formatPrice(price)} (ce prix ne change pas).</p>
             <Field id={id("repair")} label="Frais de remise en état (DA)" hint="Laissez vide s'il n'y en a pas.">
@@ -142,7 +142,7 @@ export default function TradeInForm({
               title="Prix de reprise"
               description="Saisi à la main : c'est le prix que le magasin donne au client pour son téléphone."
             />
-            <Field id={id("price")} label="Prix de reprise (DA)" hint="Il devient le prix d'achat de l'affaire quand elle sera mise en vente.">
+            <Field id={id("price")} label="Prix de reprise (DA)" hint="Il devient le prix d'achat de l'occasion quand elle sera mise en vente.">
               <input
                 id={id("price")}
                 className="input w-full sm:w-64"
@@ -156,7 +156,7 @@ export default function TradeInForm({
         )}
 
         <section className="space-y-4 p-4 sm:p-5">
-          <SectionHeading number={noPrice ? "02" : "03"} title="Garantie et origine" description="Ce que le magasin annoncera quand il revendra cette affaire." />
+          <SectionHeading number={noPrice ? "02" : "03"} title="Garantie et origine" description="Ce que le magasin annoncera quand il revendra cette occasion." />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id={id("warranty")} label="Garantie (1 à 36 mois)">
               <input
