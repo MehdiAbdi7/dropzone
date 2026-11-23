@@ -13,6 +13,7 @@ import StatusCard from "@/features/admin/dashboard/StatusCard";
 import EditDialog from "@/features/admin/products/EditDialog";
 import { formatPrice } from "@/lib/format";
 import { useNow } from "@/lib/useNow";
+import { OpenCashButton } from "@/features/admin/cash/CashDialogContext";
 
 // L'accueil du back-office. Depuis le 14/11, il montre la journée du magasin (caisse, retraits
 // attendus) au lieu du « stock faible » : avec les affaires, beaucoup d'articles sont toujours à
@@ -61,9 +62,9 @@ export default function DashboardPage() {
                 : `Ouverte. Attendu dans le tiroir : ${formatPrice(cash.expectedCash ?? 0)}.`}
           </p>
         </div>
-        <Link href="/admin/caisse" className={`btn ${cash.open ? "btn-secondary" : "btn-primary"}`}>
+        <OpenCashButton className={`btn ${cash.open ? "btn-secondary" : "btn-primary"}`}>
           {!cash.open ? "Ouvrir la journée" : "Voir la caisse"}
-        </Link>
+        </OpenCashButton>
       </section>
 
       {/* Les reprises sont en stock mais PAS en vente : elles attendent le prix de revente de l'admin. */}

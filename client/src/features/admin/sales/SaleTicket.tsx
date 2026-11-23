@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from "react";
 import { CONDITION_LABELS, PAYMENT_METHOD_LABELS } from "@/config/catalog";
 import { useCreateExchangeMutation, type ExchangeDone } from "@/features/admin/api/exchangeApi";
@@ -34,6 +33,7 @@ import {
 } from "./ticket";
 import { buildPhoneOrderBody, phoneOrderProblem, phoneOrderShipping, phoneOrderTotal, type PhoneOrderDraft } from "./phoneOrder";
 import VariantDetailDialog from "./VariantDetailDialog";
+import { OpenCashButton } from "@/features/admin/cash/CashDialogContext";
 
 const METHODS = Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[];
 // Un nombre vide reste vide (NaN) : le ticket le refuse au lieu de l'envoyer comme 0.
@@ -377,9 +377,7 @@ export default function SaleTicket(props: Props) {
           {errorMessage(error).includes("journée de caisse") ? (
             <>
               {" "}
-              <Link href="/admin/caisse" className="underline">
-                Ouvrir la caisse
-              </Link>
+              <OpenCashButton className="underline">Ouvrir la caisse</OpenCashButton>
             </>
           ) : null}
         </p>

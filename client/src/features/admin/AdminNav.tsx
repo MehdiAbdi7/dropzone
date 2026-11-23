@@ -15,8 +15,8 @@ function useActiveKey() {
 }
 
 // Les sections de la barre latérale (AdminSidebar, ordinateur) : le travail de tous les jours. Leurs
-// sous-onglets sont en haut de la page (AdminSubNav). « Voir la boutique », la Caisse, la Personnalisation, les
-// Réglages, le thème et la déconnexion sont dans la barre du haut (AdminTopbar).
+// sous-onglets sont en haut de la page (AdminSubNav). « Voir la boutique », la Caisse (une fenêtre), la Personnalisation,
+// les Réglages, le thème et la déconnexion sont dans la barre du haut (AdminTopbar).
 export default function AdminNav() {
   const activeKey = useActiveKey();
   const role = useAdminRole();
@@ -43,9 +43,9 @@ export default function AdminNav() {
 
 // La barre du bas, sur téléphone et tablette (sous lg), comme une application. Elle dépend du rôle
 // (bottomBarFor, navConfig.ts) : l'admin a Accueil, Ventes, Commandes au milieu (en relief), Catalogue, puis
-// « Plus » avec Historique et Clients ; le responsable a Ventes, Commandes au milieu, Caisse ; le vendeur a
-// Caisse, Ventes au milieu, Réglages. Pour l'admin, la Caisse, la Personnalisation, les Réglages et « Voir la
-// boutique » restent dans le menu ☰ de la barre du haut ; pour les deux autres rôles, la barre porte déjà
+// « Plus » avec Historique et Clients ; le responsable a Ventes, Commandes au milieu, Réparations ; le vendeur a
+// Réparations, Ventes au milieu, Réglages. La Caisse est le bouton de la barre du haut, pour tous. Pour l'admin, la
+// Personnalisation, les Réglages et « Voir la boutique » restent dans le menu ☰ de la barre du haut ; pour les deux autres rôles, la barre porte déjà
 // ce dont ils se servent toute la journée.
 export function AdminBottomNav() {
   const activeKey = activeBottomKey(usePathname());

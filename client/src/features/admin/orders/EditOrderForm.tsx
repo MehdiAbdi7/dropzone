@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { PAYMENT_METHOD_LABELS } from "@/config/catalog";
 import { useEditOrderMutation, type AdminOrder } from "@/features/admin/api/ordersApi";
@@ -10,6 +9,7 @@ import { errorMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/format";
 import type { PaymentMethod } from "@/types/api";
 import { buildEditBody, currentMethod, draftFromItems, draftProblem, draftTotal, type DraftLine } from "./editDraft";
+import { OpenCashButton } from "@/features/admin/cash/CashDialogContext";
 
 const METHODS = Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[];
 
@@ -170,9 +170,7 @@ export default function EditOrderForm({ order, onDone }: { order: AdminOrder; on
           {errorMessage(error).includes("journée de caisse") ? (
             <>
               {" "}
-              <Link href="/admin/caisse" className="underline">
-                Ouvrir la caisse
-              </Link>
+              <OpenCashButton className="underline">Ouvrir la caisse</OpenCashButton>
             </>
           ) : null}
         </p>

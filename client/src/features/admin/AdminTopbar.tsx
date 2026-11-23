@@ -6,19 +6,20 @@ import { useEffect, useRef, useState } from "react";
 import { CashIcon, ClipboardCheckIcon, CloseIcon, LogoutIcon, StoreIcon, UsersIcon } from "@/components/ui/icons";
 import Logo from "@/components/ui/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import { useCashTodayQuery } from "@/features/admin/api/cashApi";
 import { useLogoutMutation } from "@/features/auth/authApi";
 import { playTestChime } from "@/lib/orderAlertSound";
 import { useHydrated } from "@/lib/useHydrated";
 import { canAccess, homeFor } from "./access";
+import { useCashDialog } from "./cash/CashDialogContext";
 import { initialsOf, roleLabel, todayLabel } from "./adminIdentity";
 import { useAdminRole } from "./AdminRoleContext";
 import { ACCOUNT_HREF, MENU_SECTIONS, SETTINGS_HREF, isVisibleTo, sectionFor } from "./navConfig";
 
 // La barre du haut du back-office (14/11, refaite le 19/11) : translucide, elle porte le titre de la section
 // affichée (le logo, sur téléphone, où il n'y a pas de barre latérale), « Voir la boutique », le thème, et
-// l'avatar de la personne connectée, qui ouvre le menu : l'état de la caisse (avec un lien pour l'ouvrir ou la
-// fermer), les pages hors du travail de tous les jours, les réglages et la déconnexion.
+// la Caisse (un bouton qui ouvre une fenêtre, comme le thème : on l'ouvre de n'importe quelle page), et l'avatar de
+// la personne connectée, qui ouvre le menu : les pages hors du travail de tous les jours, les réglages et la
+// déconnexion.
 export default function AdminTopbar({ firstName, lastName }: { firstName: string; lastName: string }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -29,9 +30,7 @@ export default function AdminTopbar({ firstName, lastName }: { firstName: string
   const menuRef = useRef<HTMLDivElement>(null);
   // La date n'existe qu'une fois la page montée dans le navigateur (le serveur n'a pas la même heure).
   const today = useHydrated() ? todayLabel(new Date()) : "";
-  // L'état de la caisse ne se lit qu'à l'ouverture du menu : un appel de plus à chaque page, pour une
-  // information que personne ne regarde encore, serait du gaspillage.
-  const { data: cash } = useCashTodayQuery(undefined, { skip: !open });
+  const { openCash } = useCashDialog();
 
   useEffect(() => {
     if (!open) return;
@@ -56,10 +55,6 @@ export default function AdminTopbar({ firstName, lastName }: { firstName: string
     router.refresh();
   }
 
-  const day = cash?.day;
-  const cashText = !cash ? "…" : !day ? "Pas encore ouverte" : day.closedAt ? "Fermée pour aujourd'hui" : "Ouverte";
-  const cashAction = !day ? "Ouvrir la caisse" : day.closedAt ? "Voir la caisse" : "Fermer la caisse";
-
   return (
     <header className="admin-topbar sticky top-0 z-40 flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
       {/* Sur ordinateur, la barre latérale porte le logo : ici, un bonjour et la date du jour (la page affiche déjà son
@@ -79,6 +74,12 @@ export default function AdminTopbar({ firstName, lastName }: { firstName: string
           <span className="hidden sm:inline">Voir la boutique</span>
           <span className="sm:hidden">Boutique</span>
         </Link>
+        {/* La Caisse, pour ceux qui y ont droit (le technicien non) : une fenêtre, pas une page. */}
+        {canAccess(role, "/admin/caisse") ? (
+          <button type="button" className="icon-btn" aria-label="Caisse" title="Caisse" onClick={openCash}>
+            <CashIcon size={18} />
+          </button>
+        ) : null}
         <ThemeToggle />
         <div ref={menuRef} className="relative">
           <button
@@ -109,24 +110,7 @@ export default function AdminTopbar({ firstName, lastName }: { firstName: string
                   <span className="block truncate text-xs text-ink-muted">{roleLabel(role)}</span>
                 </span>
               </div>
-              {/* La Caisse : l'état du jour et un lien pour l'ouvrir, la fermer ou la voir. */}
-              <Link
-                role="menuitem"
-                href="/admin/caisse"
-                aria-current={sectionFor(pathname)?.key === "caisse" ? "page" : undefined}
-                onClick={() => setOpen(false)}
-                className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm hover:bg-surface-2"
-              >
-                <span className="flex items-center gap-2.5">
-                  <CashIcon size={18} />
-                  <span>
-                    <span className="block font-semibold">Caisse</span>
-                    <span className="block text-xs text-ink-muted">{cashText}</span>
-                  </span>
-                </span>
-                <span className="text-xs font-semibold text-blue-ink underline">{cash ? cashAction : ""}</span>
-              </Link>
-              {MENU_SECTIONS.filter((section) => section.key !== "caisse" && isVisibleTo(role)(section)).map(({ key, href, label, icon: SectionIcon }) => (
+              {MENU_SECTIONS.filter(isVisibleTo(role)).map(({ key, href, label, icon: SectionIcon }) => (
                 <Link
                   key={key}
                   role="menuitem"

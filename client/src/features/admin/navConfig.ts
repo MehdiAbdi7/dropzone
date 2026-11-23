@@ -1,6 +1,5 @@
 import type { ComponentType } from "react";
 import {
-  CashIcon,
   ClipboardCheckIcon,
   DocumentIcon,
   GridIcon,
@@ -18,7 +17,8 @@ import { canAccess } from "./access";
 // décrit ; la barre latérale, la barre du bas, le menu ☰ et les sous-onglets le lisent. Les pages
 // gardent leur adresse : rien ne casse, les favoris et les liens du tableau de bord continuent de marcher.
 // Chaque section est affichée à UN seul endroit : la barre latérale et la barre du bas pour le travail
-// de tous les jours, le menu ☰ de la barre du haut pour la Caisse et la Personnalisation.
+// de tous les jours, le menu ☰ de la barre du haut pour la Personnalisation et les Comptes. La Caisse n'est plus une
+// section (23/11) : c'est une fenêtre qu'on ouvre de partout avec le bouton de la barre du haut (CashDialogContext).
 export type NavTab = {
   label: string;
   href: string;
@@ -47,9 +47,9 @@ const anyUnder = (path: string, prefixes: string[]) => prefixes.some((prefix) =>
 
 export const SECTIONS: NavSection[] = [
   { key: "accueil", label: "Tableau de bord", short: "Accueil", icon: HomeIcon, href: "/admin", primary: true, owns: (path) => path === "/admin" },
-  // La vente au magasin et la caisse sont deux pages à part (demande de Mehdi du 14/11) : on y passe
-  // toute la journée, au comptoir. Une vente au magasin n'a pas d'étapes : elle est encaissée sur place
-  // et se retrouve dans l'Historique (onglet Magasin), où l'admin peut la modifier ou l'annuler.
+  // La vente au magasin est une page à part (demande de Mehdi du 14/11) : on y passe toute la journée, au
+  // comptoir. Une vente au magasin n'a pas d'étapes : elle est encaissée sur place et se retrouve dans
+  // l'Historique (onglet Magasin), où l'admin peut la modifier ou l'annuler.
   // La vente au magasin et l'échange (lot 5) sont les deux gestes du comptoir : une section, deux onglets.
   {
     key: "vente",
@@ -64,7 +64,6 @@ export const SECTIONS: NavSection[] = [
       { label: "Échange", href: "/admin/echange", match: (path) => under(path, "/admin/echange") },
     ],
   },
-  { key: "caisse", label: "Caisse", icon: CashIcon, href: "/admin/caisse", inMenu: true, owns: (path) => under(path, "/admin/caisse") },
   {
     key: "commandes",
     label: "Commandes",
@@ -130,7 +129,7 @@ export const SETTINGS_HREF = "/admin/reglages";
 // Mon compte (15/11) : nom, téléphone, email de connexion et mot de passe de celui qui est connecté.
 export const ACCOUNT_HREF = "/admin/compte";
 
-// Qui s'affiche où : le menu ☰ (Caisse, Personnalisation), la barre latérale (tout le reste), la barre
+// Qui s'affiche où : le menu ☰ (Personnalisation, Comptes), la barre latérale (tout le reste), la barre
 // du bas du téléphone (Accueil, Ventes, Commandes au milieu, Catalogue) et son panneau « Plus » (ce qui
 // reste : Historique, Clients).
 export const MENU_SECTIONS = SECTIONS.filter((section) => section.inMenu);
@@ -154,8 +153,8 @@ const SETTINGS_ITEM: BottomItem = { key: "reglages", label: "Réglages", href: S
 
 export function bottomBarFor(role: Role): { items: BottomItem[]; featured: string; more: NavSection[] } {
   // L'atelier (étape 5) : le vendeur et le responsable y créent et rendent les réparations, sur téléphone aussi.
-  if (role === "seller") return { items: [itemOf("caisse"), itemOf("atelier"), itemOf("vente"), SETTINGS_ITEM], featured: "vente", more: [] };
-  if (role === "order_manager") return { items: [itemOf("vente"), itemOf("caisse"), itemOf("commandes"), itemOf("atelier")], featured: "commandes", more: [] };
+  if (role === "seller") return { items: [itemOf("atelier"), itemOf("vente"), SETTINGS_ITEM], featured: "vente", more: [] };
+  if (role === "order_manager") return { items: [itemOf("vente"), itemOf("commandes"), itemOf("atelier")], featured: "commandes", more: [] };
   // Le technicien (étape 5) ne voit que l'atelier : une seule entrée, qui s'ouvre sur les réparations.
   if (role === "technician") return { items: [itemOf("atelier")], featured: "atelier", more: [] };
   // L'admin garde la barre d'avant : quatre entrées, « Plus » pour le reste.
