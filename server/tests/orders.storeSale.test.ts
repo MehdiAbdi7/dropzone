@@ -1,4 +1,6 @@
+import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import app from "../src/app.js";
 import { prisma } from "../src/config/db.js";
 import { createCatalog, loginAs, previewThenOrder, resetDb } from "./helpers.js";
 
@@ -234,5 +236,28 @@ describe("une commande du site", () => {
       ["IP-R-DEAL", 185_000],
       ["CHG-20W", null],
     ]);
+  });
+});
+
+// Le suivi (23/11) est pour la livraison, la réservation et la réparation : un client qui achète au magasin repart
+// avec son bon, il n'a rien à suivre. Même réponse qu'un numéro inconnu.
+describe("POST /orders/track, commandes du magasin", () => {
+  it("ne retrouve pas une vente au magasin", async () => {
+    const { agent } = await counter();
+    await agent.post("/admin/sales").send(sale()).expect(201);
+    const order = await prisma.order.findFirstOrThrow();
+
+    const found = await request(app).post("/orders/track").send({ number: order.number, phone: "0555123456" });
+    expect(found.status).toBe(404);
+  });
+
+  it("ni un échange", async () => {
+    const { agent } = await counter();
+    await agent.post("/admin/sales").send(sale()).expect(201);
+    const order = await prisma.order.findFirstOrThrow();
+    await prisma.order.update({ where: { id: order.id }, data: { type: "exchange" } });
+
+    const found = await request(app).post("/orders/track").send({ number: order.number, phone: "0555123456" });
+    expect(found.status).toBe(404);
   });
 });

@@ -389,9 +389,12 @@ const orderDetailSelect = {
 } satisfies Prisma.OrderSelect;
 
 // Même réponse que le numéro soit faux ou le téléphone : on ne dit pas lequel.
+// Le suivi est pour ce que le client attend de recevoir ou de retirer plus tard : une livraison ou une réservation.
+// Une vente au magasin ou un échange (23/11) se terminent au comptoir, le client repart avec son bon : rien à suivre,
+// et la réponse est la même qu'un numéro inconnu.
 export async function trackOrder(number: number, phone: string) {
   const order = await prisma.order.findFirst({
-    where: { number, phone },
+    where: { number, phone, type: { in: ["delivery", "pickup"] } },
     select: orderDetailSelect,
   });
   if (!order) {
