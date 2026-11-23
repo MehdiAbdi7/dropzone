@@ -4,7 +4,6 @@ import { useState, type FormEvent } from "react";
 import { useCreateRepairMutation, useWarrantySearchQuery, type WarrantyHit } from "@/features/admin/api/repairsApi";
 import EditDialog from "@/features/admin/products/EditDialog";
 import ShopPicker from "@/features/admin/sales/ShopPicker";
-import type { VariantHit } from "@/features/admin/sales/ticket";
 import { useAdminRole } from "@/features/admin/AdminRoleContext";
 import { errorMessage } from "@/lib/errors";
 import { ClientInputs, DeviceInputs, LaborInput, WindowButton, toLabor, type ClientFields, type DeviceFields } from "./RepairFields";
@@ -121,7 +120,7 @@ function CreateBody({ onCreated }: { onCreated: (id: number) => void }) {
 
       <EditDialog open={window === "device"} title="Appareil" size="sm" onClose={close}>
         <div className="space-y-4">
-          {setsPrice ? <PickFromCatalogue onPick={(hit) => setDevice((current) => ({ ...current, deviceName: hit.productName, deviceColor: colorOf(hit) || current.deviceColor }))} /> : null}
+          {setsPrice ? <PickFromCatalogue onPick={(deviceName, deviceColor) => setDevice((current) => ({ ...current, deviceName, deviceColor }))} /> : null}
           <DeviceInputs value={device} onChange={setDevice} />
         </div>
       </EditDialog>
@@ -153,11 +152,9 @@ function CreateBody({ onCreated }: { onCreated: (id: number) => void }) {
   );
 }
 
-// La couleur d'un appareil choisi dans le catalogue : l'option « Couleur » de sa variante.
-const colorOf = (hit: VariantHit) => Object.entries(hit.options).find(([key]) => /couleur/i.test(key))?.[1] ?? "";
-
-// Remplir le nom de l'appareil depuis le catalogue (la même recherche que la vente). Le texte libre reste possible.
-function PickFromCatalogue({ onPick }: { onPick: (hit: VariantHit) => void }) {
+// Remplir le nom et la couleur de l'appareil depuis le catalogue : le parcours de la vente (catégorie, marque, série,
+// modèle) puis la couleur du modèle, sans états ni stock. Le texte libre reste possible.
+function PickFromCatalogue({ onPick }: { onPick: (deviceName: string, deviceColor: string) => void }) {
   const [open, setOpen] = useState(false);
   return (
     <div>
@@ -170,8 +167,8 @@ function PickFromCatalogue({ onPick }: { onPick: (hit: VariantHit) => void }) {
         onClose={() => setOpen(false)}
       >
         <ShopPicker
-          onPick={(hit) => {
-            onPick(hit);
+          onPickColor={(modelName, color) => {
+            onPick(modelName, color);
             setOpen(false);
           }}
         />

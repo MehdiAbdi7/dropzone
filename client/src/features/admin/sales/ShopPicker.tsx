@@ -28,12 +28,17 @@ type Condition = "new" | "refurbished" | undefined;
 // `quantities` : ce qui est déjà dans le ticket, par SKU (19/11). Chaque carte affiche « ✓ 2 au ticket », un « + »
 // pour ajouter et, avec `onRemove`, un « − » pour retirer un exemplaire : un ajout ne passe plus inaperçu. Le
 // message du haut suit les deux. Sans `quantities` (réparations), la fenêtre garde le message simple.
+// `onPickColor` (réparations, 23/11) : on ne choisit qu'un modèle et sa couleur, sans stock ni état (neuf, affaire) :
+// l'appareil du client n'a rien à voir avec ce qui est en vente. Seuls les appareils sont proposés, sans recherche
+// par mots, et `onPick` n'est pas appelé.
 export default function ShopPicker({
   onPick,
+  onPickColor,
   onRemove,
   quantities,
 }: {
-  onPick: (hit: VariantHit) => void;
+  onPick?: (hit: VariantHit) => void;
+  onPickColor?: (modelName: string, color: string) => void;
   onRemove?: (hit: VariantHit) => void;
   quantities?: Record<string, OnTicket>;
 }) {
@@ -47,7 +52,7 @@ export default function ShopPicker({
   const [added, setAdded] = useState<{ sku: string; name: string } | null>(null);
 
   function pick(hit: VariantHit) {
-    onPick(hit);
+    onPick?.(hit);
     setAdded({ sku: hit.sku, name: `${hit.productName}${hit.condition === "new" ? "" : " (affaire)"}` });
   }
   // Le « − » d'une carte : le message du haut dit ce qui reste dans le ticket, ou « retiré ».
@@ -79,14 +84,16 @@ export default function ShopPicker({
     <div className="space-y-4">
       {/* Collée en haut : le message reste visible même quand la liste des appareils défile. */}
       <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 bg-surface py-1">
-        <div role="group" aria-label="Façon de chercher" className="flex gap-2">
-          <Tab selected={tab === "browse"} onClick={() => setTab("browse")}>
-            Parcourir
-          </Tab>
-          <Tab selected={tab === "search"} onClick={() => setTab("search")}>
-            Rechercher
-          </Tab>
-        </div>
+        {onPickColor ? null : (
+          <div role="group" aria-label="Façon de chercher" className="flex gap-2">
+            <Tab selected={tab === "browse"} onClick={() => setTab("browse")}>
+              Parcourir
+            </Tab>
+            <Tab selected={tab === "search"} onClick={() => setTab("search")}>
+              Rechercher
+            </Tab>
+          </div>
+        )}
         {added ? (
           <p role="status" className="ml-auto rounded-full bg-blue-soft px-3 py-1 text-sm font-semibold">
             {pickedMessage(added.name, added.sku, quantities)}
@@ -115,10 +122,12 @@ export default function ShopPicker({
           ) : null}
 
           {!category ? (
-            <Categories onPick={setCategory} />
+            <Categories onPick={setCategory} devicesOnly={onPickColor !== undefined} />
           ) : !DEVICE_KINDS.includes(category.kind) ? (
             // Les accessoires n'ont pas de séries : la même liste filtrée sur la catégorie.
             <VariantPicker grid initialCategory={category.slug} onPick={pick} onRemove={onRemoveCard} quantities={quantities} />
+          ) : model && series && onPickColor ? (
+            <ModelColors model={model} onPick={(color) => onPickColor(model.name, color)} />
           ) : model && series ? (
             <Variants category={category} model={model} onPick={pick} onRemove={onRemoveCard} quantities={quantities} />
           ) : series && brand ? (
@@ -149,13 +158,14 @@ function Tab({ selected, onClick, children }: { selected: boolean; onClick: () =
 }
 
 // L'étape 1 : les catégories, comme la page /boutique du site.
-function Categories({ onPick }: { onPick: (category: Category) => void }) {
+function Categories({ onPick, devicesOnly }: { onPick: (category: Category) => void; devicesOnly: boolean }) {
   const { data, isError, isLoading } = useShopCategoriesQuery();
   if (isError) return <p role="alert" className="field-error">Les catégories ne répondent pas, réessayez.</p>;
   if (isLoading || !data) return <p className="text-ink-muted">Chargement…</p>;
+  const shown = devicesOnly ? data.filter((category) => DEVICE_KINDS.includes(category.kind)) : data;
   return (
     <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-      {data.map((category) => {
+      {shown.map((category) => {
         const empty = category.productCount === 0;
         return (
           <li key={category.slug} className="flex">
@@ -285,6 +295,29 @@ function Models({
         );
       })}
     </ul>
+  );
+}
+
+// L'étape 4 des réparations : les couleurs officielles du modèle (celles du catalogue, pas celles du stock).
+function ModelColors({ model, onPick }: { model: PosterModel; onPick: (color: string) => void }) {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-semibold">Quelle couleur ?</p>
+      <ul className="flex flex-wrap gap-2">
+        {model.colors.map((color) => (
+          <li key={color}>
+            <button type="button" className="btn px-4 py-2 text-sm" onClick={() => onPick(color)}>
+              {color}
+            </button>
+          </li>
+        ))}
+        <li>
+          <button type="button" className="btn px-4 py-2 text-sm text-ink-muted" onClick={() => onPick("")}>
+            Je ne sais pas
+          </button>
+        </li>
+      </ul>
+    </div>
   );
 }
 
