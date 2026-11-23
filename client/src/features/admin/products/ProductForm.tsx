@@ -1,12 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
-import { CONDITION_LABELS, KIND_LABELS, SPEC_SUGGESTIONS } from "@/config/catalog";
+import { useState, type FormEvent, type ReactNode } from "react";
+import { ClipboardCheckIcon, DocumentIcon, GridIcon } from "@/components/ui/icons";
+import ProductImage from "@/components/ui/ProductImage";
+import { CONDITION_LABELS, SPEC_SUGGESTIONS } from "@/config/catalog";
 import { useBrandsQuery, useCategoriesQuery, useMakersQuery, useModelsQuery, type DeviceModel } from "@/features/admin/api/catalogApi";
 import { useCreateProductMutation, useGiftOptionsQuery, useUploadImageMutation, useUpdateProductMutation } from "@/features/admin/api/productsApi";
 import EditDialog from "./EditDialog";
-import { SectionHeading, SummaryCard, SummaryLine } from "./FormParts";
+import { SheetTile } from "./FormParts";
 import { CategoryFields, InfoFields, SpecsFields } from "./ProductFormDialogs";
 import {
   bodyFromDraft,
@@ -28,15 +30,21 @@ import VariantList from "./VariantList";
 // la catégorie, le modèle, les caractéristiques, puis chaque variante.
 // Un état React unique plutôt que React Hook Form : presque tous les champs sont
 // des listes à cocher maison, pas des <input> que RHF sait brancher seul.
-// Ce fichier garde l'état et l'envoi ; l'affichage est découpé : FormParts (cartes),
+// La page est légère (23/11) : quatre tuiles (Photos, Catégorie et modèle, Fiche, Caractéristiques) qui ouvrent
+// chacune leur fenêtre, puis le neuf scellé et l'occasion dans deux listes séparées.
+// Ce fichier garde l'état et l'envoi ; l'affichage est découpé : FormParts (tuiles),
 // ProductFormDialogs (champs des fenêtres), VariantList, VariantEditor et SaveBar.
 export default function ProductForm({
   productId,
   initial,
   ownSkus = [],
   onSaved,
+  photos,
 }: {
   productId?: number;
+  // Les photos d'un produit existant (la page les gère avec ImageManager) : la tuile et le contenu de sa fenêtre.
+  // Sans elles (création), la fenêtre Photos choisit la photo principale envoyée à la création.
+  photos?: { count: number; cover: string | null; panel: ReactNode };
   initial: ProductDraft;
   ownSkus?: string[];
   // Après une modification, la page relit le produit et recrée le formulaire
@@ -156,6 +164,10 @@ export default function ProductForm({
   const openVariant = typeof open === "string" && open.startsWith("variant:") ? open.slice("variant:".length) : null;
   const editedVariant = draft.variants.find((variant) => variant.key === openVariant);
   const editedIndex = draft.variants.findIndex((variant) => variant.key === openVariant);
+  // Le numéro dans sa propre liste (Neuf scellé ou Occasion) : « Occasion n° 2 », pas « Variante 7 ».
+  const groupIndex = editedVariant
+    ? draft.variants.filter((variant) => variant.condition === editedVariant.condition).findIndex((variant) => variant.key === editedVariant.key)
+    : -1;
 
   function addVariant(condition: "new" | "refurbished") {
     const variant = emptyVariant(condition, kind);
@@ -165,96 +177,47 @@ export default function ProductForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-6" noValidate>
-      {!productId ? (
-        <section className="space-y-4 rounded-xl border border-blue-ink/40 bg-blue-soft/40 p-4 sm:p-5">
-          <SectionHeading
-            number="01"
-            title="Photo du produit"
-            description="Choisis la photo principale maintenant. Elle sera envoyée à la création."
-          />
-          <label className="block rounded-lg border border-dashed border-line bg-surface p-4">
-            <span className="label">Photo principale (JPEG, PNG ou WebP, 5 Mo maximum)</span>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="mt-2 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue file:px-3 file:py-2 file:font-semibold file:text-on-brand"
-              onChange={(event) => setCoverPhoto(event.target.files?.[0] ?? null)}
-            />
-            {coverPhoto ? <span className="mt-2 block truncate text-sm font-semibold">{coverPhoto.name}</span> : null}
-          </label>
-        </section>
-      ) : null}
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <SummaryCard
-          step="02"
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <SheetTile
+          title="Photos"
+          status={
+            photos
+              ? photos.count > 0
+                ? `${photos.count} photo${photos.count > 1 ? "s" : ""}`
+                : "Aucune photo"
+              : (coverPhoto?.name ?? "Photo principale à choisir")
+          }
+          state={(photos ? photos.count > 0 : coverPhoto) ? "done" : "todo"}
+          preview={photos?.cover ? <ProductImage src={photos.cover} alt="" sizes="48px" /> : <GridIcon size={20} />}
+          onClick={() => setOpen("photos")}
+        />
+        <SheetTile
           title="Catégorie et modèle"
-          description="Définit les champs et les options disponibles."
-          status={category && (!isDevice || modelName) ? "Complété" : "À compléter"}
-          complete={Boolean(category && (!isDevice || modelName))}
-          action={kind ? "Modifier" : "Choisir"}
-          onEdit={() => setOpen("category")}
-          className="lg:col-span-2"
-        >
-          {category ? (
-            <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-              <SummaryLine label="Catégorie" value={`${category.name} (${KIND_LABELS[category.kind]})`} />
-              {isDevice ? <SummaryLine label="Modèle" value={modelName ?? "À choisir"} missing={!modelName} /> : null}
-              {kind === "accessory" ? (
-                <SummaryLine label="Compatible avec" value={`${draft.compatibleModelIds.length} modèle(s)`} />
-              ) : null}
-              {kind === "accessory" ? (
-                <>
-                  <SummaryLine label="Type" value={brandName ?? "Sans type"} />
-                  <SummaryLine label="Marque" value={makerName ?? "Sans marque"} />
-                </>
-              ) : (
-                <SummaryLine label="Marque" value={brandName ?? "Sans marque"} />
-              )}
-            </dl>
-          ) : (
-            <p className="text-sm text-ink-muted">Choisis d&apos;abord une catégorie : elle décide du reste de la fiche.</p>
-          )}
-        </SummaryCard>
-
+          status={category ? [category.name, isDevice ? (modelName ?? "modèle à choisir") : (brandName ?? makerName)].filter(Boolean).join(" · ") : "À choisir"}
+          state={category && (!isDevice || modelName) ? "done" : "todo"}
+          preview={<ClipboardCheckIcon size={20} />}
+          onClick={() => setOpen("category")}
+        />
         {kind ? (
           <>
-            <SummaryCard
-              step="03"
+            <SheetTile
               title="Fiche du produit"
-              description="Le nom et le texte visibles dans la boutique."
-              status={draft.name.trim() && draft.description.trim() ? "Complété" : "À compléter"}
-              complete={Boolean(draft.name.trim() && draft.description.trim())}
-              action="Modifier"
-              onEdit={() => setOpen("info")}
-            >
-              <p className="font-semibold">{draft.name || <span className="text-red">Nom à écrire</span>}</p>
-              <p className="line-clamp-3 text-sm text-ink-muted">{draft.description || "Pas encore de description."}</p>
-            </SummaryCard>
-
-            <SummaryCard
-              step="04"
+              status={draft.name.trim() ? (draft.description.trim() ? draft.name : `${draft.name} · description à écrire`) : "Nom à écrire"}
+              state={draft.name.trim() && draft.description.trim() ? "done" : "todo"}
+              preview={<DocumentIcon size={20} />}
+              onClick={() => setOpen("info")}
+            />
+            <SheetTile
               title="Caractéristiques"
-              description="Les informations techniques du modèle."
               status={filledSpecs.length > 0 ? `${filledSpecs.length} renseignée${filledSpecs.length > 1 ? "s" : ""}` : "Facultatif"}
-              complete={filledSpecs.length > 0}
-              action="Modifier"
-              onEdit={() => setOpen("specs")}
-            >
-              {filledSpecs.length > 0 ? (
-                <dl className="space-y-1 text-sm">
-                  {filledSpecs.slice(0, 4).map((row) => (
-                    <SummaryLine key={row.key} label={row.key} value={row.value} />
-                  ))}
-                  {filledSpecs.length > 4 ? <p className="text-ink-muted">et {filledSpecs.length - 4} de plus</p> : null}
-                </dl>
-              ) : (
-                <p className="text-sm text-ink-muted">Aucune caractéristique remplie.</p>
-              )}
-            </SummaryCard>
+              state={filledSpecs.length > 0 ? "done" : "optional"}
+              preview={<GridIcon size={20} />}
+              onClick={() => setOpen("specs")}
+            />
           </>
         ) : null}
       </div>
+      {!kind ? <p className="text-sm text-ink-muted">Choisis d&apos;abord une catégorie : elle décide du reste de la fiche.</p> : null}
 
       {kind ? (
         <VariantList
@@ -264,6 +227,24 @@ export default function ProductForm({
           onEdit={(key) => setOpen(`variant:${key}`)}
         />
       ) : null}
+
+      <EditDialog open={open === "photos"} title="Photos du produit" onClose={() => setOpen(null)}>
+        {photos ? (
+          photos.panel
+        ) : (
+          <label className="block rounded-lg border border-dashed border-line bg-surface p-4">
+            <span className="label">Photo principale (JPEG, PNG ou WebP, 5 Mo maximum)</span>
+            <span className="mb-2 block text-sm text-ink-muted">Elle sera envoyée à la création. Les autres photos s&apos;ajoutent ensuite.</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="mt-2 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue file:px-3 file:py-2 file:font-semibold file:text-on-brand"
+              onChange={(event) => setCoverPhoto(event.target.files?.[0] ?? null)}
+            />
+            {coverPhoto ? <span className="mt-2 block truncate text-sm font-semibold">{coverPhoto.name}</span> : null}
+          </label>
+        )}
+      </EditDialog>
 
       <EditDialog open={open === "category"} title="Catégorie et modèle" onClose={() => setOpen(null)}>
         <CategoryFields
@@ -289,13 +270,13 @@ export default function ProductForm({
 
       <EditDialog
         open={Boolean(editedVariant)}
-        title={editedVariant ? `Variante ${editedIndex + 1} · ${CONDITION_LABELS[editedVariant.condition]}` : "Variante"}
+        title={editedVariant ? `${CONDITION_LABELS[editedVariant.condition]} n° ${groupIndex + 1}` : "Variante"}
         onClose={() => setOpen(null)}
       >
         {editedVariant && kind ? (
           <VariantEditor
             variant={editedVariant}
-            index={editedIndex}
+            index={groupIndex}
             kind={kind}
             canBeRefurbished={isDevice}
             giftOptions={giftOptions}

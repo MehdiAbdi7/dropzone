@@ -31,17 +31,38 @@ export default function EditProductPage() {
       <Link href="/admin/produits" className="text-sm text-blue-ink underline">
         Produits
       </Link>
+      {/* L'en-tête porte aussi la suppression (23/11) : un petit bouton rouge plutôt qu'une grande carte en bas. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl">{product.name}</h1>
-        {product.status === "published" ? (
-          <Link href={`/produits/${product.slug}`} className="btn btn-secondary btn-small" target="_blank">
-            Voir sur la boutique
-          </Link>
-        ) : null}
+        <h1 className="min-w-0 text-2xl sm:text-3xl">{product.name}</h1>
+        <div className="flex flex-wrap gap-2">
+          {product.status === "published" ? (
+            <Link href={`/produits/${product.slug}`} className="btn btn-secondary btn-small" target="_blank">
+              Voir sur la boutique
+            </Link>
+          ) : null}
+          <ConfirmDialog
+            trigger="Supprimer"
+            triggerClassName="btn btn-small border-red text-red hover:bg-red-soft"
+            title={`Supprimer « ${product.name} » ?`}
+            confirmLabel="Supprimer"
+            onConfirm={async () => {
+              try {
+                await deleteProduct(product.id).unwrap();
+                router.push("/admin/produits");
+              } catch {
+                // Affiché sous l'en-tête.
+              }
+            }}
+          >
+            Ses variantes et ses photos seront supprimées. Les commandes passées restent intactes : elles ont recopié le nom, la
+            référence et le prix. Cette action ne se défait pas.
+          </ConfirmDialog>
+        </div>
       </div>
+      {deleteError ? <p className="field-error">{errorMessage(deleteError)}</p> : null}
       {created ? (
         <p role="status" className="rounded-lg border border-blue-ink bg-blue-soft p-3 font-semibold">
-          Produit créé. {photoError ? "La photo n’a pas pu être envoyée ; réessayez ci-dessous." : "Vous pouvez compléter ses photos ci-dessous."}
+          Produit créé. {photoError ? "La photo n’a pas pu être envoyée ; réessayez depuis la tuile Photos." : "Vous pouvez compléter ses photos depuis la tuile Photos."}
         </p>
       ) : null}
 
@@ -51,7 +72,6 @@ export default function EditProductPage() {
         </p>
       ) : null}
 
-      <ImageManager product={product} />
       {/* key : quand les variantes changent (une nouvelle reçoit son id du serveur),
           le formulaire repart des données relues, sinon il recréerait la variante. */}
       <ProductForm
@@ -60,30 +80,9 @@ export default function EditProductPage() {
         initial={draftFromProduct(product)}
         ownSkus={product.variants.map((variant) => variant.sku)}
         onSaved={() => setSavedAt(Date.now())}
+        photos={{ count: product.images.length, cover: product.images[0]?.url ?? null, panel: <ImageManager product={product} /> }}
       />
 
-      <section className="card space-y-3 p-5">
-        <h2 className="text-xl">Supprimer le produit</h2>
-        <p className="text-sm text-ink-muted">
-          Les commandes passées restent intactes : elles ont recopié le nom, la référence et le prix.
-        </p>
-        <ConfirmDialog
-          trigger="Supprimer le produit"
-          title={`Supprimer « ${product.name} » ?`}
-          confirmLabel="Supprimer"
-          onConfirm={async () => {
-            try {
-              await deleteProduct(product.id).unwrap();
-              router.push("/admin/produits");
-            } catch {
-              // Affiché sous le bouton.
-            }
-          }}
-        >
-          Ses variantes et ses photos seront supprimées. Cette action ne se défait pas.
-        </ConfirmDialog>
-        {deleteError ? <p className="field-error">{errorMessage(deleteError)}</p> : null}
-      </section>
     </div>
   );
 }

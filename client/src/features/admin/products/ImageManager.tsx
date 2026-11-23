@@ -4,22 +4,19 @@ import ProductImage from "@/components/ui/ProductImage";
 import { errorMessage } from "@/lib/errors";
 import { useDeleteImageMutation, useUploadImageMutation, type AdminProduct } from "@/features/admin/api/productsApi";
 
-const MAX_IMAGES = 6;
+export const MAX_IMAGES = 6;
 
-// Les photos du produit : envoyées à l'API, qui les range chez Cloudinary.
+// Les photos du produit : envoyées à l'API, qui les range chez Cloudinary. Depuis le 23/11, c'est le contenu de la
+// fenêtre « Photos » de la fiche (la tuile en haut de la page l'ouvre).
 export default function ImageManager({ product }: { product: AdminProduct }) {
   const [upload, { isLoading, error }] = useUploadImageMutation();
   const [remove] = useDeleteImageMutation();
 
   return (
-    <section aria-labelledby="images" className="card space-y-4 p-5">
-      <div className="flex items-start gap-3">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-soft text-xs font-bold text-blue-ink">01</span>
-        <div>
-          <h2 id="images" className="text-xl">Photos du produit ({product.images.length}/{MAX_IMAGES})</h2>
-          <p className="mt-1 text-sm text-ink-muted">La première photo est utilisée comme image principale dans la boutique.</p>
-        </div>
-      </div>
+    <section aria-label="Photos du produit" className="space-y-4">
+      <p className="text-sm text-ink-muted">
+        {product.images.length}/{MAX_IMAGES} photos. La première est l&apos;image principale dans la boutique.
+      </p>
       <ul className="grid grid-cols-3 gap-3 sm:grid-cols-6">
         {product.images.map((image) => (
           <li key={image.id} className="space-y-1">
