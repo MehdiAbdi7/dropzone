@@ -54,10 +54,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <ThemeScript />
       </head>
+      {/* Le bandeau « Démo non officielle » est retiré le 23/11 (demande de Mehdi) : le site reste hors des moteurs de
+          recherche tant que SITE_INDEXABLE n'est pas à true (noindex et robots.txt, config/site.ts). */}
       <body className="flex min-h-full flex-col">
-        <p className="bg-gradient-deep px-4 py-1.5 text-center text-xs font-semibold text-white sm:text-sm">
-          {"Démo non officielle : ce site n'est pas celui de DropZone. Aucune commande n'est livrée."}
-        </p>
         <StoreProvider>
           <ShopPageTransition>{children}</ShopPageTransition>
         </StoreProvider>
