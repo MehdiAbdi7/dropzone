@@ -116,3 +116,22 @@ describe("un cadeau en brouillon", () => {
     expect(options.body.data.map((option: { sku: string }) => option.sku)).not.toContain("CHG-20W");
   });
 });
+
+// Relecture de sécurité (suite) : le même contrôle au niveau du produit de l'accessoire offert. Plus aucun produit n'est
+// en brouillon depuis la migration, mais l'API accepte encore ce statut d'un ancien front.
+describe("un cadeau dont le produit est en brouillon", () => {
+  const productToDraft = (slug: string) => prisma.product.update({ where: { slug }, data: { status: "draft" } });
+
+  it("n'est pas ajouté à la commande de l'appareil", async () => {
+    await productToDraft("chargeur-usb-c-20-w");
+    const preview = await request(app).post("/orders/preview").send({ items: [{ sku: "IP-R-DEAL", quantity: 1 }] });
+    expect(preview.body.data.lines.map((line: { sku: string }) => line.sku)).toEqual(["IP-R-DEAL"]);
+  });
+
+  it("n'est pas proposé comme cadeau dans le back-office", async () => {
+    await productToDraft("chargeur-usb-c-20-w");
+    const { agent } = await loginAs("admin");
+    const options = await agent.get("/admin/gift-options");
+    expect(options.body.data.map((option: { sku: string }) => option.sku)).not.toContain("CHG-20W");
+  });
+});
