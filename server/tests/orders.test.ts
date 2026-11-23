@@ -257,6 +257,28 @@ describe("Suivi et historique", () => {
     expect((await agent.get("/orders/mine/1001")).status).toBe(200);
     expect((await agent.get("/orders/mine/1002")).status).toBe(404);
   });
+
+  // Mon compte en cartes (23/11) : chaque commande montre son type, son premier article (nom et photo) et le nombre
+  // d'articles, sans ouvrir le détail.
+  it("donne le type et le premier article de chaque commande", async () => {
+    const { agent } = await loginAs("customer", "amine@test.dz");
+    await previewThenOrder(
+      [
+        { sku: "COQ-IP15PM", quantity: 1 },
+        { sku: "IP-NEW-256", quantity: 1 },
+      ],
+      {},
+      agent,
+    );
+
+    const mine = await agent.get("/orders/mine");
+    expect(mine.status).toBe(200);
+    const [order] = mine.body.data;
+    expect(order).toMatchObject({ number: 1001, type: "delivery" });
+    expect(order._count.items).toBeGreaterThanOrEqual(2);
+    expect(order.firstItem.name).toEqual(expect.any(String));
+    expect(order.firstItem).toHaveProperty("image");
+  });
 });
 
 // La barre du panier (05/11) : chaque ligne montre la photo de sa couleur quand elle existe.

@@ -403,11 +403,41 @@ export async function trackOrder(number: number, phone: string) {
   return withPickupDay(order);
 }
 
+// La liste de « Mon compte » (cartes du 23/11) : le type et le premier article payant (nom et photo de sa couleur,
+// sinon la première photo du produit) pour reconnaître une commande sans l'ouvrir. `_count` reste pour un front pas
+// encore déployé.
 export async function listMyOrders(userId: number) {
-  return prisma.order.findMany({
+  const orders = await prisma.order.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
-    select: { number: true, status: true, createdAt: true, total: true, _count: { select: { items: true } } },
+    select: {
+      number: true,
+      status: true,
+      type: true,
+      createdAt: true,
+      total: true,
+      _count: { select: { items: true } },
+      items: {
+        where: { isGift: false },
+        orderBy: { id: "asc" },
+        take: 1,
+        select: {
+          name: true,
+          options: true,
+          product: {
+            select: {
+              images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
+              deviceModel: { select: { colorPhotos: { select: { color: true, url: true } } } },
+            },
+          },
+        },
+      },
+    },
+  });
+  return orders.map(({ items, ...order }) => {
+    const first = items[0];
+    const image = first?.product ? (colorPhotoOf({ options: first.options, product: first.product }) ?? first.product.images[0]?.url ?? null) : null;
+    return { ...order, firstItem: first ? { name: first.name, image } : null };
   });
 }
 
