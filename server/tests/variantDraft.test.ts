@@ -99,3 +99,39 @@ describe("le statut d'une variante dans le back-office", () => {
     expect((await request(app).get(`/products/${created.body.data.slug}`)).status).toBe(200);
   });
 });
+
+// Relecture de sécurité du 23/11 : un accessoire offert passé en brouillon ne doit pas sortir à 0 DA avec l'appareil.
+describe("un cadeau en brouillon", () => {
+  it("n'est plus ajouté à la commande de l'appareil, le client en est prévenu", async () => {
+    await toDraft("CHG-20W");
+    const preview = await request(app).post("/orders/preview").send({ items: [{ sku: "IP-R-DEAL", quantity: 1 }] });
+    expect(preview.body.data.lines.map((line: { sku: string }) => line.sku)).toEqual(["IP-R-DEAL"]);
+    expect(preview.body.data.notices.join(" ")).toContain("n'est plus offert");
+  });
+
+  it("n'est plus proposé comme cadeau dans le back-office", async () => {
+    await toDraft("CHG-20W");
+    const { agent } = await loginAs("admin");
+    const options = await agent.get("/admin/gift-options");
+    expect(options.body.data.map((option: { sku: string }) => option.sku)).not.toContain("CHG-20W");
+  });
+});
+
+// Relecture de sécurité (suite) : le même contrôle au niveau du produit de l'accessoire offert. Plus aucun produit n'est
+// en brouillon depuis la migration, mais l'API accepte encore ce statut d'un ancien front.
+describe("un cadeau dont le produit est en brouillon", () => {
+  const productToDraft = (slug: string) => prisma.product.update({ where: { slug }, data: { status: "draft" } });
+
+  it("n'est pas ajouté à la commande de l'appareil", async () => {
+    await productToDraft("chargeur-usb-c-20-w");
+    const preview = await request(app).post("/orders/preview").send({ items: [{ sku: "IP-R-DEAL", quantity: 1 }] });
+    expect(preview.body.data.lines.map((line: { sku: string }) => line.sku)).toEqual(["IP-R-DEAL"]);
+  });
+
+  it("n'est pas proposé comme cadeau dans le back-office", async () => {
+    await productToDraft("chargeur-usb-c-20-w");
+    const { agent } = await loginAs("admin");
+    const options = await agent.get("/admin/gift-options");
+    expect(options.body.data.map((option: { sku: string }) => option.sku)).not.toContain("CHG-20W");
+  });
+});

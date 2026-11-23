@@ -81,7 +81,7 @@ export async function priceCart(db: Tx, items: CartItemInput[], fulfillment: Ful
       gifts: {
         include: {
           giftVariant: {
-            include: { product: { select: { id: true, name: true, slug: true, images: image } } },
+            include: { product: { select: { id: true, name: true, slug: true, status: true, images: image } } },
           },
         },
       },
@@ -139,6 +139,12 @@ export async function priceCart(db: Tx, items: CartItemInput[], fulfillment: Ful
     // le client le voit avant de confirmer.
     for (const gift of variant.gifts) {
       const giftQuantity = gift.quantity * quantity;
+      // Un accessoire offert passé en brouillon (23/11), lui ou son produit, ne sort pas non plus : il n'est vendu
+      // nulle part, même à 0 DA.
+      if (gift.giftVariant.status !== "published" || gift.giftVariant.product.status !== "published") {
+        notices.push(`« ${gift.giftVariant.product.name} » n'est plus offert avec « ${variant.product.name} ».`);
+        continue;
+      }
       if (gift.giftVariant.stock < giftQuantity) {
         notices.push(`« ${gift.giftVariant.product.name} » n'est plus offert avec « ${variant.product.name} » : il est épuisé.`);
         continue;
