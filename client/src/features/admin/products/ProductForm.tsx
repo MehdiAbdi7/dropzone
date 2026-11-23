@@ -22,7 +22,8 @@ import {
   type ProductDraft,
 } from "./productDraft";
 import type { ProductKind } from "@/types/api";
-import SaveBar from "./SaveBar";
+import SaveBar, { WindowFooter } from "./SaveBar";
+import VariantStatusPicker from "./VariantStatusPicker";
 import VariantEditor from "./VariantEditor";
 import VariantList from "./VariantList";
 
@@ -53,6 +54,13 @@ export default function ProductForm({
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState(initial);
+  // Un produit existant s'enregistre fenêtre par fenêtre (23/11) : `saved` est ce que l'API a reçu. Fermer une
+  // fenêtre sans enregistrer y revient ; « Enregistrer » envoie la fiche telle qu'elle est, puis ferme.
+  const isEdit = Boolean(productId);
+  const [saved, setSaved] = useState(initial);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  // La variante dont on confirme le retrait (modification) : retirer une variante l'enlève tout de suite de l'API.
+  const [removing, setRemoving] = useState(false);
   const [missingOrigins, setMissingOrigins] = useState<string[]>([]);
   // Les SKU des affaires importées dont la boîte n'est pas encore choisie.
   const [missingBoxes, setMissingBoxes] = useState<string[]>([]);
@@ -91,6 +99,8 @@ export default function ProductForm({
     setWarrantyKind(kind);
     if (kind) {
       setDraft((current) => fillMissingWarranties(current, kind));
+      // La même chose sur ce qui est enregistré : ce remplissage n'est pas une modification à enregistrer.
+      setSaved((current) => fillMissingWarranties(current, kind));
     }
   }
 
@@ -120,41 +130,83 @@ export default function ProductForm({
     set({ deviceModelId: model.id, name: draft.name || model.name, brandId: maker?.id ?? draft.brandId });
   }
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    // Rien ne part tant qu'une pièce changée n'a pas son origine : pas de valeur par défaut.
-    const missing = [...new Set(draft.variants.flatMap((variant) => missingPartOrigins(variant)))];
-    // Ni une affaire importée dont la boîte n'est pas choisie (« Non précisée, à corriger »).
-    const boxes = draft.variants.filter(missingBox).map((variant) => variant.sku);
-    // Ni une garantie hors de 1 à 36 mois, que l'API refuserait.
-    const warranties = draft.variants.filter(invalidWarranty).map((variant) => variant.sku);
+  // Rien ne part tant qu'une pièce changée n'a pas son origine (pas de valeur par défaut), qu'une affaire importée
+  // n'a pas sa boîte (« Non précisée, à corriger ») ou qu'une garantie sort de 1 à 36 mois (l'API la refuserait).
+  function blocked(next: ProductDraft): boolean {
+    const missing = [...new Set(next.variants.flatMap((variant) => missingPartOrigins(variant)))];
+    const boxes = next.variants.filter(missingBox).map((variant) => variant.sku);
+    const warranties = next.variants.filter(invalidWarranty).map((variant) => variant.sku);
     setMissingOrigins(missing);
     setMissingBoxes(boxes);
     setBadWarranties(warranties);
-    if (missing.length > 0 || boxes.length > 0 || warranties.length > 0) {
-      return;
-    }
-    const body = bodyFromDraft(draft);
+    return missing.length > 0 || boxes.length > 0 || warranties.length > 0;
+  }
+
+  // Modification : la fiche part entière (la route n'a qu'une forme), mais seule la fenêtre ouverte a changé.
+  async function save(next: ProductDraft) {
+    if (!productId || blocked(next)) return;
     try {
-      if (productId) {
-        await updateProduct({ id: productId, body }).unwrap();
-        onSaved?.();
-      } else {
-        const created = await createProduct(body).unwrap();
-        if (coverPhoto) {
-          try {
-            await uploadImage({ id: created.id, file: coverPhoto }).unwrap();
-          } catch {
-            router.push(`/admin/produits/${created.id}?cree=1&photoErreur=1`);
-            return;
-          }
+      await updateProduct({ id: productId, body: bodyFromDraft(next) }).unwrap();
+      setDraft(next);
+      setSaved(next);
+      setRemoving(false);
+      setOpen(null);
+      onSaved?.();
+    } catch {
+      // L'erreur s'affiche dans la fenêtre, au-dessus du bouton.
+    }
+  }
+
+  // Fermer une fenêtre sans enregistrer : en modification, on revient à ce que l'API a reçu.
+  function closeWindow() {
+    if (isEdit) {
+      setDraft(saved);
+      setMissingOrigins([]);
+      setMissingBoxes([]);
+      setBadWarranties([]);
+      updateState.reset();
+    }
+    setRemoving(false);
+    setOpen(null);
+  }
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (isEdit || blocked(draft)) return;
+    try {
+      const created = await createProduct(bodyFromDraft(draft)).unwrap();
+      if (coverPhoto) {
+        try {
+          await uploadImage({ id: created.id, file: coverPhoto }).unwrap();
+        } catch {
+          router.push(`/admin/produits/${created.id}?cree=1&photoErreur=1`);
+          return;
         }
-        router.push(`/admin/produits/${created.id}?cree=1`);
       }
+      router.push(`/admin/produits/${created.id}?cree=1`);
     } catch {
       // Les erreurs s'affichent au-dessus du bouton.
     }
   }
+
+  // Le pied de chaque fenêtre en modification : ce qui bloque, l'erreur de l'API, Annuler et Enregistrer.
+  const footer = (extra?: ReactNode) =>
+    isEdit ? (
+      <WindowFooter
+        missingOrigins={missingOrigins}
+        missingBoxes={missingBoxes}
+        badWarranties={badWarranties}
+        error={updateState.error}
+        isLoading={updateState.isLoading}
+        canSave={dirty}
+        onCancel={closeWindow}
+        onSave={() => save(draft)}
+      >
+        {extra}
+      </WindowFooter>
+    ) : extra ? (
+      <div className="border-t border-line pt-4">{extra}</div>
+    ) : null;
 
   // Les noms lisibles du résumé : la catégorie, le modèle et la marque choisis.
   const modelName = models.find((model) => model.id === draft.deviceModelId)?.name ?? null;
@@ -246,7 +298,7 @@ export default function ProductForm({
         )}
       </EditDialog>
 
-      <EditDialog open={open === "category"} title="Catégorie et modèle" onClose={() => setOpen(null)}>
+      <EditDialog open={open === "category"} title="Catégorie et modèle" onClose={closeWindow} closeLabel={isEdit ? "Annuler" : "Terminé"}>
         <CategoryFields
           draft={draft}
           categories={categories}
@@ -258,20 +310,28 @@ export default function ProductForm({
           onChooseModel={chooseModel}
           set={set}
         />
+        {footer()}
       </EditDialog>
 
-      <EditDialog open={open === "info"} title="Fiche du produit" onClose={() => setOpen(null)}>
+      <EditDialog open={open === "info"} title="Fiche du produit" onClose={closeWindow} closeLabel={isEdit ? "Annuler" : "Terminé"}>
         <InfoFields draft={draft} set={set} />
+        {footer()}
       </EditDialog>
 
-      <EditDialog open={open === "specs"} title="Caractéristiques du modèle" onClose={() => setOpen(null)}>
+      <EditDialog open={open === "specs"} title="Caractéristiques du modèle" onClose={closeWindow} closeLabel={isEdit ? "Annuler" : "Terminé"}>
         <SpecsFields draft={draft} set={set} />
+        {footer()}
       </EditDialog>
 
       <EditDialog
         open={Boolean(editedVariant)}
-        title={editedVariant ? `${CONDITION_LABELS[editedVariant.condition]} n° ${groupIndex + 1}` : "Variante"}
-        onClose={() => setOpen(null)}
+        title={
+          editedVariant
+            ? `${CONDITION_LABELS[editedVariant.condition]} n° ${groupIndex + 1}${editedVariant.status === "draft" ? " · brouillon" : ""}`
+            : "Variante"
+        }
+        onClose={closeWindow}
+        closeLabel={isEdit ? "Annuler" : "Terminé"}
       >
         {editedVariant && kind ? (
           <VariantEditor
@@ -284,6 +344,12 @@ export default function ProductForm({
             modelId={isDevice ? draft.deviceModelId : null}
             onChange={(next) => set({ variants: draft.variants.map((v) => (v.key === editedVariant.key ? next : v)) })}
             onRemove={() => {
+              // Une variante pas encore enregistrée disparaît simplement ; une variante enregistrée demande confirmation,
+              // puis elle est retirée de l'API tout de suite (les commandes passées gardent leur copie).
+              if (isEdit && editedVariant.id) {
+                setRemoving(true);
+                return;
+              }
               set({ variants: draft.variants.filter((v) => v.key !== editedVariant.key) });
               setOpen(null);
             }}
@@ -296,19 +362,46 @@ export default function ProductForm({
             }
           />
         ) : null}
+        {editedVariant
+          ? footer(
+              <>
+                <VariantStatusPicker
+                  status={editedVariant.status}
+                  onChange={(status) => set({ variants: draft.variants.map((v) => (v.key === editedVariant.key ? { ...v, status } : v)) })}
+                />
+                {removing ? (
+                  <div role="alert" className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-red bg-red-soft p-3 text-sm">
+                    <span className="font-semibold text-red">Retirer définitivement cette variante de la fiche ?</span>
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-small"
+                      disabled={updateState.isLoading}
+                      onClick={() => save({ ...draft, variants: saved.variants.filter((v) => v.key !== editedVariant.key) })}
+                    >
+                      Oui, retirer
+                    </button>
+                    <button type="button" className="btn btn-small" onClick={() => setRemoving(false)}>
+                      Non
+                    </button>
+                  </div>
+                ) : null}
+              </>,
+            )
+          : null}
       </EditDialog>
 
-      <SaveBar
-        missingOrigins={missingOrigins}
-        missingBoxes={missingBoxes}
-        badWarranties={badWarranties}
-        error={error}
-        status={draft.status}
-        onStatusChange={(status) => set({ status })}
-        isLoading={isLoading}
-        canSubmit={Boolean(kind)}
-        submitLabel={productId ? "Enregistrer les modifications" : "Créer le produit"}
-      />
+      {/* Création : un seul envoi, en bas. Un produit existant s'enregistre dans chaque fenêtre. */}
+      {!isEdit ? (
+        <SaveBar
+          missingOrigins={missingOrigins}
+          missingBoxes={missingBoxes}
+          badWarranties={badWarranties}
+          error={error}
+          isLoading={isLoading}
+          canSubmit={Boolean(kind)}
+          submitLabel="Créer le produit"
+        />
+      ) : null}
     </form>
   );
 }

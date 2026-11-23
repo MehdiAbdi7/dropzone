@@ -361,8 +361,12 @@ model ProductVariant {
   gifts            VariantGift[] @relation("DealVariant")
   // Les affaires dans lesquelles cette variante est offerte.
   giftedIn         VariantGift[] @relation("GiftVariant")
+  // Brouillon ou publiée (23/11) : une variante en brouillon n'est vendue nulle part et n'entre dans aucun prix ni
+  // stock affiché. Le produit reste visible (« indisponible » sans variante publiée).
+  status           ProductStatus @default(published)
 
   @@index([productId])
+  @@index([status])
   @@index([stockedAt(sort: Desc)])
   @@map("product_variants")
 }

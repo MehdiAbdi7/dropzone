@@ -141,6 +141,8 @@ export const variantSchema = z
     // Le prix d'achat du magasin (14/11), facultatif, jamais montré sur le site.
     purchasePrice: z.number().int().min(0).max(10_000_000).nullable().default(null),
     stock: z.number().int().min(0).max(10_000),
+    // Brouillon ou publiée (23/11) : sans statut, une variante est publiée (anciens envois, imports).
+    status: z.enum(["draft", "published"]).default("published"),
     condition: z.enum(["new", "refurbished"]).default("new"),
     ...sheetFields,
     // La référence interne du magasin (« 51057 »), unique quand elle existe.
@@ -184,7 +186,9 @@ export const productBodySchema = z
     // Un verre incassable va sur tous les téléphones du catalogue (une taille chacun) : 150 au plus.
     compatibleModelIds: z.array(z.number().int().positive()).max(150).default([]),
     specs: labelRecord(120).default({}),
-    status: z.enum(["draft", "published"]).default("draft"),
+    // Le produit est toujours visible depuis le 23/11 : le brouillon se règle sur chaque variante. Le champ reste
+    // accepté pour un ancien front pas encore déployé.
+    status: z.enum(["draft", "published"]).default("published"),
     // La coque MagSafe iPhone a 81 variantes (27 modèles × 3 couleurs, refonte du 12/11).
     variants: z.array(variantSchema).min(1, { error: "Au moins une variante" }).max(120),
   })

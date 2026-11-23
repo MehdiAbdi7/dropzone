@@ -256,8 +256,9 @@ export async function createProduct(input: ProductBody) {
         makerId: input.makerId,
         specs: input.specs,
         status: input.status,
-        minPrice: computeMinPrice(rules.variants),
-        newPrice: computeMinNewPrice(rules.variants),
+        // Les prix affichés ne comptent que les variantes publiées (23/11).
+        minPrice: computeMinPrice(rules.variants.filter((variant) => variant.status === "published")),
+        newPrice: computeMinNewPrice(rules.variants.filter((variant) => variant.status === "published")),
         compatibleModels: { connect: rules.compatibleModelIds.map((id) => ({ id })) },
         variants: {
           create: rules.variants.map((variant) => ({

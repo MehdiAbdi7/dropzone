@@ -5,6 +5,10 @@ import { escapeLike } from "../../utils/escapeLike.js";
 import { paginate, paginationMeta } from "../../utils/pagination.js";
 import type { ProductListQuery } from "./product.schema.js";
 
+// Une variante qu'on peut vendre et montrer (23/11) : publiée. Une variante en brouillon n'est vendue nulle part
+// (boutique, comptoir, téléphone, échange) et n'entre dans aucun prix ni stock affiché.
+export const SELLABLE = { status: "published" } as const satisfies Prisma.ProductVariantWhereInput;
+
 // Les catégories dont les produits ont un modèle d'appareil et peuvent être reconditionnés.
 export const DEVICE_KINDS: ProductKind[] = ["phone", "tablet", "laptop", "watch"];
 
@@ -34,7 +38,7 @@ export async function refreshMinPrice(tx: Tx, productIds: (number | null)[]): Pr
   const ids = [...new Set(productIds.filter((id): id is number => id !== null))].sort((a, b) => a - b);
   for (const id of ids) {
     const variants = await tx.productVariant.findMany({
-      where: { productId: id },
+      where: { productId: id, ...SELLABLE },
       select: { condition: true, price: true, stock: true },
     });
     await tx.product.update({
@@ -143,6 +147,7 @@ async function listArrivalVariants(productWhere: Prisma.ProductWhereInput, query
   }
   const where: Prisma.ProductVariantWhereInput = {
     product: { is: productWhere },
+    ...SELLABLE,
     AND: variantConditions,
   };
   const select = {
@@ -233,18 +238,18 @@ export async function listProducts(query: ProductListQuery) {
   if (query.condition) {
     // « affaire » est le mot du magasin ; « reconditionne », l'ancien, reste accepté.
     const condition: Condition = query.condition === "neuf" ? "new" : "refurbished";
-    filters.push({ variants: { some: { condition, stock: { gt: 0 } } } });
+    filters.push({ variants: { some: { condition, stock: { gt: 0 }, ...SELLABLE } } });
   }
   if (query.appareils) {
     filters.push({ category: { kind: { in: DEVICE_KINDS } } });
   }
   if (query.enstock) {
-    filters.push({ variants: { some: { stock: { gt: 0 } } } });
+    filters.push({ variants: { some: { stock: { gt: 0 }, ...SELLABLE } } });
   }
   if (query.fiche === "complete") {
     filters.push({
       variants: {
-        some: { condition: "refurbished", stock: { gt: 0 }, grade: { not: null }, batteryHealth: { not: null } },
+        some: { condition: "refurbished", stock: { gt: 0 }, grade: { not: null }, batteryHealth: { not: null }, ...SELLABLE },
       },
     });
   }
@@ -271,7 +276,7 @@ export async function listProducts(query: ProductListQuery) {
     deviceModel: { select: { brand: true, releaseYear: true } },
     brand: { select: { name: true } },
     images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
-    variants: { select: { condition: true, price: true, stock: true } },
+    variants: { where: SELLABLE, select: { condition: true, price: true, stock: true } },
   } satisfies Prisma.ProductSelect;
 
   let total: number;
@@ -351,7 +356,7 @@ export async function getProductBySlug(slug: string) {
       // Les reconditionnés vendus (stock 0) ne s'affichent plus ; les neufs restent,
       // pour montrer « Rupture de stock » sur l'option choisie.
       variants: {
-        where: { OR: [{ condition: "new" }, { stock: { gt: 0 } }] },
+        where: { ...SELLABLE, OR: [{ condition: "new" }, { stock: { gt: 0 } }] },
         orderBy: [{ condition: "asc" }, { price: "asc" }],
         select: {
           sku: true,
