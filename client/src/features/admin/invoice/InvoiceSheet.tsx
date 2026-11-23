@@ -35,7 +35,9 @@ function Sheet({ invoice }: { invoice: Invoice }) {
           <p className="text-lg font-bold">{invoice.number}</p>
           <p>Date : {invoiceDate(invoice.issuedAt)}</p>
           <p className="text-neutral-700">
-            Commande n° {invoice.order.dailyNumber} du {invoiceDate(`${invoice.order.businessDate}T12:00:00Z`)} · suivi {invoice.order.number}
+            Commande n° {invoice.order.dailyNumber} du {invoiceDate(`${invoice.order.businessDate}T12:00:00Z`)}
+            {/* Le suivi n'existe que pour une livraison ou une réservation : une vente ou un échange se terminent au comptoir. */}
+            {invoice.order.type === "delivery" || invoice.order.type === "pickup" ? ` · suivi ${invoice.order.number}` : ""}
           </p>
           <p className="font-semibold">{invoiceTypeLabel(invoice)}</p>
         </div>
