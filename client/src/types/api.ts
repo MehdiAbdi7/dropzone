@@ -312,9 +312,12 @@ export type OrderDetail = {
 export type OrderSummary = {
   number: number;
   status: OrderStatus;
+  // Le type et le premier article (23/11, cartes de Mon compte) : absents d'une API pas encore déployée.
+  type?: OrderType;
   createdAt: string;
   total: number;
   _count: { items: number };
+  firstItem?: { name: string; image: string | null } | null;
 };
 
 export type User = {
