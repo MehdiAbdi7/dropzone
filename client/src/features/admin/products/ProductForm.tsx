@@ -25,7 +25,8 @@ import type { ProductKind } from "@/types/api";
 import SaveBar, { WindowFooter } from "./SaveBar";
 import VariantStatusPicker from "./VariantStatusPicker";
 import VariantEditor from "./VariantEditor";
-import VariantList from "./VariantList";
+import VariantGroupPanel from "./VariantList";
+import { groupState, groupStatus, variantGroups } from "./variantGroups";
 
 // Le formulaire produit, rempli dans l'ordre où le vendeur pense :
 // la catégorie, le modèle, les caractéristiques, puis chaque variante.
@@ -41,11 +42,14 @@ export default function ProductForm({
   ownSkus = [],
   onSaved,
   photos,
+  initialList,
 }: {
   productId?: number;
   // Les photos d'un produit existant (la page les gère avec ImageManager) : la tuile et le contenu de sa fenêtre.
   // Sans elles (création), la fenêtre Photos choisit la photo principale envoyée à la création.
   photos?: { count: number; cover: string | null; panel: ReactNode };
+  // La liste à ouvrir d'office (24/11) : le lien « + Ajouter un appareil » du Catalogue arrive avec `?liste=neuf`.
+  initialList?: "new" | "used";
   initial: ProductDraft;
   ownSkus?: string[];
   // Après une modification, la page relit le produit et recrée le formulaire
@@ -74,6 +78,9 @@ export default function ProductForm({
   const { data: models = [] } = useModelsQuery();
   // La fenêtre ouverte : une partie de la fiche, ou une variante ("variant:<clé>").
   const [open, setOpen] = useState<string | null>(initial.categoryId ? null : "category");
+  // La liste ouverte, Neuf scellé ou Occasion (24/11) : une fenêtre à part, qui reste ouverte derrière la fenêtre d'une
+  // variante (on en ouvre une depuis la liste, on ferme, on revient à la liste).
+  const [listOpen, setListOpen] = useState<"new" | "used" | null>(initialList ?? null);
   const [createProduct, createState] = useCreateProductMutation();
   const [uploadImage, uploadState] = useUploadImageMutation();
   const [updateProduct, updateState] = useUpdateProductMutation();
@@ -221,6 +228,8 @@ export default function ProductForm({
     ? draft.variants.filter((variant) => variant.condition === editedVariant.condition).findIndex((variant) => variant.key === editedVariant.key)
     : -1;
 
+  const { fresh, used } = variantGroups(draft.variants);
+
   function addVariant(condition: "new" | "refurbished") {
     const variant = emptyVariant(condition, kind);
     set({ variants: [...draft.variants, variant] });
@@ -229,7 +238,7 @@ export default function ProductForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-6" noValidate>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <SheetTile
           title="Photos"
           status={
@@ -266,19 +275,63 @@ export default function ProductForm({
               preview={<GridIcon size={20} />}
               onClick={() => setOpen("specs")}
             />
+            <SheetTile
+              title="Neuf scellé"
+              status={groupStatus(fresh, "new")}
+              state={groupState(fresh)}
+              preview={<span className="font-display text-lg font-bold text-blue-ink">{fresh.variants.length}</span>}
+              onClick={() => setListOpen("new")}
+            />
+            {/* Un accessoire ne se vend que neuf : pas de tuile Occasion. */}
+            {isDevice ? (
+              <SheetTile
+                title="Occasion"
+                status={groupStatus(used, "used")}
+                state={groupState(used)}
+                preview={<span className="font-display text-lg font-bold text-red">{used.variants.length}</span>}
+                onClick={() => setListOpen("used")}
+              />
+            ) : null}
           </>
         ) : null}
       </div>
       {!kind ? <p className="text-sm text-ink-muted">Choisis d&apos;abord une catégorie : elle décide du reste de la fiche.</p> : null}
 
-      {kind ? (
-        <VariantList
-          variants={draft.variants}
-          canAddRefurbished={isDevice}
-          onAdd={addVariant}
+      <EditDialog
+        open={listOpen === "new"}
+        title="Neuf scellé"
+        onClose={() => setListOpen(null)}
+        toolbar={
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => addVariant("new")}>
+            + Neuf scellé
+          </button>
+        }
+      >
+        <VariantGroupPanel
+          group={fresh}
+          kind="new"
+          empty="Aucun neuf scellé. Ajoute une variante par couleur et stockage."
           onEdit={(key) => setOpen(`variant:${key}`)}
         />
-      ) : null}
+      </EditDialog>
+
+      <EditDialog
+        open={listOpen === "used"}
+        title="Occasion"
+        onClose={() => setListOpen(null)}
+        toolbar={
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => addVariant("refurbished")}>
+            + Occasion
+          </button>
+        }
+      >
+        <VariantGroupPanel
+          group={used}
+          kind="used"
+          empty="Aucune occasion. Chaque appareil d'occasion a sa propre fiche d'état."
+          onEdit={(key) => setOpen(`variant:${key}`)}
+        />
+      </EditDialog>
 
       <EditDialog open={open === "photos"} title="Photos du produit" onClose={() => setOpen(null)}>
         {photos ? (

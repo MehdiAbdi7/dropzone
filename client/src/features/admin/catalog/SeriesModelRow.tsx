@@ -153,7 +153,7 @@ export default function SeriesModelRow({
                 Modifier la fiche
               </Link>
               <Link
-                href={`/admin/produits/${product.id}#variantes`}
+                href={`/admin/produits/${product.id}?liste=neuf`}
                 className="col-span-2 text-center text-xs font-semibold text-blue-ink hover:underline sm:col-span-1"
               >
                 + Ajouter un appareil

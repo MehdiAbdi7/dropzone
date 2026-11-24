@@ -2,106 +2,34 @@ import { swatchOf, type Palette } from "@/config/colors";
 import { formatPrice } from "@/lib/format";
 import { usePalette } from "../usePalette";
 import type { VariantDraft } from "./productDraft";
-import { byColor, optionsWithoutColor, variantGroups, variantProblems, type ColorGroup, type VariantGroup } from "./variantGroups";
+import { byColor, groupStatus, optionsWithoutColor, variantProblems, type ColorGroup, type VariantGroup } from "./variantGroups";
 
-// Les variantes de la fiche (refaites le 23/11) : le neuf scellé et l'occasion dans deux listes séparées, chacune avec
-// son stock total et son bouton d'ajout. Une ligne courte par variante (options, SKU, prix, stock, ce qui manque) ; un
-// clic ouvre sa fenêtre. Un accessoire ne se vend que neuf : pas de liste Occasion.
-// Dans chaque liste, les variantes sont regroupées par couleur (23/11) : un en-tête avec la pastille de la teinte (celle
-// réglée dans Listes), le nom et le stock de la couleur ; la ligne ne dit plus que les autres options.
-export default function VariantList({
-  variants,
-  canAddRefurbished,
-  onAdd,
-  onEdit,
-}: {
-  variants: VariantDraft[];
-  canAddRefurbished: boolean;
-  onAdd: (condition: "new" | "refurbished") => void;
-  onEdit: (key: string) => void;
-}) {
-  const { fresh, used } = variantGroups(variants);
-  const palette = usePalette();
-  return (
-    <div id="variantes" className={`grid scroll-mt-6 gap-4 ${canAddRefurbished ? "xl:grid-cols-2" : ""}`}>
-      <VariantGroupCard
-        tone="new"
-        title="Neuf scellé"
-        empty="Aucun neuf scellé. Ajoute une variante par couleur et stockage."
-        addLabel="+ Neuf scellé"
-        group={fresh}
-        stockText={(stock) => `${stock} en stock`}
-        onAdd={() => onAdd("new")}
-        onEdit={onEdit}
-        palette={palette}
-      />
-      {canAddRefurbished ? (
-        <VariantGroupCard
-          tone="used"
-          title="Occasion"
-          empty="Aucune occasion. Chaque appareil d'occasion a sa propre fiche d'état."
-          addLabel="+ Occasion"
-          group={used}
-          stockText={(stock) => `${stock} appareil${stock > 1 ? "s" : ""}`}
-          onAdd={() => onAdd("refurbished")}
-          onEdit={onEdit}
-          palette={palette}
-        />
-      ) : null}
-    </div>
-  );
-}
-
-function VariantGroupCard({
-  tone,
-  title,
-  empty,
-  addLabel,
+// Le contenu de la fenêtre « Neuf scellé » ou « Occasion » de la fiche produit (24/11, demande de Mehdi : la page ne
+// montre plus que des tuiles, chaque liste s'ouvre dans sa fenêtre). Les variantes sont regroupées par couleur (23/11) :
+// un en-tête avec la pastille de la teinte (celle réglée dans Listes), le nom et le stock de la couleur ; une ligne par
+// variante (autres options, SKU, prix, stock, ce qui manque). Un clic sur une ligne ouvre la fenêtre de la variante.
+// Le bouton d'ajout est dans la barre de la fenêtre (`toolbar` d'EditDialog), pas ici.
+export default function VariantGroupPanel({
   group,
-  stockText,
-  onAdd,
+  kind,
+  empty,
   onEdit,
-  palette,
 }: {
-  tone: "new" | "used";
-  title: string;
-  empty: string;
-  addLabel: string;
   group: VariantGroup;
-  stockText: (stock: number) => string;
-  onAdd: () => void;
+  kind: "new" | "used";
+  empty: string;
   onEdit: (key: string) => void;
-  palette: Palette;
 }) {
-  const id = `variantes-${tone}`;
+  const palette = usePalette();
+  if (group.variants.length === 0) {
+    return <p className="rounded-lg border border-dashed border-line p-4 text-sm text-ink-muted">{empty}</p>;
+  }
   return (
-    <section aria-labelledby={id} className="card min-w-0 space-y-3 p-4 sm:p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <span aria-hidden="true" className={`size-2.5 shrink-0 rounded-full ${tone === "new" ? "bg-blue" : "bg-red"}`} />
-          <h2 id={id} className="text-lg">
-            {title} <span className="text-ink-muted">({group.variants.length})</span>
-          </h2>
-          {group.variants.length > 0 ? (
-            <span className="text-sm text-ink-muted">
-              · {stockText(group.stock)}
-            </span>
-          ) : null}
-        </div>
-        <button type="button" className="btn btn-secondary btn-small" onClick={onAdd}>
-          {addLabel}
-        </button>
-      </div>
-      {group.variants.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-line p-4 text-sm text-ink-muted">{empty}</p>
-      ) : (
-        <div className="space-y-3">
-          {byColor(group.variants).map((colorGroup) => (
-            <ColorBlock key={colorGroup.color ?? "sans-couleur"} group={colorGroup} palette={palette} stockText={stockText} onEdit={onEdit} />
-          ))}
-        </div>
-      )}
-    </section>
+    <div className="space-y-3">
+      {byColor(group.variants).map((colorGroup) => (
+        <ColorBlock key={colorGroup.color ?? "sans-couleur"} group={colorGroup} kind={kind} palette={palette} onEdit={onEdit} />
+      ))}
+    </div>
   );
 }
 
@@ -109,13 +37,13 @@ function VariantGroupCard({
 // réglée dans Listes a une pastille vide en pointillés : on ne devine pas la teinte.
 function ColorBlock({
   group,
+  kind,
   palette,
-  stockText,
   onEdit,
 }: {
   group: ColorGroup;
+  kind: "new" | "used";
   palette: Palette;
-  stockText: (stock: number) => string;
   onEdit: (key: string) => void;
 }) {
   const hex = group.color ? swatchOf(group.color, palette) : null;
@@ -129,7 +57,7 @@ function ColorBlock({
         />
         <span className="min-w-0 truncate font-display text-sm font-bold">{group.color ?? "Sans couleur"}</span>
         <span className="ml-auto shrink-0 text-xs text-ink-muted">
-          {group.variants.length} variante{group.variants.length > 1 ? "s" : ""} · {stockText(group.stock)}
+          {groupStatus(group, kind)}
         </span>
       </div>
       <ul className="divide-y divide-line border-t border-line">
