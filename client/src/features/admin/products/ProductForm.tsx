@@ -11,7 +11,7 @@ import { colorRows, colorsSummary } from "@/features/admin/catalog/modelCard";
 import { useCreateProductMutation, useGiftOptionsQuery, useUploadImageMutation, useUpdateProductMutation } from "@/features/admin/api/productsApi";
 import { usePalette } from "../usePalette";
 import EditDialog from "./EditDialog";
-import { SheetTile } from "./FormParts";
+import { SheetSection, SheetTile } from "./FormParts";
 import { CategoryFields, InfoFields, SpecsFields } from "./ProductFormDialogs";
 import {
   bodyFromDraft,
@@ -250,9 +250,10 @@ export default function ProductForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-6" noValidate>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <SheetSection title="Présentation dans la boutique" description="Ce que le client voit sur la page du produit : son nom, son texte et ses photos.">
         <SheetTile
-          title="Photos"
+          title="Photos du produit"
+          description={photos ? "La photo principale est celle à côté du titre. Ajoute les autres ici." : "La photo principale, envoyée à la création du produit."}
           status={
             photos
               ? photos.count > 0
@@ -264,17 +265,11 @@ export default function ProductForm({
           preview={photos?.cover ? <ProductImage src={photos.cover} alt="" sizes="48px" /> : <GridIcon size={20} />}
           onClick={() => setOpen("photos")}
         />
-        <SheetTile
-          title="Catégorie et modèle"
-          status={category ? [category.name, isDevice ? (modelName ?? "modèle à choisir") : (brandName ?? makerName)].filter(Boolean).join(" · ") : "À choisir"}
-          state={category && (!isDevice || modelName) ? "done" : "todo"}
-          preview={<ClipboardCheckIcon size={20} />}
-          onClick={() => setOpen("category")}
-        />
         {kind ? (
           <>
             <SheetTile
               title="Fiche du produit"
+              description="Le nom et le texte de présentation."
               status={draft.name.trim() ? (draft.description.trim() ? draft.name : `${draft.name} · description à écrire`) : "Nom à écrire"}
               state={draft.name.trim() && draft.description.trim() ? "done" : "todo"}
               preview={<DocumentIcon size={20} />}
@@ -282,47 +277,78 @@ export default function ProductForm({
             />
             <SheetTile
               title="Caractéristiques"
-              status={filledSpecs.length > 0 ? `${filledSpecs.length} renseignée${filledSpecs.length > 1 ? "s" : ""}` : "Facultatif"}
+              description="Écran, batterie, processeur… (facultatif)."
+              status={filledSpecs.length > 0 ? `${filledSpecs.length} renseignée${filledSpecs.length > 1 ? "s" : ""}` : "Aucune pour l'instant"}
               state={filledSpecs.length > 0 ? "done" : "optional"}
               preview={<GridIcon size={20} />}
               onClick={() => setOpen("specs")}
             />
-            {colorModelId ? (
-              <SheetTile
-                title="Couleurs du modèle"
-                status={modelColors ? colorsInfo.text : "Chargement…"}
-                state={modelColors ? colorsInfo.state : "optional"}
-                preview={
-                  modelColors?.colors.find((color) => color.photoUrl)?.photoUrl ? (
-                    <ProductImage src={modelColors.colors.find((color) => color.photoUrl)?.photoUrl ?? null} alt="" sizes="48px" />
-                  ) : (
-                    <GridIcon size={20} />
-                  )
-                }
-                onClick={() => setListOpen("colors")}
-              />
-            ) : null}
-            <SheetTile
-              title="Neuf scellé"
-              status={groupStatus(fresh, "new")}
-              state={groupState(fresh)}
-              preview={<span className="font-display text-lg font-bold text-blue-ink">{fresh.variants.length}</span>}
-              onClick={() => setListOpen("new")}
-            />
-            {/* Un accessoire ne se vend que neuf : pas de tuile Occasion. */}
-            {isDevice ? (
-              <SheetTile
-                title="Occasion"
-                status={groupStatus(used, "used")}
-                state={groupState(used)}
-                preview={<span className="font-display text-lg font-bold text-red">{used.variants.length}</span>}
-                onClick={() => setListOpen("used")}
-              />
-            ) : null}
           </>
         ) : null}
-      </div>
-      {!kind ? <p className="text-sm text-ink-muted">Choisis d&apos;abord une catégorie : elle décide du reste de la fiche.</p> : null}
+      </SheetSection>
+
+      <SheetSection
+        title={!kind ? "Catégorie" : isDevice ? "Modèle et couleurs" : "Type et compatibilité"}
+        description={
+          !kind
+            ? "Choisis d'abord la catégorie du produit : elle décide du reste de la fiche."
+            : isDevice
+              ? "Le modèle de l'appareil et ses couleurs, avec la photo de chaque couleur."
+              : "Le type d'accessoire, sa marque et les téléphones avec lesquels il va."
+        }
+      >
+        <SheetTile
+          title="Catégorie et modèle"
+          description={isDevice ? "Le type de produit et le modèle de la série." : "La catégorie, le type et la marque."}
+          status={category ? [category.name, isDevice ? (modelName ?? "modèle à choisir") : (brandName ?? makerName)].filter(Boolean).join(" · ") : "À choisir"}
+          state={category && (!isDevice || modelName) ? "done" : "todo"}
+          preview={<ClipboardCheckIcon size={20} />}
+          onClick={() => setOpen("category")}
+        />
+        {kind && colorModelId ? (
+          <SheetTile
+            title="Couleurs du modèle"
+            description="Une photo pour chaque couleur, et le stock de chacune."
+            status={modelColors ? colorsInfo.text : "Chargement…"}
+            state={modelColors ? colorsInfo.state : "optional"}
+            preview={
+              modelColors?.colors.find((color) => color.photoUrl)?.photoUrl ? (
+                <ProductImage src={modelColors.colors.find((color) => color.photoUrl)?.photoUrl ?? null} alt="" sizes="48px" />
+              ) : (
+                <GridIcon size={20} />
+              )
+            }
+            onClick={() => setListOpen("colors")}
+          />
+        ) : null}
+      </SheetSection>
+
+      {kind ? (
+        <SheetSection
+          title="Stock et prix"
+          description="Ce qui est en vente : un prix et un stock par variante. Une variante en brouillon n'est vendue nulle part."
+        >
+          <SheetTile
+            title="Neuf scellé"
+            description={isDevice ? "Les appareils neufs, dans leur boîte scellée." : "Les variantes de l'accessoire (taille, couleur…)."}
+            status={groupStatus(fresh, "new")}
+            state={groupState(fresh)}
+            preview={<span className="font-display text-lg font-bold text-blue-ink">{fresh.variants.length}</span>}
+            onClick={() => setListOpen("new")}
+          />
+          {/* Un accessoire ne se vend que neuf : pas de tuile Occasion. */}
+          {isDevice ? (
+            <SheetTile
+              title="Occasion"
+              description="Les appareils testés, chacun avec sa fiche d'état."
+              status={groupStatus(used, "used")}
+              state={groupState(used)}
+              preview={<span className="font-display text-lg font-bold text-red">{used.variants.length}</span>}
+              onClick={() => setListOpen("used")}
+            />
+          ) : null}
+        </SheetSection>
+      ) : null}
 
       <EditDialog
         open={listOpen === "new"}

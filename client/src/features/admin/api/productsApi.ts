@@ -116,6 +116,11 @@ const productsApi = api.injectEndpoints({
       query: ({ id, file }) => ({ url: `/admin/products/${id}/images`, method: "POST", body: imageForm(file) }),
       invalidatesTags: (_result, _error, { id }) => [{ type: "Products", id }, "Products"],
     }),
+    // Changer la photo principale d'un clic (24/11) : la nouvelle photo remplace la première, les autres ne bougent pas.
+    replaceMainImage: build.mutation<unknown, { id: number; file: File }>({
+      query: ({ id, file }) => ({ url: `/admin/products/${id}/main-image`, method: "PUT", body: imageForm(file) }),
+      invalidatesTags: (_result, _error, { id }) => [{ type: "Products", id }, "Products"],
+    }),
     deleteImage: build.mutation<void, { id: number; imageId: number }>({
       query: ({ id, imageId }) => ({ url: `/admin/products/${id}/images/${imageId}`, method: "DELETE" }),
       invalidatesTags: (_result, _error, { id }) => [{ type: "Products", id }, "Products"],
@@ -136,5 +141,6 @@ export const {
   useDeleteProductMutation,
   useUploadImageMutation,
   useDeleteImageMutation,
+  useReplaceMainImageMutation,
   useGiftOptionsQuery,
 } = productsApi;
