@@ -59,8 +59,12 @@ export type AdminProduct = {
   categoryId: number;
   category: { id: number; name: string; kind: ProductKind };
   deviceModelId: number | null;
-  deviceModel: { id: number; brand: string; name: string } | null;
+  // La série du modèle (24/11) : le chemin de la fiche. Absente d'une API pas encore déployée.
+  deviceModel: { id: number; brand: string; name: string; series?: { id: number; name: string } | null } | null;
   brandId: number | null;
+  // La marque de la Boutique d'un appareil (« iPhone »), ou le type d'un accessoire (« Chargeurs »).
+  brand?: { id: number; name: string } | null;
+  maker?: { id: number; name: string } | null;
   // La marque d'un accessoire dans son type (Anker dans Chargeurs), null sans marque.
   makerId?: number | null;
   compatibleModels: { id: number; brand: string; name: string }[];
