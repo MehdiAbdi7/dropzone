@@ -9,6 +9,7 @@ import {
   listAdminProducts,
   listGiftOptions,
   removeImage,
+  replaceMainImage,
   updateProduct,
 } from "./productAdmin.service.js";
 
@@ -40,6 +41,10 @@ export async function removeProduct(req: Request, res: Response) {
 
 export async function postImage(req: Request, res: Response) {
   res.status(201).json({ data: await addImage(Number(req.params.id), req.file) });
+}
+
+export async function putMainImage(req: Request, res: Response) {
+  res.json({ data: await replaceMainImage(Number(req.params.id), req.file) });
 }
 
 export async function removeProductImage(req: Request, res: Response) {

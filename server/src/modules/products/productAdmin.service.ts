@@ -382,6 +382,34 @@ export async function addImage(productId: number, file: Express.Multer.File | un
   });
 }
 
+// Changer la photo principale d'un produit d'un clic (24/11) : la nouvelle photo prend la place de l'ancienne (même
+// position), qui est supprimée ; le nombre de photos ne change pas, donc la limite n'est pas en jeu. Sans photo, la
+// nouvelle devient la première. L'ancienne est retirée de Cloudinary après coup : un échec là laisserait seulement une
+// image orpheline, pas une fiche cassée.
+export async function replaceMainImage(productId: number, file: Express.Multer.File | undefined) {
+  if (!file) {
+    throw new AppError(400, "Aucune image reçue (champ « image »)");
+  }
+  const product = await prisma.product.findUnique({ where: { id: productId }, select: { id: true } });
+  if (!product) {
+    throw new AppError(404, "Produit introuvable");
+  }
+  const main = await prisma.productImage.findFirst({ where: { productId }, orderBy: { position: "asc" } });
+  const uploaded = await uploadToCloudinary(file.buffer);
+  const created = await prisma.$transaction(async (tx) => {
+    if (main) {
+      await tx.productImage.delete({ where: { id: main.id } });
+    }
+    return tx.productImage.create({
+      data: { productId, url: uploaded.url, publicId: uploaded.publicId, position: main?.position ?? 0 },
+    });
+  });
+  if (main) {
+    await deleteFromCloudinary(main.publicId).catch(() => undefined);
+  }
+  return created;
+}
+
 export async function removeImage(productId: number, imageId: number) {
   const image = await prisma.productImage.findFirst({ where: { id: imageId, productId } });
   if (!image) {

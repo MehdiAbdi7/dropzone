@@ -6,6 +6,7 @@ import { useState } from "react";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useAdminProductQuery, useDeleteProductMutation } from "@/features/admin/api/productsApi";
 import ImageManager from "@/features/admin/products/ImageManager";
+import ProductPhoto from "@/features/admin/products/ProductPhoto";
 import ProductForm from "@/features/admin/products/ProductForm";
 import { draftFromProduct } from "@/features/admin/products/productDraft";
 import { errorMessage } from "@/lib/errors";
@@ -35,7 +36,16 @@ export default function EditProductPage() {
       </Link>
       {/* L'en-tête porte aussi la suppression (23/11) : un petit bouton rouge plutôt qu'une grande carte en bas. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="min-w-0 text-2xl sm:text-3xl">{product.name}</h1>
+        {/* La photo du produit à côté du titre, modifiable d'un clic (24/11). */}
+        <div className="flex min-w-0 items-center gap-4">
+          <ProductPhoto productId={product.id} image={product.images[0]?.url ?? null} name={product.name} />
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl">{product.name}</h1>
+            <p className="mt-1 text-sm text-ink-muted">
+              {[product.category.name, product.deviceModel?.name].filter(Boolean).join(" · ")}
+            </p>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2">
           {product.status === "published" ? (
             <Link href={`/produits/${product.slug}`} className="btn btn-secondary btn-small" target="_blank">

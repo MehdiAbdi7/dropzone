@@ -10,6 +10,7 @@ import {
   patchProduct,
   postImage,
   postProduct,
+  putMainImage,
   removeProduct,
   removeProductImage,
 } from "./productAdmin.controller.js";
@@ -40,6 +41,13 @@ productAdminRouter.post(
   validate({ params: idParamsSchema }),
   uploadImage,
   postImage,
+);
+// Changer la photo principale d'un clic (24/11) : remplace la première photo, sans toucher aux autres.
+productAdminRouter.put(
+  "/products/:id/main-image",
+  validate({ params: idParamsSchema }),
+  uploadImage,
+  putMainImage,
 );
 productAdminRouter.delete(
   "/products/:id/images/:imageId",
