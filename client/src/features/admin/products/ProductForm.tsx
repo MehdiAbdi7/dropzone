@@ -6,7 +6,10 @@ import { ClipboardCheckIcon, DocumentIcon, GridIcon } from "@/components/ui/icon
 import ProductImage from "@/components/ui/ProductImage";
 import { CONDITION_LABELS, SPEC_SUGGESTIONS } from "@/config/catalog";
 import { useBrandsQuery, useCategoriesQuery, useMakersQuery, useModelsQuery, type DeviceModel } from "@/features/admin/api/catalogApi";
+import { useModelColorsQuery } from "@/features/admin/api/colorsApi";
+import { colorRows, colorsSummary } from "@/features/admin/catalog/modelCard";
 import { useCreateProductMutation, useGiftOptionsQuery, useUploadImageMutation, useUpdateProductMutation } from "@/features/admin/api/productsApi";
+import { usePalette } from "../usePalette";
 import EditDialog from "./EditDialog";
 import { SheetTile } from "./FormParts";
 import { CategoryFields, InfoFields, SpecsFields } from "./ProductFormDialogs";
@@ -19,9 +22,11 @@ import {
   missingBox,
   missingPartOrigins,
   suggestSku,
+  unitDraft,
   type ProductDraft,
 } from "./productDraft";
 import type { ProductKind } from "@/types/api";
+import ModelColorsPanel from "./ModelColorsPanel";
 import SaveBar, { WindowFooter } from "./SaveBar";
 import VariantStatusPicker from "./VariantStatusPicker";
 import VariantEditor from "./VariantEditor";
@@ -76,11 +81,12 @@ export default function ProductForm({
   const { data: allMakers = [] } = useMakersQuery();
   const { data: giftOptionsAll = [] } = useGiftOptionsQuery();
   const { data: models = [] } = useModelsQuery();
+  const palette = usePalette();
   // La fenêtre ouverte : une partie de la fiche, ou une variante ("variant:<clé>").
   const [open, setOpen] = useState<string | null>(initial.categoryId ? null : "category");
   // La liste ouverte, Neuf scellé ou Occasion (24/11) : une fenêtre à part, qui reste ouverte derrière la fenêtre d'une
   // variante (on en ouvre une depuis la liste, on ferme, on revient à la liste).
-  const [listOpen, setListOpen] = useState<"new" | "used" | null>(initialList ?? null);
+  const [listOpen, setListOpen] = useState<"new" | "used" | "colors" | null>(initialList ?? null);
   const [createProduct, createState] = useCreateProductMutation();
   const [uploadImage, uploadState] = useUploadImageMutation();
   const [updateProduct, updateState] = useUpdateProductMutation();
@@ -229,16 +235,22 @@ export default function ProductForm({
     : -1;
 
   const { fresh, used } = variantGroups(draft.variants);
+  // Les couleurs du modèle et leurs photos (24/11) : pour un appareil dont le modèle est choisi. Les photos partent
+  // tout de suite à l'API (elles appartiennent au modèle), le résumé de la tuile suit.
+  const colorModelId = isDevice ? draft.deviceModelId : null;
+  const { data: modelColors } = useModelColorsQuery(colorModelId ?? 0, { skip: !colorModelId });
+  const colorsInfo = colorsSummary(colorRows(modelColors?.colors ?? [], palette));
 
-  function addVariant(condition: "new" | "refurbished") {
-    const variant = emptyVariant(condition, kind);
+  // `color` : « + Neuf » ou « + Occasion » d'une couleur de la fenêtre des couleurs, la couleur est déjà posée.
+  function addVariant(condition: "new" | "refurbished", color?: string) {
+    const variant = color && kind ? unitDraft(kind, condition, color) : emptyVariant(condition, kind);
     set({ variants: [...draft.variants, variant] });
     setOpen(`variant:${variant.key}`);
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-6" noValidate>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SheetTile
           title="Photos"
           status={
@@ -275,6 +287,21 @@ export default function ProductForm({
               preview={<GridIcon size={20} />}
               onClick={() => setOpen("specs")}
             />
+            {colorModelId ? (
+              <SheetTile
+                title="Couleurs du modèle"
+                status={modelColors ? colorsInfo.text : "Chargement…"}
+                state={modelColors ? colorsInfo.state : "optional"}
+                preview={
+                  modelColors?.colors.find((color) => color.photoUrl)?.photoUrl ? (
+                    <ProductImage src={modelColors.colors.find((color) => color.photoUrl)?.photoUrl ?? null} alt="" sizes="48px" />
+                  ) : (
+                    <GridIcon size={20} />
+                  )
+                }
+                onClick={() => setListOpen("colors")}
+              />
+            ) : null}
             <SheetTile
               title="Neuf scellé"
               status={groupStatus(fresh, "new")}
@@ -349,6 +376,10 @@ export default function ProductForm({
             {coverPhoto ? <span className="mt-2 block truncate text-sm font-semibold">{coverPhoto.name}</span> : null}
           </label>
         )}
+      </EditDialog>
+
+      <EditDialog open={listOpen === "colors"} title="Couleurs du modèle" onClose={() => setListOpen(null)}>
+        {colorModelId ? <ModelColorsPanel modelId={colorModelId} onAddVariant={(color, condition) => addVariant(condition, color)} /> : null}
       </EditDialog>
 
       <EditDialog open={open === "category"} title="Catégorie et modèle" onClose={closeWindow} closeLabel={isEdit ? "Annuler" : "Terminé"}>
