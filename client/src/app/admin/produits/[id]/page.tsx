@@ -14,6 +14,8 @@ export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
   const created = useSearchParams().get("cree") === "1";
   const photoError = useSearchParams().get("photoErreur") === "1";
+  // `?liste=neuf` ou `?liste=occasion` : ouvre cette liste d'office (lien du Catalogue).
+  const list = useSearchParams().get("liste");
   const router = useRouter();
   const { data: product, isError } = useAdminProductQuery(Number(id));
   const [deleteProduct, { error: deleteError }] = useDeleteProductMutation();
@@ -80,6 +82,7 @@ export default function EditProductPage() {
         initial={draftFromProduct(product)}
         ownSkus={product.variants.map((variant) => variant.sku)}
         onSaved={() => setSavedAt(Date.now())}
+        initialList={list === "neuf" ? "new" : list === "occasion" ? "used" : undefined}
         photos={{ count: product.images.length, cover: product.images[0]?.url ?? null, panel: <ImageManager product={product} /> }}
       />
 

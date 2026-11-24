@@ -1,12 +1,14 @@
 import { invalidWarranty, missingBox, missingPartOrigins, type VariantDraft } from "./productDraft";
 
-// La fiche produit en fenêtres (23/11) : le neuf scellé et l'occasion ne se mélangent plus, chaque liste a son titre,
-// son stock total et son bouton d'ajout.
-export type VariantGroup = { variants: VariantDraft[]; stock: number };
+// La fiche produit en fenêtres (23/11) : le neuf scellé et l'occasion ne se mélangent plus, chaque liste a sa tuile et
+// sa fenêtre. `stock` est ce qu'on peut vendre : une variante en brouillon ne le grossit pas (24/11), on la compte à
+// part dans `drafts`.
+export type VariantGroup = { variants: VariantDraft[]; stock: number; drafts: number };
 
 const groupOf = (variants: VariantDraft[]): VariantGroup => ({
   variants,
-  stock: variants.reduce((sum, variant) => sum + (Number(variant.stock) || 0), 0),
+  stock: variants.reduce((sum, variant) => sum + (variant.status === "draft" ? 0 : Number(variant.stock) || 0), 0),
+  drafts: variants.filter((variant) => variant.status === "draft").length,
 });
 
 export function variantGroups(variants: VariantDraft[]): { fresh: VariantGroup; used: VariantGroup } {
@@ -52,4 +54,21 @@ export function optionsWithoutColor(variant: VariantDraft): string {
   const storage = entries.filter(([key]) => key === "Stockage");
   const others = entries.filter(([key]) => key !== "Stockage");
   return [...storage, ...others].map(([, value]) => value).join(" · ");
+}
+
+// Ce que dit la tuile d'une liste (24/11) : le nombre de variantes, le stock vendable, les brouillons. Le mot du stock
+// suit l'état : un neuf a des exemplaires « en stock », une occasion est une pièce unique, des « appareils ».
+export function groupStatus(group: VariantGroup, kind: "new" | "used"): string {
+  const count = group.variants.length;
+  if (count === 0) return "Aucune variante";
+  const stock = kind === "new" ? `${group.stock} en stock` : `${group.stock} appareil${group.stock > 1 ? "s" : ""}`;
+  const drafts = group.drafts > 0 ? ` · ${group.drafts} brouillon${group.drafts > 1 ? "s" : ""}` : "";
+  return `${count} variante${count > 1 ? "s" : ""} · ${stock}${drafts}`;
+}
+
+// Le point de couleur de la tuile : à compléter dès qu'une variante a un manque (prix, boîte, garantie, origine des
+// pièces), rempli sinon, facultatif tant qu'il n'y a aucune variante.
+export function groupState(group: VariantGroup): "done" | "todo" | "optional" {
+  if (group.variants.length === 0) return "optional";
+  return group.variants.some((variant) => variantProblems(variant).length > 0) ? "todo" : "done";
 }
