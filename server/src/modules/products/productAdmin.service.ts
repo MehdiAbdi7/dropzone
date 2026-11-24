@@ -69,7 +69,8 @@ export async function getAdminProduct(id: number) {
     where: { id },
     include: {
       category: { select: { id: true, name: true, kind: true } },
-      deviceModel: { select: { id: true, brand: true, name: true } },
+      // La série du modèle : le chemin de la fiche (Catalogue › catégorie › marque › série) en fait des liens.
+      deviceModel: { select: { id: true, brand: true, name: true, series: { select: { id: true, name: true } } } },
       brand: { select: { id: true, name: true, slug: true, logoUrl: true } },
       maker: { select: { id: true, name: true, slug: true, logoUrl: true } },
       compatibleModels: { select: { id: true, brand: true, name: true } },

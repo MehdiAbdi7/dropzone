@@ -11,6 +11,7 @@ import { colorRows, colorsSummary } from "@/features/admin/catalog/modelCard";
 import { useCreateProductMutation, useGiftOptionsQuery, useUploadImageMutation, useUpdateProductMutation } from "@/features/admin/api/productsApi";
 import { usePalette } from "../usePalette";
 import EditDialog from "./EditDialog";
+import Breadcrumb, { type Crumb } from "@/features/shop/Breadcrumb";
 import { SheetSection, SheetTile } from "./FormParts";
 import { CategoryFields, InfoFields, SpecsFields } from "./ProductFormDialogs";
 import {
@@ -29,6 +30,7 @@ import type { ProductKind } from "@/types/api";
 import ModelColorsPanel from "./ModelColorsPanel";
 import SaveBar, { WindowFooter } from "./SaveBar";
 import VariantStatusPicker from "./VariantStatusPicker";
+import { selectionTrail } from "./productTrail";
 import VariantEditor from "./VariantEditor";
 import VariantGroupPanel from "./VariantList";
 import { groupState, groupStatus, variantGroups } from "./variantGroups";
@@ -48,6 +50,7 @@ export default function ProductForm({
   onSaved,
   photos,
   initialList,
+  trail,
 }: {
   productId?: number;
   // Les photos d'un produit existant (la page les gère avec ImageManager) : la tuile et le contenu de sa fenêtre.
@@ -55,6 +58,9 @@ export default function ProductForm({
   photos?: { count: number; cover: string | null; panel: ReactNode };
   // La liste à ouvrir d'office (24/11) : le lien « + Ajouter un appareil » du Catalogue arrive avec `?liste=neuf`.
   initialList?: "new" | "used";
+  // Le chemin de la fiche (24/11, modification) : Catalogue › catégorie › marque › série › modèle, en liens. À la
+  // création, il se construit d'après le choix en cours.
+  trail?: Crumb[];
   initial: ProductDraft;
   ownSkus?: string[];
   // Après une modification, la page relit le produit et recrée le formulaire
@@ -83,7 +89,11 @@ export default function ProductForm({
   const { data: models = [] } = useModelsQuery();
   const palette = usePalette();
   // La fenêtre ouverte : une partie de la fiche, ou une variante ("variant:<clé>").
-  const [open, setOpen] = useState<string | null>(initial.categoryId ? null : "category");
+  const [open, setOpen] = useState<string | null>(null);
+  // Le premier pas de la création (24/11, demande de Mehdi : la catégorie et le modèle se choisissent AVANT la fiche).
+  // Déjà fait quand on arrive depuis la carte d'un modèle ou la page d'un type (catégorie et modèle, ou type, remplis) ;
+  // une fiche existante n'y repasse pas.
+  const [started, setStarted] = useState(isEdit || Boolean(initial.categoryId && (initial.deviceModelId || initial.brandId)));
   // La liste ouverte, Neuf scellé ou Occasion (24/11) : une fenêtre à part, qui reste ouverte derrière la fenêtre d'une
   // variante (on en ouvre une depuis la liste, on ferme, on revient à la liste).
   const [listOpen, setListOpen] = useState<"new" | "used" | "colors" | null>(initialList ?? null);
@@ -225,6 +235,7 @@ export default function ProductForm({
   const modelName = models.find((model) => model.id === draft.deviceModelId)?.name ?? null;
   const brandName = brands.find((brand) => brand.id === draft.brandId)?.name ?? null;
   const makerName = makers.find((maker) => maker.id === draft.makerId)?.name ?? null;
+  const choiceDone = Boolean(category && (!isDevice || draft.deviceModelId));
   const filledSpecs = draft.specs.filter((row) => row.key.trim() && row.value.trim());
   const openVariant = typeof open === "string" && open.startsWith("variant:") ? open.slice("variant:".length) : null;
   const editedVariant = draft.variants.find((variant) => variant.key === openVariant);
@@ -250,6 +261,51 @@ export default function ProductForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-6" noValidate>
+      {!started ? (
+        <section className="space-y-4">
+          <div>
+            <h2 className="font-display text-base font-bold">Quel produit ajoutes-tu ?</h2>
+            <p className="text-sm text-ink-muted">
+              Choisis la catégorie, puis le modèle (ou le type pour un accessoire). Ce choix décide du reste de la fiche : ses
+              champs, ses couleurs et ses variantes.
+            </p>
+          </div>
+          <CategoryFields
+            draft={draft}
+            categories={categories}
+            brands={brands}
+            makers={makers}
+            kind={kind}
+            isDevice={isDevice}
+            onChooseCategory={chooseCategory}
+            onChooseModel={chooseModel}
+            set={set}
+          />
+          <div className="flex justify-end">
+            <button type="button" className="btn btn-primary w-full sm:w-auto" disabled={!choiceDone} onClick={() => setStarted(true)}>
+              Continuer
+            </button>
+          </div>
+        </section>
+      ) : (
+        <>
+      {/* Le chemin du produit (catégorie, marque, série, modèle) : un choix fait avant la fiche, qui s'y lit en liens. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <Breadcrumb
+          items={
+            trail ??
+            selectionTrail({
+              category: category?.name ?? null,
+              brand: brandName,
+              last: isDevice ? modelName : makerName,
+            })
+          }
+        />
+        <button type="button" className="btn btn-secondary btn-small" onClick={() => (isEdit ? setOpen("category") : setStarted(false))}>
+          {isEdit ? (isDevice ? "Changer le modèle" : "Changer la catégorie ou le type") : "Modifier le choix"}
+        </button>
+      </div>
+
       <SheetSection title="Présentation dans la boutique" description="Ce que le client voit sur la page du produit : son nom, son texte et ses photos.">
         <SheetTile
           title="Photos du produit"
@@ -287,41 +343,45 @@ export default function ProductForm({
         ) : null}
       </SheetSection>
 
-      <SheetSection
-        title={!kind ? "Catégorie" : isDevice ? "Modèle et couleurs" : "Type et compatibilité"}
-        description={
-          !kind
-            ? "Choisis d'abord la catégorie du produit : elle décide du reste de la fiche."
-            : isDevice
-              ? "Le modèle de l'appareil et ses couleurs, avec la photo de chaque couleur."
+      {kind && (colorModelId || !isDevice) ? (
+        <SheetSection
+          title={isDevice ? "Couleurs et photos" : "Type et compatibilité"}
+          description={
+            isDevice
+              ? "Une photo pour chaque couleur du modèle, et le stock de chacune."
               : "Le type d'accessoire, sa marque et les téléphones avec lesquels il va."
-        }
-      >
-        <SheetTile
-          title="Catégorie et modèle"
-          description={isDevice ? "Le type de produit et le modèle de la série." : "La catégorie, le type et la marque."}
-          status={category ? [category.name, isDevice ? (modelName ?? "modèle à choisir") : (brandName ?? makerName)].filter(Boolean).join(" · ") : "À choisir"}
-          state={category && (!isDevice || modelName) ? "done" : "todo"}
-          preview={<ClipboardCheckIcon size={20} />}
-          onClick={() => setOpen("category")}
-        />
-        {kind && colorModelId ? (
-          <SheetTile
-            title="Couleurs du modèle"
-            description="Une photo pour chaque couleur, et le stock de chacune."
-            status={modelColors ? colorsInfo.text : "Chargement…"}
-            state={modelColors ? colorsInfo.state : "optional"}
-            preview={
-              modelColors?.colors.find((color) => color.photoUrl)?.photoUrl ? (
-                <ProductImage src={modelColors.colors.find((color) => color.photoUrl)?.photoUrl ?? null} alt="" sizes="48px" />
-              ) : (
-                <GridIcon size={20} />
-              )
-            }
-            onClick={() => setListOpen("colors")}
-          />
-        ) : null}
-      </SheetSection>
+          }
+        >
+          {/* Un appareil a choisi sa catégorie et son modèle avant la fiche (chemin en haut) ; pour un accessoire, les
+              téléphones compatibles sont du contenu : ils restent ici. */}
+          {!isDevice ? (
+            <SheetTile
+              title="Type, marque et compatibilité"
+              description="La catégorie, le type, la marque et les téléphones compatibles."
+              status={category ? [category.name, brandName ?? makerName].filter(Boolean).join(" · ") : "À choisir"}
+              state={category ? "done" : "todo"}
+              preview={<ClipboardCheckIcon size={20} />}
+              onClick={() => setOpen("category")}
+            />
+          ) : null}
+          {colorModelId ? (
+            <SheetTile
+              title="Couleurs et photos"
+              description="Une photo pour chaque couleur, et le stock de chacune."
+              status={modelColors ? colorsInfo.text : "Chargement…"}
+              state={modelColors ? colorsInfo.state : "optional"}
+              preview={
+                modelColors?.colors.find((color) => color.photoUrl)?.photoUrl ? (
+                  <ProductImage src={modelColors.colors.find((color) => color.photoUrl)?.photoUrl ?? null} alt="" sizes="48px" />
+                ) : (
+                  <GridIcon size={20} />
+                )
+              }
+              onClick={() => setListOpen("colors")}
+            />
+          ) : null}
+        </SheetSection>
+      ) : null}
 
       {kind ? (
         <SheetSection
@@ -349,6 +409,8 @@ export default function ProductForm({
           ) : null}
         </SheetSection>
       ) : null}
+        </>
+      )}
 
       <EditDialog
         open={listOpen === "new"}
@@ -404,11 +466,22 @@ export default function ProductForm({
         )}
       </EditDialog>
 
-      <EditDialog open={listOpen === "colors"} title="Couleurs du modèle" onClose={() => setListOpen(null)}>
+      <EditDialog open={listOpen === "colors"} title="Couleurs et photos" onClose={() => setListOpen(null)}>
         {colorModelId ? <ModelColorsPanel modelId={colorModelId} onAddVariant={(color, condition) => addVariant(condition, color)} /> : null}
       </EditDialog>
 
-      <EditDialog open={open === "category"} title="Catégorie et modèle" onClose={closeWindow} closeLabel={isEdit ? "Annuler" : "Terminé"}>
+      <EditDialog
+        open={open === "category"}
+        title={isEdit ? "Changer la catégorie ou le modèle" : "Catégorie et modèle"}
+        onClose={closeWindow}
+        closeLabel={isEdit ? "Annuler" : "Terminé"}
+      >
+        {isEdit ? (
+          <p role="note" className="rounded-lg border border-line bg-amber-soft p-3 text-sm text-ink">
+            Attention : ce produit est peut-être déjà en vente. Les couleurs du modèle et leurs photos ne suivent pas un
+            changement de modèle, et un accessoire ne peut pas être d&apos;occasion. Vérifie les variantes ensuite.
+          </p>
+        ) : null}
         <CategoryFields
           draft={draft}
           categories={categories}
@@ -501,7 +574,7 @@ export default function ProductForm({
       </EditDialog>
 
       {/* Création : un seul envoi, en bas. Un produit existant s'enregistre dans chaque fenêtre. */}
-      {!isEdit ? (
+      {!isEdit && started ? (
         <SaveBar
           missingOrigins={missingOrigins}
           missingBoxes={missingBoxes}

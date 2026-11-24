@@ -7,6 +7,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useAdminProductQuery, useDeleteProductMutation } from "@/features/admin/api/productsApi";
 import ImageManager from "@/features/admin/products/ImageManager";
 import ProductPhoto from "@/features/admin/products/ProductPhoto";
+import { productTrail } from "@/features/admin/products/productTrail";
 import ProductForm from "@/features/admin/products/ProductForm";
 import { draftFromProduct } from "@/features/admin/products/productDraft";
 import { errorMessage } from "@/lib/errors";
@@ -31,9 +32,6 @@ export default function EditProductPage() {
 
   return (
     <div className="max-w-5xl space-y-6">
-      <Link href="/admin/produits" className="text-sm text-blue-ink underline">
-        Produits
-      </Link>
       {/* L'en-tête porte aussi la suppression (23/11) : un petit bouton rouge plutôt qu'une grande carte en bas. */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* La photo du produit à côté du titre, modifiable d'un clic (24/11). */}
@@ -41,9 +39,6 @@ export default function EditProductPage() {
           <ProductPhoto productId={product.id} image={product.images[0]?.url ?? null} name={product.name} />
           <div className="min-w-0">
             <h1 className="text-2xl sm:text-3xl">{product.name}</h1>
-            <p className="mt-1 text-sm text-ink-muted">
-              {[product.category.name, product.deviceModel?.name].filter(Boolean).join(" · ")}
-            </p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -93,6 +88,7 @@ export default function EditProductPage() {
         ownSkus={product.variants.map((variant) => variant.sku)}
         onSaved={() => setSavedAt(Date.now())}
         initialList={list === "neuf" ? "new" : list === "occasion" ? "used" : undefined}
+        trail={productTrail({ category: product.category, brand: product.brand ?? null, maker: product.maker ?? null, deviceModel: product.deviceModel ? { name: product.deviceModel.name, series: product.deviceModel.series ?? null } : null })}
         photos={{ count: product.images.length, cover: product.images[0]?.url ?? null, panel: <ImageManager product={product} /> }}
       />
 
