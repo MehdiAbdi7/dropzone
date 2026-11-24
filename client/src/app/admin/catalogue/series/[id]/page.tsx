@@ -170,7 +170,7 @@ function SeriesView({ data }: { data: AdminSeriesPage }) {
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 id="models-title" className="text-xl">Modèles de la série</h2>
-            <p className="mt-1 text-sm text-ink-muted">Réorganise l&apos;affiche avec les flèches ou en faisant glisser une carte.</p>
+            <p className="mt-1 text-sm text-ink-muted">Fais glisser une carte pour réorganiser l&apos;affiche (ou ouvre « ⋯ » sur téléphone).</p>
           </div>
           <span className="badge bg-surface-2 text-ink">{models.length} modèle{models.length === 1 ? "" : "s"}</span>
         </div>
