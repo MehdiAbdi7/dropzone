@@ -4,7 +4,7 @@
 // doit pouvoir voir le modèle dans toutes ses couleurs, achetables ou non.
 import { CONDITION_LABELS } from "@/config/catalog";
 import { formatPrice } from "@/lib/format";
-import type { ProductDetail } from "@/types/api";
+import type { ProductDetail, Variant } from "@/types/api";
 import { colorHref, ofColor } from "./colors";
 import type { JourneyCondition } from "./journey";
 
@@ -104,4 +104,64 @@ export function alternatives(
   except: number,
 ): { name: string; index: number }[] {
   return colors.flatMap((color, index) => (index !== except && isAvailable(color, condition) ? [{ name: color.name, index }] : []));
+}
+
+// Le mode offres (25/11, demande de Mehdi) : au clic sur « Voir les offres », la partie droite de la
+// visionneuse montre ce que montrait la page suivante, sans changer de page.
+
+// Ce que la visionneuse peut acheter pour cette couleur dans cet état : les variantes en stock.
+// Vide = la couleur n'a rien à montrer dans cet état (le mode offres ne s'ouvre pas).
+export function offerVariants(product: ProductDetail, colorName: string, condition: JourneyCondition): Variant[] {
+  return ofColor(product.variants, colorName).filter((variant) => variant.condition === condition && variant.stock > 0);
+}
+
+// Les paramètres de l'adresse que lit la visionneuse : `apercu` (couleur à regarder), `couleur` (offres
+// ouvertes sur cette couleur) et `etat` (neuf ou occasion, seulement sur la page de référence).
+export type ViewerParams = {
+  preview?: string | string[];
+  couleur?: string | string[];
+  etat?: string | string[];
+};
+
+const first = (param: string | string[] | undefined) => (Array.isArray(param) ? param[0] : param);
+
+// Où la visionneuse démarre : sur les offres d'une couleur si l'adresse le demande et qu'il y a de quoi les
+// montrer (un lien périmé, une couleur vendue entre-temps : retour au mode couleurs, jamais une page vide).
+// L'état de la page l'emporte sur `etat`, qui ne sert qu'à la page de référence.
+export function startView(
+  product: ProductDetail,
+  colors: ViewerColor[],
+  condition: JourneyCondition | null,
+  params: ViewerParams,
+): { index: number; offers: JourneyCondition | null } {
+  const etat = first(params.etat);
+  const shown = condition ?? (etat === "neuf" ? "new" : etat === "occasion" ? "refurbished" : null);
+  const asked = colors.findIndex((color) => color.name === first(params.couleur));
+  if (shown && asked >= 0 && offerVariants(product, colors[asked].name, shown).length > 0) {
+    return { index: asked, offers: shown };
+  }
+  return { index: firstIndex(colors, condition, params.preview), offers: null };
+}
+
+// La requête de l'adresse (sans `?`) après un changement : offres ouvertes (`couleur`, et `etat` quand la
+// page ne connaît pas l'état) ou retour aux couleurs (`apercu`). Les autres paramètres sont gardés.
+export function viewerSearch(
+  current: string,
+  colorName: string,
+  offers: JourneyCondition | null,
+  condition: JourneyCondition | null,
+): string {
+  const query = new URLSearchParams(current);
+  query.delete("apercu");
+  query.delete("couleur");
+  query.delete("etat");
+  if (offers) {
+    query.set("couleur", colorName);
+    if (condition === null) {
+      query.set("etat", offers === "new" ? "neuf" : "occasion");
+    }
+  } else {
+    query.set("apercu", colorName);
+  }
+  return query.toString();
 }

@@ -27,7 +27,7 @@ const keys = (input: JourneyInput) => journeySteps(input).map((step) => step.key
 describe("journeySteps", () => {
   it("sur la page de la série : trois étapes faites, le modèle en cours, deux à venir", () => {
     const steps = journeySteps({ ...base, model: null });
-    expect(steps.map((step) => step.label)).toEqual(["Catégorie", "Marque", "Série", "Modèle", "État", "Couleur"]);
+    expect(steps.map((step) => step.label)).toEqual(["Catégorie", "Marque", "Série", "Modèle", "État", "Couleur et offres"]);
     expect(steps.map((step) => step.status)).toEqual(["done", "done", "done", "current", "todo", "todo"]);
     expect(steps.map((step) => step.value)).toEqual(["Smartphones", "Huawei", "Huawei P30", "À choisir", null, null]);
   });
@@ -128,7 +128,7 @@ describe("journeyTitle", () => {
     expect(journeyTitle("series")).toBe("Choisis ta série");
     expect(journeyTitle("model")).toBe("Choisis ton modèle");
     expect(journeyTitle("condition")).toBe("Neuf scellé ou occasion ?");
-    expect(journeyTitle("color")).toBe("Choisis la couleur");
+    expect(journeyTitle("color")).toBe("Choisis la couleur et l'offre");
     expect(journeyTitle("end")).toBe("Prêt à commander");
   });
 });
