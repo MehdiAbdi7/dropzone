@@ -19,8 +19,9 @@ export default function CategoryCarousel({ categories }: { categories: Category[
     // dir="ltr" même en arabe : la boucle calcule ses positions avec scrollLeft, qui devient
     // négatif dans un conteneur de droite à gauche.
     // Sur grand écran (lg), la fenêtre s'élargit jusqu'aux traits de néon des bords de la section
-    // (NeonSides, environ 260 px chacun) : toute la largeur, moins 36 rem pour les deux côtés.
-    <div dir="ltr" className="sm:mx-auto sm:max-w-[600px] lg:max-w-[min(1200px,calc(100vw-36rem))]">
+    // (NeonSides, environ 260 px chacun) : toute la largeur, moins 36 rem pour les deux côtés, sans dépasser 1100 px
+    // (25/11) : la sélection du dessous (ArrivalsCarousel) doit rester plus large que les catégories.
+    <div dir="ltr" className="sm:mx-auto sm:max-w-[600px] lg:max-w-[min(1100px,calc(100vw-36rem))]">
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
