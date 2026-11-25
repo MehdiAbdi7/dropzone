@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
+import { canDrift } from "./driftRules";
 
 // Repris du carrousel de Niwa Food (11/11), sans les flèches : sur DropZone, il défile seul et
 // se saisit au doigt ou à la molette.
@@ -127,6 +128,25 @@ export function useInfiniteCarousel(
     );
     observer.observe(el);
 
+    // Ce que fait la page pendant que le carrousel dérive (25/11) : un doigt posé n'importe où, ou la page qui défile
+    // encore par élan. Écouté sur `window`, en passif (aucun risque pour le défilement), et dans des variables
+    // locales : ces valeurs changent à chaque geste, le state refairait un rendu.
+    let touching = false;
+    let lastPageScroll = -Infinity;
+    const onTouchStart = () => {
+      touching = true;
+    };
+    const onTouchEnd = () => {
+      touching = false;
+    };
+    const onPageScroll = () => {
+      lastPageScroll = performance.now();
+    };
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    window.addEventListener("scroll", onPageScroll, { passive: true });
+
     let frameId = 0;
     let lastTime = 0;
 
@@ -143,8 +163,14 @@ export function useInfiniteCarousel(
       const deltaSeconds = (time - lastTime) / 1000;
       lastTime = time;
 
-      if (motionQuery.matches) return;
-      if (isPaused.current || !isVisible.current) return;
+      const allowed = canDrift({
+        paused: isPaused.current,
+        visible: isVisible.current,
+        reducedMotion: motionQuery.matches,
+        touching,
+        msSincePageScroll: time - lastPageScroll,
+      });
+      if (!allowed) return;
       if (el.scrollWidth <= el.clientWidth) return;
 
       const advance = autoplaySpeed * deltaSeconds + remainder.current;
@@ -164,6 +190,10 @@ export function useInfiniteCarousel(
     return () => {
       cancelAnimationFrame(frameId);
       observer.disconnect();
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
+      window.removeEventListener("scroll", onPageScroll);
     };
   }, [autoplaySpeed, itemCount, normalize, setScrollLeft]);
 
