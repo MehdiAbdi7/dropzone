@@ -49,16 +49,20 @@ export default function FilterPicker({
   // Un choix change toute la liste en dessous, souvent pour une plus courte : sans remonter, la
   // page restait scrollée en bas et le pied de page remplissait l'écran (remarque de Mehdi, 25/11).
   // On remonte donc en haut à chaque choix, sans animation : le contenu a déjà changé.
+  // Rechoisir la valeur déjà cochée ne change rien : pas de nouvelle entrée dans l'historique du
+  // navigateur (le bouton « précédent » n'aurait semblé rien faire), pas de saut en haut.
   function choose(next: string | null) {
-    onChange(next);
     close();
-    window.scrollTo({ top: 0 });
+    if (next !== value) {
+      onChange(next);
+      window.scrollTo({ top: 0 });
+    }
   }
 
   // À l'ouverture, le focus va sur le choix actuel : le clavier part de là.
   useEffect(() => {
     if (open) {
-      listRef.current?.querySelector<HTMLElement>('[aria-current="true"]')?.focus();
+      listRef.current?.querySelector<HTMLElement>("[data-current]")?.focus();
     }
   }, [open]);
 
@@ -76,8 +80,15 @@ export default function FilterPicker({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open, asSheet]);
 
-  // Échap ferme ; ↑ et ↓ passent d'une ligne à l'autre.
+  // Échap ferme ; ↑ et ↓ passent d'une ligne à l'autre. Tab (liste sous le bouton seulement) ferme
+  // aussi : sans cela, le focus sortait de la liste qui restait ouverte par-dessus la page. Le
+  // focus est rendu au bouton avant que Tab n'agisse : il passe alors à l'élément suivant.
   function onKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === "Tab" && !asSheet) {
+      setOpen(false);
+      triggerRef.current?.focus();
+      return;
+    }
     if (event.key === "Escape") {
       event.stopPropagation();
       close();
@@ -105,7 +116,7 @@ export default function FilterPicker({
             type="button"
             role="option"
             aria-selected={selected}
-            aria-current={selected ? "true" : undefined}
+            data-current={selected ? "" : undefined}
             onClick={() => choose(option.value)}
             className={`filter-option ${option.value === null ? "filter-option-all" : ""}`}
           >
@@ -126,6 +137,9 @@ export default function FilterPicker({
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
+        // Sur téléphone l'étiquette est cachée une fois une valeur choisie : le nom accessible
+        // dit toujours de quel filtre il s'agit.
+        aria-label={`${label} : ${chosen && value !== null ? chosen.label : emptyText}`}
         data-active={value !== null ? "" : undefined}
         onClick={() => (open ? setOpen(false) : openList())}
         className="filter-trigger"

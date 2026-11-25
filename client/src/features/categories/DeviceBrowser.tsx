@@ -44,6 +44,8 @@ export default function DeviceBrowser({
   const current = showOthers ? OTHERS : group?.brand.slug;
   const currentName = showOthers ? "Autres" : group?.brand.name;
 
+  const brandOptions = deviceBrandOptions(groups, others.length);
+
   // Choisir une marque dans la liste : l'adresse change sans recharger (la marque affichée se relit
   // dans l'adresse). La liste n'a pas de ligne « aucune marque » : `null` n'arrive jamais ici.
   function select(slug: string | null) {
@@ -71,17 +73,14 @@ export default function DeviceBrowser({
       <div className={CAPSULE_WRAP}>
         <div className="filter-capsule">
           <ShopSearch category={category.slug} className="min-w-0 flex-1 max-sm:basis-full" />
-          <FilterPicker
-            label="Marque"
-            emptyText="Marque"
-            options={deviceBrandOptions(groups, others.length)}
-            value={current ?? null}
-            onChange={select}
-          />
+          {/* Pas de bouton pour une catégorie sans aucune marque : il ouvrirait une liste vide. */}
+          {brandOptions.length > 0 ? (
+            <FilterPicker label="Marque" emptyText="Marque" options={brandOptions} value={current ?? null} onChange={select} />
+          ) : null}
         </div>
       </div>
 
-      {/* Dit aux lecteurs d'écran que la liste a changé : le clic ne déplace pas la page. */}
+      {/* Dit aux lecteurs d'écran que la liste a changé : l'adresse et les séries changent, sans rechargement. */}
       <p role="status" className="sr-only">
         {showOthers ? `Autres : ${others.length} modèles` : group ? `${group.brand.name} : ${group.series.length} séries` : ""}
       </p>

@@ -361,13 +361,16 @@
   .filter-trigger[aria-expanded="true"] .filter-chevron {
     transform: rotate(180deg);
   }
+  /* Alignée sur le bord droit du bouton : les boutons sont à droite de la capsule, une liste
+     alignée à gauche sortait de la fenêtre (relecture du 25/11). Elle s'étend vers la gauche. */
   .filter-pop {
     position: absolute;
-    inset-inline-start: 0;
+    inset-inline-end: 0;
     top: calc(100% + 10px);
     z-index: 40;
     width: 320px;
-    max-height: 360px;
+    max-width: calc(100vw - 32px);
+    max-height: min(360px, calc(100dvh - 160px));
     overflow-y: auto;
     padding: 8px;
     border: 1px solid var(--line);
@@ -398,7 +401,7 @@
   .filter-option:focus-visible {
     background: var(--surface-2);
   }
-  .filter-option[aria-current="true"] {
+  .filter-option[data-current] {
     background: var(--surface-2);
     color: var(--blue-ink);
   }

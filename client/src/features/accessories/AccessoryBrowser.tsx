@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import ShopSearch from "@/features/categories/ShopSearch";
 import Breadcrumb from "@/features/shop/Breadcrumb";
 import { CAPSULE_WRAP } from "@/features/shop/capsule";
@@ -24,6 +24,15 @@ export default function AccessoryBrowser({ catalog }: { catalog: AccessoryCatalo
   const products = visibleProducts(catalog, filters);
   const types = catalog.types.filter((type) => !filters.type || type.slug === filters.type);
   const go = (next: AccessoryFilters) => window.history.pushState(null, "", filtersHref(catalog.category.slug, next));
+  const capsuleRef = useRef<HTMLDivElement>(null);
+
+  // « Effacer » disparaît au clic : sans rendre le focus au premier bouton (« Type »), un clavier ou
+  // un lecteur d'écran perdait sa place. Il remonte aussi en haut, comme un choix dans une liste.
+  function clear() {
+    go({ type: null, maker: null });
+    capsuleRef.current?.querySelector<HTMLElement>(".filter-trigger")?.focus();
+    window.scrollTo({ top: 0 });
+  }
 
   return (
     <div className="container-page space-y-5 py-8">
@@ -36,7 +45,7 @@ export default function AccessoryBrowser({ catalog }: { catalog: AccessoryCatalo
       {/* La capsule (25/11, demande de Mehdi) : la recherche et deux listes, collées sous l'en-tête
           au défilement. Remplace les rangées de puces, qui disparaissaient sous l'en-tête. */}
       <div className={CAPSULE_WRAP}>
-        <div className="filter-capsule">
+        <div ref={capsuleRef} className="filter-capsule">
           <ShopSearch category={catalog.category.slug} className="min-w-0 flex-1 max-sm:basis-full" />
           <FilterPicker
             label="Type"
@@ -55,7 +64,7 @@ export default function AccessoryBrowser({ catalog }: { catalog: AccessoryCatalo
             />
           ) : null}
           {filters.type ? (
-            <button type="button" onClick={() => go({ type: null, maker: null })} className="px-2 text-sm font-bold text-blue-ink max-sm:hidden">
+            <button type="button" onClick={clear} className="px-2 text-sm font-bold text-blue-ink max-sm:hidden">
               Effacer
             </button>
           ) : null}
