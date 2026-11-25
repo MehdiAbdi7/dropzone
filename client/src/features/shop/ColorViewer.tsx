@@ -5,7 +5,7 @@ import Link from "next/link";
 import { type CSSProperties, type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { type Palette, swatchOf } from "@/config/colors";
 import type { ProductDetail } from "@/types/api";
-import { alternatives, availabilityLines, firstIndex, isAvailable, viewerColors, wrapIndex } from "./colorViewer";
+import { alternatives, availabilityLines, firstIndex, isAvailable, viewerColors, wrapIndex } from "./colorViewerRules";
 import { kindIcon } from "./colors";
 import type { JourneyCondition } from "./journey";
 import { uniformPhoto } from "./photos";
@@ -16,7 +16,7 @@ import { uniformPhoto } from "./photos";
 // couleurs du modèle sont montrées ; une couleur indisponible est seulement un peu assombrie.
 // `condition` connu (étape 6 du parcours) : le stock de cet état. `null` (page de référence, avant
 // d'avoir choisi Neuf ou Occasion) : les deux états côte à côte.
-// La logique (couleurs, texte, indices) est dans colorViewer.ts ; ici, le geste et le fondu.
+// La logique (couleurs, texte, indices) est dans colorViewerRules.ts ; ici, le geste et le fondu.
 
 const SWIPE = 40;
 

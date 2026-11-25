@@ -8,7 +8,7 @@ import {
   isAvailable,
   viewerColors,
   wrapIndex,
-} from "./colorViewer";
+} from "./colorViewerRules";
 
 const variant = (condition: Variant["condition"], color: string, stock: number, price: number): Variant =>
   ({ sku: `${condition}-${color}-${price}`, options: { Couleur: color }, price, stock, condition }) as unknown as Variant;

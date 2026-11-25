@@ -34,9 +34,10 @@ export default async function UsedProductPage({ params, searchParams }: PageProp
     redirect(`/produits/${slug}`);
   }
   const palette = await getPalette();
-  const step = productStep(product, (await searchParams).couleur);
+  const search = await searchParams;
+  const step = productStep(product, search.couleur);
   if (step.kind === "colors") {
-    return <ColorStep product={product} condition="refurbished" palette={palette} />;
+    return <ColorStep product={product} condition="refurbished" palette={palette} preview={search.apercu} />;
   }
   const ofThisColor = step.color ? ofColor(used, step.color) : used;
   // Une couleur sans occasion (adresse tapée à la main, ou vendue entre-temps) : retour au choix des couleurs.

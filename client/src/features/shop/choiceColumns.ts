@@ -1,5 +1,4 @@
 import { warrantyRange } from "@/config/warranty";
-import { formatPrice } from "@/lib/format";
 import type { ProductDetail } from "@/types/api";
 import { colorHref, kindIcon, ofColor } from "./colors";
 import { conditionSummary } from "./stock";
@@ -20,8 +19,6 @@ export type ChoiceColumnData = {
   href: string | null;
 };
 
-const lowest = (prices: number[]) => (prices.length > 0 ? Math.min(...prices) : null);
-
 // Une couleur montre sa propre photo, sinon l'icône de la catégorie : la photo du modèle
 // mettait la même image sur toutes les couleurs (06/11). Sans couleur choisie, la photo du
 // produit.
@@ -36,34 +33,6 @@ export function modelImage(product: Pick<ProductDetail, "colors" | "images" | "c
   const posterPhoto = product.colors.find((item) => item.name === product.posterColor)?.photoUrl;
   const anyPhoto = product.colors.find((item) => item.photoUrl)?.photoUrl;
   return product.images[0]?.url ?? posterPhoto ?? anyPhoto ?? kindIcon(product.category.kind);
-}
-
-// L'étape Couleur, après « Neuf scellé » ou « Occasion » (23/11) : chaque couleur dit son prix « dès » et son stock
-// dans cet état ; une couleur qui n'en a pas est grisée, sans lien.
-export function colorColumns(product: ProductDetail, condition: "new" | "refurbished"): ChoiceColumnData[] {
-  const isNew = condition === "new";
-  return product.colors.map(({ name }) => {
-    const inStock = ofColor(product.variants, name).filter((variant) => variant.stock > 0 && variant.condition === condition);
-    const from = lowest(inStock.map((v) => v.price));
-    // Une occasion est une pièce unique : on compte les appareils ; un neuf, les exemplaires en stock.
-    const count = isNew ? inStock.reduce((sum, v) => sum + v.stock, 0) : inStock.length;
-    const countLine = isNew ? `${count} en stock` : `${count} appareil${count > 1 ? "s" : ""}`;
-    return {
-      key: name,
-      title: name,
-      image: imageOf(product, name),
-      glow: name,
-      badge: null,
-      subtitle: null,
-      lines:
-        from !== null
-          ? [`${isNew ? "Neuf scellé" : "Occasion"} dès ${formatPrice(from)}`, countLine]
-          : [isNew ? "Pas de neuf dans cette couleur" : "Pas d'occasion dans cette couleur"],
-      // Le prix « dès » est dans les lignes : pas de prix en double.
-      price: null,
-      href: from !== null ? colorHref(product.slug, name, isNew ? "neuf" : "occasion") : null,
-    };
-  });
 }
 
 export function conditionColumns(product: ProductDetail, color: string | null): ChoiceColumnData[] {
