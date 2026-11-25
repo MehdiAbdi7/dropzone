@@ -51,6 +51,10 @@ export default function ColorViewer({
   const [front, setFront] = useState<0 | 1>(0);
   const [waiting, setWaiting] = useState<0 | 1 | null>(null);
   const frontRef = useRef<0 | 1>(0);
+  // La photo que porte chaque couche, et le numéro du dernier changement demandé (un passage devant
+  // programmé pour un changement dépassé par un clic plus récent est annulé).
+  const srcs = useRef<[string, string]>([layers[0].src, layers[1].src]);
+  const change = useRef(0);
   // Le changement en attente de chargement : un chargement périmé (clics rapides) est ignoré.
   const pending = useRef<{ layer: 0 | 1; src: string } | null>(null);
   const dotRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -65,15 +69,35 @@ export default function ColorViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [colors]);
 
+  // La photo demandée passe devant, l'ancienne s'efface.
+  function flip(layer: 0 | 1) {
+    pending.current = null;
+    frontRef.current = layer;
+    setFront(layer);
+    setWaiting(null);
+  }
+
   function show(next: number, dir: 1 | -1) {
     const target = wrapIndex(colors.length, next, 0);
     const layer = (1 - frontRef.current) as 0 | 1;
     const incoming = layerOf(target);
-    pending.current = { layer, src: new URL(incoming.src, window.location.href).href };
+    const mine = ++change.current;
+    // La couche cachée a déjà cette photo (retour à la couleur d'avant) : le navigateur ne lance alors
+    // aucun nouveau chargement, donc aucun événement `onLoad` à attendre. Elle passe devant d'elle-même,
+    // après un court délai, pour que son décalage de départ (`data-wait`) soit posé avant le fondu. Un
+    // délai et non `requestAnimationFrame` : celui-ci s'arrête quand la page n'est pas au premier plan.
+    const alreadyThere = srcs.current[layer] === incoming.src && pending.current?.layer !== layer;
+    srcs.current[layer] = incoming.src;
+    pending.current = alreadyThere ? null : { layer, src: new URL(incoming.src, window.location.href).href };
     setDirection(dir);
     setIndex(target);
     setWaiting(layer);
     setLayers((prev) => (layer === 0 ? [incoming, prev[1]] : [prev[0], incoming]));
+    if (alreadyThere) {
+      window.setTimeout(() => {
+        if (change.current === mine) flip(layer);
+      }, 40);
+    }
     // La couleur affichée est dans l'adresse (lien à partager, « précédent »), sans empiler d'historique.
     const url = new URL(window.location.href);
     url.searchParams.set("apercu", colors[target].name);
@@ -92,14 +116,11 @@ export default function ColorViewer({
     }
   }
 
-  // La photo demandée est arrivée : elle passe devant, l'ancienne s'efface.
+  // La photo demandée est arrivée : un chargement périmé (clics rapides) est ignoré.
   function loaded(layer: 0 | 1, element: HTMLImageElement) {
     const wanted = pending.current;
     if (wanted && wanted.layer === layer && element.src === wanted.src) {
-      pending.current = null;
-      frontRef.current = layer;
-      setFront(layer);
-      setWaiting(null);
+      flip(layer);
     }
   }
 
