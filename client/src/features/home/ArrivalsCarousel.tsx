@@ -15,9 +15,14 @@ export default function ArrivalsCarousel({ products }: { products: ProductCardDa
 
   return (
     // dir="ltr" même en arabe : la boucle calcule ses positions avec scrollLeft (voir CategoryCarousel).
-    <div dir="ltr" className="relative max-sm:-mx-4 px-9 sm:px-11">
+    // Largeur (25/11, demande de Mehdi) : sur téléphone, aucune marge autour du carrousel, comme celui des catégories
+    // (la piste va jusqu'aux bords de l'écran, les flèches se posent par-dessus). Sur ordinateur, les flèches ont leur
+    // couloir, et dès `xl` la sélection déborde de 40 px de chaque côté du conteneur : elle reste plus large que les
+    // catégories (voir CategoryCarousel, plafonnées à 1100 px).
+    <div dir="ltr" className="relative sm:px-3 lg:px-11 xl:-mx-10">
+      {/* Les flèches n'existent que dès `sm` : sur téléphone, le carrousel se glisse au doigt (25/11, demande de Mehdi). */}
       <div
-        className="pointer-events-none absolute inset-0 z-10 flex items-center justify-between"
+        className="pointer-events-none absolute inset-0 z-10 flex items-center justify-between max-sm:hidden"
         role="group"
         aria-label="Commandes des derniers arrivages"
       >
