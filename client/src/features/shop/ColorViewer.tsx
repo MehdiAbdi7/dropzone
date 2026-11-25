@@ -38,11 +38,15 @@ export default function ColorViewer({
     const photo = colors[index]?.photoUrl;
     return photo ? uniformPhoto(photo, "color") : kindIcon(product.category.kind);
   };
-  const layerOf = (index: number): Layer => ({
-    src: photoOf(index),
-    alt: `${product.name}, ${colors[index]?.name ?? ""}`,
-    dim: !isAvailable(colors[index], condition),
-  });
+  // Une couleur indisponible est assombrie ; une icône de secours (couleur sans photo) ne l'est pas.
+  const layerOf = (index: number): Layer => {
+    const one = colors[index];
+    return {
+      src: photoOf(index),
+      alt: `${product.name}, ${one?.name ?? ""}`,
+      dim: Boolean(one?.photoUrl) && !isAvailable(one, condition),
+    };
+  };
 
   const [index, setIndex] = useState(() => firstIndex(colors, condition, preview));
   const [direction, setDirection] = useState<1 | -1>(1);
@@ -58,6 +62,7 @@ export default function ColorViewer({
   // Le changement en attente de chargement : un chargement périmé (clics rapides) est ignoré.
   const pending = useRef<{ layer: 0 | 1; src: string } | null>(null);
   const dotRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const layerRefs = useRef<(HTMLDivElement | null)[]>([]);
   const dragStart = useRef<number | null>(null);
 
   // Précharger toutes les photos : le premier fondu ne doit pas attendre une image.
@@ -71,6 +76,10 @@ export default function ColorViewer({
 
   // La photo demandée passe devant, l'ancienne s'efface.
   function flip(layer: 0 | 1) {
+    // Lire la géométrie de la couche force le navigateur à calculer son style de départ (`data-wait`, le
+    // décalage du côté du geste) avant qu'elle ne passe devant : sans cela, en production, une photo déjà
+    // en cache pouvait partir de la position de sortie et arriver du mauvais côté.
+    layerRefs.current[layer]?.getBoundingClientRect();
     pending.current = null;
     frontRef.current = layer;
     setFront(layer);
@@ -139,6 +148,9 @@ export default function ColorViewer({
 
   // Glisser (doigt ou souris) : plus de 40 px d'écart change de couleur. L'écouteur est sur la fenêtre :
   // le geste peut finir hors du cadre.
+  // `pointercancel` : un défilement vertical commencé sur la photo (`touch-action: pan-y`) envoie
+  // `pointercancel` et jamais `pointerup`. Sans l'effacer, le départ restait mémorisé et un toucher
+  // ailleurs, plus tard, changeait de couleur (et le bouton « Voir les offres » menait à une autre).
   useEffect(() => {
     function onUp(event: PointerEvent) {
       if (dragStart.current === null) return;
@@ -146,8 +158,15 @@ export default function ColorViewer({
       dragStart.current = null;
       if (Math.abs(dx) > SWIPE) go(dx < 0 ? 1 : -1);
     }
+    function onCancel() {
+      dragStart.current = null;
+    }
     window.addEventListener("pointerup", onUp);
-    return () => window.removeEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
+    return () => {
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onCancel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, colors.length]);
 
@@ -176,28 +195,39 @@ export default function ColorViewer({
         <div
           className="viewer-frame"
           tabIndex={0}
+          role="group"
           aria-roledescription="carrousel"
           aria-label="Photo du téléphone, flèches gauche et droite pour changer de couleur"
           onKeyDown={onFrameKey}
           onPointerDown={(event) => {
-            if (!(event.target as HTMLElement).closest(".viewer-arrow")) dragStart.current = event.clientX;
+            // Un toucher sur une flèche n'est pas le début d'un glissement (on avançait de deux couleurs).
+            dragStart.current = (event.target as HTMLElement).closest(".viewer-arrow") ? null : event.clientX;
           }}
         >
           <div className="viewer-glow" style={{ backgroundColor: swatch(color.name) }} data-dim={unavailable ? "" : undefined} />
           {([0, 1] as const).map((layer) => (
             <div
               key={layer}
+              ref={(element) => {
+                layerRefs.current[layer] = element;
+              }}
               className="viewer-layer"
               data-front={front === layer ? "" : undefined}
               data-wait={waiting === layer ? "" : undefined}
               data-dim={layers[layer].dim ? "" : undefined}
               aria-hidden={front === layer ? undefined : true}
             >
+              {/* `key` = l'adresse de la photo : chaque photo a son propre élément. `next/image` ignore un
+                  `load` quand l'élément retrouve l'adresse qu'il avait déjà chargée (revenir à la couleur
+                  d'avant pendant un chargement) : la photo ne passait jamais devant, le nom changeait mais
+                  pas le téléphone. Un élément neuf appelle toujours `onLoad`, même depuis le cache. */}
               <Image
+                key={layers[layer].src}
                 src={layers[layer].src}
                 alt={front === layer ? layers[layer].alt : ""}
                 fill
                 unoptimized
+                loading="eager"
                 draggable={false}
                 sizes="(min-width: 768px) 340px, 90vw"
                 onLoad={(event) => loaded(layer, event.currentTarget)}
@@ -291,7 +321,14 @@ export default function ColorViewer({
                 {others.map((other, i) => (
                   <span key={other.name}>
                     {i > 0 ? " · " : ""}
-                    <button type="button" onClick={() => pick(other.index)}>
+                    {/* Ce bouton disparaît dès qu'on choisit : le focus va sur la pastille de la couleur choisie. */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        pick(other.index);
+                        dotRefs.current[other.index]?.focus();
+                      }}
+                    >
                       {other.name}
                     </button>
                   </span>

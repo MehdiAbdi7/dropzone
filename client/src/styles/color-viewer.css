@@ -5,7 +5,7 @@
 
 @layer components {
   .viewer {
-    --viewer-photo-h: clamp(9rem, calc(100dvh - 34rem), 15rem);
+    --viewer-photo-h: clamp(9rem, calc(100svh - 34rem), 15rem);
     --viewer-dir: 1;
     position: relative;
     overflow: hidden;
@@ -24,11 +24,14 @@
   }
   @media (min-width: 768px) {
     .viewer {
-      --viewer-photo-h: clamp(10rem, calc(100dvh - 30rem), 17rem);
+      --viewer-photo-h: clamp(10rem, calc(100svh - 30rem), 17rem);
       padding: 22px 22px 20px;
     }
   }
+  /* Le mot ne fait que sa largeur : un `p` pleine largeur ne montrait que le milieu du dégradé du texte. */
   .viewer-brand {
+    width: fit-content;
+    margin-inline: auto;
     font-family: var(--font-display);
     font-size: 1.1rem;
     font-weight: 800;
@@ -69,7 +72,7 @@
     position: relative;
     height: var(--viewer-photo-h);
     overflow: hidden;
-    touch-action: pan-y;
+    touch-action: pan-y pinch-zoom;
     user-select: none;
     cursor: grab;
     border-radius: 14px;
@@ -300,6 +303,12 @@
   }
   .viewer-cta:hover {
     filter: brightness(1.1);
+  }
+
+  @supports not (height: 1svh) {
+    .viewer {
+      --viewer-photo-h: 13rem;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
