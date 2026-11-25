@@ -80,7 +80,7 @@ export default function PosterSlider({
       <div className="poster-frame relative">
         <ul
           ref={trackRef}
-          className={`poster-track ${layout === "columns" ? "poster-track-fit" : ""}`}
+          className={`poster-track ${layout === "columns" ? "poster-track-fit" : ""} ${many ? "" : "poster-track-single"}`}
           style={{ "--cols": count } as CSSProperties}
           onAnimationEnd={(event) => event.currentTarget.classList.remove("poster-nudge")}
         >
