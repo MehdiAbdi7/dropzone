@@ -59,6 +59,7 @@ export default function ProductHeader({
   stepHref,
   color,
   image,
+  journey,
   children,
 }: {
   product: ProductDetail;
@@ -66,6 +67,8 @@ export default function ProductHeader({
   stepHref?: string;
   color?: string | null;
   image?: string | null;
+  // Le parcours d'achat (25/11) d'un appareil : il remplace le fil d'Ariane. Un accessoire n'en a pas.
+  journey?: ReactNode;
   children: ReactNode;
 }) {
   const crumbs = productCrumbs(product, color ?? null, step, stepHref);
@@ -75,7 +78,7 @@ export default function ProductHeader({
 
   return (
     <div className="space-y-5">
-      <Breadcrumb items={crumbs} />
+      {journey ?? <Breadcrumb items={crumbs} />}
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-8">
         <div className="mx-auto w-full max-w-sm lg:sticky lg:top-24 lg:max-w-none">
           <div className="card product-stage relative aspect-square overflow-hidden rounded-3xl lg:aspect-[1/0.92]">

@@ -276,13 +276,13 @@ export const CheckIcon = (props: IconProps) => (
   </Icon>
 );
 
-// Trois points reliés sur une ligne : le parcours d'achat. Volontairement pas trois traits
-// horizontaux, qui ressembleraient au menu hamburger de l'en-tête (MenuIcon).
+// Un chemin qui va d'un point de départ à un point d'arrivée : le parcours d'achat. Volontairement
+// ni trois traits horizontaux (le menu hamburger de l'en-tête, MenuIcon) ni trois points empilés
+// (qui se liraient comme un menu « plus d'options »).
 export const RouteIcon = (props: IconProps) => (
   <Icon {...props}>
-    <circle cx="12" cy="5" r="2" />
-    <circle cx="12" cy="12" r="2" />
-    <circle cx="12" cy="19" r="2" />
-    <path d="M12 7v3M12 14v3" />
+    <circle cx="6" cy="19" r="2.5" />
+    <circle cx="18" cy="5" r="2.5" />
+    <path d="M8.5 19H17a3.5 3.5 0 0 0 0-7H7a3.5 3.5 0 0 1 0-7h8.5" />
   </Icon>
 );

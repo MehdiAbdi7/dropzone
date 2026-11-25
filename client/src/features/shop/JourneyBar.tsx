@@ -94,6 +94,7 @@ export default function JourneyBar({
   const [expanded, setExpanded] = useState<JourneyStepKey | null>(null);
   const routeRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
+  const onPoster = current !== "end";
   const progress = journeyProgress(steps);
   const back = journeyBackHref(steps);
   // L'étape où mène le retour : celle d'avant, ou la dernière sur la fiche finale.
@@ -114,7 +115,11 @@ export default function JourneyBar({
   }
 
   return (
-    <nav aria-label="Parcours d'achat" className="journey">
+    // La barre a le fond du conteneur qu'elle surmonte (remarque de Mehdi, 25/11). Au-dessus d'une
+    // affiche (série, état, couleur), qui est sombre dans les deux thèmes : le même fond que
+    // l'affiche (`journey-poster`), et `brand-dark` pour que tout ce qu'elle contient suive. Sur la
+    // fiche finale, le bloc produit suit le thème : la barre aussi.
+    <nav aria-label="Parcours d'achat" className={`journey ${onPoster ? "brand-dark journey-poster" : ""}`}>
       <div className="journey-row">
         {back ? (
           <Link href={back} className="journey-back" aria-label={`Retour : ${backStep?.label ?? "page précédente"}`}>
@@ -162,7 +167,7 @@ export default function JourneyBar({
         ? createPortal(
             <div className="picker-layer" onKeyDown={onSheetKeyDown}>
               <button type="button" aria-label="Fermer le parcours" tabIndex={-1} onClick={closeSheet} className="picker-backdrop" />
-              <div role="dialog" aria-modal="true" aria-labelledby={titleId} className="picker-panel is-themed">
+              <div role="dialog" aria-modal="true" aria-labelledby={titleId} className={`picker-panel is-themed ${onPoster ? "brand-dark" : ""}`}>
                 <div className="picker-head">
                   <h2 id={titleId} className="text-base font-extrabold">
                     Ton parcours

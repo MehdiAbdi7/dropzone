@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type RefObject, useEffect } from "react";
+import { type RefObject, useEffect, useRef } from "react";
 import { CheckIcon } from "@/components/ui/icons";
 import type { JourneyStep, JourneyStepKey } from "./journey";
 import {
@@ -96,8 +96,20 @@ export default function JourneyChoiceList({
   onNavigate: () => void;
 }) {
   const { choices, status } = useStepChoices(step, context, staticChoices);
+  const ownRef = useRef<HTMLDivElement>(null);
+  const ref = listRef ?? ownRef;
+
+  // Les lignes d'une liste chargée par l'API n'existent qu'à l'arrivée de la réponse, après
+  // l'ouverture : useListDismiss cherche alors le choix actuel trop tôt. Quand la liste est prête,
+  // le focus va sur le choix actuel pour que le clavier (↑ ↓, Échap, Tab) parte de là.
+  useEffect(() => {
+    if (status === "ready") {
+      ref.current?.querySelector<HTMLElement>("[data-current]")?.focus();
+    }
+  }, [status, ref]);
+
   return (
-    <div ref={listRef} role="list" aria-label={`Changer de ${step.label.toLowerCase()}`} className="filter-list">
+    <div ref={ref} role="list" aria-label={`Changer de ${step.label.toLowerCase()}`} className="filter-list">
       {status === "loading" ? <p className="journey-note">Chargement…</p> : null}
       {status === "error" ? <p className="journey-note">Impossible de charger la liste.</p> : null}
       {choices.map((choice) => (

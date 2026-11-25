@@ -6,7 +6,9 @@ import ColorStep from "@/features/shop/ColorStep";
 import { ofColor, productStep } from "@/features/shop/colors";
 import ProductFacts from "@/features/shop/ProductFacts";
 import ProductHeader from "@/features/shop/ProductHeader";
+import { ProductJourney } from "@/features/shop/ProductJourney";
 import RefurbishedList from "@/features/shop/RefurbishedList";
+import ShopBackdrop from "@/features/shop/ShopBackdrop";
 import { getPalette } from "@/lib/palette";
 import { getProduct } from "@/lib/products";
 
@@ -45,17 +47,20 @@ export default async function UsedProductPage({ params, searchParams }: PageProp
   const photo = step.color ? imageOf(product, step.color) : null;
 
   return (
-    <div className="container-page py-8">
-      <ProductHeader
-        product={product}
-        step={CONDITION_LABELS.refurbished}
-        stepHref={`/produits/${slug}/occasion`}
-        color={step.color}
-        image={photo}
-      >
-        <RefurbishedList variants={ofThisColor} kind={product.category.kind} palette={palette} />
-        <ProductFacts product={product} />
-      </ProductHeader>
-    </div>
+    <ShopBackdrop contentMax={1200}>
+      <div className="container-page py-8">
+        <ProductHeader
+          product={product}
+          step={CONDITION_LABELS.refurbished}
+          stepHref={`/produits/${slug}/occasion`}
+          color={step.color}
+          image={photo}
+          journey={<ProductJourney product={product} current="end" condition="refurbished" color={step.color} />}
+        >
+          <RefurbishedList variants={ofThisColor} kind={product.category.kind} palette={palette} />
+          <ProductFacts product={product} />
+        </ProductHeader>
+      </div>
+    </ShopBackdrop>
   );
 }

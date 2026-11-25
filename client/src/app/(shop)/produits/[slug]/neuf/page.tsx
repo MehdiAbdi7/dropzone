@@ -7,6 +7,8 @@ import { ofColor, productStep } from "@/features/shop/colors";
 import NewPicker from "@/features/shop/NewPicker";
 import ProductFacts from "@/features/shop/ProductFacts";
 import ProductHeader from "@/features/shop/ProductHeader";
+import { ProductJourney } from "@/features/shop/ProductJourney";
+import ShopBackdrop from "@/features/shop/ShopBackdrop";
 import { getPalette } from "@/lib/palette";
 import { getProduct } from "@/lib/products";
 
@@ -43,11 +45,20 @@ export default async function NewProductPage({ params, searchParams }: PageProps
   const photo = step.color ? imageOf(product, step.color) : null;
 
   return (
-    <div className="container-page py-8">
-      <ProductHeader product={product} step={CONDITION_LABELS.new} stepHref={`/produits/${slug}/neuf`} color={step.color} image={photo}>
-        <NewPicker variants={ofThisColor} kind={product.category.kind} palette={palette} colorChosen={step.color !== null} />
-        <ProductFacts product={product} />
-      </ProductHeader>
-    </div>
+    <ShopBackdrop contentMax={1200}>
+      <div className="container-page py-8">
+        <ProductHeader
+          product={product}
+          step={CONDITION_LABELS.new}
+          stepHref={`/produits/${slug}/neuf`}
+          color={step.color}
+          image={photo}
+          journey={<ProductJourney product={product} current="end" condition="new" color={step.color} />}
+        >
+          <NewPicker variants={ofThisColor} kind={product.category.kind} palette={palette} colorChosen={step.color !== null} />
+          <ProductFacts product={product} />
+        </ProductHeader>
+      </div>
+    </ShopBackdrop>
   );
 }

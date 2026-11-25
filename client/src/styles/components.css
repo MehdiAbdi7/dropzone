@@ -437,16 +437,36 @@
      étapes sur une ligne ; en dessous : retour, « Étape N sur M », icône de frise, barre de
      progression. Fait = bleu, en cours = rouge, à venir = gris, comme la frise des commandes du
      back-office. */
+  /* Collée sous l'en-tête du site au défilement (remarque de Mehdi, 25/11 : la barre doit toujours
+     rester en haut). L'en-tête est lui-même collé en haut (`sticky top-0 z-30`, 4 rem plus 1 px de
+     bordure) : sans ce `top`, la barre passerait dessous (même piège que la capsule de filtres,
+     voir capsule.ts). En dessous de l'en-tête (z-index 20 contre 30), au-dessus de la page. */
   .journey {
-    position: relative;
-    z-index: 5;
+    position: sticky;
+    top: calc(4rem + 1px + 8px);
+    z-index: 20;
     margin-bottom: 18px;
     padding: 12px;
     border: 1px solid var(--line);
     border-radius: 20px;
-    background: color-mix(in srgb, var(--surface) 85%, transparent);
+    /* Presque opaque : la barre est sombre dans les deux thèmes (classe brand-dark), ses couleurs
+       ne doivent pas dépendre du fond de la page derrière. */
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
     box-shadow: 0 10px 26px -18px rgb(10 11 20 / 0.4);
     backdrop-filter: blur(12px);
+  }
+  /* Au-dessus d'une affiche : exactement le fond du conteneur de l'affiche (.poster, series-posters.css),
+     dégradé sombre et liseré indigo, violet, rouge. Pas `overflow: hidden` comme elle : la liste
+     d'une étape doit sortir de la barre. */
+  .journey-poster {
+    border-color: transparent;
+    border-radius: 22px;
+    background:
+      linear-gradient(145deg, #0d0e12, #08090d 58%, #0c0b10) padding-box,
+      linear-gradient(135deg, rgb(99 102 241 / 0.72), rgb(163 59 240 / 0.42) 48%, rgb(255 46 77 / 0.48)) border-box;
+    box-shadow:
+      0 24px 64px -42px rgb(61 75 255 / 0.5),
+      inset 0 1px 0 rgb(255 255 255 / 0.06);
   }
   .journey-row {
     display: flex;
