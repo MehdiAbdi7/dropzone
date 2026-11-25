@@ -580,4 +580,35 @@
      barre d'adresse se replie au premier défilement, la fenêtre dépasse 800 px, la règle cesse de
      s'appliquer et les caractéristiques apparaissaient d'un coup, les affiches grandissant sous le doigt.
      Elles sont maintenant toujours toutes visibles, comme après ce défilement. */
+
+  /* Téléphone : des tailles fixes, sans aucune unité de hauteur d'écran (25/11, demande de Mehdi). `lvh` ne
+     suffisait pas : sur son téléphone la photo et le titre naissaient encore petits sous la barre d'adresse
+     et grandissaient au premier défilement (certains navigateurs mobiles recalculent ces unités quand la
+     barre se replie). Ces valeurs sont celles qu'un iPhone de 844 px de haut donnait après le défilement ;
+     elles écrasent les `clamp` ci-dessus. Ordinateur et tablette : inchangés (aucune barre qui se replie). */
+  @media (max-width: 767px) {
+    :root {
+      --photo-h: 8.75rem;
+    }
+    .poster-header {
+      gap: 0.4rem;
+      padding-top: 1.25rem;
+    }
+    .poster-body {
+      padding-top: 0.4rem;
+      padding-bottom: 0.5rem;
+    }
+    .poster-headline {
+      font-size: 2.6rem;
+    }
+    .poster-stack {
+      gap: 0.4rem;
+    }
+    .poster-specs {
+      gap: 0.45rem;
+    }
+    .choice-card {
+      min-height: 380px;
+    }
+  }
 }
