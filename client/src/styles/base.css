@@ -12,6 +12,19 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Pas de zoom au pincement ni au double-appui (25/11, demande de Mehdi). Safari iOS ignore `user-scalable=no` de
+     la balise viewport : `pan-x pan-y` ne laisse que le défilement. */
+  html,
+  body {
+    touch-action: pan-x pan-y;
+  }
+
+  /* Un <fieldset> a par défaut `min-width: min-content` : il s'élargit à son contenu au lieu de rester dans son
+     parent (la fenêtre d'une variante débordait de 160 px sur téléphone, 25/11). Largeur minimale à zéro partout. */
+  fieldset {
+    min-width: 0;
+  }
+
   h1,
   h2,
   h3 {

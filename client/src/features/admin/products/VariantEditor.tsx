@@ -136,7 +136,12 @@ export default function VariantEditor({
         </div>
       ) : null}
 
-      <div role="tablist" aria-label="Parties de la variante" className="flex gap-1 overflow-x-auto border-b border-line bg-surface-2/40 px-2 pt-2">
+      {/* Sur téléphone les cinq onglets ne tiennent pas : la barre défile, sans barre de défilement visible. */}
+      <div
+        role="tablist"
+        aria-label="Parties de la variante"
+        className="flex gap-1 overflow-x-auto border-b border-line bg-surface-2/40 px-2 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {tabs.map((item) => {
           const active = item.id === tab;
           return (
@@ -148,9 +153,13 @@ export default function VariantEditor({
               aria-selected={active}
               aria-controls={id(`panel-${item.id}`)}
               tabIndex={active ? 0 : -1}
-              onClick={() => setChosenTab(item.id)}
+              onClick={(event) => {
+                setChosenTab(item.id);
+                // L'onglet touché se centre dans la barre : sur téléphone, le suivant apparaît à demi.
+                event.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+              }}
               onKeyDown={onTabKeyDown}
-              className={`flex shrink-0 items-center gap-2 rounded-t-lg border border-b-0 px-3 py-2 text-sm font-semibold transition-colors ${
+              className={`flex shrink-0 items-center gap-2 rounded-t-lg border border-b-0 px-2.5 py-2 text-sm font-semibold transition-colors sm:px-3 ${
                 active ? "border-line bg-surface text-ink" : "border-transparent text-ink-muted hover:text-ink"
               }`}
             >

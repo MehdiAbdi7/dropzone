@@ -36,8 +36,14 @@ export const metadata: Metadata = {
 };
 
 // L'en-tête est noir dans les deux thèmes : la barre du navigateur mobile aussi.
+// Zoom bloqué sur téléphone (25/11, demande de Mehdi) : `maximumScale` et `userScalable` pour Chrome et Android,
+// `touch-action` (globals.css) pour Safari iOS, qui ignore ces deux réglages.
 export const viewport: Viewport = {
   themeColor: "#000000",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
