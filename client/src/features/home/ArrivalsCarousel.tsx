@@ -51,7 +51,7 @@ export default function ArrivalsCarousel({ products }: { products: ProductCardDa
         // `py-4 -my-4` : overflow-x force overflow-y à « auto », ce qui rognerait l'ombre des
         // cartes au survol ; on rend l'espace sans décaler la page.
         // `overflow-y-hidden` (25/11) : voir CategoryCarousel, un geste vertical doit aller à la page.
-        className="scrollbar-hide -mx-4 -my-4 flex gap-3 overflow-x-auto overflow-y-hidden overscroll-x-contain px-4 py-4 [mask-image:linear-gradient(to_right,transparent,black_1%,black_99%,transparent)] sm:mx-0 sm:gap-4 sm:px-1 sm:[mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]"
+        className="scrollbar-hide -mx-4 -my-4 flex gap-3 overflow-x-auto overflow-y-hidden overscroll-x-contain px-4 py-4 sm:mx-0 sm:gap-4 sm:px-1 sm:[mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]"
       >
         {/* Trois copies : c'est ce qui donne la boucle. Les deux latérales sont cachées aux
             lecteurs d'écran et hors parcours clavier, mais restent cliquables (voir copies.ts). */}
@@ -63,7 +63,10 @@ export default function ArrivalsCarousel({ products }: { products: ProductCardDa
               aria-hidden={hidden}
               className="flex min-w-[128px] shrink-0 basis-[35vw] sm:min-w-0 sm:basis-[230px]"
             >
-              <ProductCard product={product} sizes="(min-width: 640px) 230px, 35vw" tabIndex={tabIndex} />
+              {/* eager : les trois copies partagent les mêmes images (un seul téléchargement chacune) ; « à la demande », celles
+                des copies latérales arrivaient après un grand coup de doigt et laissaient des cartes blanches. */}
+              <ProductCard product={product} sizes="(min-width: 640px) 230px, 35vw" tabIndex={tabIndex} eager />
+
             </div>
           ));
         })}
