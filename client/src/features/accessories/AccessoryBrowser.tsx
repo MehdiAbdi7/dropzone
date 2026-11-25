@@ -1,14 +1,16 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
-import BrandLogo from "@/components/ui/BrandLogo";
+import { useRef, useState } from "react";
 import ShopSearch from "@/features/categories/ShopSearch";
 import Breadcrumb from "@/features/shop/Breadcrumb";
+import { CAPSULE_WRAP } from "@/features/shop/capsule";
+import { accessoryMakerOptions, accessoryTypeOptions } from "@/features/shop/filterOptions";
+import FilterPicker from "@/features/shop/FilterPicker";
 import type { AccessoryCatalog } from "@/types/api";
 import AccessoryCard from "./AccessoryCard";
 import AccessoryDialog from "./AccessoryDialog";
-import { type AccessoryFilters, filtersHref, makersOf, readFilters, visibleProducts } from "./filters";
+import { type AccessoryFilters, filtersHref, readFilters, visibleProducts } from "./filters";
 
 // La page d'une catégorie d'accessoires (refonte du 12/11, décision de Mehdi) : une seule page,
 // deux filtres (le type, puis la marque quand le type en a), et une fenêtre d'achat par carte.
@@ -18,67 +20,55 @@ import { type AccessoryFilters, filtersHref, makersOf, readFilters, visibleProdu
 export default function AccessoryBrowser({ catalog }: { catalog: AccessoryCatalog }) {
   const filters = readFilters(useSearchParams(), catalog);
   const [open, setOpen] = useState<string | null>(null);
-  const makers = makersOf(catalog, filters.type);
+  const makerOptions = accessoryMakerOptions(catalog, filters.type);
   const products = visibleProducts(catalog, filters);
   const types = catalog.types.filter((type) => !filters.type || type.slug === filters.type);
   const go = (next: AccessoryFilters) => window.history.pushState(null, "", filtersHref(catalog.category.slug, next));
+  const capsuleRef = useRef<HTMLDivElement>(null);
 
-  const chip = (key: string, label: string, on: boolean, onClick: () => void, extra?: React.ReactNode) => (
-    <button
-      key={key}
-      type="button"
-      aria-pressed={on}
-      onClick={onClick}
-      className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
-        on ? "border-blue bg-blue text-on-brand" : "border-line bg-surface text-ink-muted hover:border-ink-muted hover:text-ink"
-      }`}
-    >
-      {extra}
-      {label}
-    </button>
-  );
-  const rowLabel = "w-14 shrink-0 text-xs font-bold tracking-wide text-ink-muted uppercase";
+  // « Effacer » disparaît au clic : sans rendre le focus au premier bouton (« Type »), un clavier ou
+  // un lecteur d'écran perdait sa place. Il remonte aussi en haut, comme un choix dans une liste.
+  function clear() {
+    go({ type: null, maker: null });
+    capsuleRef.current?.querySelector<HTMLElement>(".filter-trigger")?.focus();
+    window.scrollTo({ top: 0 });
+  }
 
   return (
     <div className="container-page space-y-5 py-8">
       <Breadcrumb items={[{ label: "Boutique", href: "/boutique" }, { label: catalog.category.name }]} />
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl">{catalog.category.name}</h1>
-          <p className="text-ink-muted">Filtre, puis choisis ton accessoire.</p>
-        </div>
-        <ShopSearch category={catalog.category.slug} />
+      <header className="space-y-1">
+        <h1 className="text-3xl">{catalog.category.name}</h1>
+        <p className="text-ink-muted">Filtre, puis choisis ton accessoire.</p>
       </header>
 
-      <div className="sticky top-0 z-20 -mx-4 space-y-2.5 border-b border-line bg-bg/90 px-4 py-3 backdrop-blur md:mx-0 md:px-0">
-        <div role="group" aria-label="Type" className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] md:flex-wrap md:overflow-visible">
-          <span className={rowLabel}>Type</span>
-          {chip("type-all", "Tous", !filters.type, () => go({ type: null, maker: null }), <small className="order-last opacity-75">{catalog.products.length}</small>)}
-          {catalog.types.map((type) =>
-            chip(
-              `type-${type.slug}`,
-              type.name,
-              filters.type === type.slug,
-              () => go({ type: type.slug, maker: null }),
-              <small className="order-last opacity-75">{catalog.products.filter((product) => product.type === type.slug).length}</small>,
-            ),
-          )}
+      {/* La capsule (25/11, demande de Mehdi) : la recherche et deux listes, collées sous l'en-tête
+          au défilement. Remplace les rangées de puces, qui disparaissaient sous l'en-tête. */}
+      <div className={CAPSULE_WRAP}>
+        <div ref={capsuleRef} className="filter-capsule">
+          <ShopSearch category={catalog.category.slug} className="min-w-0 flex-1 max-sm:basis-full" />
+          <FilterPicker
+            label="Type"
+            emptyText="Tous"
+            options={accessoryTypeOptions(catalog)}
+            value={filters.type}
+            onChange={(type) => go({ type, maker: null })}
+          />
+          {makerOptions.length > 0 ? (
+            <FilterPicker
+              label="Marque"
+              emptyText="Toutes"
+              options={makerOptions}
+              value={filters.maker}
+              onChange={(maker) => go({ type: filters.type, maker })}
+            />
+          ) : null}
+          {filters.type ? (
+            <button type="button" onClick={clear} className="px-2 text-sm font-bold text-blue-ink max-sm:hidden">
+              Effacer
+            </button>
+          ) : null}
         </div>
-        {makers.length > 0 ? (
-          <div role="group" aria-label="Marque" className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] md:flex-wrap md:overflow-visible">
-            <span className={rowLabel}>Marque</span>
-            {chip("maker-all", "Toutes", !filters.maker, () => go({ type: filters.type, maker: null }))}
-            {makers.map((maker) =>
-              chip(
-                `maker-${maker.slug}`,
-                maker.name,
-                filters.maker === maker.slug,
-                () => go({ type: filters.type, maker: maker.slug }),
-                maker.logoUrl ? <BrandLogo url={maker.logoUrl} size={14} width={maker.logoUrl.startsWith("/brands/") ? 34 : 14} /> : null,
-              ),
-            )}
-          </div>
-        ) : null}
       </div>
 
       <p role="status" className="sr-only">

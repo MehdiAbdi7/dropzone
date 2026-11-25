@@ -2,9 +2,10 @@ import { SearchIcon } from "@/components/ui/icons";
 
 // Le champ « Chercher un modèle… » des pages de la Boutique. Une simple form GET : chercher
 // marche même sans JavaScript. `category` limite la recherche à la catégorie de la page.
-export default function ShopSearch({ category }: { category?: string }) {
+// `className` remplace la largeur par défaut : la capsule de filtres lui donne la place qui reste.
+export default function ShopSearch({ category, className }: { category?: string; className?: string }) {
   return (
-    <form action="/produits" role="search" className="relative w-full sm:w-80">
+    <form action="/produits" role="search" className={`relative ${className ?? "w-full sm:w-80"}`}>
       <label htmlFor="shop-search" className="sr-only">
         Quel modèle cherches-tu ?
       </label>

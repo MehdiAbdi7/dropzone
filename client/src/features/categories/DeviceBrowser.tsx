@@ -1,18 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type MouseEvent, useEffect } from "react";
-import BrandLogo from "@/components/ui/BrandLogo";
+import { useEffect } from "react";
 import type { Palette } from "@/config/colors";
 import Breadcrumb from "@/features/shop/Breadcrumb";
+import { CAPSULE_WRAP } from "@/features/shop/capsule";
+import { deviceBrandOptions, OTHERS } from "@/features/shop/filterOptions";
+import FilterPicker from "@/features/shop/FilterPicker";
 import ModelCard from "@/features/shop/ModelCard";
 import SeriesCard from "@/features/shop/SeriesCard";
 import type { BrandSeries, Category, ProductCard } from "@/types/api";
 import ShopSearch from "./ShopSearch";
 import { brandSlugFromPath, pickBrand, tabTitle } from "./tiles";
-
-const OTHERS = "autres";
 
 // Hors du composant : le titre de l'onglet est un effet sur le document, pas un état de React.
 function setTabTitle(parts: string[]) {
@@ -20,8 +19,9 @@ function setTabTitle(parts: string[]) {
 }
 
 // La page d'une catégorie d'appareils (refonte du 12/11, décision de Mehdi) : directement les
-// affiches des séries, avec des puces de marques au-dessus. Un clic sur une puce change les séries
-// sur place, sans recharger : toutes les marques et leurs séries sont déjà là (`GET /series` sans
+// affiches des séries, avec la capsule de filtres au-dessus (la recherche et la liste des marques).
+// Choisir une marque change les séries sur place, sans recharger : toutes les marques et leurs
+// séries sont déjà là (`GET /series` sans
 // marque, lu par la page). L'adresse suit (`/boutique/smartphones/samsung`) par
 // `history.pushState`, et la marque affichée se relit dans l'adresse (`usePathname`) : un lien
 // copié ouvre la bonne marque, et le bouton « précédent » ramène à la marque d'avant.
@@ -44,13 +44,14 @@ export default function DeviceBrowser({
   const current = showOthers ? OTHERS : group?.brand.slug;
   const currentName = showOthers ? "Autres" : group?.brand.name;
 
-  function select(event: MouseEvent<HTMLAnchorElement>, slug: string) {
-    // Ctrl, Cmd, Maj ou le bouton du milieu : ouvrir ailleurs, comme un lien ordinaire.
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
+  const brandOptions = deviceBrandOptions(groups, others.length);
+
+  // Choisir une marque dans la liste : l'adresse change sans recharger (la marque affichée se relit
+  // dans l'adresse). La liste n'a pas de ligne « aucune marque » : `null` n'arrive jamais ici.
+  function select(slug: string | null) {
+    if (slug) {
+      window.history.pushState(null, "", `/boutique/${category.slug}/${slug}`);
     }
-    event.preventDefault();
-    window.history.pushState(null, "", `/boutique/${category.slug}/${slug}`);
   }
 
   // Le titre de l'onglet suit la marque : la page ne se recharge pas, Next ne le recalcule pas.
@@ -58,42 +59,28 @@ export default function DeviceBrowser({
     setTabTitle(currentName ? [currentName, category.name] : [category.name]);
   }, [currentName, category.name]);
 
-  const chip = (slug: string, name: string, logoUrl: string | null) => (
-    <li key={slug} className="shrink-0">
-      <Link
-        href={`/boutique/${category.slug}/${slug}`}
-        onClick={(event) => select(event, slug)}
-        aria-current={current === slug ? "page" : undefined}
-        className={`flex items-center gap-2 rounded-full border px-4 py-2 font-display text-sm font-bold transition-colors ${
-          current === slug ? "border-blue bg-blue text-on-brand" : "border-line bg-surface text-ink-muted hover:border-ink-muted hover:text-ink"
-        }`}
-      >
-        {logoUrl ? <BrandLogo url={logoUrl} size={16} width={logoUrl.startsWith("/brands/") ? 40 : 16} /> : null}
-        {name}
-      </Link>
-    </li>
-  );
-
   return (
     <div className="container-page space-y-5 py-8">
       <Breadcrumb items={[{ label: "Boutique", href: "/boutique" }, { label: category.name }]} />
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-3xl">{category.name}</h1>
-          <p className="text-ink-muted">Choisis ta série, de la plus récente à la plus ancienne.</p>
-        </div>
-        <ShopSearch category={category.slug} />
+      <header className="space-y-1">
+        <h1 className="text-3xl">{category.name}</h1>
+        <p className="text-ink-muted">Choisis ta série, de la plus récente à la plus ancienne.</p>
       </header>
 
-      {/* Les puces restent en haut au défilement ; sur téléphone elles défilent de côté. */}
-      <nav aria-label="Marques" className="sticky top-0 z-20 -mx-4 border-b border-line bg-bg/90 px-4 py-3 backdrop-blur md:mx-0 md:px-0">
-        <ul className="flex gap-2 overflow-x-auto [scrollbar-width:none] md:flex-wrap md:overflow-visible">
-          {groups.map((one) => chip(one.brand.slug, one.brand.name, one.brand.logoUrl))}
-          {others.length > 0 ? chip(OTHERS, "Autres", null) : null}
-        </ul>
-      </nav>
+      {/* La capsule (25/11, demande de Mehdi) : la recherche et la liste des marques, collées sous
+          l'en-tête au défilement. Même capsule que la page Accessoires. Remplace les puces de
+          marques, qui disparaissaient sous l'en-tête et qu'on ne devinait pas à faire défiler. */}
+      <div className={CAPSULE_WRAP}>
+        <div className="filter-capsule">
+          <ShopSearch category={category.slug} className="min-w-0 flex-1 max-sm:basis-full" />
+          {/* Pas de bouton pour une catégorie sans aucune marque : il ouvrirait une liste vide. */}
+          {brandOptions.length > 0 ? (
+            <FilterPicker label="Marque" emptyText="Marque" options={brandOptions} value={current ?? null} onChange={select} />
+          ) : null}
+        </div>
+      </div>
 
-      {/* Dit aux lecteurs d'écran que la liste a changé : le clic ne déplace pas la page. */}
+      {/* Dit aux lecteurs d'écran que la liste a changé : l'adresse et les séries changent, sans rechargement. */}
       <p role="status" className="sr-only">
         {showOthers ? `Autres : ${others.length} modèles` : group ? `${group.brand.name} : ${group.series.length} séries` : ""}
       </p>
