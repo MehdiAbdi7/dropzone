@@ -320,8 +320,36 @@
     font-weight: 700;
     cursor: pointer;
   }
+  /* Mode offres (25/11) : « Changer de couleur » au-dessus du choix d'achat, qui apparaît en fondu. */
+  .viewer-offers {
+    display: grid;
+    gap: 14px;
+    text-align: left;
+    animation: viewer-offers-in 0.26s ease;
+  }
+  @keyframes viewer-offers-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  .viewer-back {
+    justify-self: start;
+    min-height: 44px;
+    border: 0;
+    background: none;
+    padding: 0;
+    color: #aeb6ff;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .viewer-back:hover {
+    color: #fff;
+  }
   .viewer-cta {
     display: inline-flex;
+    border: 0;
+    cursor: pointer;
     min-height: 44px;
     align-items: center;
     justify-content: center;
@@ -344,6 +372,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .viewer-offers {
+      animation: none;
+    }
     .viewer-layer,
     .viewer-glow,
     .viewer-layer img {

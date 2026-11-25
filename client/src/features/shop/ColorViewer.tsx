@@ -1,14 +1,23 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { type CSSProperties, type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { type Palette, swatchOf } from "@/config/colors";
 import type { ProductDetail } from "@/types/api";
-import { alternatives, availabilityLines, firstIndex, isAvailable, viewerColors, wrapIndex } from "./colorViewerRules";
+import {
+  alternatives,
+  availabilityLines,
+  isAvailable,
+  startView,
+  type ViewerParams,
+  viewerColors,
+  viewerSearch,
+  wrapIndex,
+} from "./colorViewerRules";
 import { kindIcon } from "./colors";
 import type { JourneyCondition } from "./journey";
 import { uniformPhoto } from "./photos";
+import ViewerOffers from "./ViewerOffers";
 
 // La visionneuse de couleurs (25/11, demande de Mehdi) : l'étape Couleur n'est pas qu'une étape d'achat,
 // c'est une référence. Un grand téléphone qui change de couleur en fondu, le nom de la couleur toujours
@@ -17,6 +26,8 @@ import { uniformPhoto } from "./photos";
 // `condition` connu (étape 6 du parcours) : le stock de cet état. `null` (page de référence, avant
 // d'avoir choisi Neuf ou Occasion) : les deux états côte à côte.
 // La logique (couleurs, texte, indices) est dans colorViewerRules.ts ; ici, le geste et le fondu.
+// Deux modes à droite du téléphone (25/11, demande de Mehdi) : « couleurs » (nom, pastilles, disponibilité) et
+// « offres » (le choix d'achat de la couleur, voir ViewerOffers). Le téléphone ne bouge pas de l'un à l'autre.
 
 const SWIPE = 40;
 
@@ -26,12 +37,12 @@ export default function ColorViewer({
   product,
   condition,
   palette,
-  preview,
+  params,
 }: {
   product: ProductDetail;
   condition: JourneyCondition | null;
   palette: Palette;
-  preview: string | string[] | undefined;
+  params: ViewerParams;
 }) {
   const colors = useMemo(() => viewerColors(product), [product]);
   const photoOf = (index: number) => {
@@ -48,10 +59,14 @@ export default function ColorViewer({
     };
   };
 
-  const [index, setIndex] = useState(() => firstIndex(colors, condition, preview));
+  // Où l'on démarre : une couleur à regarder, ou les offres d'une couleur si l'adresse le demande.
+  const [start] = useState(() => startView(product, colors, condition, params));
+  const [index, setIndex] = useState(start.index);
+  // L'état dont on voit les offres ; null = le mode couleurs.
+  const [offers, setOffers] = useState<JourneyCondition | null>(start.offers);
   const [direction, setDirection] = useState<1 | -1>(1);
   // Deux couches pour le fondu : la nouvelle photo se charge dans la couche cachée, puis passe devant.
-  const [layers, setLayers] = useState<[Layer, Layer]>(() => [layerOf(firstIndex(colors, condition, preview)), layerOf(0)]);
+  const [layers, setLayers] = useState<[Layer, Layer]>(() => [layerOf(start.index), layerOf(0)]);
   const [front, setFront] = useState<0 | 1>(0);
   const [waiting, setWaiting] = useState<0 | 1 | null>(null);
   const frontRef = useRef<0 | 1>(0);
@@ -108,13 +123,31 @@ export default function ColorViewer({
       }, 40);
     }
     // La couleur affichée est dans l'adresse (lien à partager, « précédent »), sans empiler d'historique.
+    writeAddress(colors[target].name, null);
+  }
+
+  // L'adresse suit l'affichage (couleur regardée, ou offres ouvertes), sans empiler d'historique.
+  function writeAddress(name: string, shown: JourneyCondition | null) {
     const url = new URL(window.location.href);
-    url.searchParams.set("apercu", colors[target].name);
+    url.search = viewerSearch(url.search.slice(1), name, shown, condition);
     window.history.replaceState(null, "", url);
   }
 
+  function openOffers(one: JourneyCondition) {
+    setOffers(one);
+    writeAddress(colors[index].name, one);
+  }
+
+  // Retour aux couleurs : le focus va sur la pastille de la couleur, le bouton qu'on vient de cliquer disparaît.
+  function closeOffers() {
+    setOffers(null);
+    writeAddress(colors[index].name, null);
+    window.setTimeout(() => dotRefs.current[index]?.focus(), 0);
+  }
+
   function go(delta: number) {
-    if (colors.length > 1) {
+    // En mode offres le téléphone est figé : changer de couleur passe par « Changer de couleur ».
+    if (offers === null && colors.length > 1) {
       show(wrapIndex(colors.length, index, delta), delta > 0 ? 1 : -1);
     }
   }
@@ -168,7 +201,7 @@ export default function ColorViewer({
       window.removeEventListener("pointercancel", onCancel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, colors.length]);
+  }, [index, colors.length, offers]);
 
   if (colors.length === 0) {
     return null;
@@ -235,7 +268,7 @@ export default function ColorViewer({
               />
             </div>
           ))}
-          {colors.length > 1 ? (
+          {colors.length > 1 && offers === null ? (
             <>
               <button type="button" className="viewer-arrow" data-side="left" aria-label="Couleur précédente" onClick={() => go(-1)}>
                 ‹
@@ -248,6 +281,18 @@ export default function ColorViewer({
         </div>
 
         <div className="viewer-info">
+          {offers ? (
+            // `key` : changer de couleur ou d'état repart d'un choix neuf (stockage, tri).
+            <ViewerOffers
+              key={`${color.name}-${offers}`}
+              product={product}
+              colorName={color.name}
+              condition={offers}
+              palette={palette}
+              onBack={closeOffers}
+            />
+          ) : (
+            <>
           <p className="viewer-name" aria-live="polite">
             {color.name}
           </p>
@@ -287,11 +332,9 @@ export default function ColorViewer({
                       Disponible en {lines[0].label.toLowerCase()}
                     </span>
                     <p className="viewer-text">{lines[0].text}</p>
-                    {lines[0].href ? (
-                      <Link href={lines[0].href} className="viewer-cta">
-                        Voir les offres en {color.name} →
-                      </Link>
-                    ) : null}
+                    <button type="button" className="viewer-cta" onClick={() => openOffers(lines[0].condition)}>
+                      Voir les offres en {color.name} →
+                    </button>
                   </>
                 ) : (
                   <span className="viewer-badge">Pas disponible pour le moment</span>
@@ -306,10 +349,10 @@ export default function ColorViewer({
                       {line.available ? "Disponible" : "Pas disponible pour le moment"}
                     </span>
                     {line.available ? <p className="viewer-text">{line.text}</p> : null}
-                    {line.href ? (
-                      <Link href={line.href} className="viewer-cta">
+                    {line.available ? (
+                      <button type="button" className="viewer-cta" onClick={() => openOffers(line.condition)}>
                         Voir les offres →
-                      </Link>
+                      </button>
                     ) : null}
                   </div>
                 ))}
@@ -336,6 +379,8 @@ export default function ColorViewer({
               </p>
             ) : null}
           </div>
+            </>
+          )}
         </div>
       </div>
     </section>
