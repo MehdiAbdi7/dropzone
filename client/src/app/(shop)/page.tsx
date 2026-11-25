@@ -28,8 +28,13 @@ import {
   TOP_GUARANTEES,
 } from "@/features/home/homeContent";
 
-const LATEST_SIDE_DECORATION_WIDTH =
-  "max(60px, calc((100vw - 1200px) / 2 + 60px))";
+// Les traits de néon ne vivent que dans la marge, à l'extérieur du carrousel (25/11, remarque de
+// Mehdi : ils passaient sous les cartes, et le fondu des bords du carrousel les laissait voir à
+// travers). Le carrousel déborde du conteneur de 1200 px (flèches et débord de `xl`) : mesuré à
+// 1350 px, il occupe 1248 px. `100vw` compte la barre de défilement (environ 15 px) que la page
+// n'a pas, d'où 1260 px : la marge libre de chaque côté est (100vw - 1260px) / 2, et 0 en
+// dessous (pas de décor sur un écran plus étroit, plutôt qu'un décor sur les cartes).
+const LATEST_SIDE_DECORATION_WIDTH = "max(0px, calc((100vw - 1260px) / 2))";
 
 // L'accueil s'affiche tout de suite (06/11). Avant, la page attendait toutes les réponses de
 // l'API pour s'afficher d'un bloc : quand Render réveille le serveur endormi (jusqu'à une
