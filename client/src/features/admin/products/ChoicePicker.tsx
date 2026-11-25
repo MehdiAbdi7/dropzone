@@ -12,6 +12,8 @@ type Selector =
   | { group?: never; listId: number };
 type Props = Selector & {
   label: string;
+  // En ligne (25/11) : le nom de la liste à gauche, ses valeurs à droite, sur ordinateur. Sans `row`, le nom est au-dessus.
+  row?: boolean;
   // Les valeurs à proposer d'abord (les couleurs officielles du modèle) : en puces, les autres
   // se trouvent par la recherche.
   only?: string[];
@@ -29,7 +31,20 @@ const SUGGESTIONS = 8;
 // Une liste du formulaire produit : les valeurs de la table `choices`, et l'ajout d'une valeur
 // qui manque (elle entre dans la liste pour les produits suivants, et se choisit tout de suite).
 export default function ChoicePicker(props: Props) {
-  const { group, listId, label } = props;
+  const { group, listId, label, row = false } = props;
+  // Le cadre de la liste : en ligne, une grille « nom | valeurs » ; le <legend> reste pour les lecteurs d'écran et
+  // le nom visible est un texte à part, aligné sur la première ligne de valeurs.
+  const frame = row ? "gap-2 md:grid md:grid-cols-[9rem_minmax(0,1fr)] md:gap-x-4" : "space-y-2";
+  const legend = (
+    <>
+      <legend className={row ? "sr-only" : "label"}>{label}</legend>
+      {row ? (
+        <span aria-hidden="true" className="label md:pt-1.5">
+          {label}
+        </span>
+      ) : null}
+    </>
+  );
   const inputId = useId();
   const inputListId = useId();
   const { data: choices } = useChoicesQuery();
@@ -143,8 +158,9 @@ export default function ChoicePicker(props: Props) {
   if (!condensed) {
     // Liste courte : toutes les valeurs en puces, et un champ pour en ajouter une.
     return (
-      <fieldset className="space-y-2">
-        <legend className="label">{label}</legend>
+      <fieldset className={frame}>
+        {legend}
+        <div className="min-w-0 space-y-2">
         <div className="flex flex-wrap gap-2">
           {all.map((value) => (
             <button key={value} type="button" className="chip" aria-pressed={selected.includes(value)} onClick={() => toggle(value)}>
@@ -178,13 +194,15 @@ export default function ChoicePicker(props: Props) {
           </button>
         </div>
         {error ? <p className="field-error">{errorMessage(error)}</p> : null}
+        </div>
       </fieldset>
     );
   }
 
   return (
-    <fieldset className="space-y-2">
-      <legend className="label">{label}</legend>
+    <fieldset className={frame}>
+      {legend}
+      <div className="min-w-0 space-y-2">
 
       {/* Les couleurs du modèle en puces (peu nombreuses), puis ce qui est choisi. */}
       {only.length > 0 || selected.length > 0 ? (
@@ -270,6 +288,7 @@ export default function ChoicePicker(props: Props) {
         ) : null}
       </div>
       {error ? <p className="field-error">{errorMessage(error)}</p> : null}
+      </div>
     </fieldset>
   );
 }

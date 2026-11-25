@@ -85,6 +85,7 @@ export default function VariantEditor({
           key={field.key}
           {...selector}
           label={field.key}
+          row
           {...(only ? { only } : {})}
           multiple
           value={savedValue ? savedValue.split(" · ") : []}
@@ -97,6 +98,7 @@ export default function VariantEditor({
         key={field.key}
         {...selector}
         label={field.key}
+        row
         {...(only ? { only } : {})}
         value={savedValue}
         onChange={(value) => set({ options: { ...variant.options, [field.key]: value } })}
@@ -180,15 +182,16 @@ export default function VariantEditor({
 
       <div className="p-4 sm:p-5">
         <div role="tabpanel" id={id("panel-features")} aria-labelledby={id("tab-features")} hidden={tab !== "features"} className="space-y-5">
-          {/* Les options en deux colonnes, alignées en haut, sans cadre : un titre, ses valeurs. */}
-          <div className="grid items-start gap-x-6 gap-y-5 md:grid-cols-2">
+          {/* Une ligne par option, séparées par un trait : le nom à gauche, toujours au même endroit, ses valeurs à droite.
+              Sur téléphone le nom passe au-dessus. */}
+          <div className="divide-y divide-line">
             {OPTION_FIELDS[kind].map((field) => (
-              <div key={field.key}>
+              <div key={field.key} className="py-3 first:pt-0 last:pb-0">
                 {field.group === "color" && lockedColor ? (
-                  <>
-                    <p className="label">{field.key}</p>
-                    <p className="input flex items-center bg-surface-2 font-semibold">{lockedColor}</p>
-                  </>
+                  <div className="gap-2 md:grid md:grid-cols-[9rem_minmax(0,1fr)] md:gap-x-4">
+                    <p className="label md:pt-1.5">{field.key}</p>
+                    <p className="input flex max-w-sm items-center bg-surface-2 font-semibold">{lockedColor}</p>
+                  </div>
                 ) : (
                   renderPicker(
                     {
@@ -202,7 +205,7 @@ export default function VariantEditor({
               </div>
             ))}
             {customLists.map((list) => (
-              <div key={list.id}>
+              <div key={list.id} className="py-3 last:pb-0">
                 {renderPicker({ key: list.name, listId: list.id, multiple: list.multiple })}
               </div>
             ))}
