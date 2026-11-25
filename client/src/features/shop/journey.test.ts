@@ -60,6 +60,14 @@ describe("journeySteps", () => {
     expect(steps[5].href).toBe("/produits/p30-pro/occasion");
   });
 
+  it("page de référence (couleurs vues avant le choix de l'état) : l'état est « Au choix »", () => {
+    const steps = journeySteps({ ...base, current: "color", condition: null });
+    expect(steps.map((step) => step.status)).toEqual(["done", "done", "done", "done", "done", "current"]);
+    expect(steps[4].value).toBe("Au choix");
+    // Le retour mène toujours au choix de l'état.
+    expect(journeyBackHref(steps)).toBe("/produits/p30-pro");
+  });
+
   it("saute l'étape Série d'un produit sans série", () => {
     expect(keys({ ...base, series: null })).toEqual(["category", "brand", "model", "condition", "color"]);
   });

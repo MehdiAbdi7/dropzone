@@ -92,10 +92,13 @@ export function journeySteps(input: JourneyInput): JourneyStep[] {
 
   return keys.map((key, index) => {
     const status = index < currentIndex ? "done" : index === currentIndex ? "current" : "todo";
+    // Une étape « faite » sans choix : l'état d'un modèle vu en couleurs avant d'avoir choisi Neuf ou
+    // Occasion (la page de référence des couleurs). On ne dit pas « choisi » pour un choix pas fait.
+    const done = values[key] ?? (key === "condition" ? "Au choix" : null);
     return {
       key,
       label: LABELS[key],
-      value: status === "done" ? values[key] : status === "current" ? "À choisir" : null,
+      value: status === "done" ? done : status === "current" ? "À choisir" : null,
       href: hrefs[key],
       status,
     };
