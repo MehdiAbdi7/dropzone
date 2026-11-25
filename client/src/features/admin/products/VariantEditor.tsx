@@ -38,15 +38,6 @@ type ChoiceField = { key: string; multiple?: boolean } & (
   | { group?: never; listId: number }
 );
 
-// Une phrase sous la barre d'onglets : ce qu'on règle ici.
-const TAB_HINTS: Record<VariantTabId, string> = {
-  features: "Les caractéristiques qui distinguent cette variante des autres : stockage, couleur, etc.",
-  price: "Ce que le client paie, ce que tu as payé, et ce qu'il y a en rayon.",
-  state: "L'état réel de l'occasion, tel que le client le verra sur la fiche.",
-  refs: "Le suivi interne : références, garantie et origine.",
-  gifts: "Un accessoire inclus avec cette variante, si besoin.",
-};
-
 // Une variante du formulaire, en cinq onglets (25/11) : Caractéristiques, Prix et stock, État (occasion seulement),
 // Références, Cadeaux. Un seul onglet est visible, mais tous restent montés (attribut `hidden`) : ce qu'on a tapé ne
 // se perd pas en changeant d'onglet. Un onglet qui a un manque (prix, boîte, garantie…) le dit par une pastille.
@@ -114,24 +105,36 @@ export default function VariantEditor({
   }
 
   return (
-    <fieldset className={`overflow-hidden rounded-xl border border-line bg-surface ${refurbished ? "neon-edge" : ""}`}>
+    <fieldset className="overflow-hidden rounded-xl border border-line bg-surface">
       <legend className="sr-only">Variante {index + 1}</legend>
-      <div className={`flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5 ${refurbished ? "bg-red-soft" : "bg-blue-soft"}`}>
-        <div>
-          <p className={`text-xs font-bold tracking-widest ${refurbished ? "text-red" : "text-blue-ink"}`}>
-            VARIANTE {String(index + 1).padStart(2, "0")}
-          </p>
-          <p className="font-display text-lg font-bold">
-            {refurbished ? "Occasion" : "Neuf scellé"}
-            {variant.id ? null : <span className="ml-2 text-sm font-semibold text-blue-ink">· nouvelle</span>}
-          </p>
+
+      {/* Le titre de la fenêtre dit déjà « Occasion n° 2 » : plus de bandeau coloré. Une seule ligne fine : l'état et le retrait. */}
+      {canBeRefurbished || onRemove ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2 sm:px-5">
+          {canBeRefurbished ? (
+            <div role="group" aria-label="État" className="flex gap-1.5">
+              {(["new", "refurbished"] as const).map((condition) => (
+                <button
+                  key={condition}
+                  type="button"
+                  className="chip"
+                  aria-pressed={variant.condition === condition}
+                  onClick={() => onChange(withCondition(variant, kind, condition))}
+                >
+                  {CONDITION_LABELS[condition]}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <span />
+          )}
+          {onRemove ? (
+            <button type="button" className="text-sm font-semibold text-red underline" onClick={onRemove}>
+              Retirer cette variante
+            </button>
+          ) : null}
         </div>
-        {onRemove ? (
-          <button type="button" className="btn btn-danger btn-small" onClick={onRemove}>
-            Retirer cette variante
-          </button>
-        ) : null}
-      </div>
+      ) : null}
 
       <div role="tablist" aria-label="Parties de la variante" className="flex gap-1 overflow-x-auto border-b border-line bg-surface-2/40 px-2 pt-2">
         {tabs.map((item) => {
@@ -166,33 +169,12 @@ export default function VariantEditor({
         })}
       </div>
 
-      <p className="px-4 pt-4 text-sm text-ink-muted sm:px-5">{TAB_HINTS[tab]}</p>
-
       <div className="p-4 sm:p-5">
         <div role="tabpanel" id={id("panel-features")} aria-labelledby={id("tab-features")} hidden={tab !== "features"} className="space-y-5">
-          {canBeRefurbished ? (
-            <fieldset>
-              <legend className="label">État</legend>
-              <div className="flex flex-wrap gap-2">
-                {(["new", "refurbished"] as const).map((condition) => (
-                  <button
-                    key={condition}
-                    type="button"
-                    className="chip"
-                    aria-pressed={variant.condition === condition}
-                    onClick={() => onChange(withCondition(variant, kind, condition))}
-                  >
-                    {CONDITION_LABELS[condition]}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-          ) : null}
-
-          {/* Une carte par option, alignées en haut : une liste de puces et une liste à recherche ne s'étirent plus l'une sur l'autre. */}
-          <div className="grid items-start gap-3 md:grid-cols-2">
+          {/* Les options en deux colonnes, alignées en haut, sans cadre : un titre, ses valeurs. */}
+          <div className="grid items-start gap-x-6 gap-y-5 md:grid-cols-2">
             {OPTION_FIELDS[kind].map((field) => (
-              <div key={field.key} className="rounded-lg border border-line bg-surface-2/40 p-3">
+              <div key={field.key}>
                 {field.group === "color" && lockedColor ? (
                   <>
                     <p className="label">{field.key}</p>
@@ -211,7 +193,7 @@ export default function VariantEditor({
               </div>
             ))}
             {customLists.map((list) => (
-              <div key={list.id} className="rounded-lg border border-line bg-surface-2/40 p-3">
+              <div key={list.id}>
                 {renderPicker({ key: list.name, listId: list.id, multiple: list.multiple })}
               </div>
             ))}
@@ -224,12 +206,11 @@ export default function VariantEditor({
 
           {/* La photo suit la couleur : elle vient après le choix de la couleur, plus avant. */}
           {modelId ? (
-            <div className="space-y-3 rounded-lg border border-line bg-blue-soft/30 p-3 sm:p-4">
-              <h3 className="font-display font-bold">Photo de la couleur{color ? ` : ${color}` : ""}</h3>
+            <div className="border-t border-line pt-4">
               {color ? (
                 <ColorPhotoField modelId={modelId} color={color} />
               ) : (
-                <p className="text-sm text-ink-muted">Choisis d’abord une couleur ci-dessus pour gérer sa photo.</p>
+                <p className="text-sm text-ink-muted">Choisis une couleur pour gérer sa photo.</p>
               )}
             </div>
           ) : null}
