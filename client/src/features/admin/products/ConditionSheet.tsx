@@ -51,20 +51,23 @@ export default function ConditionSheet({
   onChange,
 }: {
   variant: VariantDraft;
-  // Le numéro de la section dans la fenêtre de la variante (« 05 »).
-  number: string;
+  // Le numéro de la section dans une page numérotée (« 04 » dans la reprise). Sans numéro (onglet État d'une variante),
+  // la fiche n'a ni titre ni fond : l'onglet porte déjà son nom.
+  number?: string;
   // L'identifiant d'un champ, unique à cette variante (pour les <label htmlFor>).
   idOf: (name: string) => string;
   set: (patch: Partial<VariantDraft>) => void;
   onChange: (variant: VariantDraft) => void;
 }) {
   return (
-    <section className="space-y-5 bg-red-soft/50 p-4 sm:p-5">
-      <SectionHeading
-        number={number}
-        title="Fiche d’état de l’occasion"
-        description="Détaille l'état réel et le contenu de l'appareil."
-      />
+    <section className={number ? "space-y-5 bg-red-soft/50 p-4 sm:p-5" : "space-y-5"}>
+      {number ? (
+        <SectionHeading
+          number={number}
+          title="Fiche d’état de l’occasion"
+          description="Détaille l'état réel et le contenu de l'appareil."
+        />
+      ) : null}
       <div className="grid gap-4 rounded-lg border border-line bg-surface p-4 sm:grid-cols-2">
         <Field id={idOf("grade")} label="Note d'état (sur 10, facultatif)">
           <select id={idOf("grade")} className="input" value={variant.grade} onChange={(event) => set({ grade: event.target.value })}>
