@@ -21,7 +21,7 @@ export default function ChoiceColumn({
   const off = column.href === null;
   const body = (
     <>
-      <div className="choice-card-media relative h-48 w-full md:h-40">
+      <div className="choice-card-media poster-photo relative w-full">
         <div
           aria-hidden="true"
           className="poster-glow"
@@ -67,7 +67,7 @@ export default function ChoiceColumn({
     </>
   );
 
-  const className = "poster-column choice-card flex h-full flex-col items-center gap-2 rounded-2xl px-3 pb-3 text-center";
+  const className = "poster-column poster-stack choice-card flex h-full flex-col items-center rounded-2xl px-3 pb-3 text-center";
   if (off) {
     return (
       <div aria-disabled="true" data-unavailable="true" className={className}>

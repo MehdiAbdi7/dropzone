@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { formatPrice } from "@/lib/format";
 import type { Options, ProductDetail, Variant } from "@/types/api";
-import { colorColumns, conditionColumns } from "./choiceColumns";
+import { conditionColumns } from "./choiceColumns";
+import { uniformPhoto } from "./photos";
 
 const variant = (options: Options, stock: number, price: number, condition: Variant["condition"] = "new", warrantyMonths = 12): Variant => ({
   sku: `${options.Couleur}-${options.Stockage}-${price}-${condition}`,
@@ -42,57 +42,7 @@ const product = (overrides: Partial<ProductDetail> = {}) =>
     ...overrides,
   }) as ProductDetail;
 
-describe("colorColumns", () => {
-  it("donne une colonne par couleur, dans l'ordre, avec la lueur de sa couleur", () => {
-    const columns = colorColumns(product(), "new");
-    expect(columns.map((c) => [c.title, c.glow])).toEqual([
-      ["Argent", "Argent"],
-      ["Orange cosmique", "Orange cosmique"],
-      ["Bleu intense", "Bleu intense"],
-    ]);
-  });
-
-  // 23/11 : la couleur se choisit après « Neuf scellé » ou « Occasion ». Une couleur sans stock dans cet état est
-  // grisée, même si elle en a dans l'autre.
-  it("grise une couleur sans neuf en stock, sans lien", () => {
-    const [argent, , bleu] = colorColumns(product(), "new");
-    expect(argent).toMatchObject({ href: null, price: null, lines: ["Pas de neuf dans cette couleur"] });
-    expect(bleu.href).toBeNull();
-  });
-
-  it("donne le prix « dès » et le stock du neuf de la couleur, et mène au neuf de cette couleur", () => {
-    const orange = colorColumns(product(), "new")[1];
-    expect(orange).toMatchObject({
-      href: "/produits/iphone-17-pro-max/neuf?couleur=Orange%20cosmique",
-      // Le prix est dans les lignes : pas de prix en double (relecture du 05/11).
-      price: null,
-      lines: [`Neuf scellé dès ${formatPrice(352000)}`, "4 en stock"],
-    });
-  });
-
-  it("après Occasion : le prix « dès » et le nombre d'occasions de la couleur, et mène aux occasions de cette couleur", () => {
-    const [argent, orange] = colorColumns(product(), "refurbished");
-    expect(orange).toMatchObject({
-      href: "/produits/iphone-17-pro-max/occasion?couleur=Orange%20cosmique",
-      price: null,
-      lines: [`Occasion dès ${formatPrice(310000)}`, "1 appareil"],
-    });
-    expect(argent).toMatchObject({ href: null, lines: ["Pas d'occasion dans cette couleur"] });
-  });
-
-  it("après Neuf scellé, ne compte jamais une occasion dans la couleur", () => {
-    const orange = colorColumns(product({ variants: [product().variants[2]!] }), "new")[1];
-    expect(orange).toMatchObject({ href: null, lines: ["Pas de neuf dans cette couleur"] });
-  });
-
-  // 06/11 : la photo du modèle montrait la même image sur toutes les couleurs. Une couleur
-  // sans sa photo garde l'icône, le gérant envoie la sienne depuis la variante.
-  it("prend la photo de la couleur, sinon l'icône (jamais la photo du modèle)", () => {
-    const [argent, orange] = colorColumns(product(), "new");
-    expect(orange.image).toBe("https://x/orange.webp");
-    expect(argent.image).toBe("/products/phone.svg");
-  });
-
+describe("photos des colonnes du choix de l'état", () => {
   // 23/11 (demande de Mehdi) : la première étape, Neuf scellé ou Occasion, montre la photo du modèle sur les deux cartes.
   it("met la photo du modèle sur les deux cartes Neuf scellé et Occasion", () => {
     const [fresh, deal] = conditionColumns(product(), null);
@@ -108,6 +58,21 @@ describe("colorColumns", () => {
 
   it("garde la photo de la couleur d'un ancien lien avec une couleur", () => {
     expect(conditionColumns(product(), "Argent")[0].image).toBe("/products/phone.svg");
+  });
+
+  // 25/11 (demande de Mehdi : des téléphones de la même taille, surtout les modèles) : la photo est recadrée.
+  it("recadre la photo du modèle dans le cadre des modèles", () => {
+    const cloudinary = "https://res.cloudinary.com/x/image/upload/v1/modele.webp";
+    const [fresh, deal] = conditionColumns(product({ images: [{ id: 1, url: cloudinary }] }), null);
+    expect(fresh.image).toBe(uniformPhoto(cloudinary, "model"));
+    expect(deal.image).toBe(uniformPhoto(cloudinary, "model"));
+    expect(fresh.image).toContain("c_pad");
+  });
+
+  it("recadre la photo de la couleur d'un ancien lien dans le cadre des couleurs", () => {
+    const photo = "https://res.cloudinary.com/x/image/upload/v1/orange.webp";
+    const colors = [{ name: "Orange cosmique", photoUrl: photo }];
+    expect(conditionColumns(product({ colors }), "Orange cosmique")[0].image).toBe(uniformPhoto(photo, "color"));
   });
 });
 

@@ -1,0 +1,321 @@
+/* La visionneuse de couleurs (25/11), maquette `maquette-couleurs.html` : un grand téléphone qui change
+   de couleur en fondu, le nom de la couleur toujours visible, des pastilles et la disponibilité en
+   dessous. Toujours sombre dans les deux thèmes, comme les affiches : le même fond que `.poster`
+   (series-posters.css). */
+
+@layer components {
+  .viewer {
+    --viewer-photo-h: clamp(9rem, calc(100svh - 34rem), 15rem);
+    --viewer-dir: 1;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    padding: 16px 14px 14px;
+    border: 1px solid transparent;
+    border-radius: 22px;
+    text-align: center;
+    background:
+      linear-gradient(145deg, #0d0e12, #08090d 58%, #0c0b10) padding-box,
+      linear-gradient(135deg, rgb(99 102 241 / 0.72), rgb(163 59 240 / 0.42) 48%, rgb(255 46 77 / 0.48)) border-box;
+    box-shadow:
+      0 24px 64px -42px rgb(61 75 255 / 0.5),
+      inset 0 1px 0 rgb(255 255 255 / 0.06);
+    color: var(--ink);
+  }
+  @media (min-width: 768px) {
+    .viewer {
+      --viewer-photo-h: clamp(10rem, calc(100svh - 30rem), 17rem);
+      padding: 22px 22px 20px;
+    }
+  }
+  /* Le mot ne fait que sa largeur : un `p` pleine largeur ne montrait que le milieu du dégradé du texte. */
+  .viewer-brand {
+    width: fit-content;
+    margin-inline: auto;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 800;
+  }
+  .viewer-title {
+    font-size: 1.6rem;
+    margin-top: 2px;
+  }
+  .viewer-sub {
+    margin: 6px 0 8px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.22em;
+    color: rgb(255 255 255 / 0.62);
+  }
+  @media (min-width: 768px) {
+    .viewer-title {
+      font-size: 1.9rem;
+    }
+  }
+
+  /* Téléphone : tout en colonne. Ordinateur : la photo à gauche, le reste à droite. */
+  .viewer-cols {
+    display: block;
+  }
+  @media (min-width: 768px) {
+    .viewer-cols {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 28px;
+      text-align: left;
+    }
+  }
+
+  /* Le cadre de la photo : hauteur fixe, jamais dépassée (les photos sont recadrées à la même taille par
+     Cloudinary, voir photos.ts). Deux couches superposées pour le fondu. */
+  .viewer-frame {
+    position: relative;
+    height: var(--viewer-photo-h);
+    overflow: hidden;
+    touch-action: pan-y pinch-zoom;
+    user-select: none;
+    cursor: grab;
+    border-radius: 14px;
+  }
+  .viewer-frame:focus-visible {
+    outline: 2px solid #a33bf0;
+    outline-offset: 2px;
+  }
+  .viewer-glow {
+    position: absolute;
+    inset: 8% 14%;
+    border-radius: 50%;
+    filter: blur(36px);
+    opacity: 0.5;
+    transition:
+      background-color 0.35s,
+      opacity 0.35s;
+  }
+  .viewer-glow[data-dim] {
+    opacity: 0.32;
+  }
+  /* La couche devant (`data-front`) est visible ; l'autre attend, invisible, de l'autre côté du
+     geste (`data-wait`, sans transition : elle se place avant d'entrer), ou sort dans le sens
+     opposé au geste. */
+  .viewer-layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translateX(calc(var(--viewer-dir) * -22px)) scale(0.985);
+    transition:
+      opacity 0.26s ease,
+      transform 0.26s ease;
+    pointer-events: none;
+  }
+  .viewer-layer[data-wait] {
+    transform: translateX(calc(var(--viewer-dir) * 22px)) scale(0.985);
+    transition: none;
+  }
+  .viewer-layer[data-front] {
+    opacity: 1;
+    transform: none;
+  }
+  .viewer-layer img {
+    padding: 6px 0;
+    object-fit: contain;
+    filter: drop-shadow(0 18px 24px rgb(0 0 0 / 0.45));
+    transition: filter 0.26s;
+  }
+  /* Une couleur indisponible : un peu assombrie, sa teinte reste bien lisible (demande de Mehdi). */
+  .viewer-layer[data-dim] img {
+    filter: drop-shadow(0 18px 24px rgb(0 0 0 / 0.45)) brightness(0.8);
+  }
+  .viewer-arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 3;
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    transform: translateY(-50%);
+    border: 1px solid rgb(255 255 255 / 0.2);
+    border-radius: 50%;
+    background: rgb(14 15 26 / 0.7);
+    color: #fff;
+    font-size: 1.125rem;
+    cursor: pointer;
+  }
+  .viewer-arrow:hover {
+    border-color: #8c95ff;
+  }
+  .viewer-arrow[data-side="left"] {
+    left: 2px;
+  }
+  .viewer-arrow[data-side="right"] {
+    right: 2px;
+  }
+
+  .viewer-name {
+    margin-top: 6px;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 800;
+  }
+  .viewer-count {
+    margin-bottom: 10px;
+    font-size: 0.75rem;
+    color: rgb(255 255 255 / 0.62);
+  }
+  @media (min-width: 768px) {
+    .viewer-name {
+      margin-top: 0;
+      font-size: 1.6rem;
+    }
+  }
+
+  .viewer-dots {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  @media (min-width: 768px) {
+    .viewer-dots {
+      justify-content: flex-start;
+    }
+  }
+  .viewer-dot {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 2px solid rgb(255 255 255 / 0.18);
+    border-radius: 50%;
+    cursor: pointer;
+    transition:
+      transform 0.15s,
+      border-color 0.15s,
+      box-shadow 0.15s;
+  }
+  .viewer-dot:hover {
+    transform: scale(1.1);
+  }
+  .viewer-dot[aria-checked="true"] {
+    border-color: #fff;
+    box-shadow: 0 0 0 3px rgb(61 75 255 / 0.7);
+  }
+  /* Indisponible : un peu assombrie, comme la photo. */
+  .viewer-dot[data-dim] {
+    filter: brightness(0.78);
+  }
+  .viewer-dot:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+  }
+
+  /* La disponibilité : une information, jamais un blocage. */
+  .viewer-avail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgb(255 255 255 / 0.14);
+  }
+  @media (min-width: 768px) {
+    .viewer-avail {
+      align-items: flex-start;
+    }
+  }
+  .viewer-lines {
+    display: grid;
+    width: 100%;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .viewer-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  @media (min-width: 768px) {
+    .viewer-line {
+      align-items: flex-start;
+    }
+  }
+  .viewer-line-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.62);
+  }
+  .viewer-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+  .viewer-badge::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .viewer-badge[data-ok] {
+    background: rgb(61 75 255 / 0.2);
+    color: #aeb6ff;
+  }
+  .viewer-badge:not([data-ok]) {
+    background: rgb(255 255 255 / 0.08);
+    color: #c9ccd9;
+  }
+  .viewer-text {
+    font-size: 0.875rem;
+    color: rgb(255 255 255 / 0.85);
+  }
+  .viewer-hint {
+    font-size: 0.8rem;
+    color: rgb(255 255 255 / 0.7);
+  }
+  .viewer-hint button {
+    border: 0;
+    background: none;
+    padding: 0 2px;
+    color: #aeb6ff;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .viewer-cta {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 20px;
+    border-radius: 14px;
+    background: #3d4bff;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  .viewer-cta:hover {
+    filter: brightness(1.1);
+  }
+
+  @supports not (height: 1svh) {
+    .viewer {
+      --viewer-photo-h: 13rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .viewer-layer,
+    .viewer-glow,
+    .viewer-layer img {
+      transition: none;
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import { warrantyRange } from "@/config/warranty";
-import { formatPrice } from "@/lib/format";
 import type { ProductDetail } from "@/types/api";
 import { colorHref, kindIcon, ofColor } from "./colors";
+import { uniformPhoto } from "./photos";
 import { conditionSummary } from "./stock";
 
 // L'affiche de choix (05/11, ordre inversé le 23/11) : Neuf scellé ou Occasion d'abord, puis la couleur pour le neuf
@@ -20,8 +20,6 @@ export type ChoiceColumnData = {
   href: string | null;
 };
 
-const lowest = (prices: number[]) => (prices.length > 0 ? Math.min(...prices) : null);
-
 // Une couleur montre sa propre photo, sinon l'icône de la catégorie : la photo du modèle
 // mettait la même image sur toutes les couleurs (06/11). Sans couleur choisie, la photo du
 // produit.
@@ -38,34 +36,6 @@ export function modelImage(product: Pick<ProductDetail, "colors" | "images" | "c
   return product.images[0]?.url ?? posterPhoto ?? anyPhoto ?? kindIcon(product.category.kind);
 }
 
-// L'étape Couleur, après « Neuf scellé » ou « Occasion » (23/11) : chaque couleur dit son prix « dès » et son stock
-// dans cet état ; une couleur qui n'en a pas est grisée, sans lien.
-export function colorColumns(product: ProductDetail, condition: "new" | "refurbished"): ChoiceColumnData[] {
-  const isNew = condition === "new";
-  return product.colors.map(({ name }) => {
-    const inStock = ofColor(product.variants, name).filter((variant) => variant.stock > 0 && variant.condition === condition);
-    const from = lowest(inStock.map((v) => v.price));
-    // Une occasion est une pièce unique : on compte les appareils ; un neuf, les exemplaires en stock.
-    const count = isNew ? inStock.reduce((sum, v) => sum + v.stock, 0) : inStock.length;
-    const countLine = isNew ? `${count} en stock` : `${count} appareil${count > 1 ? "s" : ""}`;
-    return {
-      key: name,
-      title: name,
-      image: imageOf(product, name),
-      glow: name,
-      badge: null,
-      subtitle: null,
-      lines:
-        from !== null
-          ? [`${isNew ? "Neuf scellé" : "Occasion"} dès ${formatPrice(from)}`, countLine]
-          : [isNew ? "Pas de neuf dans cette couleur" : "Pas d'occasion dans cette couleur"],
-      // Le prix « dès » est dans les lignes : pas de prix en double.
-      price: null,
-      href: from !== null ? colorHref(product.slug, name, isNew ? "neuf" : "occasion") : null,
-    };
-  });
-}
-
 export function conditionColumns(product: ProductDetail, color: string | null): ChoiceColumnData[] {
   const variants = color ? ofColor(product.variants, color) : product.variants;
   const summary = conditionSummary(variants);
@@ -74,7 +44,12 @@ export function conditionColumns(product: ProductDetail, color: string | null): 
   const newPrices = new Set(fresh.filter((v) => v.stock > 0).map((v) => v.price));
   const href = (step: "neuf" | "occasion") => (color ? colorHref(product.slug, color, step) : `/produits/${product.slug}/${step}`);
   // Sans couleur (la première étape) : la photo du modèle ; un ancien lien avec `?couleur=` garde la photo de sa couleur.
-  const common = { image: color ? imageOf(product, color) : modelImage(product), glow: color ?? product.posterColor, subtitle: null };
+  // Recadrées (25/11) : tous les téléphones à la même hauteur, dans le cadre de leur famille de photos.
+  const common = {
+    image: color ? uniformPhoto(imageOf(product, color), "color") : uniformPhoto(modelImage(product), "model"),
+    glow: color ?? product.posterColor,
+    subtitle: null,
+  };
   const n = summary.refurbishedCount;
   const warranty = (list: typeof variants) => {
     const label = warrantyRange(list);

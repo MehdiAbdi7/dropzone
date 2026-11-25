@@ -32,9 +32,10 @@ export default async function NewProductPage({ params, searchParams }: PageProps
     redirect(`/produits/${slug}`);
   }
   const palette = await getPalette();
-  const step = productStep(product, (await searchParams).couleur);
+  const search = await searchParams;
+  const step = productStep(product, search.couleur);
   if (step.kind === "colors") {
-    return <ColorStep product={product} condition="new" palette={palette} />;
+    return <ColorStep product={product} condition="new" palette={palette} preview={search.apercu} />;
   }
   const ofThisColor = step.color ? ofColor(fresh, step.color) : fresh;
   // Une couleur sans neuf (adresse tapée à la main, ou vendue entre-temps) : retour au choix des couleurs.

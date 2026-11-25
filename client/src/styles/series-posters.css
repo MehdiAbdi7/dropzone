@@ -122,8 +122,10 @@
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035);
   }
   @media (max-width: 767px) {
+    /* Une hauteur minimale qui égalise les deux cartes d'un choix glissé ; suit la hauteur de l'écran
+       (25/11, tout voir d'un coup) au lieu de 380 px fixes, avec un plancher pour le contenu. */
     .choice-card {
-      min-height: 380px;
+      min-height: clamp(300px, calc(100svh - 380px), 380px);
     }
     .choice-card-media img {
       padding: 8px;
@@ -227,6 +229,56 @@
     height: 14px;
     border-radius: 50%;
     border: 1px solid rgb(255 255 255 / 0.4);
+  }
+  /* Une pastille est un lien vers la visionneuse de couleurs (25/11) : zone de toucher de 28 px, la
+     pastille reste de 14 px. `pointer-events: auto` : le reste de la colonne laisse passer les clics
+     au lien étiré dessous, pas les pastilles. */
+  .poster-swatch-link {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border-radius: 50%;
+    pointer-events: auto;
+  }
+  a.poster-swatch-link:hover .poster-swatch,
+  a.poster-swatch-link:focus-visible .poster-swatch {
+    transform: scale(1.35);
+    border-color: #fff;
+  }
+  a.poster-swatch-link:focus-visible {
+    outline: 2px solid #a33bf0;
+    outline-offset: 1px;
+  }
+  .poster-swatch-link[data-static] {
+    pointer-events: none;
+  }
+
+  /* La colonne d'un modèle en vente : un conteneur dont le lien vers la fiche est étiré sur toute sa
+     surface, sous le contenu (pas de lien dans un lien, voir PosterColumn). Même survol et même
+     focus qu'une colonne qui était un lien (`a.poster-column`). */
+  .poster-column-linked {
+    position: relative;
+    transition: background-color 0.2s;
+  }
+  .poster-link {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+  }
+  .poster-column-linked > :not(.poster-link) {
+    position: relative;
+    pointer-events: none;
+  }
+  .poster-column-linked:hover {
+    background-color: rgb(255 255 255 / 0.05);
+  }
+  /* Le lien étiré couvre toute la colonne : son contour est celui de la colonne (sans `:has()`, que les
+     navigateurs un peu anciens ignorent, en perdant alors le contour du focus). */
+  .poster-link:focus-visible {
+    outline: 2px solid #a33bf0;
+    outline-offset: 2px;
   }
 
   /* La piste à glisser (06/11 : le modèle affiché est toujours au centre). Un modèle par
@@ -388,7 +440,7 @@
     bottom: 0;
     left: 0;
     display: flex;
-    max-height: 70dvh;
+    max-height: 70svh;
     flex-direction: column;
     border: 1px solid rgb(255 255 255 / 0.14);
     border-bottom: 0;
@@ -404,7 +456,7 @@
       bottom: auto;
       left: 50%;
       width: min(28rem, calc(100vw - 32px));
-      max-height: 70dvh;
+      max-height: 70svh;
       border-bottom: 1px solid rgb(255 255 255 / 0.14);
       border-radius: 20px;
       transform: translate(-50%, -50%);
@@ -461,6 +513,77 @@
     }
     .poster-track {
       scroll-behavior: auto;
+    }
+  }
+
+  /* Tout voir d'un coup (25/11, demande de Mehdi) : à l'arrivée sur la page de la série ou le choix de
+     l'état, le parcours et l'affiche tiennent dans l'écran, sans défiler. Les tailles qui prenaient de la
+     place suivent la hauteur de l'écran (`svh`) au lieu d'être fixes : la photo, les marges, le titre
+     rétrécissent d'abord. Bornes en `clamp` : jamais sous un minimum lisible, jamais au-dessus du
+     maximum d'avant sur un grand écran. Sur un écran de téléphone bas, les caractéristiques au-delà de
+     la troisième se replient (le nom, le prix et les couleurs restent). Mesures : voir le journal. */
+  /* `svh` et non `dvh` : la hauteur avec la barre d'adresse du téléphone affichée, celle de l'arrivée sur la
+     page. `dvh` change quand la barre se replie au défilement, et toute la page bougeait sous le doigt. */
+  :root {
+    --photo-h: clamp(4.5rem, calc(100svh - 44rem), 9rem);
+  }
+  /* Ordinateur et tablette : les colonnes sont côte à côte, la photo peut être plus grande. */
+  @media (min-width: 768px) {
+    :root {
+      --photo-h: clamp(6rem, calc(100svh - 38rem), 10rem);
+    }
+  }
+  .poster-photo {
+    height: var(--photo-h);
+  }
+  /* `ProductImage` ajoute `p-4` (32 px de haut) : dans un cadre de 72 px il ne restait que 40 px au téléphone.
+     Le recadrage (photos.ts) pose déjà le téléphone à la bonne taille : presque pas de marge. `!important` :
+     l'utilitaire Tailwind, couche plus tardive, l'emporterait. */
+  .poster-photo img {
+    padding: 2px 0 !important;
+  }
+  .poster-header {
+    display: grid;
+    gap: clamp(0.15rem, 0.8svh, 0.5rem);
+    padding-top: clamp(0.5rem, 2.4svh, 1.5rem);
+  }
+  .poster-body {
+    padding-top: clamp(0.15rem, 0.8svh, 0.5rem);
+    padding-bottom: clamp(0.25rem, 1svh, 0.75rem);
+  }
+  .poster-headline {
+    font-size: clamp(1.5rem, calc(4.4svh + 0.25rem), 3.75rem);
+  }
+  .poster-stack {
+    gap: clamp(0.15rem, 0.8svh, 0.5rem);
+  }
+  .poster-specs {
+    display: grid;
+    gap: clamp(0.15rem, 0.9svh, 0.375rem);
+  }
+  /* `!important` : les lignes sont des `flex` (utilitaire Tailwind, couche plus tardive) qui l'emporteraient. */
+  /* Un navigateur sans `svh` (Chrome avant 108, Safari avant 15.4) : des valeurs fixes, sinon la hauteur des
+     photos serait invalide (donc nulle) et le titre perdrait sa taille. */
+  @supports not (height: 1svh) {
+    :root {
+      --photo-h: 7rem;
+    }
+    .poster-header {
+      padding-top: 1rem;
+    }
+    .poster-headline {
+      font-size: 2.25rem;
+    }
+  }
+  @media (max-height: 800px) and (max-width: 767px) {
+    /* Masquées à l'œil seulement : un lecteur d'écran les lit encore. */
+    .poster-specs > li:nth-child(n + 4) {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      overflow: hidden !important;
+      clip: rect(0 0 0 0) !important;
+      white-space: nowrap !important;
     }
   }
 }
