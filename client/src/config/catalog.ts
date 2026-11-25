@@ -19,15 +19,16 @@ export type ChoiceGroup =
 // Les options d'une variante, selon la sorte de produit. `key` est le texte affiché
 // au client et rangé dans `options` ; `group` est la liste où piocher les valeurs.
 export const OPTION_FIELDS: Record<ProductKind, { key: string; group: ChoiceGroup }[]> = {
+  // La couleur d'abord (25/11) : c'est elle qui porte la photo, puis ce qui distingue deux variantes de la même couleur.
   phone: [
-    { key: "Stockage", group: "storage" },
     { key: "Couleur", group: "color" },
+    { key: "Stockage", group: "storage" },
     { key: "RAM", group: "ram" },
     { key: "SIM", group: "sim" },
   ],
   tablet: [
-    { key: "Stockage", group: "storage" },
     { key: "Couleur", group: "color" },
+    { key: "Stockage", group: "storage" },
     { key: "Connectivité", group: "connectivity" },
     { key: "SIM", group: "sim" },
   ],

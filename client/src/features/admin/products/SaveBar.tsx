@@ -83,16 +83,19 @@ export function WindowFooter({
   ...problems
 }: ProblemProps & { isLoading: boolean; canSave: boolean; onCancel: () => void; onSave: () => void; children?: ReactNode }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 -mb-4 space-y-3 border-t border-line bg-surface p-4 sm:-mx-5 sm:-mb-5 sm:px-5">
-      {children}
+    <div className="sticky bottom-0 z-10 -mx-4 -mb-4 space-y-2 border-t border-line bg-surface px-4 py-3 sm:-mx-5 sm:-mb-5 sm:px-5">
       <Problems {...problems} />
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <button type="button" className="btn w-full sm:w-auto" onClick={onCancel} disabled={isLoading}>
-          Annuler
-        </button>
-        <button type="button" className="btn btn-primary w-full sm:w-auto" onClick={onSave} disabled={isLoading || !canSave}>
-          {isLoading ? "Enregistrement…" : canSave ? "Enregistrer" : "Rien à enregistrer"}
-        </button>
+      {/* Une ligne : ce qui est propre à la fenêtre (le statut d'une variante) à gauche, les deux boutons à droite. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        {children ? <div className="min-w-0">{children}</div> : null}
+        <div className="ml-auto flex gap-2">
+          <button type="button" className="btn" onClick={onCancel} disabled={isLoading}>
+            Annuler
+          </button>
+          <button type="button" className="btn btn-primary" onClick={onSave} disabled={isLoading || !canSave}>
+            {isLoading ? "Enregistrement…" : canSave ? "Enregistrer" : "Rien à enregistrer"}
+          </button>
+        </div>
       </div>
     </div>
   );
