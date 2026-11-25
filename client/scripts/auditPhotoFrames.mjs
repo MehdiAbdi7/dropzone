@@ -143,6 +143,12 @@ function report(family, rows) {
   tooWide.slice(0, 15).forEach((row) => console.log(`  - ${row.where} (rapport ${row.aspect.toFixed(2)})`));
   console.log(`photos illisibles : ${errors.length}`);
   errors.slice(0, 15).forEach((row) => console.log(`  - ${row.where} : ${row.error}`));
+  // La répartition des rapports : pour choisir un cadre, combien de photos y rentrent.
+  const sorted = [...aspects].sort((a, b) => a - b);
+  const at = (share) => sorted[Math.min(sorted.length - 1, Math.floor(share * sorted.length))].toFixed(2);
+  console.log(`répartition des rapports : médiane ${at(0.5)}, 75 % ${at(0.75)}, 90 % ${at(0.9)}, 95 % ${at(0.95)}`);
+  const fits = [0.9, 1, 1.2, 1.4, 1.6, 2, 2.5, 3.2].map((cut) => `${cut} : ${aspects.filter((a) => a <= cut).length}`);
+  console.log(`photos qui rentrent dans un cadre de rapport … (sur ${aspects.length}) : ${fits.join(" | ")}`);
 }
 
 const photos = await collectPhotos();
