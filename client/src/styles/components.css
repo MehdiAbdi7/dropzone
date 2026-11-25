@@ -662,6 +662,24 @@
       display: none;
     }
   }
+  /* La lueur du haut des pages du parcours d'achat (25/11) : bleu à gauche, rouge à droite, très
+     faible (valeurs vues et validées par Mehdi sur la maquette), un peu plus forte en sombre pour
+     rester visible. Les traits de néon des marges sont dans ShopBackdrop. */
+  .shop-glow {
+    --glow-b: 10%;
+    --glow-r: 8%;
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 440px;
+    background:
+      radial-gradient(60% 100% at 18% 0%, color-mix(in srgb, var(--blue) var(--glow-b), transparent), transparent 70%),
+      radial-gradient(55% 100% at 85% 0%, color-mix(in srgb, var(--red) var(--glow-r), transparent), transparent 70%);
+  }
+  [data-theme="dark"] .shop-glow {
+    --glow-b: 20%;
+    --glow-r: 14%;
+  }
+
   /* La feuille « Ton parcours » : une frise verticale, un trait relie les ronds. */
   .journey-timeline {
     margin: 0;

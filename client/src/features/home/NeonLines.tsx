@@ -2,6 +2,16 @@
 // SVG plutôt qu'une image : quelques centaines d'octets, net à toutes les tailles. Le filtre
 // `glow` floute une copie du trait et la pose dessous, d'où le halo.
 // `id` doit être unique sur la page : c'est le nom du filtre, que chaque dessin référence.
+import type { CSSProperties } from "react";
+
+// Les bandes de décor sont découpées à leur largeur : sans fondu, les traits s'arrêtent net au
+// bord et on voit « un morceau collé sur le côté » (remarque de Mehdi, 25/11). Le masque les
+// laisse pleins côté écran et les dissout vers le contenu, comme sur les catégories. Partagé par
+// « Notre sélection » de l'accueil et le fond des pages du parcours d'achat (ShopBackdrop).
+export function fadeToward(direction: "left" | "right"): CSSProperties {
+  const mask = `linear-gradient(to ${direction}, #000 0%, #000 40%, transparent 100%)`;
+  return { maskImage: mask, WebkitMaskImage: mask };
+}
 
 // Les traits, dans le repère 600 × 480 du socle. Les rouges débordent à gauche (x négatifs), les
 // bleus à droite (au-delà de 600) : posés derrière le socle, ils sortent du cadre comme sur les
