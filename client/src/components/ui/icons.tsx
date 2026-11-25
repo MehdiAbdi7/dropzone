@@ -275,3 +275,14 @@ export const CheckIcon = (props: IconProps) => (
     <path d="m5 12.5 4.5 4.5L19 7" />
   </Icon>
 );
+
+// Trois points reliés sur une ligne : le parcours d'achat. Volontairement pas trois traits
+// horizontaux, qui ressembleraient au menu hamburger de l'en-tête (MenuIcon).
+export const RouteIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="5" r="2" />
+    <circle cx="12" cy="12" r="2" />
+    <circle cx="12" cy="19" r="2" />
+    <path d="M12 7v3M12 14v3" />
+  </Icon>
+);

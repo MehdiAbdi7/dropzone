@@ -1,11 +1,11 @@
 "use client";
 
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import BrandLogo from "@/components/ui/BrandLogo";
 import { CheckIcon, ChevronDownIcon, CloseIcon } from "@/components/ui/icons";
 import type { PickerOption } from "./filterOptions";
-import { moveIndex } from "./series";
+import { useListDismiss } from "./useListDismiss";
 
 // Un bouton de filtre de la capsule de la Boutique (« Type », « Marque ») et sa liste (25/11,
 // demande de Mehdi : des listes plutôt que des puces). Sur ordinateur, la liste s'ouvre sous le
@@ -41,10 +41,8 @@ export default function FilterPicker({
     setOpen(true);
   }
 
-  function close() {
-    setOpen(false);
-    triggerRef.current?.focus();
-  }
+  // La fermeture et le clavier (Échap, Tab, flèches, clic en dehors) : voir useListDismiss.
+  const { close, onKeyDown } = useListDismiss({ open, popover: !asSheet, rootRef, triggerRef, listRef, setOpen });
 
   // Un choix change toute la liste en dessous, souvent pour une plus courte : sans remonter, la
   // page restait scrollée en bas et le pied de page remplissait l'écran (remarque de Mehdi, 25/11).
@@ -57,53 +55,6 @@ export default function FilterPicker({
       onChange(next);
       window.scrollTo({ top: 0 });
     }
-  }
-
-  // À l'ouverture, le focus va sur le choix actuel : le clavier part de là.
-  useEffect(() => {
-    if (open) {
-      listRef.current?.querySelector<HTMLElement>("[data-current]")?.focus();
-    }
-  }, [open]);
-
-  // Sur ordinateur, un clic en dehors ferme la liste (la feuille a son fond cliquable).
-  useEffect(() => {
-    if (!open || asSheet) {
-      return;
-    }
-    function onPointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open, asSheet]);
-
-  // Échap ferme ; ↑ et ↓ passent d'une ligne à l'autre. Tab (liste sous le bouton seulement) ferme
-  // aussi : sans cela, le focus sortait de la liste qui restait ouverte par-dessus la page. Le
-  // focus est rendu au bouton avant que Tab n'agisse : il passe alors à l'élément suivant.
-  function onKeyDown(event: KeyboardEvent<HTMLElement>) {
-    if (event.key === "Tab" && !asSheet) {
-      setOpen(false);
-      triggerRef.current?.focus();
-      return;
-    }
-    if (event.key === "Escape") {
-      event.stopPropagation();
-      close();
-      return;
-    }
-    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
-      return;
-    }
-    const rows = Array.from(listRef.current?.querySelectorAll<HTMLElement>("button") ?? []);
-    const current = rows.indexOf(document.activeElement as HTMLElement);
-    if (current === -1) {
-      return;
-    }
-    event.preventDefault();
-    rows[moveIndex(current, rows.length, event.key === "ArrowDown" ? 1 : -1)]?.focus();
   }
 
   const list = (
