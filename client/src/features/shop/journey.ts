@@ -41,7 +41,8 @@ const LABELS: Record<JourneyStepKey, string> = {
   series: "Série",
   model: "Modèle",
   condition: "État",
-  color: "Couleur",
+  // 25/11, demande de Mehdi : les offres s'affichent dans la visionneuse de couleurs, sans changer de page.
+  color: "Couleur et offres",
 };
 
 const TITLES: Record<JourneyStepKey | "end", string> = {
@@ -50,7 +51,7 @@ const TITLES: Record<JourneyStepKey | "end", string> = {
   series: "Choisis ta série",
   model: "Choisis ton modèle",
   condition: "Neuf scellé ou occasion ?",
-  color: "Choisis la couleur",
+  color: "Choisis la couleur et l'offre",
   end: "Prêt à commander",
 };
 
