@@ -36,6 +36,14 @@ import {
 // dessous (pas de décor sur un écran plus étroit, plutôt qu'un décor sur les cartes).
 const LATEST_SIDE_DECORATION_WIDTH = "max(0px, calc((100vw - 1260px) / 2))";
 
+// Les bandes de décor sont découpées à leur largeur : sans fondu, les traits s'arrêtent net au
+// bord et on voit « un morceau collé sur le côté » (remarque de Mehdi, 25/11). Le masque les
+// laisse pleins côté écran et les dissout vers le carrousel, comme sur les catégories.
+function fadeToward(direction: "left" | "right"): CSSProperties {
+  const mask = `linear-gradient(to ${direction}, #000 0%, #000 40%, transparent 100%)`;
+  return { maskImage: mask, WebkitMaskImage: mask };
+}
+
 // L'accueil s'affiche tout de suite (06/11). Avant, la page attendait toutes les réponses de
 // l'API pour s'afficher d'un bloc : quand Render réveille le serveur endormi (jusqu'à une
 // minute), on ne voyait que les cartes grises de loading.tsx. Maintenant, seules les parties
@@ -220,13 +228,19 @@ export default function HomePage() {
           <div className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden sm:block">
             <div
               className="absolute inset-y-0 left-0 overflow-hidden"
-              style={{ width: LATEST_SIDE_DECORATION_WIDTH }}
+              style={{
+                width: LATEST_SIDE_DECORATION_WIDTH,
+                ...fadeToward("right"),
+              }}
             >
               <NeonSides id="latest-left" side="left" />
             </div>
             <div
               className="absolute inset-y-0 right-0 overflow-hidden"
-              style={{ width: LATEST_SIDE_DECORATION_WIDTH }}
+              style={{
+                width: LATEST_SIDE_DECORATION_WIDTH,
+                ...fadeToward("left"),
+              }}
             >
               <NeonSides id="latest-right" side="right" />
             </div>
