@@ -273,6 +273,12 @@
     max-width: 22rem;
     margin-inline: auto;
   }
+  /* Un seul modèle : pas de voisins à montrer, donc pas de marge `--side` à gauche (elle sert à
+     centrer le premier modèle d'une piste qui en a plusieurs). Sans cela la carte était poussée
+     à droite. */
+  .poster-track-single {
+    padding-left: 0;
+  }
   @media (min-width: 768px) {
     .poster-track {
       --slide: 30cqw;

@@ -3,13 +3,14 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { DEVICE_KINDS } from "@/config/catalog";
 import ProductGrid from "@/features/products/ProductGrid";
-import Breadcrumb from "@/features/shop/Breadcrumb";
 import ChoicePoster from "@/features/shop/ChoicePoster";
 import { conditionColumns } from "@/features/shop/choiceColumns";
 import { pickColor } from "@/features/shop/colors";
 import NewPicker from "@/features/shop/NewPicker";
 import ProductFacts from "@/features/shop/ProductFacts";
-import ProductHeader, { productCrumbs } from "@/features/shop/ProductHeader";
+import ProductHeader from "@/features/shop/ProductHeader";
+import { ProductJourney } from "@/features/shop/ProductJourney";
+import ShopBackdrop from "@/features/shop/ShopBackdrop";
 import { formatPrice } from "@/lib/format";
 import { retiredProductRedirect } from "@/lib/legacyRedirect";
 import { getPalette } from "@/lib/palette";
@@ -111,21 +112,26 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
 
   const color = pickColor(product.colors, search.couleur);
   return (
-    <div className="container-page space-y-4 py-4">
-      <Breadcrumb items={productCrumbs(product, color)} />
-      <ChoicePoster
-        kicker="NEUF SCELLÉ OU OCCASION"
-        title={color ? `${product.name} · ${color}` : product.name}
-        columns={conditionColumns(product, color)}
-        palette={palette}
-      />
-      {color ? (
-        <Link href={`/produits/${product.slug}`} className="inline-block text-sm text-blue-ink underline">
-          Voir toutes les couleurs
-        </Link>
-      ) : null}
-      <ProductFacts product={product} />
-      {accessoriesSection}
-    </div>
+    <ShopBackdrop contentMax={1200}>
+      <div className="container-page space-y-4 py-4">
+        {/* Le choix de l'état (étape 5 du parcours d'achat). Un ancien lien `?couleur=` montre encore
+            le choix dans cette couleur, mais le parcours n'en tient pas compte : la couleur se
+            choisit après l'état. */}
+        <ProductJourney product={product} current="condition" condition={null} color={null} />
+        <ChoicePoster
+          kicker="NEUF SCELLÉ OU OCCASION"
+          title={color ? `${product.name} · ${color}` : product.name}
+          columns={conditionColumns(product, color)}
+          palette={palette}
+        />
+        {color ? (
+          <Link href={`/produits/${product.slug}`} className="inline-block text-sm text-blue-ink underline">
+            Voir toutes les couleurs
+          </Link>
+        ) : null}
+        <ProductFacts product={product} />
+        {accessoriesSection}
+      </div>
+    </ShopBackdrop>
   );
 }

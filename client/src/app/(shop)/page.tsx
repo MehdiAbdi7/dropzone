@@ -8,7 +8,7 @@ import {
 import ScrollToHash from "@/components/ui/ScrollToHash";
 import { STORE_INFO } from "@/config/storeInfo";
 import HomeCategories from "@/features/categories/HomeCategories";
-import { NeonSides } from "@/features/home/NeonLines";
+import { NeonSides, fadeToward } from "@/features/home/NeonLines";
 import { StageLoading } from "@/features/home/DeviceStage";
 import Guarantees from "@/features/home/Guarantees";
 import Reveal from "@/features/home/Reveal";
@@ -35,14 +35,6 @@ import {
 // n'a pas, d'où 1260 px : la marge libre de chaque côté est (100vw - 1260px) / 2, et 0 en
 // dessous (pas de décor sur un écran plus étroit, plutôt qu'un décor sur les cartes).
 const LATEST_SIDE_DECORATION_WIDTH = "max(0px, calc((100vw - 1260px) / 2))";
-
-// Les bandes de décor sont découpées à leur largeur : sans fondu, les traits s'arrêtent net au
-// bord et on voit « un morceau collé sur le côté » (remarque de Mehdi, 25/11). Le masque les
-// laisse pleins côté écran et les dissout vers le carrousel, comme sur les catégories.
-function fadeToward(direction: "left" | "right"): CSSProperties {
-  const mask = `linear-gradient(to ${direction}, #000 0%, #000 40%, transparent 100%)`;
-  return { maskImage: mask, WebkitMaskImage: mask };
-}
 
 // L'accueil s'affiche tout de suite (06/11). Avant, la page attendait toutes les réponses de
 // l'API pour s'afficher d'un bloc : quand Render réveille le serveur endormi (jusqu'à une

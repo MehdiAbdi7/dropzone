@@ -16,3 +16,14 @@ describe("Les animations de l'affiche", () => {
     expect(Number(delay) + Number(duration) * Number(count)).toBeLessThanOrEqual(5);
   });
 });
+
+describe("La piste d'une série d'un seul modèle", () => {
+  // La marge gauche de `.poster-track` (--side) sert à centrer le premier modèle d'une piste qui
+  // en a plusieurs, entre deux voisins. Avec un seul modèle (Huawei P30), il n'y a ni voisin ni
+  // marge de droite pour la compenser : la carte restait poussée à droite (remarque de Mehdi, 25/11).
+  it("n'a aucune marge de côté, pour que la carte soit au milieu", () => {
+    const rule = css.match(/\.poster-track-single \{([^}]*)\}/);
+    expect(rule, "règle .poster-track-single introuvable").not.toBeNull();
+    expect(rule![1]).toMatch(/padding-left:\s*0\b/);
+  });
+});

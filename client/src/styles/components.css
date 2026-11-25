@@ -431,4 +431,347 @@
     background: var(--surface);
     color: var(--ink);
   }
+
+  /* Le parcours d'achat (25/11) : une carte sobre en tête des pages d'un appareil. Pas d'overflow
+     caché : la liste d'une étape doit sortir de la carte. Ordinateur (1024 px et plus) : les
+     étapes sur une ligne ; en dessous : retour, « Étape N sur M », icône de frise, barre de
+     progression. Fait = bleu, en cours = rouge, à venir = gris, comme la frise des commandes du
+     back-office. */
+  /* Collée sous l'en-tête du site au défilement (remarque de Mehdi, 25/11 : la barre doit toujours
+     rester en haut). L'en-tête est lui-même collé en haut (`sticky top-0 z-30`, 4 rem plus 1 px de
+     bordure) : sans ce `top`, la barre passerait dessous (même piège que la capsule de filtres,
+     voir capsule.ts). En dessous de l'en-tête (z-index 20 contre 30), au-dessus de la page. */
+  .journey {
+    position: sticky;
+    top: calc(4rem + 1px + 8px);
+    z-index: 20;
+    margin-bottom: 18px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    /* Presque opaque : la barre est sombre dans les deux thèmes (classe brand-dark), ses couleurs
+       ne doivent pas dépendre du fond de la page derrière. */
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    box-shadow: 0 10px 26px -18px rgb(10 11 20 / 0.4);
+    backdrop-filter: blur(12px);
+  }
+  /* Au-dessus d'une affiche : exactement le fond du conteneur de l'affiche (.poster, series-posters.css),
+     dégradé sombre et liseré indigo, violet, rouge. Pas `overflow: hidden` comme elle : la liste
+     d'une étape doit sortir de la barre. */
+  .journey-poster {
+    border-color: transparent;
+    border-radius: 22px;
+    background:
+      linear-gradient(145deg, #0d0e12, #08090d 58%, #0c0b10) padding-box,
+      linear-gradient(135deg, rgb(99 102 241 / 0.72), rgb(163 59 240 / 0.42) 48%, rgb(255 46 77 / 0.48)) border-box;
+    box-shadow:
+      0 24px 64px -42px rgb(61 75 255 / 0.5),
+      inset 0 1px 0 rgb(255 255 255 / 0.06);
+  }
+  .journey-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .journey-back,
+  .journey-route {
+    display: inline-grid;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .journey-route {
+    border-radius: 12px;
+  }
+  .journey-back:hover,
+  .journey-route:hover {
+    border-color: var(--blue-ink);
+    color: var(--blue-ink);
+  }
+  .journey-steps {
+    display: none;
+    min-width: 0;
+    flex: 1;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .journey-item {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+  }
+  /* Le trait qui relie une étape à la suivante ; bleu après une étape faite. */
+  .journey-item:not(:last-child)::after {
+    content: "";
+    min-width: 10px;
+    flex: 1;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--line);
+  }
+  .journey-item[data-status="done"]:not(:last-child)::after {
+    background: var(--blue);
+  }
+  .journey-item:not(:last-child) {
+    flex: 1 1 auto;
+  }
+  .journey-menu {
+    position: relative;
+    min-width: 0;
+  }
+  .journey-step {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: var(--ink-muted);
+    text-align: start;
+  }
+  button.journey-step:hover,
+  button.journey-step[aria-expanded="true"] {
+    border-color: var(--line);
+    background: var(--surface);
+  }
+  .journey-dot {
+    display: inline-grid;
+    width: 24px;
+    height: 24px;
+    flex: none;
+    place-items: center;
+    border: 2px solid var(--line);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--ink-muted);
+    font-family: var(--font-display, inherit);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+  [data-status="done"] > .journey-dot,
+  [data-status="done"] .journey-dot {
+    border-color: var(--blue);
+    background: var(--blue);
+    color: #fff;
+  }
+  [data-status="current"] .journey-dot {
+    border-color: var(--red);
+    background: color-mix(in srgb, var(--red) 12%, transparent);
+    color: var(--red);
+  }
+  .journey-text {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    line-height: 1.15;
+  }
+  .journey-k {
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  [data-status="done"] > .journey-text .journey-k,
+  [data-status="done"] .journey-k {
+    color: var(--blue-ink);
+  }
+  [data-status="current"] .journey-k,
+  [data-status="current"] .journey-v {
+    color: var(--red);
+  }
+  .journey-v {
+    max-width: 110px;
+    overflow: hidden;
+    color: var(--ink);
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .journey-chevron {
+    flex: none;
+    color: var(--ink-muted);
+  }
+  /* La liste sous une étape : celle du filtre, ancrée à gauche de l'étape. */
+  .journey-pop {
+    inset-inline-start: 0;
+    inset-inline-end: auto;
+    width: 280px;
+  }
+  .journey-head {
+    padding: 6px 8px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .journey-note {
+    padding: 10px 12px;
+    font-size: 0.875rem;
+    color: var(--ink-muted);
+  }
+  .journey-all {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    margin-top: 6px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--line);
+    border-radius: 0 0 12px 12px;
+    color: var(--blue-ink);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+  .journey-all:hover {
+    background: var(--surface-2);
+  }
+  /* Téléphone : « Étape N sur M », titre, icône, barre de progression. */
+  .journey-info {
+    min-width: 0;
+    flex: 1;
+  }
+  .journey-kicker {
+    color: var(--red);
+    font-size: 0.656rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+  .journey-title {
+    overflow: hidden;
+    font-family: var(--font-display, inherit);
+    font-size: 1rem;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .journey-bars {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(var(--journey-steps, 6), minmax(0, 1fr));
+    gap: 4px;
+    margin-top: 10px;
+    padding: 6px 2px;
+  }
+  .journey-bars > span {
+    height: 4px;
+    border-radius: 9px;
+    background: var(--line);
+  }
+  .journey-bars > [data-status="done"] {
+    background: var(--blue);
+  }
+  .journey-bars > [data-status="current"] {
+    background: var(--red);
+  }
+  @media (min-width: 1024px) {
+    .journey-steps {
+      display: flex;
+    }
+    .journey-info,
+    .journey-route,
+    .journey-bars {
+      display: none;
+    }
+  }
+  /* La lueur du haut des pages du parcours d'achat (25/11) : bleu à gauche, rouge à droite, très
+     faible (valeurs vues et validées par Mehdi sur la maquette), un peu plus forte en sombre pour
+     rester visible. Les traits de néon des marges sont dans ShopBackdrop. */
+  .shop-glow {
+    --glow-b: 10%;
+    --glow-r: 8%;
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 440px;
+    background:
+      radial-gradient(60% 100% at 18% 0%, color-mix(in srgb, var(--blue) var(--glow-b), transparent), transparent 70%),
+      radial-gradient(55% 100% at 85% 0%, color-mix(in srgb, var(--red) var(--glow-r), transparent), transparent 70%);
+  }
+  [data-theme="dark"] .shop-glow {
+    --glow-b: 20%;
+    --glow-r: 14%;
+  }
+
+  /* La feuille « Ton parcours » : une frise verticale, un trait relie les ronds. */
+  .journey-timeline {
+    margin: 0;
+    padding: 0 16px 20px;
+    list-style: none;
+  }
+  .journey-timeline > li {
+    position: relative;
+    padding: 0 0 4px 40px;
+  }
+  .journey-timeline > li::before {
+    content: "";
+    position: absolute;
+    top: 34px;
+    bottom: -4px;
+    inset-inline-start: 13px;
+    width: 2px;
+    background: var(--line);
+  }
+  .journey-timeline > li:last-child::before {
+    display: none;
+  }
+  .journey-timeline > li[data-status="done"]::before {
+    background: var(--blue);
+  }
+  .journey-timeline > li > .journey-dot {
+    position: absolute;
+    top: 10px;
+    inset-inline-start: 0;
+    width: 28px;
+    height: 28px;
+  }
+  .journey-row-button {
+    display: flex;
+    width: 100%;
+    min-height: 48px;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    color: var(--ink);
+    text-align: start;
+  }
+  button.journey-row-button:hover {
+    background: var(--surface-2);
+  }
+  .journey-row-button .journey-text {
+    flex: 1;
+  }
+  .journey-row-button .journey-v {
+    max-width: none;
+    font-size: 0.94rem;
+  }
+  .journey-change {
+    color: var(--blue-ink);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .journey-now {
+    color: var(--red);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  [data-status="todo"] .journey-row-button {
+    color: var(--ink-muted);
+  }
+  .journey-alts {
+    margin: 2px 0 8px;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--bg);
+  }
 }

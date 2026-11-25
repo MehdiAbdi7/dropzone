@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import Breadcrumb from "@/features/shop/Breadcrumb";
+import { SeriesJourney } from "@/features/shop/ProductJourney";
 import SeriesPoster from "@/features/shop/SeriesPoster";
+import ShopBackdrop from "@/features/shop/ShopBackdrop";
 import { accessoryRedirect } from "@/lib/legacyRedirect";
 import { getPalette } from "@/lib/palette";
 import { publicFetch } from "@/lib/publicFetch";
@@ -62,21 +63,13 @@ export default async function ShopSeriesPage({
   // Les teintes des couleurs (Listes du back-office) : lueurs et pastilles de l'affiche.
   const palette = await getPalette();
 
-  const brandHref = `/boutique/${poster.category.slug}/${poster.brand.slug}`;
   return (
-    <div className="container-page space-y-4 py-12 sm:py-8">
-      <Breadcrumb
-        items={[
-          { label: "Boutique", href: "/boutique" },
-          {
-            label: poster.category.name,
-            href: `/boutique/${poster.category.slug}`,
-          },
-          { label: poster.brand.name, href: brandHref },
-          { label: poster.name },
-        ]}
-      />
-      <SeriesPoster poster={poster} palette={palette} />
-    </div>
+    <ShopBackdrop contentMax={1100}>
+      <div className="container-page space-y-4 py-12 sm:py-8">
+        {/* Le parcours d'achat (25/11) : on choisit ici le modèle (étape 4). */}
+        <SeriesJourney poster={poster} />
+        <SeriesPoster poster={poster} palette={palette} />
+      </div>
+    </ShopBackdrop>
   );
 }
