@@ -283,4 +283,149 @@
   .search-toggle > summary::-webkit-details-marker {
     display: none;
   }
+
+  /* La capsule de filtres de la Boutique (25/11) : la recherche et les boutons « Type » et
+     « Marque », collés sous l'en-tête. Sobre (demande de Mehdi) : une bordure grise, un fond de
+     verre qui suit le thème, aucun dégradé. Pas d'overflow caché : la liste doit sortir de la
+     capsule. */
+  .filter-capsule {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 7px;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    box-shadow: 0 8px 24px -14px rgb(10 11 20 / 0.28);
+    backdrop-filter: blur(14px);
+  }
+  @media (min-width: 640px) {
+    .filter-capsule {
+      flex-wrap: nowrap;
+    }
+  }
+  .filter-picker {
+    position: relative;
+    min-width: 0;
+    flex: 1 1 0;
+  }
+  @media (min-width: 640px) {
+    .filter-picker {
+      flex: none;
+    }
+  }
+  .filter-trigger {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: border-color 0.15s;
+  }
+  .filter-trigger:hover {
+    border-color: var(--ink-muted);
+  }
+  .filter-trigger[aria-expanded="true"],
+  .filter-trigger[data-active] {
+    border-color: var(--blue-ink);
+    color: var(--blue-ink);
+  }
+  .filter-label {
+    display: none;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  @media (min-width: 640px) {
+    .filter-label {
+      display: inline;
+    }
+  }
+  .filter-chevron {
+    margin-inline-start: auto;
+    flex: none;
+    color: var(--ink-muted);
+    transition: transform 0.2s;
+  }
+  .filter-trigger[aria-expanded="true"] .filter-chevron {
+    transform: rotate(180deg);
+  }
+  .filter-pop {
+    position: absolute;
+    inset-inline-start: 0;
+    top: calc(100% + 10px);
+    z-index: 40;
+    width: 320px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--surface);
+    box-shadow: 0 24px 50px -16px rgb(0 0 0 / 0.35);
+    overscroll-behavior: contain;
+  }
+  .filter-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .filter-option {
+    display: flex;
+    width: 100%;
+    min-height: 46px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    color: var(--ink);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-align: start;
+  }
+  .filter-option:hover,
+  .filter-option:focus-visible {
+    background: var(--surface-2);
+  }
+  .filter-option[aria-current="true"] {
+    background: var(--surface-2);
+    color: var(--blue-ink);
+  }
+  /* « Tous » ou « Toutes » : première ligne, séparée des choix par un trait. */
+  .filter-option-all {
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+    border-radius: 12px 12px 0 0;
+  }
+  .filter-check {
+    display: inline-grid;
+    width: 18px;
+    flex: none;
+    place-items: center;
+    color: var(--blue-ink);
+  }
+  .filter-detail {
+    flex: none;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+  }
+  /* La feuille du bas du téléphone prend les couleurs du thème (celle du sélecteur de modèles
+     est toujours sombre, posée sur une affiche). */
+  .picker-panel.is-themed {
+    border-color: var(--line);
+    background: var(--surface);
+    color: var(--ink);
+  }
 }

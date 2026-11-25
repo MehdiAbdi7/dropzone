@@ -263,3 +263,15 @@ export const LogoutIcon = (props: IconProps) => (
     <path d="M10 8l-4 4 4 4M6 12h10" />
   </Icon>
 );
+
+export const ChevronDownIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m6 9 6 6 6-6" />
+  </Icon>
+);
+
+export const CheckIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m5 12.5 4.5 4.5L19 7" />
+  </Icon>
+);
