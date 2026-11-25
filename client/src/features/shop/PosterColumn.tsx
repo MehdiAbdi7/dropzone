@@ -32,7 +32,7 @@ export default function PosterColumn({
   const slug = status ? null : model.productSlug;
   const body = (
     <>
-      <div className="relative h-36 w-full md:h-40">
+      <div className="poster-photo relative w-full">
         <div
           aria-hidden="true"
           className="poster-glow"
@@ -49,7 +49,7 @@ export default function PosterColumn({
       <h2 className={`text-lg font-bold text-white ${status ? "line-through" : ""}`}>{model.name}</h2>
 
       {model.specs.length > 0 ? (
-        <ul className="w-full max-w-[16rem] space-y-1.5 text-left text-xs text-white/80">
+        <ul className="poster-specs w-full max-w-[16rem] text-left text-xs text-white/80">
           {model.specs.map(([key, value]) => (
             <li key={key} className="flex items-start gap-2">
               <SpecGlyph icon={specIcon(key)} size={14} className="mt-px shrink-0 text-white/55" />
@@ -116,7 +116,7 @@ export default function PosterColumn({
     </>
   );
 
-  const className = "poster-column flex h-full flex-col items-center gap-2 rounded-2xl px-3 pb-3 text-center";
+  const className = "poster-column poster-stack flex h-full flex-col items-center rounded-2xl px-3 pb-3 text-center";
   if (!slug) {
     return (
       <div aria-disabled="true" className={`${className} opacity-50`}>

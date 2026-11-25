@@ -5,7 +5,7 @@
 
 @layer components {
   .viewer {
-    --viewer-photo-h: 210px;
+    --viewer-photo-h: clamp(9rem, calc(100dvh - 34rem), 15rem);
     --viewer-dir: 1;
     position: relative;
     overflow: hidden;
@@ -24,7 +24,7 @@
   }
   @media (min-width: 768px) {
     .viewer {
-      --viewer-photo-h: 250px;
+      --viewer-photo-h: clamp(10rem, calc(100dvh - 30rem), 17rem);
       padding: 22px 22px 20px;
     }
   }

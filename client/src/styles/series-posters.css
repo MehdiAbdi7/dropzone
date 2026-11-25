@@ -122,8 +122,10 @@
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035);
   }
   @media (max-width: 767px) {
+    /* Une hauteur minimale qui égalise les deux cartes d'un choix glissé ; suit la hauteur de l'écran
+       (25/11, tout voir d'un coup) au lieu de 380 px fixes, avec un plancher pour le contenu. */
     .choice-card {
-      min-height: 380px;
+      min-height: clamp(300px, calc(100dvh - 380px), 380px);
     }
     .choice-card-media img {
       padding: 8px;
@@ -513,6 +515,50 @@
     }
     .poster-track {
       scroll-behavior: auto;
+    }
+  }
+
+  /* Tout voir d'un coup (25/11, demande de Mehdi) : à l'arrivée sur la page de la série ou le choix de
+     l'état, le parcours et l'affiche tiennent dans l'écran, sans défiler. Les tailles qui prenaient de la
+     place suivent la hauteur de l'écran (`dvh`) au lieu d'être fixes : la photo, les marges, le titre
+     rétrécissent d'abord. Bornes en `clamp` : jamais sous un minimum lisible, jamais au-dessus du
+     maximum d'avant sur un grand écran. Sur un écran de téléphone bas, les caractéristiques au-delà de
+     la troisième se replient (le nom, le prix et les couleurs restent). Mesures : voir le journal. */
+  :root {
+    --photo-h: clamp(4.5rem, calc(100dvh - 44rem), 9rem);
+  }
+  /* Ordinateur et tablette : les colonnes sont côte à côte, la photo peut être plus grande. */
+  @media (min-width: 768px) {
+    :root {
+      --photo-h: clamp(6rem, calc(100dvh - 38rem), 10rem);
+    }
+  }
+  .poster-photo {
+    height: var(--photo-h);
+  }
+  .poster-header {
+    display: grid;
+    gap: clamp(0.15rem, 0.8dvh, 0.5rem);
+    padding-top: clamp(0.5rem, 2.4dvh, 1.5rem);
+  }
+  .poster-body {
+    padding-top: clamp(0.15rem, 0.8dvh, 0.5rem);
+    padding-bottom: clamp(0.25rem, 1dvh, 0.75rem);
+  }
+  .poster-headline {
+    font-size: clamp(1.5rem, calc(4.4dvh + 0.25rem), 3.75rem);
+  }
+  .poster-stack {
+    gap: clamp(0.15rem, 0.8dvh, 0.5rem);
+  }
+  .poster-specs {
+    display: grid;
+    gap: clamp(0.15rem, 0.9dvh, 0.375rem);
+  }
+  /* `!important` : les lignes sont des `flex` (utilitaire Tailwind, couche plus tardive) qui l'emporteraient. */
+  @media (max-height: 800px) and (max-width: 767px) {
+    .poster-specs > li:nth-child(n + 4) {
+      display: none !important;
     }
   }
 }

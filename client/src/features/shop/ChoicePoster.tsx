@@ -24,7 +24,7 @@ export default function ChoicePoster({
   return (
     <section
       aria-labelledby="choice-title"
-      className="brand-dark poster pt-8 pb-14 sm:pb-12 sm:pt-8 "
+      className="brand-dark poster"
     >
       <div
         aria-hidden="true"
@@ -33,15 +33,16 @@ export default function ChoicePoster({
           background: `radial-gradient(60% 80% at 0% 55%, ${glowColor(first?.glow ?? null, palette)}, transparent 70%), radial-gradient(60% 80% at 100% 55%, ${glowColor(last?.glow ?? null, palette)}, transparent 70%)`,
         }}
       />
-      <header className="relative space-y-2 px-4 pt-5 text-center md:pt-6">
+      {/* Tout voir d'un coup (25/11) : les marges et le titre suivent la hauteur de l'écran (series-posters.css). */}
+      <header className="poster-header relative px-4 text-center">
         <p className="text-gradient text-xs font-extrabold tracking-[0.32em]">
           {kicker}
         </p>
-        <h1 id="choice-title" className="poster-title text-3xl md:text-5xl">
+        <h1 id="choice-title" className="poster-title poster-headline">
           {title}
         </h1>
       </header>
-      <div className="relative pt-2 pb-3">
+      <div className="poster-body relative">
         {/* Les onglets du glissement : le nom court (« Neuf scellé », « Affaire »), pas le sous-titre. */}
         <PosterSlider
           names={columns.map((column) =>

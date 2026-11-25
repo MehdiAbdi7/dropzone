@@ -28,16 +28,17 @@ export default function SeriesPoster({
           background: `radial-gradient(60% 80% at 0% 55%, ${glowColor(first.posterColor, palette)}, transparent 70%), radial-gradient(60% 80% at 100% 55%, ${glowColor(last.posterColor, palette)}, transparent 70%)`,
         }}
       />
-      <header className="relative space-y-2 px-4 pt-5 text-center md:pt-6">
+      {/* Tout voir d'un coup (25/11) : les marges et le titre suivent la hauteur de l'écran (series-posters.css). */}
+      <header className="poster-header relative px-4 text-center">
         <Logo />
-        <h1 id="poster-title" className="poster-title text-4xl md:text-6xl">
+        <h1 id="poster-title" className="poster-title poster-headline">
           {poster.name}
         </h1>
         <p className="text-xs tracking-[0.28em] text-white/70 uppercase">
           La série · {count} modèle{count > 1 ? "s" : ""}
         </p>
       </header>
-      <div className="relative pt-2 pb-3">
+      <div className="poster-body relative">
         <PosterSlider
           names={poster.models.map((model) => model.name)}
           layout={posterLayout(count)}

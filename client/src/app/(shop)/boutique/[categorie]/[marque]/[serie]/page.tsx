@@ -65,7 +65,9 @@ export default async function ShopSeriesPage({
 
   return (
     <ShopBackdrop contentMax={1100}>
-      <div className="container-page space-y-4 py-12 sm:py-8">
+      {/* Marges comme les autres pages du parcours (`py-4`) : le parcours est collé en haut, il n'a plus
+          besoin de la grande marge (`py-12`) du temps du fil d'Ariane. Tout doit tenir d'un coup. */}
+      <div className="container-page space-y-4 py-4">
         {/* Le parcours d'achat (25/11) : on choisit ici le modèle (étape 4). */}
         <SeriesJourney poster={poster} />
         <SeriesPoster poster={poster} palette={palette} />
