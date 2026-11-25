@@ -7,6 +7,11 @@
   .viewer {
     --viewer-photo-h: clamp(11rem, calc(100svh - 32rem), 16rem);
     --viewer-dir: 1;
+    /* Mode clair (25/11, demande de Mehdi) : `.card` (offres) lit `--color-surface`, calculée sur `:root`
+       donc claire, alors que le texte, lui, suit `.brand-dark` (clair sur sombre) : prix blanc sur carte
+       blanche. On redéclare ces deux variables ICI, où `--surface` est déjà la sombre. */
+    --color-surface: var(--surface);
+    --color-surface-2: var(--surface-2);
     position: relative;
     overflow: hidden;
     isolation: isolate;
