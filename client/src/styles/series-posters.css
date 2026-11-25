@@ -520,8 +520,7 @@
      l'état, le parcours et l'affiche tiennent dans l'écran, sans défiler. Les tailles qui prenaient de la
      place suivent la hauteur de l'écran (`svh`) au lieu d'être fixes : la photo, les marges, le titre
      rétrécissent d'abord. Bornes en `clamp` : jamais sous un minimum lisible, jamais au-dessus du
-     maximum d'avant sur un grand écran. Sur un écran de téléphone bas, les caractéristiques au-delà de
-     la troisième se replient (le nom, le prix et les couleurs restent). Mesures : voir le journal. */
+     maximum d'avant sur un grand écran. Toutes les caractéristiques restent visibles. Mesures : voir le journal. */
   /* `svh` et non `dvh` : la hauteur avec la barre d'adresse du téléphone affichée, celle de l'arrivée sur la
      page. `dvh` change quand la barre se replie au défilement, et toute la page bougeait sous le doigt. */
   :root {
@@ -575,15 +574,9 @@
       font-size: 2.25rem;
     }
   }
-  @media (max-height: 800px) and (max-width: 767px) {
-    /* Masquées à l'œil seulement : un lecteur d'écran les lit encore. */
-    .poster-specs > li:nth-child(n + 4) {
-      position: absolute !important;
-      width: 1px !important;
-      height: 1px !important;
-      overflow: hidden !important;
-      clip: rect(0 0 0 0) !important;
-      white-space: nowrap !important;
-    }
-  }
+  /* Retiré le 25/11 (demande de Mehdi) : une règle `@media (max-height: 800px)` cachait les caractéristiques
+     au-delà de la troisième sur téléphone. Or `max-height` suit la hauteur de la fenêtre EN DIRECT : quand la
+     barre d'adresse se replie au premier défilement, la fenêtre dépasse 800 px, la règle cesse de
+     s'appliquer et les caractéristiques apparaissaient d'un coup, les affiches grandissant sous le doigt.
+     Elles sont maintenant toujours toutes visibles, comme après ce défilement. */
 }
