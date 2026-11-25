@@ -1,6 +1,7 @@
 import { warrantyRange } from "@/config/warranty";
 import type { ProductDetail } from "@/types/api";
 import { colorHref, kindIcon, ofColor } from "./colors";
+import { uniformPhoto } from "./photos";
 import { conditionSummary } from "./stock";
 
 // L'affiche de choix (05/11, ordre inversé le 23/11) : Neuf scellé ou Occasion d'abord, puis la couleur pour le neuf
@@ -43,7 +44,12 @@ export function conditionColumns(product: ProductDetail, color: string | null): 
   const newPrices = new Set(fresh.filter((v) => v.stock > 0).map((v) => v.price));
   const href = (step: "neuf" | "occasion") => (color ? colorHref(product.slug, color, step) : `/produits/${product.slug}/${step}`);
   // Sans couleur (la première étape) : la photo du modèle ; un ancien lien avec `?couleur=` garde la photo de sa couleur.
-  const common = { image: color ? imageOf(product, color) : modelImage(product), glow: color ?? product.posterColor, subtitle: null };
+  // Recadrées (25/11) : tous les téléphones à la même hauteur, dans le cadre de leur famille de photos.
+  const common = {
+    image: color ? uniformPhoto(imageOf(product, color), "color") : uniformPhoto(modelImage(product), "model"),
+    glow: color ?? product.posterColor,
+    subtitle: null,
+  };
   const n = summary.refurbishedCount;
   const warranty = (list: typeof variants) => {
     const label = warrantyRange(list);

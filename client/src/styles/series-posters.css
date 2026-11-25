@@ -228,6 +228,58 @@
     border-radius: 50%;
     border: 1px solid rgb(255 255 255 / 0.4);
   }
+  /* Une pastille est un lien vers la visionneuse de couleurs (25/11) : zone de toucher de 28 px, la
+     pastille reste de 14 px. `pointer-events: auto` : le reste de la colonne laisse passer les clics
+     au lien étiré dessous, pas les pastilles. */
+  .poster-swatch-link {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border-radius: 50%;
+    pointer-events: auto;
+  }
+  a.poster-swatch-link:hover .poster-swatch,
+  a.poster-swatch-link:focus-visible .poster-swatch {
+    transform: scale(1.35);
+    border-color: #fff;
+  }
+  a.poster-swatch-link:focus-visible {
+    outline: 2px solid #a33bf0;
+    outline-offset: 1px;
+  }
+  .poster-swatch-link[data-static] {
+    pointer-events: none;
+  }
+
+  /* La colonne d'un modèle en vente : un conteneur dont le lien vers la fiche est étiré sur toute sa
+     surface, sous le contenu (pas de lien dans un lien, voir PosterColumn). Même survol et même
+     focus qu'une colonne qui était un lien (`a.poster-column`). */
+  .poster-column-linked {
+    position: relative;
+    transition: background-color 0.2s;
+  }
+  .poster-link {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+  }
+  .poster-column-linked > :not(.poster-link) {
+    position: relative;
+    pointer-events: none;
+  }
+  .poster-column-linked:hover,
+  .poster-column-linked:has(> .poster-link:focus-visible) {
+    background-color: rgb(255 255 255 / 0.05);
+  }
+  .poster-column-linked:has(> .poster-link:focus-visible) {
+    outline: 2px solid #a33bf0;
+    outline-offset: 2px;
+  }
+  .poster-link:focus-visible {
+    outline: none;
+  }
 
   /* La piste à glisser (06/11 : le modèle affiché est toujours au centre). Un modèle par
      écran sur téléphone, les voisins qui dépassent des deux côtés, grisés.

@@ -5,11 +5,18 @@ import { CONDITION_LABELS } from "@/config/catalog";
 import { type Palette, swatchOf } from "@/config/colors";
 import { formatPrice } from "@/lib/format";
 import type { PosterModel } from "@/types/api";
+import { uniformPhoto } from "./photos";
 import { glowColor, posterStatus, specIcon } from "./series";
 
 // Une colonne de l'affiche : la photo sur la lueur de sa couleur, le nom, 4 caractéristiques,
-// les couleurs (barrées si épuisées) et les prix « dès ». Toute la colonne mène à la fiche
-// du modèle (l'étape Neuf scellé ou Affaire). Un modèle épuisé reste, grisé, sans lien.
+// les couleurs et les prix « dès ». La colonne mène à la fiche du modèle (l'étape Neuf scellé ou
+// Occasion) ; chaque pastille de couleur mène à la visionneuse de couleurs de ce modèle, sur cette
+// couleur (25/11, demande de Mehdi : voir un modèle dans toutes ses couleurs sans rien acheter).
+// Un modèle épuisé ou pas encore en vente reste, grisé, sans lien.
+//
+// Pas de lien dans un lien : la colonne est un conteneur dont le lien vers la fiche est étiré sur toute
+// sa surface (`poster-link`), sous le contenu ; le contenu laisse passer les clics (`pointer-events`),
+// sauf les pastilles, qui sont les seuls liens posés par-dessus.
 export default function PosterColumn({
   model,
   palette,
@@ -22,6 +29,7 @@ export default function PosterColumn({
   // « Pas encore en vente » (aucune fiche publiée) ou « Épuisé » : la colonne est grisée,
   // son nom barré, et elle ne se clique pas, comme une carte Neuf ou Affaire vide.
   const status = posterStatus(model);
+  const slug = status ? null : model.productSlug;
   const body = (
     <>
       <div className="relative h-36 w-full md:h-40">
@@ -30,7 +38,13 @@ export default function PosterColumn({
           className="poster-glow"
           style={{ background: `radial-gradient(closest-side, ${glowColor(model.posterColor, palette)}, transparent 75%)` }}
         />
-        <ProductImage src={model.image} alt="" sizes="(min-width: 768px) 25vw, 78vw" priority={priority} />
+        {/* Recadrée (25/11) : tous les téléphones de l'affiche à la même hauteur. */}
+        <ProductImage
+          src={model.image ? uniformPhoto(model.image, "model") : null}
+          alt=""
+          sizes="(min-width: 768px) 25vw, 78vw"
+          priority={priority}
+        />
       </div>
       <h2 className={`text-lg font-bold text-white ${status ? "line-through" : ""}`}>{model.name}</h2>
 
@@ -48,22 +62,35 @@ export default function PosterColumn({
         </ul>
       ) : null}
 
-      {/* Les couleurs officielles du modèle, comme sur une affiche de lancement : rien
-          n'est barré ici, le stock par couleur se lit sur la page Neuf scellé. */}
+      {/* Les couleurs officielles du modèle, comme sur une affiche de lancement : rien n'est barré
+          ici. Chacune ouvre la visionneuse sur elle (zone de toucher de 28 px, pastille de 14 px). */}
       {model.colors.length > 0 ? (
-        <ul aria-label="Couleurs" className="flex flex-wrap justify-center gap-2">
+        <ul aria-label="Couleurs" className="flex flex-wrap justify-center">
           {model.colors.map((color) => {
             const swatch = swatchOf(color, palette);
+            const mark = swatch ? (
+              <span aria-hidden="true" className="poster-swatch" style={{ backgroundColor: swatch }} />
+            ) : (
+              <span aria-hidden="true" className="text-xs text-white/80">
+                {color}
+              </span>
+            );
             return (
               <li key={color} title={color}>
-                {swatch ? (
-                  <span aria-hidden="true" className="poster-swatch" style={{ backgroundColor: swatch }} />
+                {slug ? (
+                  <Link
+                    href={`/produits/${slug}/couleurs?apercu=${encodeURIComponent(color)}`}
+                    className="poster-swatch-link"
+                    aria-label={`Voir le ${model.name} en ${color}`}
+                  >
+                    {mark}
+                  </Link>
                 ) : (
-                  <span aria-hidden="true" className="text-xs text-white/80">
-                    {color}
+                  <span className="poster-swatch-link" data-static="">
+                    {mark}
+                    <span className="sr-only">{color}</span>
                   </span>
                 )}
-                <span className="sr-only">{color}</span>
               </li>
             );
           })}
@@ -90,7 +117,7 @@ export default function PosterColumn({
   );
 
   const className = "poster-column flex h-full flex-col items-center gap-2 rounded-2xl px-3 pb-3 text-center";
-  if (status || !model.productSlug) {
+  if (!slug) {
     return (
       <div aria-disabled="true" className={`${className} opacity-50`}>
         {body}
@@ -98,8 +125,9 @@ export default function PosterColumn({
     );
   }
   return (
-    <Link href={`/produits/${model.productSlug}`} className={className}>
+    <div className={`${className} poster-column-linked`}>
+      <Link href={`/produits/${slug}`} className="poster-link" aria-label={model.name} />
       {body}
-    </Link>
+    </div>
   );
 }

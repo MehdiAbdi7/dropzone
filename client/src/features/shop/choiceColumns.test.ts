@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Options, ProductDetail, Variant } from "@/types/api";
 import { conditionColumns } from "./choiceColumns";
+import { uniformPhoto } from "./photos";
 
 const variant = (options: Options, stock: number, price: number, condition: Variant["condition"] = "new", warrantyMonths = 12): Variant => ({
   sku: `${options.Couleur}-${options.Stockage}-${price}-${condition}`,
@@ -57,6 +58,21 @@ describe("photos des colonnes du choix de l'état", () => {
 
   it("garde la photo de la couleur d'un ancien lien avec une couleur", () => {
     expect(conditionColumns(product(), "Argent")[0].image).toBe("/products/phone.svg");
+  });
+
+  // 25/11 (demande de Mehdi : des téléphones de la même taille, surtout les modèles) : la photo est recadrée.
+  it("recadre la photo du modèle dans le cadre des modèles", () => {
+    const cloudinary = "https://res.cloudinary.com/x/image/upload/v1/modele.webp";
+    const [fresh, deal] = conditionColumns(product({ images: [{ id: 1, url: cloudinary }] }), null);
+    expect(fresh.image).toBe(uniformPhoto(cloudinary, "model"));
+    expect(deal.image).toBe(uniformPhoto(cloudinary, "model"));
+    expect(fresh.image).toContain("c_pad");
+  });
+
+  it("recadre la photo de la couleur d'un ancien lien dans le cadre des couleurs", () => {
+    const photo = "https://res.cloudinary.com/x/image/upload/v1/orange.webp";
+    const colors = [{ name: "Orange cosmique", photoUrl: photo }];
+    expect(conditionColumns(product({ colors }), "Orange cosmique")[0].image).toBe(uniformPhoto(photo, "color"));
   });
 });
 
