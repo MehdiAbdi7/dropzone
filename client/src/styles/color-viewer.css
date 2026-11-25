@@ -5,7 +5,7 @@
 
 @layer components {
   .viewer {
-    --viewer-photo-h: clamp(9rem, calc(100svh - 34rem), 15rem);
+    --viewer-photo-h: clamp(11rem, calc(100svh - 32rem), 16rem);
     --viewer-dir: 1;
     position: relative;
     overflow: hidden;
@@ -24,7 +24,9 @@
   }
   @media (min-width: 768px) {
     .viewer {
-      --viewer-photo-h: clamp(10rem, calc(100svh - 30rem), 17rem);
+      /* Ordinateur : le téléphone doit être le sujet. Un plancher de 20rem (la page défile au besoin sur un
+         écran bas) et un plafond de 28rem ; les photos font 600 px de haut, assez pour cette taille. */
+      --viewer-photo-h: clamp(20rem, calc(100svh - 18rem), 28rem);
       padding: 22px 22px 20px;
     }
   }
@@ -83,9 +85,11 @@
   }
   .viewer-glow {
     position: absolute;
-    inset: 8% 14%;
+    /* Assez rentrée pour que le flou (28 px) reste dans le cadre : sinon le cadre coupe le halo net,
+       en haut et en bas, et on voit une bande grise aux bords durs derrière le téléphone. */
+    inset: 24% 20%;
     border-radius: 50%;
-    filter: blur(36px);
+    filter: blur(28px);
     opacity: 0.5;
     transition:
       background-color 0.35s,
@@ -116,12 +120,22 @@
     transform: none;
   }
   .viewer-layer img {
-    padding: 6px 0;
+    padding: 16px 0;
     object-fit: contain;
     filter: drop-shadow(0 18px 24px rgb(0 0 0 / 0.45));
     transition: filter 0.26s;
   }
   /* Une couleur indisponible : un peu assombrie, sa teinte reste bien lisible (demande de Mehdi). */
+  /* Ordinateur : de l'air au-dessus et au-dessous du téléphone (l'ombre et le reflet ne sont plus coupés
+     par le cadre), et le cadre un peu plus haut pour que le téléphone ne rapetisse pas. */
+  @media (min-width: 768px) {
+    .viewer {
+      --viewer-photo-h: clamp(22rem, calc(100svh - 16rem), 32rem);
+    }
+    .viewer-layer img {
+      padding: 32px 0;
+    }
+  }
   .viewer-layer[data-dim] img {
     filter: drop-shadow(0 18px 24px rgb(0 0 0 / 0.45)) brightness(0.8);
   }
@@ -134,15 +148,33 @@
     height: 38px;
     place-items: center;
     transform: translateY(-50%);
-    border: 1px solid rgb(255 255 255 / 0.2);
+    border: 1.5px solid rgb(255 255 255 / 0.55);
     border-radius: 50%;
-    background: rgb(14 15 26 / 0.7);
+    background: rgb(14 15 26 / 0.85);
     color: #fff;
     font-size: 1.125rem;
     cursor: pointer;
+    transition:
+      background-color 0.15s,
+      border-color 0.15s;
   }
   .viewer-arrow:hover {
-    border-color: #8c95ff;
+    border-color: #fff;
+    background: #3d4bff;
+  }
+  /* Ordinateur : le cadre se resserre autour du téléphone (largeur proportionnelle à la hauteur), donc les
+     flèches, collées aux bords du cadre, restent près de lui au lieu de partir aux extrémités de la colonne. */
+  @media (min-width: 768px) {
+    .viewer-frame {
+      width: min(100%, calc(var(--viewer-photo-h) * 1.1));
+      margin-inline: auto;
+    }
+    .viewer-arrow[data-side="left"] {
+      left: 0;
+    }
+    .viewer-arrow[data-side="right"] {
+      right: 0;
+    }
   }
   .viewer-arrow[data-side="left"] {
     left: 2px;
