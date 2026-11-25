@@ -32,7 +32,7 @@ export default function CategoryCarousel({ categories }: { categories: Category[
         // léger soulèvement des cartes au survol ; on rend l'espace sans décaler la page.
         // `overflow-y-hidden` (25/11) : sans lui la piste défile aussi à la verticale de quelques pixels, et sur
         // iPhone un doigt posé dessus pour faire défiler la page restait accroché à la piste.
-        className="scrollbar-hide -mx-4 -my-4 flex gap-3 overflow-x-auto overflow-y-hidden overscroll-x-contain px-4 py-4 [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)] sm:mx-0 sm:gap-4 sm:px-1"
+        className="scrollbar-hide -mx-4 -my-4 flex gap-3 overflow-x-auto overflow-y-hidden overscroll-x-contain px-4 py-4 sm:mx-0 sm:gap-4 sm:px-1 sm:[mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]"
       >
         {/* Trois copies : c'est ce qui donne la boucle. Les deux latérales sont cachées aux
             lecteurs d'écran et hors parcours clavier : la liste ne doit être lue qu'une fois. */}

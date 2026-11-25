@@ -16,11 +16,14 @@ export default function ProductCard({
   sizes,
   href,
   tabIndex,
+  eager = false,
 }: {
   product: ProductCardData;
   sizes: string;
   href?: string;
   tabIndex?: -1;
+  // Image chargée tout de suite : les copies d'un carrousel en boucle (voir ProductImage).
+  eager?: boolean;
 }) {
   const arrivalStep = product.hasRefurbished ? "occasion" : product.hasNew ? "neuf" : null;
   const productHref =
@@ -38,7 +41,7 @@ export default function ProductCard({
       className="card group flex w-full flex-col gap-2 p-2 transition-[border-color,box-shadow] sm:gap-3 sm:p-3 sm:hover:border-blue-ink sm:hover:shadow-[var(--shadow)]"
     >
       <div className="relative aspect-[1/0.9] overflow-hidden rounded-[10px] bg-surface-2 sm:aspect-square">
-        <ProductImage src={product.image} alt="" sizes={sizes} />
+        <ProductImage src={product.image} alt="" sizes={sizes} eager={eager} />
         <div className="absolute left-2 top-2 flex flex-wrap gap-1.5">
           {!product.inStock ? <span className="badge badge-out">Rupture</span> : null}
         </div>
