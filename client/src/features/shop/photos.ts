@@ -5,15 +5,20 @@
 // coupe la transparence autour du téléphone, `c_pad` le pose, à la plus grande taille possible, dans un
 // cadre fixe. Tous les téléphones y ont alors exactement la même hauteur. Aucune photo n'est renvoyée.
 
-export type PhotoShape = "portrait" | "wide";
+// `color` : les photos de couleur ; `model` : les photos de modèle (une photo de série, une carte).
+export type PhotoShape = "color" | "model";
 
-// Deux cadres, parce que les compositions diffèrent : les photos de couleur sont des paires verticales
-// (rapport largeur sur hauteur mesuré jusqu'à 0,83), celles de modèles des paires horizontales (jusqu'à
-// 1,46). Un cadre doit être plus large que la composition la plus large, sinon cette photo sera un peu
-// plus petite que les autres : scripts/auditPhotoFrames.mjs le vérifie sur toute la boutique.
+// Deux cadres, parce que les compositions diffèrent. Mesuré sur toute la boutique (362 photos de couleur,
+// 113 de modèle) avec scripts/auditPhotoFrames.mjs, par le rapport largeur sur hauteur de la zone du
+// téléphone : les photos de couleur vont de 0,49 à 1,41 (médiane 0,80), celles de modèles de 0,81 à 3,06
+// (médiane 1,46 : une photo peut montrer trois téléphones côte à côte). Un cadre doit être aussi large que
+// la composition : au-delà, cette photo est un peu plus petite que les autres (la hauteur égale n'est
+// possible que dans le cadre). Cadre de couleur à 1,2 : 361 photos sur 362. Cadre de modèle à 2,0 : 102
+// sur 113 ; seules les photos plus larges (la plus large : 3,06) sont réduites.
+// Les dimensions valent le double de l'affichage : assez pour un écran à haute densité, sans alourdir.
 export const PHOTO_FRAMES: Record<PhotoShape, { width: number; height: number }> = {
-  portrait: { width: 900, height: 1000 },
-  wide: { width: 1600, height: 1000 },
+  color: { width: 720, height: 600 },
+  model: { width: 1200, height: 600 },
 };
 
 const CLOUDINARY = "https://res.cloudinary.com/";

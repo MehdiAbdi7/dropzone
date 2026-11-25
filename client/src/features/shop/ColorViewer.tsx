@@ -36,7 +36,7 @@ export default function ColorViewer({
   const colors = useMemo(() => viewerColors(product), [product]);
   const photoOf = (index: number) => {
     const photo = colors[index]?.photoUrl;
-    return photo ? uniformPhoto(photo, "portrait") : kindIcon(product.category.kind);
+    return photo ? uniformPhoto(photo, "color") : kindIcon(product.category.kind);
   };
   const layerOf = (index: number): Layer => ({
     src: photoOf(index),

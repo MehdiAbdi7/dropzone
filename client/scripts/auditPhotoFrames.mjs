@@ -19,7 +19,7 @@ const limitArg = process.argv.find((arg) => arg.startsWith("--limit="));
 const LIMIT = limitArg ? Number(limitArg.split("=")[1]) : Number.POSITIVE_INFINITY;
 const DEVICE_KINDS = ["phone", "tablet", "laptop", "watch"];
 // Les cadres à tester (portrait pour les couleurs, large pour les modèles) : voir features/shop/photos.ts.
-const FRAME_LIMITS = { couleur: 0.9, modele: 1.6 };
+const FRAME_LIMITS = { couleur: 1.2, modele: 2 };
 const ALPHA_MIN = 12;
 
 async function get(path) {
