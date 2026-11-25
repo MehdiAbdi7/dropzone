@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { CONDITION_LABELS, DEVICE_KINDS } from "@/config/catalog";
-import { imageOf } from "@/features/shop/choiceColumns";
 import ColorStep from "@/features/shop/ColorStep";
 import { ofColor, productStep } from "@/features/shop/colors";
 import ProductFacts from "@/features/shop/ProductFacts";
@@ -37,15 +36,20 @@ export default async function UsedProductPage({ params, searchParams }: PageProp
   const search = await searchParams;
   const step = productStep(product, search.couleur);
   if (step.kind === "colors") {
-    return <ColorStep product={product} condition="refurbished" palette={palette} preview={search.apercu} />;
+    return <ColorStep product={product} condition="refurbished" palette={palette} params={{ preview: search.apercu }} />;
   }
   const ofThisColor = step.color ? ofColor(used, step.color) : used;
   // Une couleur sans occasion (adresse tapée à la main, ou vendue entre-temps) : retour au choix des couleurs.
   if (ofThisColor.length === 0) {
     redirect(`/produits/${slug}/occasion`);
   }
-  // La photo de la couleur choisie (sinon l'icône), jamais celle d'une autre couleur.
-  const photo = step.color ? imageOf(product, step.color) : null;
+  // Une couleur choisie (25/11, demande de Mehdi) : les offres s'affichent dans la visionneuse, qui s'ouvre
+  // directement dessus ; plus de page séparée. Seul un modèle sans couleurs garde la fiche ci-dessous.
+  if (step.color !== null) {
+    return (
+      <ColorStep product={product} condition="refurbished" palette={palette} params={{ preview: search.apercu, couleur: search.couleur }} />
+    );
+  }
 
   return (
     <ShopBackdrop contentMax={1200}>
@@ -54,9 +58,9 @@ export default async function UsedProductPage({ params, searchParams }: PageProp
           product={product}
           step={CONDITION_LABELS.refurbished}
           stepHref={`/produits/${slug}/occasion`}
-          color={step.color}
-          image={photo}
-          journey={<ProductJourney product={product} current="end" condition="refurbished" color={step.color} />}
+          color={null}
+          image={null}
+          journey={<ProductJourney product={product} current="end" condition="refurbished" color={null} />}
         >
           <RefurbishedList variants={ofThisColor} kind={product.category.kind} palette={palette} />
           <ProductFacts product={product} />

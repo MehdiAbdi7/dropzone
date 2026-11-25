@@ -293,92 +293,92 @@ export default function ColorViewer({
             />
           ) : (
             <>
-          <p className="viewer-name" aria-live="polite">
-            {color.name}
-          </p>
-          <p className="viewer-count">
-            {index + 1} / {colors.length}
-          </p>
-          <div className="viewer-dots" role="radiogroup" aria-label="Couleur" onKeyDown={onDotsKey}>
-            {colors.map((one, i) => {
-              const off = !isAvailable(one, condition);
-              return (
-                <button
-                  key={one.name}
-                  ref={(element) => {
-                    dotRefs.current[i] = element;
-                  }}
-                  type="button"
-                  role="radio"
-                  aria-checked={i === index}
-                  aria-label={`${one.name}${off ? ", indisponible" : ""}`}
-                  title={one.name}
-                  tabIndex={i === index ? 0 : -1}
-                  data-dim={off ? "" : undefined}
-                  className="viewer-dot"
-                  style={{ backgroundColor: swatch(one.name) }}
-                  onClick={() => pick(i)}
-                />
-              );
-            })}
-          </div>
-
-          <div className="viewer-avail">
-            {single ? (
-              <>
-                {lines[0].available ? (
+              <p className="viewer-name" aria-live="polite">
+                {color.name}
+              </p>
+              <p className="viewer-count">
+                {index + 1} / {colors.length}
+              </p>
+              <div className="viewer-dots" role="radiogroup" aria-label="Couleur" onKeyDown={onDotsKey}>
+                {colors.map((one, i) => {
+                  const off = !isAvailable(one, condition);
+                  return (
+                    <button
+                      key={one.name}
+                      ref={(element) => {
+                        dotRefs.current[i] = element;
+                      }}
+                      type="button"
+                      role="radio"
+                      aria-checked={i === index}
+                      aria-label={`${one.name}${off ? ", indisponible" : ""}`}
+                      title={one.name}
+                      tabIndex={i === index ? 0 : -1}
+                      data-dim={off ? "" : undefined}
+                      className="viewer-dot"
+                      style={{ backgroundColor: swatch(one.name) }}
+                      onClick={() => pick(i)}
+                    />
+                  );
+                })}
+              </div>
+    
+              <div className="viewer-avail">
+                {single ? (
                   <>
-                    <span className="viewer-badge" data-ok="">
-                      Disponible en {lines[0].label.toLowerCase()}
-                    </span>
-                    <p className="viewer-text">{lines[0].text}</p>
-                    <button type="button" className="viewer-cta" onClick={() => openOffers(lines[0].condition)}>
-                      Voir les offres en {color.name} →
-                    </button>
+                    {lines[0].available ? (
+                      <>
+                        <span className="viewer-badge" data-ok="">
+                          Disponible en {lines[0].label.toLowerCase()}
+                        </span>
+                        <p className="viewer-text">{lines[0].text}</p>
+                        <button type="button" className="viewer-cta" onClick={() => openOffers(lines[0].condition)}>
+                          Voir les offres en {color.name} →
+                        </button>
+                      </>
+                    ) : (
+                      <span className="viewer-badge">Pas disponible pour le moment</span>
+                    )}
                   </>
                 ) : (
-                  <span className="viewer-badge">Pas disponible pour le moment</span>
-                )}
-              </>
-            ) : (
-              <div className="viewer-lines">
-                {lines.map((line) => (
-                  <div key={line.condition} className="viewer-line">
-                    <span className="viewer-line-label">{line.label}</span>
-                    <span className="viewer-badge" data-ok={line.available ? "" : undefined}>
-                      {line.available ? "Disponible" : "Pas disponible pour le moment"}
-                    </span>
-                    {line.available ? <p className="viewer-text">{line.text}</p> : null}
-                    {line.available ? (
-                      <button type="button" className="viewer-cta" onClick={() => openOffers(line.condition)}>
-                        Voir les offres →
-                      </button>
-                    ) : null}
+                  <div className="viewer-lines">
+                    {lines.map((line) => (
+                      <div key={line.condition} className="viewer-line">
+                        <span className="viewer-line-label">{line.label}</span>
+                        <span className="viewer-badge" data-ok={line.available ? "" : undefined}>
+                          {line.available ? "Disponible" : "Pas disponible pour le moment"}
+                        </span>
+                        {line.available ? <p className="viewer-text">{line.text}</p> : null}
+                        {line.available ? (
+                          <button type="button" className="viewer-cta" onClick={() => openOffers(line.condition)}>
+                            Voir les offres →
+                          </button>
+                        ) : null}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+                {unavailable && others.length > 0 ? (
+                  <p className="viewer-hint">
+                    Disponibles{single ? ` en ${lines[0].label.toLowerCase()}` : ""} :{" "}
+                    {others.map((other, i) => (
+                      <span key={other.name}>
+                        {i > 0 ? " · " : ""}
+                        {/* Ce bouton disparaît dès qu'on choisit : le focus va sur la pastille de la couleur choisie. */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            pick(other.index);
+                            dotRefs.current[other.index]?.focus();
+                          }}
+                        >
+                          {other.name}
+                        </button>
+                      </span>
+                    ))}
+                  </p>
+                ) : null}
               </div>
-            )}
-            {unavailable && others.length > 0 ? (
-              <p className="viewer-hint">
-                Disponibles{single ? ` en ${lines[0].label.toLowerCase()}` : ""} :{" "}
-                {others.map((other, i) => (
-                  <span key={other.name}>
-                    {i > 0 ? " · " : ""}
-                    {/* Ce bouton disparaît dès qu'on choisit : le focus va sur la pastille de la couleur choisie. */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        pick(other.index);
-                        dotRefs.current[other.index]?.focus();
-                      }}
-                    >
-                      {other.name}
-                    </button>
-                  </span>
-                ))}
-              </p>
-            ) : null}
-          </div>
             </>
           )}
         </div>

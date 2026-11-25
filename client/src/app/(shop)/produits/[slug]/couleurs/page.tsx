@@ -28,12 +28,18 @@ export default async function ColorsPage({ params, searchParams }: PageProps<"/p
     redirect(`/produits/${slug}`);
   }
   const palette = await getPalette();
+  const search = await searchParams;
   return (
     <ShopBackdrop contentMax={1200}>
       <div className="container-page space-y-4 py-4">
         {/* Étape Couleur du parcours, l'état n'étant pas encore choisi : « Au choix ». */}
         <ProductJourney product={product} current="color" condition={null} color={null} />
-        <ColorViewer product={product} condition={null} palette={palette} preview={(await searchParams).apercu} />
+        <ColorViewer
+          product={product}
+          condition={null}
+          palette={palette}
+          params={{ preview: search.apercu, couleur: search.couleur, etat: search.etat }}
+        />
         <ProductFacts product={product} />
       </div>
     </ShopBackdrop>
