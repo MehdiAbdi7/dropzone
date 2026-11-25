@@ -1,17 +1,19 @@
 "use client";
 
+import { useState, type KeyboardEvent } from "react";
 import Field from "@/components/ui/Field";
 import { CONDITION_LABELS, OPTION_FIELDS, type ChoiceGroup } from "@/config/catalog";
 import type { ProductKind } from "@/types/api";
+import { formatPrice } from "@/lib/format";
 import { useChoicesQuery } from "@/features/admin/api/choicesApi";
 import { type GiftOption } from "@/features/admin/api/productsApi";
 import ChoicePicker from "./ChoicePicker";
 import ColorPhotoField from "./ColorPhotoField";
 import ConditionSheet from "./ConditionSheet";
-import { SectionHeading } from "./FormParts";
 import GiftEditor from "./GiftEditor";
 import VariantPhones from "./VariantPhones";
 import { type VariantDraft, withCondition } from "./productDraft";
+import { marginPercent, variantTabs, type VariantTabId } from "./variantTabs";
 
 type Props = {
   variant: VariantDraft;
@@ -36,8 +38,18 @@ type ChoiceField = { key: string; multiple?: boolean } & (
   | { group?: never; listId: number }
 );
 
-// Une variante du formulaire : neuf scellé ou affaire, ses options à cocher, son prix et
-// son stock, la fiche d'une affaire (ConditionSheet), et ses articles offerts (GiftEditor).
+// Une phrase sous la barre d'onglets : ce qu'on règle ici.
+const TAB_HINTS: Record<VariantTabId, string> = {
+  features: "Les caractéristiques qui distinguent cette variante des autres : stockage, couleur, etc.",
+  price: "Ce que le client paie, ce que tu as payé, et ce qu'il y a en rayon.",
+  state: "L'état réel de l'occasion, tel que le client le verra sur la fiche.",
+  refs: "Le suivi interne : références, garantie et origine.",
+  gifts: "Un accessoire inclus avec cette variante, si besoin.",
+};
+
+// Une variante du formulaire, en cinq onglets (25/11) : Caractéristiques, Prix et stock, État (occasion seulement),
+// Références, Cadeaux. Un seul onglet est visible, mais tous restent montés (attribut `hidden`) : ce qu'on a tapé ne
+// se perd pas en changeant d'onglet. Un onglet qui a un manque (prix, boîte, garantie…) le dit par une pastille.
 export default function VariantEditor({
   variant,
   index,
@@ -51,12 +63,27 @@ export default function VariantEditor({
   onRemove,
   onSuggestSku,
 }: Props) {
+  const [chosenTab, setChosenTab] = useState<VariantTabId>("features");
   const set = (patch: Partial<VariantDraft>) => onChange({ ...variant, ...patch });
   const id = (name: string) => `${variant.key}-${name}`;
   const refurbished = variant.condition === "refurbished";
   const { data: choiceData } = useChoicesQuery();
   const customLists = choiceData?.lists.filter((list) => list.group === null && list.kinds.includes(kind)) ?? [];
-  const sectionNumber = (base: number) => String(base + (modelId ? 1 : 0)).padStart(2, "0");
+
+  const tabs = variantTabs(variant, { lockedColor: Boolean(lockedColor) });
+  // Une affaire repassée en neuf n'a plus d'onglet État : on retombe sur le premier onglet.
+  const tab = tabs.some((item) => item.id === chosenTab) ? chosenTab : "features";
+  const margin = marginPercent(variant.price, variant.purchasePrice);
+  const color = lockedColor ?? variant.options.Couleur;
+
+  function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    event.preventDefault();
+    const at = tabs.findIndex((item) => item.id === tab);
+    const next = tabs[(at + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length];
+    setChosenTab(next.id);
+    document.getElementById(id(`tab-${next.id}`))?.focus();
+  }
 
   function renderPicker(field: ChoiceField, only?: string[]) {
     const savedValue = variant.options[field.key] ?? "";
@@ -89,12 +116,12 @@ export default function VariantEditor({
   return (
     <fieldset className={`overflow-hidden rounded-xl border border-line bg-surface ${refurbished ? "neon-edge" : ""}`}>
       <legend className="sr-only">Variante {index + 1}</legend>
-      <div className={`flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-4 sm:px-5 ${refurbished ? "bg-red-soft" : "bg-blue-soft"}`}>
+      <div className={`flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5 ${refurbished ? "bg-red-soft" : "bg-blue-soft"}`}>
         <div>
           <p className={`text-xs font-bold tracking-widest ${refurbished ? "text-red" : "text-blue-ink"}`}>
             VARIANTE {String(index + 1).padStart(2, "0")}
           </p>
-          <p className="mt-1 font-display text-lg font-bold">
+          <p className="font-display text-lg font-bold">
             {refurbished ? "Occasion" : "Neuf scellé"}
             {variant.id ? null : <span className="ml-2 text-sm font-semibold text-blue-ink">· nouvelle</span>}
           </p>
@@ -106,29 +133,46 @@ export default function VariantEditor({
         ) : null}
       </div>
 
-      <div className="divide-y divide-line">
-        {modelId ? (
-          <section className="space-y-4 bg-blue-soft/30 p-4 sm:p-5">
-            <SectionHeading
-              number="01"
-              title="Photo de la couleur"
-              description="Ajoute ou modifie la photo associée à la couleur de cette variante."
-            />
-            {lockedColor ?? variant.options.Couleur ? (
-              <ColorPhotoField modelId={modelId} color={lockedColor ?? variant.options.Couleur} />
-            ) : (
-              <p className="rounded-lg border border-line bg-surface p-3 text-sm text-ink-muted">
-                Choisis d’abord une couleur dans « Options du produit » pour gérer sa photo.
-              </p>
-            )}
-          </section>
-        ) : null}
+      <div role="tablist" aria-label="Parties de la variante" className="flex gap-1 overflow-x-auto border-b border-line bg-surface-2/40 px-2 pt-2">
+        {tabs.map((item) => {
+          const active = item.id === tab;
+          return (
+            <button
+              key={item.id}
+              id={id(`tab-${item.id}`)}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              aria-controls={id(`panel-${item.id}`)}
+              tabIndex={active ? 0 : -1}
+              onClick={() => setChosenTab(item.id)}
+              onKeyDown={onTabKeyDown}
+              className={`flex shrink-0 items-center gap-2 rounded-t-lg border border-b-0 px-3 py-2 text-sm font-semibold transition-colors ${
+                active ? "border-line bg-surface text-ink" : "border-transparent text-ink-muted hover:text-ink"
+              }`}
+            >
+              {item.label}
+              {item.problems.length > 0 ? (
+                <span
+                  aria-label={`À compléter : ${item.problems.join(", ")}`}
+                  title={`À compléter : ${item.problems.join(", ")}`}
+                  className="grid size-5 place-items-center rounded-full bg-amber text-xs font-bold text-on-brand"
+                >
+                  !
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
 
-        {canBeRefurbished ? (
-          <section className="space-y-3 p-4 sm:p-5">
-            <SectionHeading number={sectionNumber(1)} title="État du produit" description="Choisis la condition de cette variante." />
+      <p className="px-4 pt-4 text-sm text-ink-muted sm:px-5">{TAB_HINTS[tab]}</p>
+
+      <div className="p-4 sm:p-5">
+        <div role="tabpanel" id={id("panel-features")} aria-labelledby={id("tab-features")} hidden={tab !== "features"} className="space-y-5">
+          {canBeRefurbished ? (
             <fieldset>
-              <legend className="sr-only">État</legend>
+              <legend className="label">État</legend>
               <div className="flex flex-wrap gap-2">
                 {(["new", "refurbished"] as const).map((condition) => (
                   <button
@@ -143,46 +187,57 @@ export default function VariantEditor({
                 ))}
               </div>
             </fieldset>
-          </section>
-        ) : null}
+          ) : null}
 
-        <section className="space-y-4 p-4 sm:p-5">
-          <SectionHeading
-            number={sectionNumber(canBeRefurbished ? 2 : 1)}
-            title="Options du produit"
-            description="Sélectionne les caractéristiques de cette combinaison."
-          />
-          <div className="grid gap-5 md:grid-cols-2">
-            {OPTION_FIELDS[kind].map((field) =>
-              field.group === "color" && lockedColor ? (
-                <div key={field.key}>
-                  <p className="label">{field.key}</p>
-                  <p className="input flex items-center bg-surface-2 font-semibold">{lockedColor}</p>
-                </div>
-              ) : (
-                renderPicker({
-                  key: field.key,
-                  group: field.group,
-                  multiple: choiceData?.lists.find((list) => list.group === field.group)?.multiple,
-                }, field.group === "color" ? modelColors : undefined)
-              ),
-            )}
-            {customLists.map((list) => renderPicker({ key: list.name, listId: list.id, multiple: list.multiple }))}
+          {/* Une carte par option, alignées en haut : une liste de puces et une liste à recherche ne s'étirent plus l'une sur l'autre. */}
+          <div className="grid items-start gap-3 md:grid-cols-2">
+            {OPTION_FIELDS[kind].map((field) => (
+              <div key={field.key} className="rounded-lg border border-line bg-surface-2/40 p-3">
+                {field.group === "color" && lockedColor ? (
+                  <>
+                    <p className="label">{field.key}</p>
+                    <p className="input flex items-center bg-surface-2 font-semibold">{lockedColor}</p>
+                  </>
+                ) : (
+                  renderPicker(
+                    {
+                      key: field.key,
+                      group: field.group,
+                      multiple: choiceData?.lists.find((list) => list.group === field.group)?.multiple,
+                    },
+                    field.group === "color" ? modelColors : undefined,
+                  )
+                )}
+              </div>
+            ))}
+            {customLists.map((list) => (
+              <div key={list.id} className="rounded-lg border border-line bg-surface-2/40 p-3">
+                {renderPicker({ key: list.name, listId: list.id, multiple: list.multiple })}
+              </div>
+            ))}
           </div>
+
           {/* Une taille d'écran (un verre) : ses téléphones. Une coque garde la compatibilité de sa fiche. */}
           {kind === "accessory" && variant.options["Taille de l'écran"] ? (
             <VariantPhones variant={variant} id={id("phones")} onChange={(ids) => set({ compatibleModelIds: ids })} />
           ) : null}
-        </section>
 
-        <section className="space-y-4 bg-surface-2/40 p-4 sm:p-5">
-          <SectionHeading
-            number={sectionNumber(canBeRefurbished ? 3 : 2)}
-            title="Prix et stock"
-            description="Définis le prix de vente et la quantité disponible."
-          />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field id={id("price")} label="Prix TTC (DA)">
+          {/* La photo suit la couleur : elle vient après le choix de la couleur, plus avant. */}
+          {modelId ? (
+            <div className="space-y-3 rounded-lg border border-line bg-blue-soft/30 p-3 sm:p-4">
+              <h3 className="font-display font-bold">Photo de la couleur{color ? ` : ${color}` : ""}</h3>
+              {color ? (
+                <ColorPhotoField modelId={modelId} color={color} />
+              ) : (
+                <p className="text-sm text-ink-muted">Choisis d’abord une couleur ci-dessus pour gérer sa photo.</p>
+              )}
+            </div>
+          ) : null}
+        </div>
+
+        <div role="tabpanel" id={id("panel-price")} aria-labelledby={id("tab-price")} hidden={tab !== "price"} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field id={id("price")} label="Prix de vente TTC (DA)">
               <input
                 id={id("price")}
                 className="input"
@@ -214,14 +269,24 @@ export default function VariantEditor({
               />
             </Field>
           </div>
-        </section>
+          {/* La marge se lit en direct : plus besoin de la calculer de tête. */}
+          {margin !== null ? (
+            <p
+              aria-live="polite"
+              className={`rounded-lg border p-3 text-sm font-semibold ${margin < 0 ? "border-red bg-red-soft text-red" : "border-line bg-surface-2/40"}`}
+            >
+              {margin < 0 ? "Vendu sous le prix d'achat" : "Marge"} : {margin} % ({formatPrice(Number(variant.price) - Number(variant.purchasePrice))})
+            </p>
+          ) : null}
+        </div>
 
-        <section className="space-y-4 p-4 sm:p-5">
-          <SectionHeading
-            number={sectionNumber(canBeRefurbished ? 4 : 3)}
-            title="Références et garantie"
-            description="Informations de suivi et d'origine."
-          />
+        {refurbished ? (
+          <div role="tabpanel" id={id("panel-state")} aria-labelledby={id("tab-state")} hidden={tab !== "state"}>
+            <ConditionSheet variant={variant} idOf={id} set={set} onChange={onChange} />
+          </div>
+        ) : null}
+
+        <div role="tabpanel" id={id("panel-refs")} aria-labelledby={id("tab-refs")} hidden={tab !== "refs"}>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id={id("sku")} label="Référence (SKU)">
               <div className="flex gap-2">
@@ -261,30 +326,14 @@ export default function VariantEditor({
               onChange={(origin) => set({ origin })}
             />
           </div>
-        </section>
-
-        {refurbished ? (
-          <ConditionSheet
-            variant={variant}
-            number={sectionNumber(canBeRefurbished ? 5 : 4)}
-            idOf={id}
-            set={set}
-            onChange={onChange}
-          />
-        ) : null}
+        </div>
 
         {lockedColor ? null : (
-          <section className="space-y-4 bg-surface-2/40 p-4 sm:p-5">
-            <SectionHeading
-              number={sectionNumber(refurbished ? 6 : canBeRefurbished ? 5 : 4)}
-              title="Articles offerts"
-              description="Ajoute un accessoire inclus avec cette variante, si nécessaire."
-            />
+          <div role="tabpanel" id={id("panel-gifts")} aria-labelledby={id("tab-gifts")} hidden={tab !== "gifts"}>
             <GiftEditor variant={variant} giftOptions={giftOptions} onChange={(gifts) => set({ gifts })} />
-          </section>
+          </div>
         )}
       </div>
-
     </fieldset>
   );
 }
