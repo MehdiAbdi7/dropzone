@@ -6,7 +6,10 @@ import {
   availabilityLines,
   firstIndex,
   isAvailable,
+  offerVariants,
+  startView,
   viewerColors,
+  viewerSearch,
   wrapIndex,
 } from "./colorViewerRules";
 
@@ -157,5 +160,78 @@ describe("alternatives", () => {
 
   it("est vide quand aucune couleur n'est disponible dans l'état", () => {
     expect(alternatives(colors, "new", 0)).toEqual([]);
+  });
+});
+
+// Un modèle de boutique : Noir a 2 neufs à 345 000 DA ; Argent a un neuf épuisé et une occasion à 250 000 DA.
+const shop = {
+  slug: "p30",
+  colors: [
+    { name: "Noir", photoUrl: null },
+    { name: "Argent", photoUrl: null },
+  ],
+  variants: [variant("new", "Noir", 2, 345000), variant("new", "Argent", 0, 345000), variant("refurbished", "Argent", 1, 250000)],
+} as unknown as ProductDetail;
+const shopColors = viewerColors(shop);
+
+describe("offerVariants", () => {
+  it("rend les variantes en stock de la couleur dans l'état demandé", () => {
+    expect(offerVariants(shop, "Noir", "new").map((one) => one.price)).toEqual([345000]);
+    expect(offerVariants(shop, "Argent", "refurbished").map((one) => one.price)).toEqual([250000]);
+  });
+
+  it("ne rend rien pour un neuf épuisé ni pour un état absent de la couleur", () => {
+    expect(offerVariants(shop, "Argent", "new")).toEqual([]);
+    expect(offerVariants(shop, "Noir", "refurbished")).toEqual([]);
+  });
+});
+
+describe("startView", () => {
+  it("état connu et couleur de l'adresse en stock : ouvre ses offres", () => {
+    expect(startView(shop, shopColors, "new", { couleur: "Noir" })).toEqual({ index: 0, offers: "new" });
+  });
+
+  it("couleur de l'adresse sans stock dans l'état : mode couleurs, sur la couleur de l'aperçu", () => {
+    expect(startView(shop, shopColors, "new", { couleur: "Argent", preview: "Argent" })).toEqual({ index: 1, offers: null });
+  });
+
+  it("couleur inconnue : mode couleurs, sur la première couleur disponible", () => {
+    expect(startView(shop, shopColors, "new", { couleur: "Inconnue" })).toEqual({ index: 0, offers: null });
+  });
+
+  it("couleur donnée deux fois : prend la première", () => {
+    expect(startView(shop, shopColors, "new", { couleur: ["Noir", "x"] })).toEqual({ index: 0, offers: "new" });
+  });
+
+  it("sans état connu : l'état vient de `etat` dans l'adresse", () => {
+    expect(startView(shop, shopColors, null, { couleur: "Argent", etat: "occasion" })).toEqual({ index: 1, offers: "refurbished" });
+  });
+
+  it("sans état connu ni `etat` : mode couleurs", () => {
+    expect(startView(shop, shopColors, null, { couleur: "Noir" }).offers).toBeNull();
+  });
+
+  it("l'état de la page l'emporte sur `etat`", () => {
+    expect(startView(shop, shopColors, "new", { couleur: "Noir", etat: "occasion" })).toEqual({ index: 0, offers: "new" });
+  });
+});
+
+describe("viewerSearch", () => {
+  it("mode offres sur une page à état connu : `couleur`, sans `apercu` ni `etat`", () => {
+    expect(viewerSearch("apercu=Noir", "Noir", "new", "new")).toBe("couleur=Noir");
+  });
+
+  it("retour au mode couleurs : `apercu` remplace `couleur`", () => {
+    expect(viewerSearch("couleur=Noir", "Noir", null, "new")).toBe("apercu=Noir");
+  });
+
+  it("page de référence : l'état s'écrit dans `etat`, et s'enlève au retour", () => {
+    expect(viewerSearch("apercu=Argent", "Argent", "refurbished", null)).toBe("couleur=Argent&etat=occasion");
+    expect(viewerSearch("couleur=Argent&etat=occasion", "Argent", null, null)).toBe("apercu=Argent");
+  });
+
+  it("garde les autres paramètres et encode le nom de la couleur", () => {
+    expect(viewerSearch("utm=1&apercu=Noir", "Noir", "new", "new")).toBe("utm=1&couleur=Noir");
+    expect(viewerSearch("", "Bleu ciel", "new", "new")).toBe("couleur=Bleu+ciel");
   });
 });
