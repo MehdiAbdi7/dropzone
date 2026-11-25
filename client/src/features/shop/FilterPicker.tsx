@@ -46,9 +46,13 @@ export default function FilterPicker({
     triggerRef.current?.focus();
   }
 
+  // Un choix change toute la liste en dessous, souvent pour une plus courte : sans remonter, la
+  // page restait scrollée en bas et le pied de page remplissait l'écran (remarque de Mehdi, 25/11).
+  // On remonte donc en haut à chaque choix, sans animation : le contenu a déjà changé.
   function choose(next: string | null) {
     onChange(next);
     close();
+    window.scrollTo({ top: 0 });
   }
 
   // À l'ouverture, le focus va sur le choix actuel : le clavier part de là.
