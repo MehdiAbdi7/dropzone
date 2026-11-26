@@ -15,3 +15,19 @@ export const uploadImage = multer({
     callback(null, true);
   },
 }).single("image");
+
+const MEDIA_ACCEPTED = [...ACCEPTED, "video/mp4", "video/quicktime", "video/webm"];
+
+// Les photos et la vidéo d'une variante (26/11) : le champ s'appelle « media ». La limite de 50 Mo est celle de la
+// vidéo ; la taille maximale d'une photo (5 Mo) est vérifiée ensuite par `checkMediaRoom`, qui connaît le type.
+export const uploadMedia = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, callback) => {
+    if (!MEDIA_ACCEPTED.includes(file.mimetype)) {
+      callback(new AppError(400, "Formats acceptés : JPEG, PNG, WebP, MP4, MOV ou WebM"));
+      return;
+    }
+    callback(null, true);
+  },
+}).single("media");

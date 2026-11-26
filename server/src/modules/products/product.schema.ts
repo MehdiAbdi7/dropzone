@@ -41,6 +41,10 @@ export const slugParamsSchema = z.object({ slug });
 
 export const imageParamsSchema = idParamsSchema.extend({ imageId: z.coerce.number().int().positive() });
 
+// Les médias d'une variante (26/11) : l'adresse d'un média, et la liste dans l'ordre voulu (8 photos et 1 vidéo au plus).
+export const mediaParamsSchema = idParamsSchema.extend({ mediaId: z.coerce.number().int().positive() });
+export const mediaOrderBodySchema = z.object({ ids: z.array(z.number().int().positive()).max(9) });
+
 export const adminProductListQuerySchema = z.object({
   q: z.string().trim().min(1).max(100).optional(),
   status: z.enum(["draft", "published"]).optional(),
