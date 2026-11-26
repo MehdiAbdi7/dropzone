@@ -1,9 +1,10 @@
-import { CONDITION_LABELS, PICKUP_STEPS, STATUS_LABELS, STATUS_STEPS } from "@/config/catalog";
+import { CONDITION_LABELS, STATUS_LABELS, STATUS_STEPS } from "@/config/catalog";
 import { warrantyLabel } from "@/config/warranty";
 import { formatDate, formatOptions, formatPrice } from "@/lib/format";
 import { pickupLabel } from "@/lib/pickupLabel";
 import type { OrderDetail } from "@/types/api";
 import OrderSlipSection from "./OrderSlipSection";
+import { pickupSteps } from "./pickupSteps";
 import { slipAvailable } from "./slipRows";
 
 // Le détail d'une commande, partagé par le suivi invité et l'espace client.
@@ -11,7 +12,8 @@ import { slipAvailable } from "./slipRows";
 // (réservée, récupérée), son créneau, et un message clair si la réservation a expiré.
 export default function OrderDetailView({ order }: { order: OrderDetail }) {
   const pickup = order.type === "pickup";
-  const steps = pickup ? PICKUP_STEPS : STATUS_STEPS;
+  // Le texte de la réservation dépend de son mode : une réservation illimitée n'a pas de jour choisi ni de délai.
+  const steps = pickup ? pickupSteps(order.reservationMode) : STATUS_STEPS;
   const reached = steps.findIndex((step) => step.status === order.status);
 
   return (
