@@ -5,11 +5,23 @@ import type { ProductDetail } from "@/types/api";
 
 // La description, les modèles compatibles et les caractéristiques d'un produit : à chaque
 // étape du parcours (décision de Mehdi du 05/11).
-export default function ProductFacts({ product, withDescription = true }: { product: ProductDetail; withDescription?: boolean }) {
+// `descriptionMobileOnly` (26/11) : sur ordinateur, la visionneuse de couleurs montre déjà la description
+// dans son conteneur (colonne de droite) ; ici elle ne reste que sur téléphone, où la visionneuse n'a pas la place.
+export default function ProductFacts({
+  product,
+  withDescription = true,
+  descriptionMobileOnly = false,
+}: {
+  product: ProductDetail;
+  withDescription?: boolean;
+  descriptionMobileOnly?: boolean;
+}) {
   const specs = orderedEntries(product.specs, SPEC_ORDER);
   return (
     <div className="space-y-5">
-      {withDescription ? <p className="max-w-prose text-ink-muted">{product.description}</p> : null}
+      {withDescription ? (
+        <p className={`max-w-prose text-ink-muted${descriptionMobileOnly ? " md:hidden" : ""}`}>{product.description}</p>
+      ) : null}
 
       {product.compatibleModels.length > 0 ? (
         <p className="text-sm">
