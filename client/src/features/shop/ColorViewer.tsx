@@ -18,7 +18,8 @@ import {
 import { kindIcon } from "./colors";
 import type { JourneyCondition } from "./journey";
 import { uniformPhoto } from "./photos";
-import { shownMedia } from "./variantMediaRules";
+import { colorVariants, variantChoiceLabel } from "./variantChoice";
+import { mediaSummary, shownMedia } from "./variantMediaRules";
 import VariantMediaStrip from "./VariantMediaStrip";
 import ViewerOffers from "./ViewerOffers";
 
@@ -70,6 +71,8 @@ export default function ColorViewer({
   // La variante dont les photos et la vidéo sont montrées sous le téléphone (26/11) : celle choisie dans les offres, ou
   // celle d'un lien de story (`?variante=`). Aucune au mode couleurs : les médias suivent la variante, jamais la couleur.
   const [shownSku, setShownSku] = useState<string | null>(() => requestedVariant(product, colors, condition, params));
+  // La variante choisie dans la liste de l'écran de la couleur (null : la première). Un choix d'une autre couleur est ignoré.
+  const [picked, setPicked] = useState<string | null>(null);
   const [direction, setDirection] = useState<1 | -1>(1);
   // Deux couches pour le fondu : la nouvelle photo se charge dans la couche cachée, puis passe devant.
   const [layers, setLayers] = useState<[Layer, Layer]>(() => [layerOf(start.index), layerOf(0)]);
@@ -140,7 +143,10 @@ export default function ColorViewer({
   }
 
   function openOffers(one: JourneyCondition) {
-    setShownSku(null);
+    // Le choix fait sur l'écran de la couleur est repris dans les offres, s'il est de cet état (sinon le choix y repart de zéro).
+    const choices = colorVariants(product, colors[index].name, condition);
+    const preview = choices.find((variant) => variant.sku === picked) ?? choices[0];
+    setShownSku(preview && preview.condition === one ? preview.sku : null);
     setOffers(one);
     writeAddress(colors[index].name, one);
   }
@@ -221,6 +227,14 @@ export default function ColorViewer({
   const others = alternatives(colors, condition, index);
   const unavailable = !isAvailable(color, condition);
   const single = condition !== null;
+  // Les variantes en stock de cette couleur (27/11, remarque de Mehdi). Une seule : ses photos et sa vidéo s'affichent tout de
+  // suite sous le téléphone. Deux ou plus : une liste déroulante pour choisir (la moins chère est choisie au départ), et les
+  // médias suivent le choix. Les offres ouvertes, c'est leur propre choix qui compte (`shownSku`).
+  const choices = colorVariants(product, color.name, condition);
+  const previewVariant = choices.find((variant) => variant.sku === picked) ?? choices[0];
+  const previewSku = previewVariant?.sku ?? null;
+  const previewSummary = mediaSummary(previewVariant?.media);
+  const mediaSku = offers !== null ? shownSku : previewSku;
 
   return (
     <section
@@ -289,7 +303,7 @@ export default function ColorViewer({
         </div>
 
         {/* Sous le téléphone : les photos et la vidéo de la variante choisie (rien sans variante choisie ni sans médias). */}
-        <VariantMediaStrip media={shownMedia(product.variants, shownSku)} label={`${product.name}, ${color.name}`} />
+        <VariantMediaStrip media={shownMedia(product.variants, mediaSku)} label={`${product.name}, ${color.name}`} />
 
         <div className="viewer-info">
           {offers ? (
@@ -335,7 +349,23 @@ export default function ColorViewer({
                   );
                 })}
               </div>
-    
+
+              {choices.length >= 2 ? (
+                <label className="viewer-pick">
+                  <span className="viewer-pick-label">Choisis la variante ({choices.length} disponibles)</span>
+                  <select className="input" value={previewSku ?? ""} onChange={(event) => setPicked(event.target.value)}>
+                    {choices.map((variant) => (
+                      <option key={variant.sku} value={variant.sku}>
+                        {variantChoiceLabel(variant, condition === null)}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="viewer-pick-note">
+                    {previewSummary ? `Photos et vidéo sous le téléphone : ${previewSummary}.` : "Pas de photo ni de vidéo pour cette variante."}
+                  </span>
+                </label>
+              ) : null}
+
               <div className="viewer-avail">
                 {single ? (
                   <>

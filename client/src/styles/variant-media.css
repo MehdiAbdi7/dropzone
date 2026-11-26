@@ -2,6 +2,26 @@
    visionneuse. Tailles fixes, aucune unité de hauteur d'écran (leçon du 25/11 : elles font bouger les pages sur téléphone). */
 
 @layer components {
+  /* La liste déroulante des variantes d'une couleur, sur l'écran de la couleur (27/11) : à partir de deux variantes. */
+  .viewer-pick {
+    display: block;
+    width: 100%;
+    margin-bottom: 12px;
+    text-align: left;
+  }
+  .viewer-pick-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: rgb(255 255 255 / 0.62);
+  }
+  .viewer-pick-note {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: rgb(255 255 255 / 0.62);
+  }
   .viewer-media {
     display: flex;
     flex-wrap: wrap;
