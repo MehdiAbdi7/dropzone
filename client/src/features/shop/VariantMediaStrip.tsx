@@ -51,21 +51,46 @@ function MediaLightbox({ media, start, label, onClose }: { media: VariantMedia[]
   });
   const item = media[index];
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
+    // Ce qui avait le focus (la miniature cliquée) le retrouve à la fermeture ; la page ne défile plus derrière.
+    const opener = document.activeElement as HTMLElement | null;
+    const scroll = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     closeRef.current?.focus();
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onCloseRef.current();
       if (event.key === "ArrowLeft") setIndex((current) => (current - 1 + media.length) % media.length);
       if (event.key === "ArrowRight") setIndex((current) => (current + 1) % media.length);
+      if (event.key === "Tab") {
+        // Le focus reste dans la fenêtre : Tab après le dernier bouton revient au premier, Maj+Tab fait l'inverse.
+        const buttons = [...(dialogRef.current?.querySelectorAll<HTMLElement>("button") ?? [])];
+        if (buttons.length === 0) return;
+        const first = buttons[0];
+        const last = buttons[buttons.length - 1];
+        const active = document.activeElement;
+        if (!dialogRef.current?.contains(active) || (event.shiftKey && active === first)) {
+          event.preventDefault();
+          (event.shiftKey ? last : first).focus();
+        } else if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = scroll;
+      opener?.focus();
+    };
   }, [media.length]);
 
   // Rendue dans `document.body` : la page de la boutique est dans un bloc `relative z-10`, donc sans cela l'en-tête
   // collant (z-30) passerait par-dessus la fenêtre et cacherait la croix.
   return createPortal(
-    <div className="media-lightbox" role="dialog" aria-modal="true" aria-label={label} onClick={onClose}>
+    <div ref={dialogRef} className="media-lightbox" role="dialog" aria-modal="true" aria-label={label} onClick={onClose}>
       <div className="media-stage" onClick={(event) => event.stopPropagation()}>
         {/* `key` : changer de média repart d'un lecteur neuf (la vidéo précédente ne continue pas en fond). */}
         {item.kind === "video" ? (

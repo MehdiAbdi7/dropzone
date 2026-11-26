@@ -1,5 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { mediaPanelState, storyLink } from "./variantMedia";
+import { fileProblem, mediaPanelState, storyLink } from "./variantMedia";
+
+// Ce qu'on vérifie sur le fichier choisi, avant tout envoi (26/11) : un refus clair tout de suite vaut mieux qu'une minute
+// d'envoi pour apprendre que 60 Mo c'est trop. Mêmes plafonds que l'API : photo 4 Mo, vidéo 50 Mo.
+describe("fileProblem", () => {
+  const mo = 1024 * 1024;
+
+  it("accepte une photo, une vidéo dans les limites", () => {
+    expect(fileProblem({ type: "image/jpeg", size: 3 * mo })).toBeNull();
+    expect(fileProblem({ type: "video/mp4", size: 49 * mo })).toBeNull();
+    expect(fileProblem({ type: "video/quicktime", size: 50 * mo })).toBeNull();
+  });
+
+  it("refuse une photo de plus de 4 Mo, avec son plafond dans le message", () => {
+    expect(fileProblem({ type: "image/png", size: 4 * mo + 1 })).toContain("4 Mo");
+  });
+
+  it("refuse une vidéo de plus de 50 Mo, avec son plafond dans le message", () => {
+    expect(fileProblem({ type: "video/mp4", size: 50 * mo + 1 })).toContain("50 Mo");
+  });
+
+  it("refuse un autre type de fichier", () => {
+    expect(fileProblem({ type: "application/pdf", size: 1000 })).toContain("JPEG");
+    expect(fileProblem({ type: "image/gif", size: 1000 })).toContain("JPEG");
+  });
+});
 
 // L'onglet « Photos et vidéo » d'une variante (26/11) : ce qu'il propose selon l'état de la variante, et le lien de la
 // story Instagram (le bouton « Acheter » mène à cette variante précise).

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Palette } from "@/config/colors";
 import type { ProductKind, Variant } from "@/types/api";
 import RefurbishedCard from "./RefurbishedCard";
+import { pinFirst } from "./variantMediaRules";
 
 type RefurbSort = "price" | "grade" | "battery";
 
@@ -35,18 +36,12 @@ export default function RefurbishedList({
   onSelect?: (variant: Variant) => void;
 }) {
   const [sort, setSort] = useState<RefurbSort>("price");
-  const sorted = [...variants].sort(SORTS[sort].compare);
+  // Venu d'une story : l'appareil visé passe en tête de la liste (sous le téléphone sur mobile, il est visible sans
+  // défiler). Le choix d'un tri par le client remet la liste dans l'ordre normal.
+  const [pinned, setPinned] = useState<string | null>(selectedSku);
+  const sorted = pinFirst([...variants].sort(SORTS[sort].compare), pinned);
   // Une fiche peut couvrir plusieurs exemplaires identiques : on compte les appareils, pas les fiches.
   const units = variants.reduce((sum, variant) => sum + variant.stock, 0);
-
-  // Venu d'une story : l'appareil visé est amené à l'écran (la liste est triée par prix, il peut être plus bas).
-  useEffect(() => {
-    if (selectedSku) {
-      document.getElementById(`unit-${selectedSku}`)?.scrollIntoView({ block: "nearest" });
-    }
-    // Au premier affichage seulement : un clic de l'utilisateur ne doit pas faire défiler la liste.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <div className="space-y-4">
@@ -57,7 +52,10 @@ export default function RefurbishedList({
         </p>
         <label className="flex items-center gap-2 text-sm">
           <span className="text-ink-muted">Trier</span>
-          <select className="input min-h-9 w-auto py-1" value={sort} onChange={(event) => setSort(event.target.value as RefurbSort)}>
+          <select className="input min-h-9 w-auto py-1" value={sort} onChange={(event) => {
+              setSort(event.target.value as RefurbSort);
+              setPinned(null);
+            }}>
             {Object.entries(SORTS).map(([value, { label }]) => (
               <option key={value} value={value}>
                 {label}

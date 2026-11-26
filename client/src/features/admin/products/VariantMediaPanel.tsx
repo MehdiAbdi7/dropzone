@@ -6,11 +6,14 @@ import { errorMessage } from "@/lib/errors";
 import {
   useAddVariantMediaMutation,
   useAdminProductQuery,
+  usePrepareVideoUploadMutation,
+  useRegisterVideoMutation,
   useRemoveVariantMediaMutation,
   useReorderVariantMediaMutation,
 } from "@/features/admin/api/productsApi";
 import type { VariantDraft } from "./productDraft";
-import { mediaPanelState, storyLink } from "./variantMedia";
+import { fileProblem, mediaPanelState, PHOTO_MAX_MB, storyLink, VIDEO_MAX_MB } from "./variantMedia";
+import { sendVideoToCloudinary } from "./videoUpload";
 
 // L'onglet « Photos et vidéo » d'une variante (26/11, demande de Mehdi : la vidéo de la story Instagram d'un téléphone et
 // d'autres photos du même exemplaire). Ces médias appartiennent à CETTE variante, pas à la couleur du modèle : ils
@@ -21,14 +24,45 @@ export default function VariantMediaPanel({ variant, productId }: { variant: Var
   const [add, addState] = useAddVariantMediaMutation();
   const [remove, removeState] = useRemoveVariantMediaMutation();
   const [reorder, reorderState] = useReorderVariantMediaMutation();
+  const [prepare, prepareState] = usePrepareVideoUploadMutation();
+  const [register, registerState] = useRegisterVideoMutation();
   const [copied, setCopied] = useState(false);
+  // Progression de l'envoi d'une vidéo (null : aucun envoi), et le refus du fichier ou l'échec de l'envoi direct.
+  const [percent, setPercent] = useState<number | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
 
   // La variante telle qu'elle est enregistrée : son stock réel est celui que l'API vérifie, pas celui qu'on tape.
   const saved = product?.variants.find((item) => item.id === variant.id);
   const media = saved?.media ?? [];
   const state = mediaPanelState({ id: variant.id, stock: saved?.stock ?? variant.stock }, media);
-  const busy = addState.isLoading || removeState.isLoading || reorderState.isLoading;
-  const failure = addState.error ?? removeState.error ?? reorderState.error;
+  const busy =
+    addState.isLoading || removeState.isLoading || reorderState.isLoading || prepareState.isLoading || registerState.isLoading || percent !== null;
+  const failure = addState.error ?? removeState.error ?? reorderState.error ?? prepareState.error ?? registerState.error;
+
+  // Une photo traverse l'API ; une vidéo part directement chez Cloudinary (signée par l'API, enregistrée après l'envoi).
+  async function onFile(file: File) {
+    setProblem(null);
+    const refused = fileProblem(file);
+    if (refused) {
+      setProblem(refused);
+      return;
+    }
+    if (!productId || !variant.id) return;
+    if (!file.type.startsWith("video/")) {
+      add({ productId, variantId: variant.id, file });
+      return;
+    }
+    try {
+      setPercent(0);
+      const signed = await prepare({ variantId: variant.id }).unwrap();
+      const publicId = await sendVideoToCloudinary(file, signed, setPercent);
+      await register({ productId, variantId: variant.id, publicId }).unwrap();
+    } catch (error) {
+      setProblem(error instanceof Error ? error.message : errorMessage(error));
+    } finally {
+      setPercent(null);
+    }
+  }
   const color = variant.options.Couleur;
   const link = saved && product && color ? storyLink({ slug: product.slug, color, condition: variant.condition, sku: variant.sku }) : null;
 
@@ -100,7 +134,7 @@ export default function VariantMediaPanel({ variant, productId }: { variant: Var
 
       <div className="space-y-2">
         <label className={`btn btn-secondary btn-small ${state.canAdd && !busy ? "cursor-pointer" : "pointer-events-none opacity-50"}`}>
-          {addState.isLoading ? "Envoi…" : "Ajouter une photo ou la vidéo"}
+          {percent !== null ? `Envoi de la vidéo… ${percent} %` : addState.isLoading ? "Envoi…" : "Ajouter une photo ou la vidéo"}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
@@ -109,14 +143,16 @@ export default function VariantMediaPanel({ variant, productId }: { variant: Var
             onChange={(event) => {
               const file = event.target.files?.[0];
               event.target.value = "";
-              if (file && productId && variant.id) {
-                add({ productId, variantId: variant.id, file });
-              }
+              if (file) void onFile(file);
             }}
           />
         </label>
+        {percent !== null ? <progress className="block h-2 w-full max-w-xs" max={100} value={percent} aria-label="Progression de l'envoi" /> : null}
         {state.reason ? <p className="text-xs text-ink-muted">{state.reason}</p> : null}
-        <p className="text-xs text-ink-muted">Photos de 5 Mo au plus, vidéo de 50 Mo au plus (MP4, MOV ou WebM).</p>
+        <p className="text-xs text-ink-muted">
+          Photos de {PHOTO_MAX_MB} Mo au plus, vidéo de {VIDEO_MAX_MB} Mo au plus (MP4, MOV ou WebM). La vidéo part directement chez Cloudinary :
+          ne ferme pas la page pendant l&apos;envoi.
+        </p>
       </div>
 
       {link ? (
@@ -132,7 +168,7 @@ export default function VariantMediaPanel({ variant, productId }: { variant: Var
         </div>
       ) : null}
 
-      {failure ? <p className="field-error">{errorMessage(failure)}</p> : null}
+      {problem ? <p className="field-error">{problem}</p> : failure ? <p className="field-error">{errorMessage(failure)}</p> : null}
     </div>
   );
 }
