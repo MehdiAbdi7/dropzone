@@ -121,6 +121,8 @@ export type ViewerParams = {
   preview?: string | string[];
   couleur?: string | string[];
   etat?: string | string[];
+  // Le SKU d'un exemplaire précis (26/11) : le lien du bouton « Acheter » d'une story Instagram.
+  variante?: string | string[];
 };
 
 const first = (param: string | string[] | undefined) => (Array.isArray(param) ? param[0] : param);
@@ -143,8 +145,27 @@ export function startView(
   return { index: firstIndex(colors, condition, params.preview), offers: null };
 }
 
+// L'exemplaire visé par l'adresse (26/11, lien d'une story Instagram) : son SKU, seulement si l'adresse ouvre bien les
+// offres de sa couleur dans son état (`startView`) et qu'il est en stock. Un SKU inconnu, épuisé, en brouillon (l'API
+// ne l'envoie pas) ou d'une autre couleur ou d'un autre état est ignoré : on retombe sur le comportement d'avant.
+export function requestedVariant(
+  product: ProductDetail,
+  colors: ViewerColor[],
+  condition: JourneyCondition | null,
+  params: ViewerParams,
+): string | null {
+  const wanted = first(params.variante);
+  const view = startView(product, colors, condition, params);
+  if (!wanted || !view.offers) {
+    return null;
+  }
+  const found = offerVariants(product, colors[view.index].name, view.offers).find((variant) => variant.sku === wanted);
+  return found ? found.sku : null;
+}
+
 // La requête de l'adresse (sans `?`) après un changement : offres ouvertes (`couleur`, et `etat` quand la
-// page ne connaît pas l'état) ou retour aux couleurs (`apercu`). Les autres paramètres sont gardés.
+// page ne connaît pas l'état) ou retour aux couleurs (`apercu`). Les autres paramètres sont gardés, sauf `variante` :
+// dès que la visionneuse bouge, le lien ne vise plus l'exemplaire de la story.
 export function viewerSearch(
   current: string,
   colorName: string,
@@ -155,6 +176,7 @@ export function viewerSearch(
   query.delete("apercu");
   query.delete("couleur");
   query.delete("etat");
+  query.delete("variante");
   if (offers) {
     query.set("couleur", colorName);
     if (condition === null) {

@@ -67,9 +67,24 @@
     .viewer-cols {
       display: grid;
       grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      /* Le téléphone et, dessous, la rangée de photos et vidéo de la variante (26/11) ; les infos à droite sur les deux
+         rangées. Pas d'espace entre les rangées : sans médias, la rangée du bas est vide et ne doit rien ajouter. */
+      grid-template-areas:
+        "frame info"
+        "media info";
+      align-content: center;
       align-items: center;
-      gap: 28px;
+      column-gap: 28px;
       text-align: left;
+    }
+    .viewer-frame {
+      grid-area: frame;
+    }
+    .viewer-media {
+      grid-area: media;
+    }
+    .viewer-info {
+      grid-area: info;
     }
   }
 

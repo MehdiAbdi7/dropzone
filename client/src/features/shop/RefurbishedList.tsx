@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Palette } from "@/config/colors";
 import type { ProductKind, Variant } from "@/types/api";
 import RefurbishedCard from "./RefurbishedCard";
@@ -18,19 +18,35 @@ const SORTS: Record<RefurbSort, { label: string; compare: (a: Variant, b: Varian
 
 // Tous les reconditionnés en stock d'un modèle, une radiographie par appareil,
 // du moins cher au plus cher par défaut. La palette donne la pastille de chaque couleur.
+// Plusieurs appareils peuvent avoir la même couleur (26/11) : un clic sur un appareil le choisit, et ce sont SES photos
+// et SA vidéo qui apparaissent sous le téléphone (aucune s'il n'en a pas : celles de l'appareil d'avant ne restent
+// pas). `selectedSku` : l'appareil choisi.
 export default function RefurbishedList({
   variants,
   kind,
   palette,
+  selectedSku = null,
+  onSelect,
 }: {
   variants: Variant[];
   kind: ProductKind;
   palette: Palette;
+  selectedSku?: string | null;
+  onSelect?: (variant: Variant) => void;
 }) {
   const [sort, setSort] = useState<RefurbSort>("price");
   const sorted = [...variants].sort(SORTS[sort].compare);
   // Une fiche peut couvrir plusieurs exemplaires identiques : on compte les appareils, pas les fiches.
   const units = variants.reduce((sum, variant) => sum + variant.stock, 0);
+
+  // Venu d'une story : l'appareil visé est amené à l'écran (la liste est triée par prix, il peut être plus bas).
+  useEffect(() => {
+    if (selectedSku) {
+      document.getElementById(`unit-${selectedSku}`)?.scrollIntoView({ block: "nearest" });
+    }
+    // Au premier affichage seulement : un clic de l'utilisateur ne doit pas faire défiler la liste.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -51,11 +67,30 @@ export default function RefurbishedList({
         </label>
       </div>
       <ul className="space-y-4">
-        {sorted.map((variant) => (
-          <li key={variant.sku}>
-            <RefurbishedCard variant={variant} kind={kind} palette={palette} />
-          </li>
-        ))}
+        {sorted.map((variant) => {
+          const hasMedia = (variant.media?.length ?? 0) > 0;
+          const selected = variant.sku === selectedSku;
+          return (
+            <li
+              key={variant.sku}
+              id={`unit-${variant.sku}`}
+              className={`rounded-2xl transition-shadow ${selected ? "ring-2 ring-blue-ink" : ""}`}
+              // Un clic sur l'appareil le choisit, sauf sur ses boutons et liens (ajouter au panier…).
+              onClick={(event) => {
+                if (onSelect && !(event.target as HTMLElement).closest("button, a, select, input")) {
+                  onSelect(variant);
+                }
+              }}
+            >
+              {hasMedia && onSelect ? (
+                <button type="button" className="btn btn-secondary btn-small mb-2" aria-pressed={selected} onClick={() => onSelect(variant)}>
+                  {selected ? "Photos et vidéo affichées sous le téléphone" : "Voir ses photos et sa vidéo"}
+                </button>
+              ) : null}
+              <RefurbishedCard variant={variant} kind={kind} palette={palette} />
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

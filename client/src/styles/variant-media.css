@@ -1,0 +1,143 @@
+/* Les photos et la vidéo d'une variante, sous le téléphone de la visionneuse (26/11). Toujours sombre comme la
+   visionneuse. Tailles fixes, aucune unité de hauteur d'écran (leçon du 25/11 : elles font bouger les pages sur téléphone). */
+
+@layer components {
+  .viewer-media {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  @media (min-width: 768px) {
+    /* Aligné sur la largeur du cadre du téléphone. */
+    .viewer-media {
+      width: min(100%, calc(var(--viewer-photo-h) * 1.1));
+      margin-inline: auto;
+    }
+  }
+  .viewer-thumb {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    overflow: hidden;
+    border: 1.5px solid rgb(255 255 255 / 0.28);
+    border-radius: 10px;
+    background: #101116;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .viewer-thumb:hover {
+    border-color: #fff;
+  }
+  .viewer-thumb:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+  .viewer-thumb img {
+    object-fit: cover;
+  }
+  .viewer-thumb-play {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgb(0 0 0 / 0.38);
+    color: #fff;
+    font-size: 1rem;
+  }
+
+  /* Le média en grand. */
+  .media-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: rgb(0 0 0 / 0.88);
+  }
+  .media-stage {
+    position: relative;
+    width: min(92vw, 460px);
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #08090d;
+  }
+  .media-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    border: 1.5px solid rgb(255 255 255 / 0.55);
+    border-radius: 50%;
+    background: rgb(14 15 26 / 0.85);
+    color: #fff;
+    cursor: pointer;
+  }
+  .media-close:hover {
+    background: #3d4bff;
+  }
+  .media-nav {
+    position: absolute;
+    top: 50%;
+    z-index: 3;
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    transform: translateY(-50%);
+    border: 1.5px solid rgb(255 255 255 / 0.55);
+    border-radius: 50%;
+    background: rgb(14 15 26 / 0.85);
+    color: #fff;
+    font-size: 1.125rem;
+    cursor: pointer;
+  }
+  .media-nav[data-side="left"] {
+    left: 8px;
+  }
+  .media-nav[data-side="right"] {
+    right: 8px;
+  }
+
+  /* La vidéo : un clic la met en pause, une barre donne pause et son. */
+  .story-video {
+    position: absolute;
+    inset: 0;
+  }
+  .story-video video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    cursor: pointer;
+  }
+  .story-video-bar {
+    position: absolute;
+    inset: auto 0 0;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    background: linear-gradient(transparent, rgb(0 0 0 / 0.65));
+  }
+  .story-video-bar button {
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1.5px solid rgb(255 255 255 / 0.6);
+    border-radius: 999px;
+    background: rgb(14 15 26 / 0.85);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .story-video-bar button:hover,
+  .story-video-bar button[aria-pressed="true"] {
+    background: #3d4bff;
+  }
+}

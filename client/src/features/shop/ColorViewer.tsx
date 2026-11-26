@@ -8,6 +8,7 @@ import {
   alternatives,
   availabilityLines,
   isAvailable,
+  requestedVariant,
   startView,
   type ViewerParams,
   viewerColors,
@@ -17,6 +18,8 @@ import {
 import { kindIcon } from "./colors";
 import type { JourneyCondition } from "./journey";
 import { uniformPhoto } from "./photos";
+import { shownMedia } from "./variantMediaRules";
+import VariantMediaStrip from "./VariantMediaStrip";
 import ViewerOffers from "./ViewerOffers";
 
 // La visionneuse de couleurs (25/11, demande de Mehdi) : l'étape Couleur n'est pas qu'une étape d'achat,
@@ -64,6 +67,9 @@ export default function ColorViewer({
   const [index, setIndex] = useState(start.index);
   // L'état dont on voit les offres ; null = le mode couleurs.
   const [offers, setOffers] = useState<JourneyCondition | null>(start.offers);
+  // La variante dont les photos et la vidéo sont montrées sous le téléphone (26/11) : celle choisie dans les offres, ou
+  // celle d'un lien de story (`?variante=`). Aucune au mode couleurs : les médias suivent la variante, jamais la couleur.
+  const [shownSku, setShownSku] = useState<string | null>(() => requestedVariant(product, colors, condition, params));
   const [direction, setDirection] = useState<1 | -1>(1);
   // Deux couches pour le fondu : la nouvelle photo se charge dans la couche cachée, puis passe devant.
   const [layers, setLayers] = useState<[Layer, Layer]>(() => [layerOf(start.index), layerOf(0)]);
@@ -134,12 +140,14 @@ export default function ColorViewer({
   }
 
   function openOffers(one: JourneyCondition) {
+    setShownSku(null);
     setOffers(one);
     writeAddress(colors[index].name, one);
   }
 
   // Retour aux couleurs : le focus va sur la pastille de la couleur, le bouton qu'on vient de cliquer disparaît.
   function closeOffers() {
+    setShownSku(null);
     setOffers(null);
     writeAddress(colors[index].name, null);
     window.setTimeout(() => dotRefs.current[index]?.focus(), 0);
@@ -280,6 +288,9 @@ export default function ColorViewer({
           ) : null}
         </div>
 
+        {/* Sous le téléphone : les photos et la vidéo de la variante choisie (rien sans variante choisie ni sans médias). */}
+        <VariantMediaStrip media={shownMedia(product.variants, shownSku)} label={`${product.name}, ${color.name}`} />
+
         <div className="viewer-info">
           {offers ? (
             // `key` : changer de couleur ou d'état repart d'un choix neuf (stockage, tri).
@@ -289,6 +300,8 @@ export default function ColorViewer({
               colorName={color.name}
               condition={offers}
               palette={palette}
+              shownSku={shownSku}
+              onShow={(variant) => setShownSku(variant.sku)}
               onBack={closeOffers}
             />
           ) : (

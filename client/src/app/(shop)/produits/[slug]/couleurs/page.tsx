@@ -38,7 +38,7 @@ export default async function ColorsPage({ params, searchParams }: PageProps<"/p
           product={product}
           condition={null}
           palette={palette}
-          params={{ preview: search.apercu, couleur: search.couleur, etat: search.etat }}
+          params={{ preview: search.apercu, couleur: search.couleur, etat: search.etat, variante: search.variante }}
         />
         <ProductFacts product={product} descriptionMobileOnly />
       </div>
