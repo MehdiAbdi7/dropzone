@@ -39,7 +39,7 @@ export default function ViewerOffers({
       {condition === "new" ? (
         <NewPicker variants={variants} kind={product.category.kind} palette={palette} colorChosen initialSku={shownSku ?? undefined} onCurrent={onShow} />
       ) : (
-        <RefurbishedList variants={variants} kind={product.category.kind} palette={palette} selectedSku={shownSku} onSelect={onShow} />
+        <RefurbishedList variants={variants} kind={product.category.kind} palette={palette} initialSku={shownSku ?? undefined} onCurrent={onShow} />
       )}
     </div>
   );
