@@ -138,7 +138,7 @@
 
 **Files:**
 - Create: `client/src/features/shop/variantMediaRules.ts`, `client/src/features/shop/VariantMediaStrip.tsx`
-- Modify: `client/src/features/shop/colorViewerRules.ts` (`ViewerParams.variante`, `startView`), `ColorViewer.tsx`, `ViewerOffers.tsx`, `NewPicker.tsx` (prop `onCurrent`, prop `initialSku`), `RefurbishedList.tsx` (bouton « Photos et vidéo », prop `onShowMedia`, prop `highlightSku`), `client/src/styles/color-viewer.css`, `client/src/app/(shop)/produits/[slug]/couleurs/page.tsx` (passe `variante`)
+- Modify: `client/src/features/shop/colorViewerRules.ts` (`ViewerParams.variante`, `startView`), `ColorViewer.tsx`, `ViewerOffers.tsx`, `NewPicker.tsx` (prop `onCurrent`, prop `initialSku`), `RefurbishedList.tsx` (un clic sur la carte d'un appareil affiche ses médias, prop `onShowMedia`, prop `highlightSku`), `client/src/styles/color-viewer.css`, `client/src/app/(shop)/produits/[slug]/couleurs/page.tsx` (passe `variante`)
 - Test: `client/src/features/shop/variantMediaRules.test.ts`, `colorViewerRules.test.ts` (ajouts)
 
 **Interfaces:**
@@ -147,7 +147,7 @@
 
 - [ ] **Step 1: Write the failing tests** : `shownMedia` (SKU connu avec médias, SKU inconnu, `media` absent) ; `startView` avec `variante` valide → `offers` ouvert sur l'état de la variante, `index` de sa couleur, `variantSku` rempli ; avec un SKU inconnu, une variante à stock 0 → comportement actuel et `variantSku: null`.
 - [ ] **Step 2: Run** `npx vitest run src/features/shop/variantMediaRules.test.ts src/features/shop/colorViewerRules.test.ts`. Expected: FAIL.
-- [ ] **Step 3: Implémenter** les règles ; dans `ColorViewer`, garder `shownSku` (nul au mode couleurs et à « Changer de couleur ») ; poser la photo du téléphone et la rangée dans un même bloc `viewer-visual` de la colonne de gauche ; la rangée est une grille de miniatures sous `.viewer-frame` (le téléphone ne bouge pas), un clic sur une photo l'agrandit, un clic sur la vidéo ouvre un lecteur (`<video controls playsInline preload="metadata" poster>`), fermeture par un bouton et Échap ; ne rien rendre sans médias.
+- [ ] **Step 3: Implémenter** les règles ; dans `ColorViewer`, garder `shownSku` (nul au mode couleurs et à « Changer de couleur ») ; poser la photo du téléphone et la rangée dans un même bloc `viewer-visual` de la colonne de gauche ; la rangée est une grille de miniatures sous `.viewer-frame` (le téléphone ne bouge pas), un clic sur une photo l'agrandit, un clic sur la vidéo ouvre un lecteur (`<video playsInline preload="metadata" poster>`) que le client peut mettre en pause et relancer à volonté (clic sur la vidéo et bouton lecture/pause) avec un bouton son qui coupe et remet le son (décision de Mehdi du 26/11), fermeture par un bouton et Échap ; ne rien rendre sans médias. Plusieurs variantes de la même couleur (décision de Mehdi du 26/11) : les médias suivent la variante cliquée, jamais la couleur ; un appareil d'occasion se choisit en cliquant sa carte, un neuf par son stockage.
 - [ ] **Step 4: Run** les tests, `npx tsc --noEmit`, `npx eslint src/features/shop`, puis `npx vitest run` en entier. Expected: PASS.
 - [ ] **Step 5: Vérifier à l'écran** (base locale jetable, avec une variante à médias posés à la main) : neuf (stockage choisi → rangée), occasion (bouton → rangée), lien `?couleur=…&etat=occasion&variante=<sku>`, SKU inconnu, mode clair, téléphone 375 px et ordinateur 1365 px, sans défilement horizontal.
 - [ ] **Step 6: Commit** `feat: photos et video d'une variante sous le telephone`.

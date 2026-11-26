@@ -21,6 +21,7 @@ import { productRouter } from "./modules/products/product.routes.js";
 import { seriesRouter } from "./modules/series/series.routes.js";
 import { seriesAdminRouter } from "./modules/series/seriesAdmin.routes.js";
 import { stageAdminRouter, stageRouter } from "./modules/stage/stage.routes.js";
+import { purgeSoldMediaMiddleware } from "./middlewares/purgeSoldMedia.js";
 import { releaseReservationsMiddleware } from "./middlewares/releaseReservations.js";
 import { cashAdminRouter } from "./modules/cash/cash.routes.js";
 import { deliveriesAdminRouter } from "./modules/deliveries/deliveries.routes.js";
@@ -49,6 +50,8 @@ app.get("/health", (_req, res) => {
 // Les retraits expirés repartent en stock avant toute lecture du stock ou des commandes (14/11).
 const releaseReservations = releaseReservationsMiddleware();
 app.use(["/categories", "/products", "/series", "/accessories", "/orders", "/admin"], releaseReservations);
+// Les médias d'une variante vendue (stock à 0) sont supprimés après toute écriture réussie (26/11).
+app.use(["/orders", "/admin"], purgeSoldMediaMiddleware());
 
 app.use("/categories", categoryRouter);
 app.use("/products", productRouter);
