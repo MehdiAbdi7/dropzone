@@ -2,7 +2,9 @@
 
 export const MAX_PHOTOS = 8;
 export const MAX_VIDEOS = 1;
-export const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+// 4 Mo : sous les 4,5 Mo que Vercel accepte pour un corps de requête, car la photo traverse sa réécriture vers l'API
+// (la vidéo, elle, part directement chez Cloudinary).
+export const PHOTO_MAX_BYTES = 4 * 1024 * 1024;
 export const VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 
 export type MediaKindName = "photo" | "video";

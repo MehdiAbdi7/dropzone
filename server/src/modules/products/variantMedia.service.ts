@@ -1,4 +1,10 @@
-import { deleteFromCloudinary, uploadToCloudinary, uploadVideoToCloudinary } from "../../config/cloudinary.js";
+import {
+  getUploadedVideo,
+  type SignedVideoUpload,
+  signVideoUpload,
+  uploadToCloudinary,
+  VARIANT_FOLDER,
+} from "../../config/cloudinary.js";
 import { prisma, type Tx } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
 import { destroyMediaFiles } from "./soldMedia.service.js";
@@ -41,45 +47,78 @@ async function roomFor(db: Tx, variantId: number, kind: "photo" | "video", size:
   return { room, position };
 }
 
-export async function addVariantMedia(variantId: number, file: Express.Multer.File | undefined): Promise<MediaView> {
-  if (!file) {
-    throw new AppError(400, "Aucun fichier reçu (champ « media »)");
-  }
-  const kind = mediaKindOf(file.mimetype);
-  if (!kind) {
-    throw new AppError(400, "Formats acceptés : JPEG, PNG, WebP, MP4, MOV ou WebM");
-  }
-  await variantOrThrow(variantId);
-  // Première vérification, avant l'envoi : refuser tout de suite (variante épuisée, plafond atteint, fichier trop lourd)
-  // sans déranger Cloudinary.
-  const first = await roomFor(prisma, variantId, kind, file.size);
-  if (!first.room.ok) {
-    throw new AppError(first.room.status, first.room.message);
-  }
-  const uploaded =
-    kind === "video"
-      ? await uploadVideoToCloudinary(file.buffer)
-      : await uploadToCloudinary(file.buffer, "dropzone/variants", { maxWidth: PHOTO_MAX_WIDTH });
+// Enregistre un média déjà chez Cloudinary : deuxième vérification de la place qui reste, sous verrou de la ligne de la
+// variante, juste avant d'écrire. Pendant un envoi (qui peut durer une minute), un autre envoi ou une vente a pu changer
+// cette place : deux envois en même temps ne dépassent jamais le plafond. Si la vérification échoue, le fichier, qui n'a
+// pas de ligne, est supprimé de Cloudinary (avec une trace s'il résiste), puis l'erreur repart.
+async function saveUploadedMedia(
+  variantId: number,
+  media: { kind: "photo" | "video"; url: string; publicId: string; size: number },
+): Promise<MediaView> {
   try {
-    // L'envoi peut durer une minute : pendant ce temps un autre envoi, ou une vente, a pu changer la place qui reste.
-    // Deuxième vérification, sous verrou de la ligne de la variante, juste avant d'enregistrer : deux envois en même
-    // temps ne dépassent jamais le plafond.
     return await prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM product_variants WHERE id = ${variantId} FOR UPDATE`;
-      const last = await roomFor(tx, variantId, kind, file.size);
+      const last = await roomFor(tx, variantId, media.kind, media.size);
       if (!last.room.ok) {
         throw new AppError(last.room.status, last.room.message);
       }
       const created = await tx.variantMedia.create({
-        data: { variantId, kind, url: uploaded.url, publicId: uploaded.publicId, position: last.position },
+        data: { variantId, kind: media.kind, url: media.url, publicId: media.publicId, position: last.position },
       });
       return toMediaView(created);
     });
   } catch (error) {
-    // Le fichier est déjà chez Cloudinary mais n'a pas de ligne : on le supprime (avec une trace s'il résiste).
-    await destroyMediaFiles([{ publicId: uploaded.publicId, kind }]);
+    await destroyMediaFiles([{ publicId: media.publicId, kind: media.kind }]);
     throw error;
   }
+}
+
+// Une photo : elle traverse l'API (4 Mo au plus), qui la réduit et l'envoie à Cloudinary.
+export async function addVariantMedia(variantId: number, file: Express.Multer.File | undefined): Promise<MediaView> {
+  if (!file) {
+    throw new AppError(400, "Aucun fichier reçu (champ « media »)");
+  }
+  if (mediaKindOf(file.mimetype) !== "photo") {
+    throw new AppError(400, "Formats acceptés : JPEG, PNG ou WebP (une vidéo s'envoie à part)");
+  }
+  await variantOrThrow(variantId);
+  // Première vérification, avant l'envoi : refuser tout de suite (variante épuisée, plafond atteint, fichier trop lourd)
+  // sans déranger Cloudinary.
+  const first = await roomFor(prisma, variantId, "photo", file.size);
+  if (!first.room.ok) {
+    throw new AppError(first.room.status, first.room.message);
+  }
+  const uploaded = await uploadToCloudinary(file.buffer, VARIANT_FOLDER, { maxWidth: PHOTO_MAX_WIDTH });
+  return saveUploadedMedia(variantId, { kind: "photo", ...uploaded, size: file.size });
+}
+
+// Une vidéo, étape 1 : les paramètres signés pour l'envoyer directement du navigateur chez Cloudinary. Refusé tout de
+// suite (variante épuisée, vidéo déjà là) : inutile d'envoyer 50 Mo pour être refusé ensuite.
+export async function prepareVideoUpload(variantId: number): Promise<SignedVideoUpload> {
+  await variantOrThrow(variantId);
+  const first = await roomFor(prisma, variantId, "video", 0);
+  if (!first.room.ok) {
+    throw new AppError(first.room.status, first.room.message);
+  }
+  return signVideoUpload();
+}
+
+// Une vidéo, étape 2 : le navigateur a fini l'envoi et donne l'identifiant Cloudinary. L'adresse et la taille enregistrées
+// sont celles que Cloudinary a reçues, jamais celles que dit le navigateur ; l'identifiant doit être dans le dossier des
+// variantes et ne pas être déjà celui d'un média (on ne supprime jamais un fichier déjà enregistré).
+export async function registerUploadedVideo(variantId: number, publicId: string): Promise<MediaView> {
+  if (!publicId.startsWith(`${VARIANT_FOLDER}/`)) {
+    throw new AppError(400, "Vidéo inconnue");
+  }
+  await variantOrThrow(variantId);
+  if (await prisma.variantMedia.findFirst({ where: { publicId }, select: { id: true } })) {
+    throw new AppError(409, "Cette vidéo est déjà enregistrée");
+  }
+  const uploaded = await getUploadedVideo(publicId);
+  if (!uploaded) {
+    throw new AppError(404, "Vidéo introuvable chez Cloudinary");
+  }
+  return saveUploadedMedia(variantId, { kind: "video", url: uploaded.url, publicId, size: uploaded.bytes });
 }
 
 export async function removeVariantMedia(variantId: number, mediaId: number): Promise<void> {
@@ -88,9 +127,8 @@ export async function removeVariantMedia(variantId: number, mediaId: number): Pr
     throw new AppError(404, "Média introuvable");
   }
   await prisma.variantMedia.delete({ where: { id: item.id } });
-  // Un échec chez Cloudinary laisserait seulement un fichier orphelin, pas une fiche cassée : le balayage n'a rien à
-  // refaire, mais on le dit dans les logs.
-  await deleteFromCloudinary(item.publicId, item.kind).catch((error) => console.error("[médias] suppression Cloudinary impossible :", error));
+  // Un échec chez Cloudinary laisse une trace (`media_orphans`) que le balayage réessaie : jamais un fichier perdu.
+  await destroyMediaFiles([{ publicId: item.publicId, kind: item.kind }]);
 }
 
 // L'ordre voulu : la liste doit contenir exactement les médias de la variante, une fois chacun.

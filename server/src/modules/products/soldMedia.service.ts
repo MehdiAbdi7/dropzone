@@ -1,5 +1,5 @@
 import type { Prisma } from "../../generated/prisma/client.js";
-import { deleteFromCloudinary } from "../../config/cloudinary.js";
+import { deleteFromCloudinary, listVariantVideos } from "../../config/cloudinary.js";
 import { prisma } from "../../config/db.js";
 
 // Ce qui se vend se supprime (26/11, décision de Mehdi, précisée le même jour) : les photos et la vidéo d'une variante
@@ -73,10 +73,34 @@ export async function purgeSoldMedia(): Promise<number> {
   return sold.length;
 }
 
-// Un tour de balayage : supprime les médias des variantes vendues, puis réessaie les fichiers restés chez Cloudinary.
+// Une vidéo part directement du navigateur chez Cloudinary : si l'onglet se ferme avant l'enregistrement, elle reste là
+// sans aucune ligne en base. Supprime les vidéos des variantes vieilles de plus d'une heure que rien ne désigne (ni un
+// média, ni une trace à réessayer). Une vidéo plus récente est peut-être en cours d'envoi : on n'y touche pas.
+const STRAY_AFTER_MS = 3_600_000;
+
+export async function sweepStrayVideos(): Promise<number> {
+  const old = (await listVariantVideos()).filter((video) => Date.now() - video.createdAt.getTime() > STRAY_AFTER_MS);
+  if (old.length === 0) {
+    return 0;
+  }
+  const publicIds = old.map((video) => video.publicId);
+  const [registered, traced] = await Promise.all([
+    prisma.variantMedia.findMany({ where: { publicId: { in: publicIds } }, select: { publicId: true } }),
+    prisma.mediaOrphan.findMany({ where: { publicId: { in: publicIds } }, select: { publicId: true } }),
+  ]);
+  const known = new Set([...registered, ...traced].map((item) => item.publicId));
+  const stray = old.filter((video) => !known.has(video.publicId));
+  await destroyMediaFiles(stray.map((video) => ({ publicId: video.publicId, kind: "video" as const })));
+  return stray.length;
+}
+
+// Un tour de balayage : supprime les médias des variantes vendues, réessaie les fichiers restés chez Cloudinary, puis
+// retrouve les vidéos envoyées mais jamais enregistrées. Chaque étape est indépendante : une panne de Cloudinary sur la
+// liste ne doit pas empêcher les autres.
 export async function sweepMedia(): Promise<number> {
   const purged = await purgeSoldMedia();
   await retryMediaOrphans();
+  await sweepStrayVideos().catch((error) => console.error("[médias] recherche des vidéos perdues impossible :", error));
   return purged;
 }
 

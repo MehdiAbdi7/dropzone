@@ -1,15 +1,15 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app.js";
-import { deleteFromCloudinary } from "../src/config/cloudinary.js";
+import { deleteFromCloudinary, listVariantVideos } from "../src/config/cloudinary.js";
 import { prisma } from "../src/config/db.js";
-import { purgeSoldMedia, retryMediaOrphans, startMediaSweep } from "../src/modules/products/soldMedia.service.js";
+import { purgeSoldMedia, retryMediaOrphans, startMediaSweep, sweepStrayVideos } from "../src/modules/products/soldMedia.service.js";
 import { createCatalog, loginAs, previewThenOrder, resetDb } from "./helpers.js";
 
 vi.mock("../src/config/cloudinary.js", () => ({
   uploadToCloudinary: vi.fn(),
-  uploadVideoToCloudinary: vi.fn(),
   deleteFromCloudinary: vi.fn(async () => undefined),
+  listVariantVideos: vi.fn(async () => []),
 }));
 
 // Ce qui se vend se supprime (26/11, décision de Mehdi, précisée le même jour) : les photos et la vidéo d'une variante
@@ -22,6 +22,12 @@ let catalog: Awaited<ReturnType<typeof createCatalog>>;
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  // `clearAllMocks` n'efface pas ce qu'un test a imposé (un échec de Cloudinary, une liste de vidéos) : on le remet à zéro
+  // pour qu'un test ne déteigne pas sur le suivant.
+  vi.mocked(deleteFromCloudinary).mockReset();
+  vi.mocked(deleteFromCloudinary).mockResolvedValue(undefined);
+  vi.mocked(listVariantVideos).mockReset();
+  vi.mocked(listVariantVideos).mockResolvedValue([]);
   await resetDb();
   catalog = await createCatalog();
 });
@@ -291,6 +297,36 @@ describe("purgeSoldMedia", () => {
 
     expect(counts.reduce((sum, count) => sum + count, 0)).toBe(2);
     await vi.waitFor(() => expect(deleteFromCloudinary).toHaveBeenCalledTimes(2));
+  });
+});
+
+// Une vidéo part directement du navigateur chez Cloudinary : si l'onglet se ferme avant l'enregistrement, elle reste là sans
+// ligne en base. Le balayage la retrouve et la supprime, mais jamais une vidéo enregistrée, ni une vidéo toute récente (son
+// envoi est peut-être en cours : l'enregistrement n'a pas encore eu lieu).
+describe("sweepStrayVideos", () => {
+  const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000);
+
+  it("supprime une vieille vidéo sans ligne, garde celle d'une variante, celle qui a une trace et la récente", async () => {
+    await prisma.variantMedia.create({
+      data: { variantId: await variantId("IP-R-DEAL"), kind: "video", url: "https://x/a.mp4", publicId: "dropzone/variants/enregistree", position: 0 },
+    });
+    await prisma.mediaOrphan.create({ data: { publicId: "dropzone/variants/tracee", kind: "video" } });
+    vi.mocked(listVariantVideos).mockResolvedValue([
+      { publicId: "dropzone/variants/perdue", createdAt: hoursAgo(3) },
+      { publicId: "dropzone/variants/enregistree", createdAt: hoursAgo(3) },
+      { publicId: "dropzone/variants/tracee", createdAt: hoursAgo(3) },
+      { publicId: "dropzone/variants/recente", createdAt: hoursAgo(0.1) },
+    ]);
+
+    expect(await sweepStrayVideos()).toBe(1);
+
+    expect(deleteFromCloudinary).toHaveBeenCalledTimes(1);
+    expect(deleteFromCloudinary).toHaveBeenCalledWith("dropzone/variants/perdue", "video");
+  });
+
+  it("ne fait rien quand Cloudinary ne liste rien", async () => {
+    expect(await sweepStrayVideos()).toBe(0);
+    expect(deleteFromCloudinary).not.toHaveBeenCalled();
   });
 });
 
