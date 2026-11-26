@@ -379,6 +379,8 @@ export default function ColorViewer({
                   </p>
                 ) : null}
               </div>
+              {/* Ordinateur seulement : remplit la colonne de droite. Sur téléphone, la même phrase est sous le conteneur (ProductFacts). */}
+              <p className="viewer-desc">{product.description}</p>
             </>
           )}
         </div>

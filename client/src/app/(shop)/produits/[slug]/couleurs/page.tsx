@@ -40,7 +40,7 @@ export default async function ColorsPage({ params, searchParams }: PageProps<"/p
           palette={palette}
           params={{ preview: search.apercu, couleur: search.couleur, etat: search.etat }}
         />
-        <ProductFacts product={product} />
+        <ProductFacts product={product} descriptionMobileOnly />
       </div>
     </ShopBackdrop>
   );

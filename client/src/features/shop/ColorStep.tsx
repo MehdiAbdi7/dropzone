@@ -27,7 +27,7 @@ export default function ColorStep({
       <div className="container-page space-y-4 py-4">
         <ProductJourney product={product} current="color" condition={condition} color={null} />
         <ColorViewer product={product} condition={condition} palette={palette} params={params} />
-        <ProductFacts product={product} />
+        <ProductFacts product={product} descriptionMobileOnly />
       </div>
     </ShopBackdrop>
   );
