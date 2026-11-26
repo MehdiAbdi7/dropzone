@@ -21,6 +21,7 @@ import { productRouter } from "./modules/products/product.routes.js";
 import { seriesRouter } from "./modules/series/series.routes.js";
 import { seriesAdminRouter } from "./modules/series/seriesAdmin.routes.js";
 import { stageAdminRouter, stageRouter } from "./modules/stage/stage.routes.js";
+import { purgeSoldMediaMiddleware } from "./middlewares/purgeSoldMedia.js";
 import { releaseReservationsMiddleware } from "./middlewares/releaseReservations.js";
 import { cashAdminRouter } from "./modules/cash/cash.routes.js";
 import { deliveriesAdminRouter } from "./modules/deliveries/deliveries.routes.js";
@@ -49,6 +50,10 @@ app.get("/health", (_req, res) => {
 // Les retraits expirés repartent en stock avant toute lecture du stock ou des commandes (14/11).
 const releaseReservations = releaseReservationsMiddleware();
 app.use(["/categories", "/products", "/series", "/accessories", "/orders", "/admin"], releaseReservations);
+// Les médias d'une variante vendue sont supprimés après toute écriture réussie du back-office (26/11) : c'est là que se
+// font les ventes payées (comptoir, retrait récupéré, livraison encaissée). Une écriture publique (commande du site,
+// aperçu d'un panier, suivi) ne peut jamais en faire une : elle ne lance rien.
+app.use("/admin", purgeSoldMediaMiddleware());
 
 app.use("/categories", categoryRouter);
 app.use("/products", productRouter);

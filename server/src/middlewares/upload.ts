@@ -15,3 +15,18 @@ export const uploadImage = multer({
     callback(null, true);
   },
 }).single("image");
+
+// Une photo d'une variante (26/11) : le champ s'appelle « media ». 4 Mo au plus, sous les 4,5 Mo que Vercel accepte pour
+// un corps de requête (la photo traverse sa réécriture vers l'API). Une vidéo ne passe pas par ici : elle part
+// directement du navigateur chez Cloudinary (voir `signVideoUpload`).
+export const uploadMedia = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 4 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, callback) => {
+    if (!ACCEPTED.includes(file.mimetype)) {
+      callback(new AppError(400, "Formats acceptés : JPEG, PNG ou WebP (une vidéo s'envoie à part)"));
+      return;
+    }
+    callback(null, true);
+  },
+}).single("media");

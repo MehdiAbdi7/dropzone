@@ -12,8 +12,8 @@ const variant = (condition: VariantDraft["condition"], patch: Partial<VariantDra
 const ids = (tabs: ReturnType<typeof variantTabs>) => tabs.map((tab) => tab.id);
 
 describe("variantTabs", () => {
-  it("un neuf a quatre onglets : caractéristiques, prix et stock, références, cadeaux", () => {
-    expect(ids(variantTabs(variant("new"), { lockedColor: false }))).toEqual(["features", "price", "refs", "gifts"]);
+  it("un neuf a cinq onglets : caractéristiques, prix et stock, références, cadeaux, photos et vidéo", () => {
+    expect(ids(variantTabs(variant("new"), { lockedColor: false }))).toEqual(["features", "price", "refs", "gifts", "media"]);
   });
 
   it("une occasion ajoute l'onglet État, avant les références", () => {
@@ -23,11 +23,18 @@ describe("variantTabs", () => {
       "state",
       "refs",
       "gifts",
+      "media",
     ]);
   });
 
-  it("sans cadeaux quand la couleur est imposée (page d'une couleur du Catalogue)", () => {
+  it("sans cadeaux ni médias quand la couleur est imposée (page d'une couleur du Catalogue)", () => {
     expect(ids(variantTabs(variant("new"), { lockedColor: true }))).not.toContain("gifts");
+    expect(ids(variantTabs(variant("new"), { lockedColor: true }))).not.toContain("media");
+  });
+
+  it("l'onglet des médias s'appelle « Photos et vidéo » et n'a jamais de problème", () => {
+    const tab = variantTabs(variant("new"), { lockedColor: false }).find((item) => item.id === "media");
+    expect(tab).toEqual({ id: "media", label: "Photos et vidéo", problems: [] });
   });
 
   it("le prix manquant se signale sur Prix et stock", () => {

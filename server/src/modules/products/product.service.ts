@@ -4,6 +4,7 @@ import { AppError } from "../../utils/AppError.js";
 import { escapeLike } from "../../utils/escapeLike.js";
 import { paginate, paginationMeta } from "../../utils/pagination.js";
 import type { ProductListQuery } from "./product.schema.js";
+import { posterOf } from "./variantMedia.rules.js";
 
 // Une variante qu'on peut vendre et montrer (23/11) : publiée. Une variante en brouillon n'est vendue nulle part
 // (boutique, comptoir, téléphone, échange) et n'entre dans aucun prix ni stock affiché.
@@ -375,6 +376,8 @@ export async function getProductBySlug(slug: string) {
           warrantyMonths: true,
           origin: true,
           reference: true,
+          // Les photos et la vidéo de cet exemplaire (26/11), dans l'ordre choisi au back-office.
+          media: { orderBy: { position: "asc" }, select: { kind: true, url: true } },
           // Les téléphones de cette variante d'accessoire (une taille de verre) : la fenêtre de la
           // Boutique y cherche le téléphone du client (12/11).
           compatibleModels: {
@@ -421,8 +424,12 @@ export async function getProductBySlug(slug: string) {
       name,
       photoUrl: colorPhotos.find((photo) => photo.color === name)?.url ?? null,
     })),
-    variants: product.variants.map(({ gifts, ...variant }) => ({
+    variants: product.variants.map(({ gifts, media, ...variant }) => ({
       ...variant,
+      // La vignette d'une vidéo est sa couverture Cloudinary ; une photo n'en a pas. Une variante à stock 0 (un neuf épuisé
+      // reste affiché, « Rupture de stock », ou un appareil tenu par une commande en cours) ne montre aucun média : ils sont
+      // gardés pour le cas où l'article reviendrait en vente, mais plus personne n'a de raison de les voir.
+      media: (variant.stock > 0 ? media : []).map((item) => ({ kind: item.kind, url: item.url, posterUrl: item.kind === "video" ? posterOf(item.url) : null })),
       gifts: gifts.map(({ quantity, giftVariant }) => ({
         sku: giftVariant.sku,
         name: giftVariant.product.name,

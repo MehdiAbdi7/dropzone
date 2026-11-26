@@ -30,6 +30,12 @@ enum ProductStatus {
   published
 }
 
+// Une photo ou la vidéo d'une variante (26/11).
+enum MediaKind {
+  photo
+  video
+}
+
 enum Condition {
   new
   refurbished
@@ -364,11 +370,42 @@ model ProductVariant {
   // Brouillon ou publiée (23/11) : une variante en brouillon n'est vendue nulle part et n'entre dans aucun prix ni
   // stock affiché. Le produit reste visible (« indisponible » sans variante publiée).
   status           ProductStatus @default(published)
+  // Les photos et la vidéo de CET exemplaire (26/11) : supprimées dès que son stock tombe à 0.
+  media            VariantMedia[]
 
   @@index([productId])
   @@index([status])
   @@index([stockedAt(sort: Desc)])
   @@map("product_variants")
+}
+
+// Les photos et la vidéo d'une variante précise (26/11, demande de Mehdi : la vidéo de la story Instagram d'un
+// téléphone). La photo de la couleur reste celle du modèle (ModelColorPhoto) ; celles-ci s'ajoutent en plus. Supprimées
+// de la base avec la variante, et de Cloudinary par `purgeSoldMedia` (la cascade de la base ne prévient pas Cloudinary).
+model VariantMedia {
+  id        Int            @id @default(autoincrement())
+  variantId Int            @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  kind      MediaKind
+  url       String
+  // Unique (26/11) : deux médias avec le même fichier Cloudinary, et supprimer l'un supprimerait le fichier de l'autre.
+  publicId  String         @unique @map("public_id")
+  position  Int            @default(0)
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  @@index([variantId])
+  @@map("variant_media")
+}
+
+// Un fichier Cloudinary dont la suppression a échoué (26/11) : sa ligne de média est déjà partie de la base, donc plus rien
+// ne le retrouverait. Le balayage de l'API réessaie jusqu'à ce que Cloudinary réponde, puis efface cette ligne.
+model MediaOrphan {
+  id        Int       @id @default(autoincrement())
+  publicId  String    @map("public_id")
+  kind      MediaKind
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("media_orphans")
 }
 
 model VariantGift {

@@ -46,7 +46,7 @@ export function errorHandler(
   if (err instanceof multer.MulterError) {
     const tooLarge = err.code === "LIMIT_FILE_SIZE";
     res.status(tooLarge ? 413 : 400).json({
-      error: { message: tooLarge ? "Image trop lourde (5 Mo maximum)" : "Fichier refusé" },
+      error: { message: tooLarge ? "Fichier trop lourd" : "Fichier refusé" },
     });
     return;
   }

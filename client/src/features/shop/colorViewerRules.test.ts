@@ -7,6 +7,7 @@ import {
   firstIndex,
   isAvailable,
   offerVariants,
+  requestedVariant,
   startView,
   viewerColors,
   viewerSearch,
@@ -233,5 +234,44 @@ describe("viewerSearch", () => {
   it("garde les autres paramètres et encode le nom de la couleur", () => {
     expect(viewerSearch("utm=1&apercu=Noir", "Noir", "new", "new")).toBe("utm=1&couleur=Noir");
     expect(viewerSearch("", "Bleu ciel", "new", "new")).toBe("couleur=Bleu+ciel");
+  });
+
+  it("enlève `variante` : une fois la visionneuse déplacée, le lien de la story ne doit plus viser cette variante", () => {
+    expect(viewerSearch("couleur=Noir&etat=neuf&variante=new-Noir-345000", "Noir", null, null)).toBe("apercu=Noir");
+  });
+});
+
+// Le lien de la story Instagram (26/11) : `variante` désigne l'exemplaire dont le client veut revoir la vidéo.
+describe("requestedVariant", () => {
+  it("rend le SKU quand la couleur, l'état et la variante de l'adresse sont en stock", () => {
+    expect(requestedVariant(shop, shopColors, null, { couleur: "Argent", etat: "occasion", variante: "refurbished-Argent-250000" })).toBe(
+      "refurbished-Argent-250000",
+    );
+  });
+
+  it("sur une page à état connu, `etat` n'est pas nécessaire", () => {
+    expect(requestedVariant(shop, shopColors, "new", { couleur: "Noir", variante: "new-Noir-345000" })).toBe("new-Noir-345000");
+  });
+
+  it("ignore un SKU inconnu", () => {
+    expect(requestedVariant(shop, shopColors, "new", { couleur: "Noir", variante: "inconnu" })).toBeNull();
+  });
+
+  it("ignore une variante en rupture (le neuf d'Argent est épuisé)", () => {
+    expect(requestedVariant(shop, shopColors, "new", { couleur: "Argent", variante: "new-Argent-345000" })).toBeNull();
+  });
+
+  it("ignore la variante d'une autre couleur ou d'un autre état que ceux de l'adresse", () => {
+    expect(requestedVariant(shop, shopColors, "new", { couleur: "Noir", variante: "refurbished-Argent-250000" })).toBeNull();
+    expect(requestedVariant(shop, shopColors, null, { couleur: "Noir", etat: "neuf", variante: "refurbished-Argent-250000" })).toBeNull();
+  });
+
+  it("sans `variante`, ou sans offres ouvertes par l'adresse : null", () => {
+    expect(requestedVariant(shop, shopColors, "new", { couleur: "Noir" })).toBeNull();
+    expect(requestedVariant(shop, shopColors, null, { couleur: "Noir", variante: "new-Noir-345000" })).toBeNull();
+  });
+
+  it("prend le premier SKU quand l'adresse en donne deux", () => {
+    expect(requestedVariant(shop, shopColors, "new", { couleur: "Noir", variante: ["new-Noir-345000", "x"] })).toBe("new-Noir-345000");
   });
 });

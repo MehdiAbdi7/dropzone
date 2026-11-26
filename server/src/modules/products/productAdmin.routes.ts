@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { uploadImage } from "../../middlewares/upload.js";
+import { uploadImage, uploadMedia } from "../../middlewares/upload.js";
 import { validate } from "../../middlewares/validate.js";
 import { idParamsSchema } from "../../utils/idParams.js";
 import {
+  deleteVariantMedia,
   getGiftOptions,
   getProduct,
   getProducts,
@@ -10,14 +11,21 @@ import {
   patchProduct,
   postImage,
   postProduct,
+  postRegisteredVideo,
+  postVariantMedia,
+  postVideoUpload,
   putMainImage,
+  putVariantMediaOrder,
   removeProduct,
   removeProductImage,
 } from "./productAdmin.controller.js";
 import {
   adminProductListQuerySchema,
   imageParamsSchema,
+  mediaOrderBodySchema,
+  mediaParamsSchema,
   productBodySchema,
+  registerVideoBodySchema,
   variantSearchQuerySchema,
 } from "./product.schema.js";
 
@@ -25,6 +33,21 @@ import {
 export const productAdminRouter = Router();
 
 productAdminRouter.get("/gift-options", getGiftOptions);
+// Les photos et la vidéo d'une variante (26/11) : admin seulement, comme tout ce qui n'est pas dans la table des droits.
+productAdminRouter.post("/variants/:id/media", validate({ params: idParamsSchema }), uploadMedia, postVariantMedia);
+// La vidéo part directement du navigateur chez Cloudinary : l'API signe l'envoi, puis enregistre la vidéo reçue.
+productAdminRouter.post("/variants/:id/media/video-upload", validate({ params: idParamsSchema }), postVideoUpload);
+productAdminRouter.post(
+  "/variants/:id/media/video",
+  validate({ params: idParamsSchema, body: registerVideoBodySchema }),
+  postRegisteredVideo,
+);
+productAdminRouter.put(
+  "/variants/:id/media/order",
+  validate({ params: idParamsSchema, body: mediaOrderBodySchema }),
+  putVariantMediaOrder,
+);
+productAdminRouter.delete("/variants/:id/media/:mediaId", validate({ params: mediaParamsSchema }), deleteVariantMedia);
 // Le sélecteur de variantes du comptoir : vente au magasin et fenêtre « Modifier » (lot 3).
 productAdminRouter.get("/variants", validate({ query: variantSearchQuerySchema }), getVariants);
 productAdminRouter.get("/products", validate({ query: adminProductListQuerySchema }), getProducts);

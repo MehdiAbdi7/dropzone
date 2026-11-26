@@ -1,0 +1,164 @@
+"use client";
+
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import type { VariantMedia } from "@/types/api";
+
+// Les photos et la vidéo de la variante choisie, en miniatures sous le téléphone (26/11, demande de Mehdi : la vidéo de
+// la story Instagram d'un téléphone, à revoir, et d'autres photos du même exemplaire). Un clic ouvre le média en grand.
+// Sans médias, rien n'est rendu.
+export default function VariantMediaStrip({ media, label }: { media: VariantMedia[]; label: string }) {
+  const [open, setOpen] = useState<number | null>(null);
+  if (media.length === 0) {
+    return null;
+  }
+  return (
+    <>
+      <ul className="viewer-media" aria-label={`Photos et vidéo : ${label}`}>
+        {media.map((item, index) => (
+          <li key={item.url}>
+            <button
+              type="button"
+              className="viewer-thumb"
+              aria-label={item.kind === "video" ? "Voir la vidéo" : `Agrandir la photo ${index + 1}`}
+              onClick={() => setOpen(index)}
+            >
+              <Image src={item.posterUrl ?? item.url} alt="" fill unoptimized sizes="64px" />
+              {item.kind === "video" ? (
+                <span className="viewer-thumb-play" aria-hidden="true">
+                  ▶
+                </span>
+              ) : null}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {open !== null ? <MediaLightbox media={media} start={open} label={label} onClose={() => setOpen(null)} /> : null}
+    </>
+  );
+}
+
+// Le média en grand, avec ‹ › pour passer au suivant. Échap, la croix ou un clic à côté referment.
+function MediaLightbox({ media, start, label, onClose }: { media: VariantMedia[]; start: number; label: string; onClose: () => void }) {
+  const [index, setIndex] = useState(start);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  // La dernière fonction de fermeture : le parent en recrée une à chaque rendu, la mettre dans les dépendances de
+  // l'effet remettrait le focus sur la croix à chaque rendu.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+  const item = media[index];
+
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Ce qui avait le focus (la miniature cliquée) le retrouve à la fermeture ; la page ne défile plus derrière.
+    const opener = document.activeElement as HTMLElement | null;
+    const scroll = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onCloseRef.current();
+      if (event.key === "ArrowLeft") setIndex((current) => (current - 1 + media.length) % media.length);
+      if (event.key === "ArrowRight") setIndex((current) => (current + 1) % media.length);
+      if (event.key === "Tab") {
+        // Le focus reste dans la fenêtre : Tab après le dernier bouton revient au premier, Maj+Tab fait l'inverse.
+        const buttons = [...(dialogRef.current?.querySelectorAll<HTMLElement>("button") ?? [])];
+        if (buttons.length === 0) return;
+        const first = buttons[0];
+        const last = buttons[buttons.length - 1];
+        const active = document.activeElement;
+        if (!dialogRef.current?.contains(active) || (event.shiftKey && active === first)) {
+          event.preventDefault();
+          (event.shiftKey ? last : first).focus();
+        } else if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = scroll;
+      opener?.focus();
+    };
+  }, [media.length]);
+
+  // Rendue dans `document.body` : la page de la boutique est dans un bloc `relative z-10`, donc sans cela l'en-tête
+  // collant (z-30) passerait par-dessus la fenêtre et cacherait la croix.
+  return createPortal(
+    <div ref={dialogRef} className="media-lightbox" role="dialog" aria-modal="true" aria-label={label} onClick={onClose}>
+      <div className="media-stage" onClick={(event) => event.stopPropagation()}>
+        {/* `key` : changer de média repart d'un lecteur neuf (la vidéo précédente ne continue pas en fond). */}
+        {item.kind === "video" ? (
+          <StoryVideo key={item.url} item={item} />
+        ) : (
+          <Image key={item.url} src={item.url} alt={`${label}, photo ${index + 1}`} fill unoptimized sizes="460px" className="object-contain" />
+        )}
+        {media.length > 1 ? (
+          <>
+            <button type="button" className="media-nav" data-side="left" aria-label="Média précédent" onClick={() => setIndex((index - 1 + media.length) % media.length)}>
+              ‹
+            </button>
+            <button type="button" className="media-nav" data-side="right" aria-label="Média suivant" onClick={() => setIndex((index + 1) % media.length)}>
+              ›
+            </button>
+          </>
+        ) : null}
+      </div>
+      <button ref={closeRef} type="button" className="media-close" aria-label="Fermer" onClick={onClose}>
+        ✕
+      </button>
+    </div>,
+    document.body,
+  );
+}
+
+// La vidéo de la story : elle démarre sans le son (comme une story, et les navigateurs l'exigent), en boucle. Le client
+// la met en pause et la relance quand il veut (un clic sur la vidéo ou le bouton), et active ou coupe le son (décision de
+// Mehdi du 26/11).
+function StoryVideo({ item }: { item: VariantMedia }) {
+  const video = useRef<HTMLVideoElement>(null);
+  // Faux au départ : c'est le lecteur qui dit s'il joue (`onPlay`). Si le navigateur refuse la lecture automatique
+  // (économie d'énergie sur iPhone), le bouton affiche « Lecture » et non un « Pause » qui mentirait.
+  const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(true);
+
+  function toggle() {
+    const element = video.current;
+    if (!element) return;
+    if (element.paused) {
+      element.play().catch(() => setPlaying(false));
+    } else {
+      element.pause();
+    }
+  }
+
+  return (
+    <div className="story-video">
+      <video
+        ref={video}
+        src={item.url}
+        poster={item.posterUrl ?? undefined}
+        autoPlay
+        loop
+        muted={muted}
+        playsInline
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onClick={toggle}
+      />
+      <div className="story-video-bar">
+        <button type="button" onClick={toggle} aria-label={playing ? "Mettre la vidéo en pause" : "Relancer la vidéo"}>
+          {playing ? "⏸ Pause" : "▶ Lecture"}
+        </button>
+        <button type="button" aria-pressed={!muted} onClick={() => setMuted((current) => !current)} aria-label={muted ? "Activer le son" : "Couper le son"}>
+          {muted ? "Son coupé" : "Son activé"}
+        </button>
+      </div>
+    </div>
+  );
+}

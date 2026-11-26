@@ -525,6 +525,7 @@ export default function ProductForm({
             giftOptions={giftOptions}
             modelColors={models.find((model) => model.id === draft.deviceModelId)?.colors ?? []}
             modelId={isDevice ? draft.deviceModelId : null}
+            productId={productId}
             onChange={(next) => set({ variants: draft.variants.map((v) => (v.key === editedVariant.key ? next : v)) })}
             onRemove={() => {
               // Une variante pas encore enregistrée disparaît simplement ; une variante enregistrée demande confirmation,

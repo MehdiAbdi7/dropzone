@@ -44,7 +44,15 @@ export default async function NewProductPage({ params, searchParams }: PageProps
   // Une couleur choisie (25/11, demande de Mehdi) : les offres s'affichent dans la visionneuse, qui s'ouvre
   // directement dessus ; plus de page séparée. Seul un modèle sans couleurs garde la fiche ci-dessous.
   if (step.color !== null) {
-    return <ColorStep product={product} condition="new" palette={palette} params={{ preview: search.apercu, couleur: search.couleur }} />;
+    // `variante` : le SKU visé par un lien de story (26/11), comme sur la page de référence des couleurs.
+    return (
+      <ColorStep
+        product={product}
+        condition="new"
+        palette={palette}
+        params={{ preview: search.apercu, couleur: search.couleur, variante: search.variante }}
+      />
+    );
   }
 
   return (

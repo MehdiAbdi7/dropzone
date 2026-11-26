@@ -12,6 +12,34 @@ import {
   replaceMainImage,
   updateProduct,
 } from "./productAdmin.service.js";
+import {
+  addVariantMedia,
+  prepareVideoUpload,
+  registerUploadedVideo,
+  removeVariantMedia,
+  reorderVariantMedia,
+} from "./variantMedia.service.js";
+
+export async function postVariantMedia(req: Request, res: Response) {
+  res.status(201).json({ data: await addVariantMedia(Number(req.params.id), req.file) });
+}
+
+export async function postVideoUpload(req: Request, res: Response) {
+  res.json({ data: await prepareVideoUpload(Number(req.params.id)) });
+}
+
+export async function postRegisteredVideo(req: Request, res: Response) {
+  res.status(201).json({ data: await registerUploadedVideo(Number(req.params.id), (req.body as { publicId: string }).publicId) });
+}
+
+export async function deleteVariantMedia(req: Request, res: Response) {
+  await removeVariantMedia(Number(req.params.id), Number(req.params.mediaId));
+  res.status(204).end();
+}
+
+export async function putVariantMediaOrder(req: Request, res: Response) {
+  res.json({ data: await reorderVariantMedia(Number(req.params.id), (req.body as { ids: number[] }).ids) });
+}
 
 export async function getVariants(_req: Request, res: Response) {
   const { hits, total } = await searchVariants(res.locals.query as VariantSearchQuery);

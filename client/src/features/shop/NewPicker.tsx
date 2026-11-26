@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type Palette, swatchOf } from "@/config/colors";
 import AddToCartButton from "@/features/cart/AddToCartButton";
 import GiftList from "@/features/products/GiftList";
@@ -39,6 +39,8 @@ export default function NewPicker({
   palette,
   colorChosen = false,
   requested,
+  initialSku,
+  onCurrent,
 }: {
   variants: Variant[];
   kind: ProductKind;
@@ -46,6 +48,10 @@ export default function NewPicker({
   colorChosen?: boolean;
   // Les options demandées par l'adresse (la colonne d'une affiche d'accessoire, 12/11).
   requested?: Record<string, string | undefined>;
+  // Le SKU visé par l'adresse (26/11, lien d'une story) : ses options sont choisies au départ.
+  initialSku?: string;
+  // Prévenu de la variante choisie, au départ puis à chaque choix : la visionneuse montre ses photos et sa vidéo.
+  onCurrent?: (variant: Variant) => void;
 }) {
   // Deux neufs identiques mais d'origines différentes : l'origine se choisit, en dernier.
   const pickable = withOriginOption(variants);
@@ -53,13 +59,21 @@ export default function NewPicker({
     ...optionKeys(variants, kind, colorChosen ? "Couleur" : undefined),
     ...(pickable === variants ? [] : [ORIGIN_KEY]),
   ];
+  // Les options de la variante visée (même rang dans `pickable` et dans `variants`), l'origine comprise.
+  const wantedAt = initialSku ? variants.findIndex((variant) => variant.sku === initialSku) : -1;
+  const start = requested ?? (wantedAt >= 0 ? pickable[wantedAt].options : undefined);
   const [selected, setSelected] = useState(
-    () => (requested ? requestedSelection(pickable, keys, requested) : null) ?? initialSelection(pickable, keys),
+    () => (start ? requestedSelection(pickable, keys, start) : null) ?? initialSelection(pickable, keys),
   );
   const choices = optionChoices(pickable, keys, selected);
   // La variante d'origine (sans l'option ajoutée) part au panier.
   const index = pickable.findIndex((variant) => keys.every((key) => variant.options[key] === selected[key]));
   const current = variants[Math.max(index, 0)];
+  // Dépend du SKU seulement : la fonction reçue change à chaque rendu du parent, la relancer bouclerait.
+  useEffect(() => {
+    onCurrent?.(current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current.sku]);
 
   return (
     <div className="space-y-5">

@@ -8,6 +8,8 @@ import { slugify } from "../../utils/slugify.js";
 import type { AdminProductListQuery, ProductBody } from "./product.schema.js";
 import { addMissingModelColors, alignVariantColors, variantColors } from "../models/modelColors.js";
 import { DEVICE_KINDS, SELLABLE, computeMinNewPrice, computeMinPrice, refreshMinPrice } from "./product.service.js";
+import { destroyMediaFiles, mediaFilesOfVariants } from "./soldMedia.service.js";
+import { toMediaView } from "./variantMedia.service.js";
 
 const MAX_IMAGES = 6;
 
@@ -80,6 +82,8 @@ export async function getAdminProduct(id: number) {
         include: {
           gifts: { select: { giftVariantId: true, quantity: true } },
           compatibleModels: { select: { id: true }, orderBy: { id: "asc" } },
+          // Les photos et la vidéo de la variante (26/11), avec leurs ids : le back-office les retire et les range.
+          media: { orderBy: { position: "asc" } },
         },
       },
     },
@@ -90,9 +94,10 @@ export async function getAdminProduct(id: number) {
   // Le formulaire reçoit les ids des téléphones compatibles de chaque variante.
   return {
     ...product,
-    variants: product.variants.map(({ compatibleModels, ...variant }) => ({
+    variants: product.variants.map(({ compatibleModels, media, ...variant }) => ({
       ...variant,
       compatibleModelIds: compatibleModels.map((model) => model.id),
+      media: media.map(toMediaView),
     })),
   };
 }
@@ -308,8 +313,10 @@ export async function updateProduct(id: number, input: ProductBody) {
   const oldStock = new Map(existing.variants.map((variant) => [variant.id, variant.stock]));
   const arrived = rules.variants.some((variant) => !variant.id || variant.stock > (oldStock.get(variant.id) ?? 0));
   const stockedAt = arrived ? new Date() : undefined;
+  // Les variantes retirées du formulaire : leurs fichiers Cloudinary se lisent AVANT, la cascade de la base efface les lignes.
+  const removedMedia = await mediaFilesOfVariants({ productId: id, id: { notIn: keptIds } });
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     // Les variantes retirées du formulaire sont supprimées. Les commandes passées
     // n'en dépendent pas : elles ont recopié le SKU, le nom et le prix.
     await tx.productVariant.deleteMany({ where: { productId: id, id: { notIn: keptIds } } });
@@ -359,14 +366,19 @@ export async function updateProduct(id: number, input: ProductBody) {
     }
     return { id };
   });
+  await destroyMediaFiles(removedMedia);
+  return result;
 }
 
 export async function deleteProduct(id: number) {
+  // Les fichiers des variantes se lisent AVANT : la cascade de la base efface les lignes qui les nomment.
+  const variantMedia = await mediaFilesOfVariants({ productId: id });
   const product = await prisma.product.delete({
     where: { id },
     select: { images: { select: { publicId: true } } },
   });
   await Promise.allSettled(product.images.map((image) => deleteFromCloudinary(image.publicId)));
+  await destroyMediaFiles(variantMedia);
 }
 
 export async function addImage(productId: number, file: Express.Multer.File | undefined) {
