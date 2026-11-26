@@ -38,10 +38,37 @@ export function uploadToCloudinary(
   });
 }
 
+// La vidéo d'une variante (26/11) : compressée UNE fois, à l'envoi (largeur 720 px au plus, qualité automatique, mp4),
+// pour que sa lecture ne coûte ni transformation ni gros transfert. Le fichier d'origine n'est pas gardé.
+export function uploadVideoToCloudinary(buffer: Buffer): Promise<{ url: string; publicId: string }> {
+  if (!ready) {
+    throw new AppError(503, "L'envoi de vidéos n'est pas configuré (variables CLOUDINARY_*)");
+  }
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "dropzone/variants",
+        resource_type: "video",
+        format: "mp4",
+        transformation: [{ width: 720, crop: "limit", quality: "auto" }],
+      },
+      (error, result) => {
+        if (error || !result) {
+          reject(new AppError(502, "Cloudinary a refusé la vidéo"));
+          return;
+        }
+        resolve({ url: result.secure_url, publicId: result.public_id });
+      },
+    );
+    stream.end(buffer);
+  });
+}
+
 // Sans publicId (images du script de remplissage), il n'y a rien à supprimer chez Cloudinary.
-export async function deleteFromCloudinary(publicId: string | null): Promise<void> {
+// Une vidéo se supprime avec son propre type de ressource : sans lui, Cloudinary ne la trouve pas.
+export async function deleteFromCloudinary(publicId: string | null, kind: "photo" | "video" = "photo"): Promise<void> {
   if (!ready || !publicId) {
     return;
   }
-  await cloudinary.uploader.destroy(publicId);
+  await cloudinary.uploader.destroy(publicId, kind === "video" ? { resource_type: "video" } : undefined);
 }
