@@ -15,17 +15,24 @@ if (ready) {
   });
 }
 
-// `folder` range les images par usage : photos produit ou logos de marques.
+// `folder` range les images par usage : photos produit ou logos de marques. `maxWidth` (26/11, photos d'une variante) :
+// l'image est réduite UNE fois à l'envoi, jamais agrandie, pour qu'une miniature de 56 px ne télécharge pas une photo
+// de téléphone en pleine résolution (la bande passante est la contrainte du forfait gratuit).
 export function uploadToCloudinary(
   buffer: Buffer,
   folder = "dropzone/products",
+  options: { maxWidth?: number } = {},
 ): Promise<{ url: string; publicId: string }> {
   if (!ready) {
     throw new AppError(503, "L'envoi d'images n'est pas configuré (variables CLOUDINARY_*)");
   }
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder, format: "webp" },
+      {
+        folder,
+        format: "webp",
+        ...(options.maxWidth ? { transformation: [{ width: options.maxWidth, crop: "limit", quality: "auto" }] } : {}),
+      },
       (error, result) => {
         if (error || !result) {
           reject(new AppError(502, "Cloudinary a refusé l'image"));
@@ -70,5 +77,6 @@ export async function deleteFromCloudinary(publicId: string | null, kind: "photo
   if (!ready || !publicId) {
     return;
   }
-  await cloudinary.uploader.destroy(publicId, kind === "video" ? { resource_type: "video" } : undefined);
+  // `invalidate` : sans lui, la copie en cache du CDN peut rester accessible un moment après la suppression.
+  await cloudinary.uploader.destroy(publicId, { invalidate: true, ...(kind === "video" ? { resource_type: "video" } : {}) });
 }

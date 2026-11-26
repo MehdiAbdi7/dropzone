@@ -35,6 +35,16 @@ describe("GET /products/:slug", () => {
 
     expect(variantOf(response.body.data.variants, "IP-R-WIFI").media).toEqual([]);
   });
+
+  it("ne montre pas les médias d'une variante à stock 0 (un neuf épuisé reste affiché, « Rupture de stock »)", async () => {
+    const neuf = await prisma.productVariant.findUniqueOrThrow({ where: { sku: "IP-NEW-256" } });
+    await prisma.variantMedia.create({ data: { variantId: neuf.id, kind: "photo", url: "https://x/neuf.webp", publicId: "n", position: 0 } });
+    await prisma.productVariant.update({ where: { id: neuf.id }, data: { stock: 0 } });
+
+    const response = await request(app).get("/products/iphone-15-pro-max").expect(200);
+
+    expect(variantOf(response.body.data.variants, "IP-NEW-256").media).toEqual([]);
+  });
 });
 
 describe("GET /admin/products/:id", () => {

@@ -40,6 +40,15 @@ describe("POST /admin/variants/:id/media", () => {
     expect(uploadToCloudinary).toHaveBeenCalledTimes(1);
   });
 
+  it("limite la largeur d'une photo à 1600 px à l'envoi (la bande passante est la contrainte, pas la finesse)", async () => {
+    const id = await variantId("IP-R-DEAL");
+    const { agent } = await loginAs("admin");
+
+    await agent.post(`/admin/variants/${id}/media`).attach("media", fake, photo).expect(201);
+
+    expect(uploadToCloudinary).toHaveBeenCalledWith(expect.any(Buffer), "dropzone/variants", { maxWidth: 1600 });
+  });
+
   it("ajoute une vidéo avec sa vignette en .jpg, sans passer par l'envoi des photos", async () => {
     const id = await variantId("IP-R-DEAL");
     const { agent } = await loginAs("admin");

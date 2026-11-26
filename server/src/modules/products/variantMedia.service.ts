@@ -3,6 +3,9 @@ import { prisma } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
 import { checkMediaRoom, mediaKindOf, posterOf } from "./variantMedia.rules.js";
 
+// La largeur maximale d'une photo de variante, réduite à l'envoi (26/11) : assez fine pour l'agrandir à l'écran.
+const PHOTO_MAX_WIDTH = 1600;
+
 // Les photos et la vidéo d'une variante (26/11), ajoutées depuis le back-office. Ce que l'API rend d'un média :
 // `posterUrl` n'existe que pour une vidéo (sa couverture).
 export type MediaView = { id: number; kind: "photo" | "video"; url: string; posterUrl: string | null; position: number };
@@ -39,7 +42,10 @@ export async function addVariantMedia(variantId: number, file: Express.Multer.Fi
   if (!room.ok) {
     throw new AppError(room.status, room.message);
   }
-  const uploaded = kind === "video" ? await uploadVideoToCloudinary(file.buffer) : await uploadToCloudinary(file.buffer, "dropzone/variants");
+  const uploaded =
+    kind === "video"
+      ? await uploadVideoToCloudinary(file.buffer)
+      : await uploadToCloudinary(file.buffer, "dropzone/variants", { maxWidth: PHOTO_MAX_WIDTH });
   const position = existing.reduce((max, item) => Math.max(max, item.position + 1), 0);
   const created = await prisma.variantMedia.create({
     data: { variantId, kind, url: uploaded.url, publicId: uploaded.publicId, position },

@@ -10,9 +10,12 @@ vi.mock("../src/config/cloudinary.js", () => ({
   deleteFromCloudinary: vi.fn(async () => undefined),
 }));
 
-// Ce qui se vend se supprime (26/11, décision de Mehdi) : dès que le stock d'une variante tombe à 0, ses photos et sa
-// vidéo disparaissent de la base et de Cloudinary. Une occasion est presque toujours un seul exemplaire : la vidéo est
-// faite pour lui. Un neuf à plusieurs exemplaires garde ses médias jusqu'au dernier.
+// Ce qui se vend se supprime (26/11, décision de Mehdi, précisée le même jour) : les photos et la vidéo d'une variante
+// partent quand la VENTE est faite, pas quand une commande prend le dernier exemplaire. Une commande en attente, une
+// réservation (deux jours ou illimitée) ou une livraison en cours gardent les médias : si le client ne vient pas, la
+// réservation expire, l'article revient en vente et doit retrouver ses photos et sa vidéo. La vente est faite quand
+// la commande est payée : vente au comptoir, échange ou remplacement (récupérée tout de suite), réservation
+// récupérée, livraison encaissée. Un neuf à plusieurs exemplaires garde ses médias jusqu'au dernier.
 let catalog: Awaited<ReturnType<typeof createCatalog>>;
 
 beforeEach(async () => {
@@ -42,28 +45,21 @@ const expectFilesDestroyed = async (tag: string) => {
   });
 };
 
-describe("une vente qui prend le dernier exemplaire", () => {
-  it("commande du site : supprime les médias, base et Cloudinary", async () => {
+async function counterSale(sku: string) {
+  const { agent } = await loginAs("admin");
+  await agent.post("/admin/cash/open").send({ openingFloat: 10_000 }).expect(201);
+  await agent
+    .post("/admin/sales")
+    .send({ fullName: "Amine Test", phone: "0555 12 34 56", method: "cash", lines: [{ sku, quantity: 1 }] })
+    .expect(201);
+}
+
+describe("une vente faite (payée)", () => {
+  it("vente au comptoir : supprime les médias tout de suite, base et Cloudinary", async () => {
     const id = await variantId("IP-R-DEAL");
     await seedMedia(id);
 
-    const response = await previewThenOrder([{ sku: "IP-R-DEAL", quantity: 1 }]);
-
-    expect(response.status).toBe(201);
-    await vi.waitFor(async () => expect(await mediaCount(id)).toBe(0));
-    await expectFilesDestroyed("a");
-  });
-
-  it("vente au comptoir : fait de même", async () => {
-    const id = await variantId("IP-R-DEAL");
-    await seedMedia(id);
-    const { agent } = await loginAs("admin");
-    await agent.post("/admin/cash/open").send({ openingFloat: 10_000 }).expect(201);
-
-    await agent
-      .post("/admin/sales")
-      .send({ fullName: "Amine Test", phone: "0555 12 34 56", method: "cash", lines: [{ sku: "IP-R-DEAL", quantity: 1 }] })
-      .expect(201);
+    await counterSale("IP-R-DEAL");
 
     await vi.waitFor(async () => expect(await mediaCount(id)).toBe(0));
     await expectFilesDestroyed("a");
@@ -74,10 +70,65 @@ describe("une vente qui prend le dernier exemplaire", () => {
     const id = await variantId("IP-R-DEAL");
     await seedMedia(id);
 
+    await counterSale("IP-R-DEAL");
+
+    await vi.waitFor(async () => expect(await mediaCount(id)).toBe(0));
+  });
+
+  it("une commande du site payée à la livraison (encaissée) supprime les médias", async () => {
+    const id = await variantId("IP-R-DEAL");
+    await seedMedia(id);
+    await previewThenOrder([{ sku: "IP-R-DEAL", quantity: 1 }]).then((response) => expect(response.status).toBe(201));
+    await settle();
+    await prisma.order.updateMany({ data: { status: "collected" } });
+
+    await purgeSoldMedia();
+
+    expect(await mediaCount(id)).toBe(0);
+    await expectFilesDestroyed("a");
+  });
+});
+
+describe("une commande qui n'est pas encore une vente", () => {
+  it("une commande du site en attente garde les médias, même après une écriture de l'API", async () => {
+    const id = await variantId("IP-R-DEAL");
+    await seedMedia(id);
+
     const response = await previewThenOrder([{ sku: "IP-R-DEAL", quantity: 1 }]);
+    await settle();
 
     expect(response.status).toBe(201);
-    await vi.waitFor(async () => expect(await mediaCount(id)).toBe(0));
+    expect(await mediaCount(id)).toBe(2);
+    expect(deleteFromCloudinary).not.toHaveBeenCalled();
+  });
+
+  it("chaque état en cours garde les médias (confirmée, expédiée, livrée, réservée) ; récupérée les supprime", async () => {
+    const id = await variantId("IP-R-DEAL");
+    await seedMedia(id);
+    await previewThenOrder([{ sku: "IP-R-DEAL", quantity: 1 }]);
+    await settle();
+
+    for (const status of ["confirmed", "shipped", "delivered", "reserved"] as const) {
+      await prisma.order.updateMany({ data: { status } });
+      expect(await purgeSoldMedia(), status).toBe(0);
+      expect(await mediaCount(id), status).toBe(2);
+    }
+
+    await prisma.order.updateMany({ data: { status: "picked_up" } });
+    expect(await purgeSoldMedia()).toBe(2);
+  });
+
+  it("une commande annulée ou expirée qui remet le stock garde les médias", async () => {
+    const id = await variantId("IP-R-DEAL");
+    await seedMedia(id);
+    await previewThenOrder([{ sku: "IP-R-DEAL", quantity: 1 }]);
+    await settle();
+    await prisma.order.updateMany({ data: { status: "cancelled" } });
+    await prisma.productVariant.update({ where: { id }, data: { stock: 1 } });
+
+    expect(await purgeSoldMedia()).toBe(0);
+
+    expect(await mediaCount(id)).toBe(2);
   });
 });
 
@@ -86,7 +137,7 @@ describe("un stock qui ne tombe pas à 0", () => {
     const id = await variantId("IP-NEW-256");
     await seedMedia(id);
 
-    await previewThenOrder([{ sku: "IP-NEW-256", quantity: 1 }]);
+    await counterSale("IP-NEW-256");
     await settle();
 
     expect(await mediaCount(id)).toBe(2);
@@ -138,7 +189,7 @@ describe("la fiche produit du back-office", () => {
     return { product, body };
   }
 
-  it("mettre le stock d'une variante à 0 supprime ses médias", async () => {
+  it("mettre le stock d'une variante à 0, sans commande en cours, supprime ses médias", async () => {
     const { product, body } = await galaxy();
     const [first, second] = product.variants;
     await seedMedia(first.id);
@@ -177,7 +228,7 @@ describe("la fiche produit du back-office", () => {
 });
 
 describe("purgeSoldMedia", () => {
-  it("supprime les médias d'une variante à 0 posés à la main, sans toucher aux autres (filet de sécurité)", async () => {
+  it("supprime les médias d'une variante à 0 sans commande en cours, sans toucher aux autres (filet de sécurité)", async () => {
     const sold = await variantId("IP-R-SOLD");
     const inStock = await variantId("IP-R-WIFI");
     await seedMedia(sold, "sold");
@@ -194,6 +245,15 @@ describe("purgeSoldMedia", () => {
   it("ne rend 0 et n'appelle pas Cloudinary quand il n'y a rien à supprimer", async () => {
     expect(await purgeSoldMedia()).toBe(0);
     expect(deleteFromCloudinary).not.toHaveBeenCalled();
+  });
+
+  it("deux balayages en même temps ne détruisent chaque fichier qu'une fois", async () => {
+    await seedMedia(await variantId("IP-R-SOLD"));
+
+    const counts = await Promise.all([purgeSoldMedia(), purgeSoldMedia()]);
+
+    expect(counts.reduce((sum, count) => sum + count, 0)).toBe(2);
+    await vi.waitFor(() => expect(deleteFromCloudinary).toHaveBeenCalledTimes(2));
   });
 });
 

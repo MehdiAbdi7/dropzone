@@ -47,7 +47,7 @@ Ces médias appartiennent à **l'exemplaire** que la story montre, pas au modèl
 
 - La photo du téléphone reste exactement comme aujourd'hui ; les médias s'ajoutent en plus.
 - Les médias se règlent sur la variante précise, dans le back-office.
-- Suppression **dès que le stock tombe à 0**, base et Cloudinary. Une commande annulée qui remet le stock ne remet pas les médias : accepté (une occasion est presque toujours un seul exemplaire).
+- Suppression **quand la vente est faite (payée)**, base et Cloudinary (précisé par Mehdi le 26/11, après une première version « dès que le stock tombe à 0 » : une réservation non récupérée remet l'article en vente, il doit retrouver ses photos et sa vidéo). Vente faite = commande « récupérée » (vente au comptoir, échange, remplacement, réservation récupérée) ou « encaissée » (livraison). Tant qu'une commande en attente, confirmée, expédiée, livrée ou réservée (deux jours ou illimitée) tient l'exemplaire, les médias restent ; une commande annulée ou expirée qui remet le stock ne perd rien. Un stock mis à 0 depuis la fiche, sans commande en cours, supprime aussi les médias.
 - Aucun média visible avant qu'une variante soit choisie : sous le téléphone, rien tant que le client n'a pas choisi (stockage d'un neuf, appareil d'une occasion). Venant de la story, la variante est déjà choisie.
 
 ## Conception

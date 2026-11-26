@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { VariantMedia } from "@/types/api";
 
 // Les photos et la vidéo de la variante choisie, en miniatures sous le téléphone (26/11, demande de Mehdi : la vidéo de
@@ -42,20 +43,28 @@ export default function VariantMediaStrip({ media, label }: { media: VariantMedi
 function MediaLightbox({ media, start, label, onClose }: { media: VariantMedia[]; start: number; label: string; onClose: () => void }) {
   const [index, setIndex] = useState(start);
   const closeRef = useRef<HTMLButtonElement>(null);
+  // La dernière fonction de fermeture : le parent en recrée une à chaque rendu, la mettre dans les dépendances de
+  // l'effet remettrait le focus sur la croix à chaque rendu.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
   const item = media[index];
 
   useEffect(() => {
     closeRef.current?.focus();
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") onCloseRef.current();
       if (event.key === "ArrowLeft") setIndex((current) => (current - 1 + media.length) % media.length);
       if (event.key === "ArrowRight") setIndex((current) => (current + 1) % media.length);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [media.length, onClose]);
+  }, [media.length]);
 
-  return (
+  // Rendue dans `document.body` : la page de la boutique est dans un bloc `relative z-10`, donc sans cela l'en-tête
+  // collant (z-30) passerait par-dessus la fenêtre et cacherait la croix.
+  return createPortal(
     <div className="media-lightbox" role="dialog" aria-modal="true" aria-label={label} onClick={onClose}>
       <div className="media-stage" onClick={(event) => event.stopPropagation()}>
         {/* `key` : changer de média repart d'un lecteur neuf (la vidéo précédente ne continue pas en fond). */}
@@ -78,7 +87,8 @@ function MediaLightbox({ media, start, label, onClose }: { media: VariantMedia[]
       <button ref={closeRef} type="button" className="media-close" aria-label="Fermer" onClick={onClose}>
         ✕
       </button>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -87,14 +97,16 @@ function MediaLightbox({ media, start, label, onClose }: { media: VariantMedia[]
 // Mehdi du 26/11).
 function StoryVideo({ item }: { item: VariantMedia }) {
   const video = useRef<HTMLVideoElement>(null);
-  const [playing, setPlaying] = useState(true);
+  // Faux au départ : c'est le lecteur qui dit s'il joue (`onPlay`). Si le navigateur refuse la lecture automatique
+  // (économie d'énergie sur iPhone), le bouton affiche « Lecture » et non un « Pause » qui mentirait.
+  const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
 
   function toggle() {
     const element = video.current;
     if (!element) return;
     if (element.paused) {
-      void element.play();
+      element.play().catch(() => setPlaying(false));
     } else {
       element.pause();
     }

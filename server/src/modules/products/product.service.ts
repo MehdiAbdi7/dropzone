@@ -426,8 +426,10 @@ export async function getProductBySlug(slug: string) {
     })),
     variants: product.variants.map(({ gifts, media, ...variant }) => ({
       ...variant,
-      // La vignette d'une vidéo est sa couverture Cloudinary ; une photo n'en a pas.
-      media: media.map((item) => ({ kind: item.kind, url: item.url, posterUrl: item.kind === "video" ? posterOf(item.url) : null })),
+      // La vignette d'une vidéo est sa couverture Cloudinary ; une photo n'en a pas. Une variante à stock 0 (un neuf épuisé
+      // reste affiché, « Rupture de stock », ou un appareil tenu par une commande en cours) ne montre aucun média : ils sont
+      // gardés pour le cas où l'article reviendrait en vente, mais plus personne n'a de raison de les voir.
+      media: (variant.stock > 0 ? media : []).map((item) => ({ kind: item.kind, url: item.url, posterUrl: item.kind === "video" ? posterOf(item.url) : null })),
       gifts: gifts.map(({ quantity, giftVariant }) => ({
         sku: giftVariant.sku,
         name: giftVariant.product.name,

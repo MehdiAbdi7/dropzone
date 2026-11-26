@@ -24,19 +24,30 @@ export async function mediaFilesOfVariants(where: Prisma.ProductVariantWhereInpu
   return prisma.variantMedia.findMany({ where: { variant: where }, select: { publicId: true, kind: true } });
 }
 
-// Supprime les médias de toute variante dont le stock est à 0 ; rend le nombre de lignes supprimées. Les lignes partent
-// d'abord (la base fait foi), les fichiers ensuite.
+// Supprime les médias de toute variante VENDUE ; rend le nombre de lignes supprimées. Les lignes partent d'abord (la
+// base fait foi), les fichiers ensuite.
+// Vendue = le stock est à 0 ET aucune commande en cours ne la tient (décision de Mehdi du 26/11). Une commande en
+// attente, confirmée, expédiée, livrée mais pas encore encaissée, ou une réservation (deux jours ou illimitée) garde les
+// médias : si le client ne vient pas, la réservation expire ou l'on annule, l'article revient en vente et doit retrouver
+// ses photos et sa vidéo. La vente est faite quand la commande est payée : « picked_up » (vente au comptoir, échange,
+// remplacement, réservation récupérée) ou « collected » (livraison encaissée).
+// Une seule requête qui supprime ET rend les fichiers (`DELETE … RETURNING`) : deux balayages en même temps ne
+// détruisent jamais deux fois le même fichier, et un stock remis entre la lecture et la suppression est impossible.
 export async function purgeSoldMedia(): Promise<number> {
-  const sold = await prisma.variantMedia.findMany({
-    where: { variant: { stock: { lte: 0 } } },
-    select: { id: true, publicId: true, kind: true },
-  });
-  if (sold.length === 0) {
-    return 0;
-  }
-  const { count } = await prisma.variantMedia.deleteMany({ where: { id: { in: sold.map((item) => item.id) } } });
+  const sold = await prisma.$queryRaw<MediaFile[]>`
+    DELETE FROM variant_media m
+    USING product_variants v
+    WHERE m.variant_id = v.id
+      AND v.stock <= 0
+      AND NOT EXISTS (
+        SELECT 1 FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        WHERE oi.sku = v.sku
+          AND o.status IN ('pending', 'confirmed', 'shipped', 'delivered', 'reserved')
+      )
+    RETURNING m.public_id AS "publicId", m.kind::text AS "kind"`;
   await destroyMediaFiles(sold);
-  return count;
+  return sold.length;
 }
 
 // Le filet de sécurité : un chemin qui baisse le stock sans passer par l'API (un script d'import) est rattrapé ici.
