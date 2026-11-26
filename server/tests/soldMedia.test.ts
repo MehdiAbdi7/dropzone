@@ -1,7 +1,9 @@
+import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import app from "../src/app.js";
 import { deleteFromCloudinary } from "../src/config/cloudinary.js";
 import { prisma } from "../src/config/db.js";
-import { purgeSoldMedia, startMediaSweep } from "../src/modules/products/soldMedia.service.js";
+import { purgeSoldMedia, retryMediaOrphans, startMediaSweep } from "../src/modules/products/soldMedia.service.js";
 import { createCatalog, loginAs, previewThenOrder, resetDb } from "./helpers.js";
 
 vi.mock("../src/config/cloudinary.js", () => ({
@@ -75,6 +77,31 @@ describe("une vente faite (payée)", () => {
     await vi.waitFor(async () => expect(await mediaCount(id)).toBe(0));
   });
 
+  it("un échec de Cloudinary laisse une trace, et le balayage suivant réessaie jusqu'à réussir", async () => {
+    vi.mocked(deleteFromCloudinary).mockRejectedValue(new Error("Cloudinary indisponible"));
+    const id = await variantId("IP-R-DEAL");
+    await seedMedia(id);
+    await counterSale("IP-R-DEAL");
+    await vi.waitFor(async () => expect(await prisma.mediaOrphan.count()).toBe(2));
+
+    // Cloudinary revient : le balayage réessaie, supprime les fichiers et efface la trace.
+    vi.mocked(deleteFromCloudinary).mockResolvedValue(undefined);
+    expect(await retryMediaOrphans()).toBe(2);
+
+    expect(await prisma.mediaOrphan.count()).toBe(0);
+    expect(deleteFromCloudinary).toHaveBeenCalledWith("photo-a", "photo");
+    expect(deleteFromCloudinary).toHaveBeenCalledWith("video-a", "video");
+  });
+
+  it("un fichier dont la suppression échoue encore garde sa trace pour le balayage d'après", async () => {
+    await prisma.mediaOrphan.create({ data: { publicId: "reste", kind: "video" } });
+    vi.mocked(deleteFromCloudinary).mockRejectedValue(new Error("Cloudinary indisponible"));
+
+    expect(await retryMediaOrphans()).toBe(0);
+
+    expect(await prisma.mediaOrphan.count()).toBe(1);
+  });
+
   it("une commande du site payée à la livraison (encaissée) supprime les médias", async () => {
     const id = await variantId("IP-R-DEAL");
     await seedMedia(id);
@@ -142,6 +169,16 @@ describe("un stock qui ne tombe pas à 0", () => {
 
     expect(await mediaCount(id)).toBe(2);
     expect(deleteFromCloudinary).not.toHaveBeenCalled();
+  });
+
+  it("une écriture publique (aperçu d'un panier) ne lance aucune suppression", async () => {
+    const id = await variantId("IP-R-SOLD");
+    await seedMedia(id);
+
+    await request(app).post("/orders/preview").send({ items: [{ sku: "IP-R-WIFI", quantity: 1 }] }).expect(200);
+    await settle();
+
+    expect(await mediaCount(id)).toBe(2);
   });
 
   it("une simple lecture ne supprime rien", async () => {

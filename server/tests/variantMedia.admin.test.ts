@@ -83,6 +83,34 @@ describe("POST /admin/variants/:id/media", () => {
     expect(uploadToCloudinary).not.toHaveBeenCalled();
   });
 
+  it("deux vidéos envoyées en même temps : une seule est gardée, l'autre est supprimée de Cloudinary", async () => {
+    const id = await variantId("IP-R-DEAL");
+    const { agent } = await loginAs("admin");
+    // Les deux envois passent la vérification des plafonds avant que l'un ait fini : la deuxième vidéo n'arrive pas
+    // en base, c'est la vérification faite sous verrou, juste avant l'enregistrement, qui la refuse.
+    let calls = 0;
+    let open!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      open = resolve;
+    });
+    vi.mocked(uploadVideoToCloudinary).mockImplementation(async () => {
+      const number = ++calls;
+      if (number === 2) open();
+      await gate;
+      return { url: `https://x/video/upload/v${number}.mp4`, publicId: `dropzone/variants/v${number}` };
+    });
+
+    const [first, second] = await Promise.all([
+      agent.post(`/admin/variants/${id}/media`).attach("media", fake, video),
+      agent.post(`/admin/variants/${id}/media`).attach("media", fake, video),
+    ]);
+
+    expect([first.status, second.status].sort()).toEqual([201, 409]);
+    expect(await mediaOf(id)).toHaveLength(1);
+    expect(deleteFromCloudinary).toHaveBeenCalledTimes(1);
+    expect(deleteFromCloudinary).toHaveBeenCalledWith(expect.stringMatching(/^dropzone\/variants\/v[12]$/), "video");
+  });
+
   it("refuse une deuxième vidéo", async () => {
     const id = await variantId("IP-R-DEAL");
     await seed(id, "video", 0);

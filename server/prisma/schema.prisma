@@ -396,6 +396,17 @@ model VariantMedia {
   @@map("variant_media")
 }
 
+// Un fichier Cloudinary dont la suppression a échoué (26/11) : sa ligne de média est déjà partie de la base, donc plus rien
+// ne le retrouverait. Le balayage de l'API réessaie jusqu'à ce que Cloudinary réponde, puis efface cette ligne.
+model MediaOrphan {
+  id        Int       @id @default(autoincrement())
+  publicId  String    @map("public_id")
+  kind      MediaKind
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("media_orphans")
+}
+
 model VariantGift {
   id            Int            @id @default(autoincrement())
   variantId     Int            @map("variant_id")

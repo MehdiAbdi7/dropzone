@@ -2,21 +2,44 @@ import type { Prisma } from "../../generated/prisma/client.js";
 import { deleteFromCloudinary } from "../../config/cloudinary.js";
 import { prisma } from "../../config/db.js";
 
-// Ce qui se vend se supprime (26/11, décision de Mehdi) : les photos et la vidéo d'une variante n'ont de sens que tant
-// que l'exemplaire est en vente. Dès que son stock tombe à 0, les lignes partent de la base ET les fichiers de
-// Cloudinary (la cascade de la base ne prévient pas Cloudinary, d'où ce service).
+// Ce qui se vend se supprime (26/11, décision de Mehdi, précisée le même jour) : les photos et la vidéo d'une variante
+// n'ont de sens que tant que l'exemplaire est en vente. Quand la vente est PAYÉE, les lignes partent de la base ET les
+// fichiers de Cloudinary (la cascade de la base ne prévient pas Cloudinary, d'où ce service).
 
 export type MediaFile = { publicId: string; kind: "photo" | "video" };
 
-// Supprime des fichiers chez Cloudinary. Ne lève jamais : un échec laisse un fichier orphelin, jamais une vente ou une
-// fiche cassée. Il est écrit dans les logs.
+// Supprime des fichiers chez Cloudinary. Ne lève jamais : un échec ne casse ni une vente ni une fiche. Les lignes de
+// média étant déjà parties de la base, plus rien ne retrouverait le fichier : on en garde une trace (`media_orphans`) que
+// le balayage réessaie jusqu'à ce que Cloudinary réponde (`retryMediaOrphans`).
 export async function destroyMediaFiles(files: MediaFile[]): Promise<void> {
   const results = await Promise.allSettled(files.map((file) => deleteFromCloudinary(file.publicId, file.kind)));
-  results.forEach((result, index) => {
-    if (result.status === "rejected") {
-      console.error(`[médias] suppression Cloudinary impossible (${files[index].publicId}) :`, result.reason);
+  await Promise.all(
+    results.map(async (result, index) => {
+      if (result.status === "fulfilled") return;
+      const { publicId, kind } = files[index];
+      console.error(`[médias] suppression Cloudinary impossible (${publicId}), réessayée au prochain balayage :`, result.reason);
+      await prisma.mediaOrphan.create({ data: { publicId, kind } }).catch((error) => {
+        console.error(`[médias] trace du fichier ${publicId} impossible :`, error);
+      });
+    }),
+  );
+}
+
+// Réessaie la suppression des fichiers dont un essai a échoué ; rend le nombre de fichiers enfin supprimés. Un fichier
+// qui résiste garde sa trace pour le balayage d'après.
+export async function retryMediaOrphans(): Promise<number> {
+  const orphans = await prisma.mediaOrphan.findMany({ orderBy: { id: "asc" }, take: 200 });
+  let done = 0;
+  for (const orphan of orphans) {
+    try {
+      await deleteFromCloudinary(orphan.publicId, orphan.kind);
+      await prisma.mediaOrphan.delete({ where: { id: orphan.id } });
+      done += 1;
+    } catch (error) {
+      console.error(`[médias] suppression de ${orphan.publicId} toujours impossible :`, error);
     }
-  });
+  }
+  return done;
 }
 
 // Les fichiers des variantes visées : à lire AVANT de les supprimer, après il n'y a plus de lignes pour les retrouver.
@@ -50,10 +73,18 @@ export async function purgeSoldMedia(): Promise<number> {
   return sold.length;
 }
 
-// Le filet de sécurité : un chemin qui baisse le stock sans passer par l'API (un script d'import) est rattrapé ici.
-export function startMediaSweep(intervalMs = 3_600_000, purge: () => Promise<number> = purgeSoldMedia): NodeJS.Timeout {
+// Un tour de balayage : supprime les médias des variantes vendues, puis réessaie les fichiers restés chez Cloudinary.
+export async function sweepMedia(): Promise<number> {
+  const purged = await purgeSoldMedia();
+  await retryMediaOrphans();
+  return purged;
+}
+
+// Le filet de sécurité : un chemin qui baisse le stock sans passer par l'API (un script d'import) est rattrapé ici, et
+// les fichiers que Cloudinary n'a pas pu supprimer sont réessayés.
+export function startMediaSweep(intervalMs = 3_600_000, sweep: () => Promise<number> = sweepMedia): NodeJS.Timeout {
   const timer = setInterval(() => {
-    purge().catch((error) => console.error("[médias] balayage impossible :", error));
+    sweep().catch((error) => console.error("[médias] balayage impossible :", error));
   }, intervalMs);
   timer.unref();
   return timer;

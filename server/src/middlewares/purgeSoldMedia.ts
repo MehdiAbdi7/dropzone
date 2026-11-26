@@ -1,10 +1,11 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { purgeSoldMedia } from "../modules/products/soldMedia.service.js";
 
-// Après toute écriture réussie de l'API (26/11), supprime les médias des variantes dont le stock est tombé à 0. Un seul
-// point pour tous les chemins de vente (commande du site, comptoir, téléphone, échange, remplacement, modification de
-// commande, fiche produit) : impossible d'en oublier un. Elle coûte une requête indexée et ne tourne jamais pour une
-// simple lecture. Elle part après la réponse et une erreur est journalisée, jamais renvoyée au client.
+// Après toute écriture réussie du back-office (26/11), supprime les médias des variantes VENDUES (stock à 0, aucune
+// commande en cours, voir `purgeSoldMedia`). Un seul point pour tous les chemins de vente payée (comptoir, échange,
+// remplacement, retrait récupéré, livraison encaissée, fiche produit) : impossible d'en oublier un. Elle coûte une
+// requête et ne tourne jamais pour une simple lecture. Elle part après la réponse et une erreur est journalisée, jamais
+// renvoyée au client.
 export function purgeSoldMediaMiddleware(purge: () => Promise<number> = purgeSoldMedia): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
