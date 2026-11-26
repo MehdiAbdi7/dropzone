@@ -9,6 +9,7 @@ import type { AdminProductListQuery, ProductBody } from "./product.schema.js";
 import { addMissingModelColors, alignVariantColors, variantColors } from "../models/modelColors.js";
 import { DEVICE_KINDS, SELLABLE, computeMinNewPrice, computeMinPrice, refreshMinPrice } from "./product.service.js";
 import { destroyMediaFiles, mediaFilesOfVariants } from "./soldMedia.service.js";
+import { toMediaView } from "./variantMedia.service.js";
 
 const MAX_IMAGES = 6;
 
@@ -81,6 +82,8 @@ export async function getAdminProduct(id: number) {
         include: {
           gifts: { select: { giftVariantId: true, quantity: true } },
           compatibleModels: { select: { id: true }, orderBy: { id: "asc" } },
+          // Les photos et la vidéo de la variante (26/11), avec leurs ids : le back-office les retire et les range.
+          media: { orderBy: { position: "asc" } },
         },
       },
     },
@@ -91,9 +94,10 @@ export async function getAdminProduct(id: number) {
   // Le formulaire reçoit les ids des téléphones compatibles de chaque variante.
   return {
     ...product,
-    variants: product.variants.map(({ compatibleModels, ...variant }) => ({
+    variants: product.variants.map(({ compatibleModels, media, ...variant }) => ({
       ...variant,
       compatibleModelIds: compatibleModels.map((model) => model.id),
+      media: media.map(toMediaView),
     })),
   };
 }

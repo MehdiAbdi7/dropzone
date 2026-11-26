@@ -127,7 +127,13 @@ export type Variant = {
   gifts: Gift[];
   // Les téléphones de cette variante d'accessoire (une taille de verre, 12/11) ; vide sinon.
   compatibleModels?: ModelRef[];
+  // Les photos et la vidéo de CET exemplaire (26/11). Facultatif exprès, comme la garantie : une réponse mise en
+  // cache avant cette version ne l'a pas.
+  media?: VariantMedia[];
 };
+
+// Une photo, ou la vidéo (avec sa vignette) d'une variante.
+export type VariantMedia = { kind: "photo" | "video"; url: string; posterUrl: string | null };
 
 type ModelRef = { brand: string; name: string; slug: string };
 
