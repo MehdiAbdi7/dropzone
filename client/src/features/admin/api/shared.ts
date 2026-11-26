@@ -9,3 +9,10 @@ export function imageForm(file: File): FormData {
   form.append("image", file);
   return form;
 }
+
+// Le corps d'un envoi de photo ou de vidéo d'une variante (26/11) : le fichier dans le champ « media ».
+export function mediaForm(file: File): FormData {
+  const form = new FormData();
+  form.append("media", file);
+  return form;
+}

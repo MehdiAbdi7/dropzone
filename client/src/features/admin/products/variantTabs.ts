@@ -3,7 +3,7 @@ import { invalidWarranty, missingBox, missingPartOrigins, type VariantDraft } fr
 // La fenêtre d'une variante en onglets (25/11, demande de Mehdi : « une organisation parfaite ») : un onglet par
 // thème, un seul visible à la fois. Chaque onglet porte ses propres problèmes, pour que le gérant voie tout de suite
 // où corriger sans ouvrir les cinq. Les règles sont celles de `variantProblems` (variantGroups.ts), rangées par onglet.
-export type VariantTabId = "features" | "price" | "state" | "refs" | "gifts";
+export type VariantTabId = "features" | "price" | "state" | "refs" | "gifts" | "media";
 
 export type VariantTab = { id: VariantTabId; label: string; problems: string[] };
 
@@ -25,6 +25,8 @@ export function variantTabs(variant: VariantDraft, { lockedColor }: { lockedColo
     { id: "refs", label: "Références", problems: invalidWarranty(variant) ? ["garantie"] : [] },
     // La page d'une couleur du Catalogue n'offre pas d'articles : la couleur y est imposée.
     lockedColor ? null : { id: "gifts", label: "Cadeaux", problems: [] },
+    // Les photos et la vidéo de CET exemplaire (26/11) : elles s'envoient tout de suite, jamais un problème de formulaire.
+    lockedColor ? null : { id: "media", label: "Photos et vidéo", problems: [] },
   ];
   return tabs.filter((tab): tab is VariantTab => tab !== null);
 }

@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import type { Condition, Options, Page, ProductKind, ProductStatus } from "@/types/api";
-import { data, imageForm } from "./shared";
+import { data, imageForm, mediaForm } from "./shared";
 
 // Les produits du back-office : la liste, la fiche, les photos et les articles offerts.
 
@@ -46,7 +46,11 @@ export type AdminVariant = {
   compatibleModelIds: number[];
   // Brouillon ou publiée (23/11) : absent d'une API pas encore déployée (= publiée).
   status?: ProductStatus;
+  // Les photos et la vidéo de cet exemplaire (26/11), dans l'ordre : absent d'une API pas encore déployée.
+  media?: AdminMedia[];
 };
+
+export type AdminMedia = { id: number; kind: "photo" | "video"; url: string; posterUrl: string | null; position: number };
 
 export type AdminProduct = {
   id: number;
@@ -129,6 +133,21 @@ const productsApi = api.injectEndpoints({
       query: ({ id, imageId }) => ({ url: `/admin/products/${id}/images/${imageId}`, method: "DELETE" }),
       invalidatesTags: (_result, _error, { id }) => [{ type: "Products", id }, "Products"],
     }),
+    // Les photos et la vidéo d'une variante (26/11) : l'envoi part tout de suite, sans attendre « Enregistrer ».
+    // `productId` sert à relire la fiche du produit, qui porte la liste des médias.
+    addVariantMedia: build.mutation<AdminMedia, { productId: number; variantId: number; file: File }>({
+      query: ({ variantId, file }) => ({ url: `/admin/variants/${variantId}/media`, method: "POST", body: mediaForm(file) }),
+      transformResponse: data<AdminMedia>,
+      invalidatesTags: (_result, _error, { productId }) => [{ type: "Products", id: productId }],
+    }),
+    removeVariantMedia: build.mutation<void, { productId: number; variantId: number; mediaId: number }>({
+      query: ({ variantId, mediaId }) => ({ url: `/admin/variants/${variantId}/media/${mediaId}`, method: "DELETE" }),
+      invalidatesTags: (_result, _error, { productId }) => [{ type: "Products", id: productId }],
+    }),
+    reorderVariantMedia: build.mutation<unknown, { productId: number; variantId: number; ids: number[] }>({
+      query: ({ variantId, ids }) => ({ url: `/admin/variants/${variantId}/media/order`, method: "PUT", body: { ids } }),
+      invalidatesTags: (_result, _error, { productId }) => [{ type: "Products", id: productId }],
+    }),
     giftOptions: build.query<GiftOption[], void>({
       query: () => "/admin/gift-options",
       transformResponse: data<GiftOption[]>,
@@ -146,5 +165,8 @@ export const {
   useUploadImageMutation,
   useDeleteImageMutation,
   useReplaceMainImageMutation,
+  useAddVariantMediaMutation,
+  useRemoveVariantMediaMutation,
+  useReorderVariantMediaMutation,
   useGiftOptionsQuery,
 } = productsApi;

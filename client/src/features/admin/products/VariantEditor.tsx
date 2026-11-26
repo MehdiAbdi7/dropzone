@@ -11,6 +11,7 @@ import ChoicePicker from "./ChoicePicker";
 import ColorPhotoField from "./ColorPhotoField";
 import ConditionSheet from "./ConditionSheet";
 import GiftEditor from "./GiftEditor";
+import VariantMediaPanel from "./VariantMediaPanel";
 import VariantPhones from "./VariantPhones";
 import { type VariantDraft, withCondition } from "./productDraft";
 import { marginPercent, variantTabs, type VariantTabId } from "./variantTabs";
@@ -25,6 +26,8 @@ type Props = {
   modelColors?: string[];
   // Le modèle choisi : la photo de la couleur de la variante s'envoie sous lui (06/11).
   modelId?: number | null;
+  // Le produit enregistré (26/11) : l'onglet « Photos et vidéo » relit sa fiche. Absent à la création d'un produit.
+  productId?: number;
   // La couleur imposée (page d'une couleur du Catalogue) : affichée, pas modifiable.
   lockedColor?: string;
   onChange: (variant: VariantDraft) => void;
@@ -49,6 +52,7 @@ export default function VariantEditor({
   giftOptions,
   modelColors = [],
   modelId = null,
+  productId,
   lockedColor,
   onChange,
   onRemove,
@@ -324,6 +328,12 @@ export default function VariantEditor({
         {lockedColor ? null : (
           <div role="tabpanel" id={id("panel-gifts")} aria-labelledby={id("tab-gifts")} hidden={tab !== "gifts"}>
             <GiftEditor variant={variant} giftOptions={giftOptions} onChange={(gifts) => set({ gifts })} />
+          </div>
+        )}
+
+        {lockedColor ? null : (
+          <div role="tabpanel" id={id("panel-media")} aria-labelledby={id("tab-media")} hidden={tab !== "media"}>
+            <VariantMediaPanel variant={variant} productId={productId} />
           </div>
         )}
       </div>
