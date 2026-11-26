@@ -67,12 +67,16 @@
     .viewer-cols {
       display: grid;
       grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-      /* Le téléphone et, dessous, la rangée de photos et vidéo de la variante (26/11) ; les infos à droite sur les deux
-         rangées. Pas d'espace entre les rangées : sans médias, la rangée du bas est vide et ne doit rien ajouter. */
+      /* Le téléphone et, dessous, la rangée de photos et vidéo de la variante (26/11) ; les infos à droite sur les quatre
+         rangées. Les rangées du haut et du bas (1fr) absorbent la hauteur en trop quand les offres allongent la colonne de
+         droite : le téléphone et ses miniatures restent collés et centrés ensemble. Pas d'espace entre les rangées : sans
+         médias, la rangée « media » est vide et ne doit rien ajouter. */
       grid-template-areas:
+        ". info"
         "frame info"
-        "media info";
-      align-content: center;
+        "media info"
+        ". info";
+      grid-template-rows: 1fr auto auto 1fr;
       align-items: center;
       column-gap: 28px;
       text-align: left;
