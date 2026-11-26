@@ -3,12 +3,16 @@ import request from "supertest";
 import app from "../src/app.js";
 import { prisma } from "../src/config/db.js";
 import type { Role } from "../src/generated/prisma/client.js";
+import { drainSoldMediaPurges } from "../src/middlewares/purgeSoldMedia.js";
 
 export const PASSWORD = "motdepasse123";
 
 // Vide toutes les tables avant chaque test. RESTART IDENTITY remet aussi les
 // séquences à leur départ : la première commande de chaque test porte le numéro 1001.
 export async function resetDb() {
+  // D'abord, la fin des suppressions de médias parties après la dernière réponse du test d'avant : sinon elles lisent les
+  // tables pendant qu'on les vide et les deux se bloquent (« deadlock detected »).
+  await drainSoldMediaPurges();
   await prisma.$executeRaw`TRUNCATE order_items, orders, users, variant_gifts, product_images,
     product_variants, "_ProductCompatibleModels", "_VariantCompatibleModels", products, accessory_makers, series, brands, choices, device_models, categories, import_records,
     daily_counters, cash_days, cash_reopenings, money_movements, order_events, invoice_counters, part_categories, parts, part_movements, repairs, repair_parts, repair_events, media_orphans
