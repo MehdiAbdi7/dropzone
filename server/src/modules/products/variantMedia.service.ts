@@ -8,7 +8,7 @@ import {
 import { prisma, type Tx } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
 import { destroyMediaFiles } from "./soldMedia.service.js";
-import { checkMediaRoom, mediaKindOf, posterOf } from "./variantMedia.rules.js";
+import { checkMediaRoom, checkUploadedVideo, mediaKindOf, posterOf } from "./variantMedia.rules.js";
 
 // La largeur maximale d'une photo de variante, réduite à l'envoi (26/11) : assez fine pour l'agrandir à l'écran.
 const PHOTO_MAX_WIDTH = 1600;
@@ -68,7 +68,12 @@ async function saveUploadedMedia(
       return toMediaView(created);
     });
   } catch (error) {
-    await destroyMediaFiles([{ publicId: media.publicId, kind: media.kind }]);
+    // Jamais le fichier d'un média qui existe : deux appels pour le même fichier en même temps, et le perdant ne doit pas
+    // supprimer celui du gagnant (la ligne du gagnant pointerait vers un fichier disparu).
+    const registered = await prisma.variantMedia.findFirst({ where: { publicId: media.publicId }, select: { id: true } });
+    if (!registered) {
+      await destroyMediaFiles([{ publicId: media.publicId, kind: media.kind }]);
+    }
     throw error;
   }
 }
@@ -100,14 +105,16 @@ export async function prepareVideoUpload(variantId: number): Promise<SignedVideo
   if (!first.room.ok) {
     throw new AppError(first.room.status, first.room.message);
   }
-  return signVideoUpload();
+  return signVideoUpload(variantId);
 }
 
-// Une vidéo, étape 2 : le navigateur a fini l'envoi et donne l'identifiant Cloudinary. L'adresse et la taille enregistrées
-// sont celles que Cloudinary a reçues, jamais celles que dit le navigateur ; l'identifiant doit être dans le dossier des
-// variantes et ne pas être déjà celui d'un média (on ne supprime jamais un fichier déjà enregistré).
+// Une vidéo, étape 2 : le navigateur a fini l'envoi et donne l'identifiant Cloudinary. Tout ce qui est enregistré est ce
+// que Cloudinary a reçu, jamais ce que dit le navigateur. L'identifiant doit être celui que l'API a signé POUR CETTE
+// variante (`dropzone/variants/v<id>-…`) et ne pas être déjà celui d'un média (on ne supprime jamais un fichier déjà
+// enregistré). La vidéo reçue est vérifiée (durée, image, taille après compression) : si elle ne passe pas, elle est
+// supprimée de Cloudinary.
 export async function registerUploadedVideo(variantId: number, publicId: string): Promise<MediaView> {
-  if (!publicId.startsWith(`${VARIANT_FOLDER}/`)) {
+  if (!publicId.startsWith(`${VARIANT_FOLDER}/v${variantId}-`)) {
     throw new AppError(400, "Vidéo inconnue");
   }
   await variantOrThrow(variantId);
@@ -117,6 +124,11 @@ export async function registerUploadedVideo(variantId: number, publicId: string)
   const uploaded = await getUploadedVideo(publicId);
   if (!uploaded) {
     throw new AppError(404, "Vidéo introuvable chez Cloudinary");
+  }
+  const check = checkUploadedVideo(uploaded);
+  if (!check.ok) {
+    await destroyMediaFiles([{ publicId, kind: "video" }]);
+    throw new AppError(check.status, check.message);
   }
   return saveUploadedMedia(variantId, { kind: "video", url: uploaded.url, publicId, size: uploaded.bytes });
 }

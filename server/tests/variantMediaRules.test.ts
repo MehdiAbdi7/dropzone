@@ -1,12 +1,38 @@
 import { describe, expect, it } from "vitest";
 import {
   checkMediaRoom,
+  checkUploadedVideo,
   MAX_PHOTOS,
+  MAX_VIDEO_SECONDS,
   mediaKindOf,
   PHOTO_MAX_BYTES,
   posterOf,
   VIDEO_MAX_BYTES,
 } from "../src/modules/products/variantMedia.rules.js";
+
+// Ce que Cloudinary a vraiment reçu pour une vidéo envoyée directement du navigateur (26/11). La taille mesurée est celle du
+// fichier stocké, APRÈS la compression à l'envoi : une vidéo 4K de 300 Mo passe sous 50 Mo une fois réduite. La durée et la
+// présence d'une image sont donc les vraies limites.
+describe("checkUploadedVideo", () => {
+  const ok = { bytes: 8_000_000, duration: 15, width: 720 };
+
+  it("accepte une courte vidéo dans les limites", () => {
+    expect(checkUploadedVideo(ok)).toEqual({ ok: true });
+    expect(checkUploadedVideo({ ...ok, duration: MAX_VIDEO_SECONDS, bytes: VIDEO_MAX_BYTES })).toEqual({ ok: true });
+  });
+
+  it("refuse une vidéo trop lourde (413)", () => {
+    expect(checkUploadedVideo({ ...ok, bytes: VIDEO_MAX_BYTES + 1 })).toMatchObject({ ok: false, status: 413 });
+  });
+
+  it("refuse une vidéo trop longue (413), même légère", () => {
+    expect(checkUploadedVideo({ ...ok, duration: MAX_VIDEO_SECONDS + 1 })).toMatchObject({ ok: false, status: 413 });
+  });
+
+  it("refuse un fichier sans image : Cloudinary range un son avec les vidéos (400)", () => {
+    expect(checkUploadedVideo({ ...ok, width: 0 })).toMatchObject({ ok: false, status: 400 });
+  });
+});
 
 const room = { stock: 1, kind: "photo" as const, photos: 0, videos: 0, size: 1000 };
 

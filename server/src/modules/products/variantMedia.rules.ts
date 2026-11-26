@@ -6,6 +6,8 @@ export const MAX_VIDEOS = 1;
 // (la vidéo, elle, part directement chez Cloudinary).
 export const PHOTO_MAX_BYTES = 4 * 1024 * 1024;
 export const VIDEO_MAX_BYTES = 50 * 1024 * 1024;
+// Une story dure au plus une minute ; 120 s laissent de la marge sans laisser passer un film.
+export const MAX_VIDEO_SECONDS = 120;
 
 export type MediaKindName = "photo" | "video";
 
@@ -22,6 +24,23 @@ export function posterOf(videoUrl: string): string {
 }
 
 export type MediaRoomResult = { ok: true } | { ok: false; status: number; message: string };
+
+// Ce que Cloudinary a vraiment reçu pour une vidéo envoyée directement du navigateur. La taille mesurée est celle du
+// fichier STOCKÉ, après la compression faite à l'envoi (720 px, qualité automatique) : une vidéo 4K de 300 Mo passe sous
+// 50 Mo une fois réduite. La durée est donc la vraie limite, et la largeur à zéro dit que le fichier n'a pas d'image
+// (Cloudinary range un fichier audio avec les vidéos).
+export function checkUploadedVideo(video: { bytes: number; duration: number; width: number }): MediaRoomResult {
+  if (video.width <= 0) {
+    return { ok: false, status: 400, message: "Ce fichier n'est pas une vidéo" };
+  }
+  if (video.duration > MAX_VIDEO_SECONDS) {
+    return { ok: false, status: 413, message: `Vidéo trop longue (${MAX_VIDEO_SECONDS} secondes au maximum)` };
+  }
+  if (video.bytes > VIDEO_MAX_BYTES) {
+    return { ok: false, status: 413, message: `Vidéo trop lourde (${VIDEO_MAX_BYTES / 1024 / 1024} Mo au maximum)` };
+  }
+  return { ok: true };
+}
 
 // Peut-on ajouter ce média à la variante ? Une variante épuisée est refusée : la suppression des médias se déclenche
 // quand le stock BAISSE, donc des médias posés sur une variante déjà à 0 ne partiraient jamais.

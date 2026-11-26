@@ -1,5 +1,5 @@
 import type { Prisma } from "../../generated/prisma/client.js";
-import { deleteFromCloudinary, listVariantVideos } from "../../config/cloudinary.js";
+import { deleteFromCloudinary, isCloudinaryReady, listVariantVideos } from "../../config/cloudinary.js";
 import { prisma } from "../../config/db.js";
 
 // Ce qui se vend se supprime (26/11, décision de Mehdi, précisée le même jour) : les photos et la vidéo d'une variante
@@ -12,7 +12,12 @@ export type MediaFile = { publicId: string; kind: "photo" | "video" };
 // média étant déjà parties de la base, plus rien ne retrouverait le fichier : on en garde une trace (`media_orphans`) que
 // le balayage réessaie jusqu'à ce que Cloudinary réponde (`retryMediaOrphans`).
 export async function destroyMediaFiles(files: MediaFile[]): Promise<void> {
-  const results = await Promise.allSettled(files.map((file) => deleteFromCloudinary(file.publicId, file.kind)));
+  // Sans clés Cloudinary (une instance de développement branchée sur la vraie base), `deleteFromCloudinary` ne fait rien et
+  // ne le dit pas : sans cette vérification, les lignes partiraient sans qu'aucune trace ne reste des fichiers.
+  const ready = isCloudinaryReady();
+  const results = await Promise.allSettled(
+    files.map((file) => (ready ? deleteFromCloudinary(file.publicId, file.kind) : Promise.reject(new Error("Cloudinary non configuré")))),
+  );
   await Promise.all(
     results.map(async (result, index) => {
       if (result.status === "fulfilled") return;
@@ -26,8 +31,12 @@ export async function destroyMediaFiles(files: MediaFile[]): Promise<void> {
 }
 
 // Réessaie la suppression des fichiers dont un essai a échoué ; rend le nombre de fichiers enfin supprimés. Un fichier
-// qui résiste garde sa trace pour le balayage d'après.
+// qui résiste garde sa trace pour le balayage d'après. Sans clés Cloudinary, rien n'est tenté et aucune trace n'est
+// effacée : une instance sans clés branchée sur la vraie base ne doit pas vider celles de la production.
 export async function retryMediaOrphans(): Promise<number> {
+  if (!isCloudinaryReady()) {
+    return 0;
+  }
   const orphans = await prisma.mediaOrphan.findMany({ orderBy: { id: "asc" }, take: 200 });
   let done = 0;
   for (const orphan of orphans) {
@@ -77,6 +86,11 @@ export async function purgeSoldMedia(): Promise<number> {
 // sans aucune ligne en base. Supprime les vidéos des variantes vieilles de plus d'une heure que rien ne désigne (ni un
 // média, ni une trace à réessayer). Une vidéo plus récente est peut-être en cours d'envoi : on n'y touche pas.
 const STRAY_AFTER_MS = 3_600_000;
+// Garde-fou : une vidéo perdue est un accident rare (un onglet fermé), jamais plus de quelques-unes d'un coup. Si le balayage
+// en voit davantage, c'est que cette instance ne regarde pas la même base que Cloudinary (une copie de développement avec les
+// vraies clés Cloudinary et une base jetable verrait TOUTES les vidéos de production comme perdues) : elle n'en supprime
+// aucune et le dit dans les logs.
+const MAX_STRAY_PER_SWEEP = 5;
 
 export async function sweepStrayVideos(): Promise<number> {
   const old = (await listVariantVideos()).filter((video) => Date.now() - video.createdAt.getTime() > STRAY_AFTER_MS);
@@ -90,26 +104,51 @@ export async function sweepStrayVideos(): Promise<number> {
   ]);
   const known = new Set([...registered, ...traced].map((item) => item.publicId));
   const stray = old.filter((video) => !known.has(video.publicId));
+  if (stray.length > MAX_STRAY_PER_SWEEP) {
+    console.error(
+      `[médias] ${stray.length} vidéos sans média en base : trop pour un accident, rien n'est supprimé (cette instance lit-elle la bonne base ?)`,
+    );
+    return 0;
+  }
   await destroyMediaFiles(stray.map((video) => ({ publicId: video.publicId, kind: "video" as const })));
   return stray.length;
 }
 
 // Un tour de balayage : supprime les médias des variantes vendues, réessaie les fichiers restés chez Cloudinary, puis
-// retrouve les vidéos envoyées mais jamais enregistrées. Chaque étape est indépendante : une panne de Cloudinary sur la
-// liste ne doit pas empêcher les autres.
-export async function sweepMedia(): Promise<number> {
-  const purged = await purgeSoldMedia();
-  await retryMediaOrphans();
-  await sweepStrayVideos().catch((error) => console.error("[médias] recherche des vidéos perdues impossible :", error));
-  return purged;
+// retrouve les vidéos envoyées mais jamais enregistrées. Chaque étape est indépendante : une base ou un Cloudinary en panne
+// pour l'une ne doit pas empêcher les autres.
+export async function sweepMedia(
+  steps: (() => Promise<unknown>)[] = [purgeSoldMedia, retryMediaOrphans, sweepStrayVideos],
+): Promise<void> {
+  for (const step of steps) {
+    try {
+      await step();
+    } catch (error) {
+      console.error(`[médias] étape du balayage impossible (${step.name}) :`, error);
+    }
+  }
 }
 
-// Le filet de sécurité : un chemin qui baisse le stock sans passer par l'API (un script d'import) est rattrapé ici, et
-// les fichiers que Cloudinary n'a pas pu supprimer sont réessayés.
-export function startMediaSweep(intervalMs = 3_600_000, sweep: () => Promise<number> = sweepMedia): NodeJS.Timeout {
-  const timer = setInterval(() => {
+// Le filet de sécurité : un chemin qui baisse le stock sans passer par l'API (un script d'import) est rattrapé ici, les
+// fichiers que Cloudinary n'a pas pu supprimer sont réessayés, les vidéos jamais enregistrées sont retrouvées. Un premier
+// tour peu après le démarrage (chaque redéploiement remet le compteur d'une heure à zéro), puis un tour par heure.
+// Rend de quoi arrêter les deux minuteries.
+export function startMediaSweep(
+  intervalMs = 3_600_000,
+  sweep: () => Promise<unknown> = sweepMedia,
+  firstDelayMs = 300_000,
+): { stop: () => void } {
+  const run = () => {
     sweep().catch((error) => console.error("[médias] balayage impossible :", error));
-  }, intervalMs);
-  timer.unref();
-  return timer;
+  };
+  const interval = setInterval(run, intervalMs);
+  const first = setTimeout(run, firstDelayMs);
+  interval.unref();
+  first.unref();
+  return {
+    stop: () => {
+      clearInterval(interval);
+      clearTimeout(first);
+    },
+  };
 }

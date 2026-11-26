@@ -1,13 +1,21 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app.js";
-import { deleteFromCloudinary, listVariantVideos } from "../src/config/cloudinary.js";
+import { deleteFromCloudinary, isCloudinaryReady, listVariantVideos } from "../src/config/cloudinary.js";
 import { prisma } from "../src/config/db.js";
-import { purgeSoldMedia, retryMediaOrphans, startMediaSweep, sweepStrayVideos } from "../src/modules/products/soldMedia.service.js";
+import {
+  destroyMediaFiles,
+  purgeSoldMedia,
+  retryMediaOrphans,
+  startMediaSweep,
+  sweepMedia,
+  sweepStrayVideos,
+} from "../src/modules/products/soldMedia.service.js";
 import { createCatalog, loginAs, previewThenOrder, resetDb } from "./helpers.js";
 
 vi.mock("../src/config/cloudinary.js", () => ({
   uploadToCloudinary: vi.fn(),
+  isCloudinaryReady: vi.fn(() => true),
   deleteFromCloudinary: vi.fn(async () => undefined),
   listVariantVideos: vi.fn(async () => []),
 }));
@@ -28,6 +36,8 @@ beforeEach(async () => {
   vi.mocked(deleteFromCloudinary).mockResolvedValue(undefined);
   vi.mocked(listVariantVideos).mockReset();
   vi.mocked(listVariantVideos).mockResolvedValue([]);
+  vi.mocked(isCloudinaryReady).mockReset();
+  vi.mocked(isCloudinaryReady).mockReturnValue(true);
   await resetDb();
   catalog = await createCatalog();
 });
@@ -328,14 +338,80 @@ describe("sweepStrayVideos", () => {
     expect(await sweepStrayVideos()).toBe(0);
     expect(deleteFromCloudinary).not.toHaveBeenCalled();
   });
+
+  it("garde-fou : au-delà de 5 vidéos perdues d'un coup, ne supprime rien (une instance branchée sur une autre base les verrait toutes perdues)", async () => {
+    vi.mocked(listVariantVideos).mockResolvedValue(
+      Array.from({ length: 6 }, (_, index) => ({ publicId: `dropzone/variants/v${index}-x`, createdAt: hoursAgo(3) })),
+    );
+
+    expect(await sweepStrayVideos()).toBe(0);
+
+    expect(deleteFromCloudinary).not.toHaveBeenCalled();
+  });
+
+  it("jusqu'à 5 vidéos perdues, les supprime", async () => {
+    vi.mocked(listVariantVideos).mockResolvedValue(
+      Array.from({ length: 5 }, (_, index) => ({ publicId: `dropzone/variants/v${index}-x`, createdAt: hoursAgo(3) })),
+    );
+
+    expect(await sweepStrayVideos()).toBe(5);
+  });
+});
+
+// Une instance sans clés Cloudinary peut être branchée sur la vraie base (le PC lit Neon) : elle ne peut rien supprimer chez
+// Cloudinary, mais elle ne doit ni perdre la trace des fichiers à supprimer, ni effacer celles qui existent déjà.
+describe("Cloudinary non configuré", () => {
+  it("garde une trace de chaque fichier au lieu de les perdre en silence", async () => {
+    vi.mocked(isCloudinaryReady).mockReturnValue(false);
+
+    await destroyMediaFiles([{ publicId: "dropzone/variants/v1-a", kind: "video" }]);
+
+    expect(deleteFromCloudinary).not.toHaveBeenCalled();
+    expect((await prisma.mediaOrphan.findMany()).map((item) => item.publicId)).toEqual(["dropzone/variants/v1-a"]);
+  });
+
+  it("n'efface aucune trace existante", async () => {
+    vi.mocked(isCloudinaryReady).mockReturnValue(false);
+    await prisma.mediaOrphan.create({ data: { publicId: "reste", kind: "photo" } });
+
+    expect(await retryMediaOrphans()).toBe(0);
+
+    expect(await prisma.mediaOrphan.count()).toBe(1);
+    expect(deleteFromCloudinary).not.toHaveBeenCalled();
+  });
+});
+
+describe("sweepMedia", () => {
+  it("chaque étape est indépendante : une étape qui échoue n'empêche pas les suivantes", async () => {
+    const calls: string[] = [];
+    const failing = async () => {
+      calls.push("échec");
+      throw new Error("base indisponible");
+    };
+    const after = async () => {
+      calls.push("suite");
+    };
+
+    await sweepMedia([failing, after]);
+
+    expect(calls).toEqual(["échec", "suite"]);
+  });
 });
 
 describe("startMediaSweep", () => {
   it("lance le balayage à intervalle régulier", async () => {
     const purge = vi.fn(async () => 0);
 
-    const timer = startMediaSweep(20, purge);
+    const timers = startMediaSweep(20, purge);
     await vi.waitFor(() => expect(purge.mock.calls.length).toBeGreaterThanOrEqual(2));
-    clearInterval(timer);
+    timers.stop();
+  });
+
+  it("fait un premier tour peu après le démarrage (un redéploiement remet le compteur d'une heure à zéro)", async () => {
+    const sweep = vi.fn(async () => 0);
+
+    const timers = startMediaSweep(60_000, sweep, 30);
+    await vi.waitFor(() => expect(sweep).toHaveBeenCalledTimes(1));
+    timers.stop();
   });
 });

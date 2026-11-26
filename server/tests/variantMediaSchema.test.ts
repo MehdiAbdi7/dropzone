@@ -26,6 +26,19 @@ describe("variant_media", () => {
     expect(await prisma.variantMedia.count()).toBe(0);
   });
 
+  it("refuse deux médias avec le même identifiant Cloudinary (supprimer l'un supprimerait le fichier de l'autre)", async () => {
+    const variant = await anyVariant();
+    await prisma.variantMedia.create({
+      data: { variantId: variant.id, kind: "video", url: "https://x/a.mp4", publicId: "dropzone/variants/v1-a", position: 0 },
+    });
+
+    await expect(
+      prisma.variantMedia.create({
+        data: { variantId: variant.id, kind: "video", url: "https://x/b.mp4", publicId: "dropzone/variants/v1-a", position: 1 },
+      }),
+    ).rejects.toMatchObject({ code: "P2002" });
+  });
+
   it("garde l'ordre des médias par position", async () => {
     const variant = await anyVariant();
     await prisma.variantMedia.createMany({

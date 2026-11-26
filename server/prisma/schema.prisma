@@ -388,7 +388,8 @@ model VariantMedia {
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   kind      MediaKind
   url       String
-  publicId  String         @map("public_id")
+  // Unique (26/11) : deux médias avec le même fichier Cloudinary, et supprimer l'un supprimerait le fichier de l'autre.
+  publicId  String         @unique @map("public_id")
   position  Int            @default(0)
   createdAt DateTime       @default(now()) @map("created_at")
 
