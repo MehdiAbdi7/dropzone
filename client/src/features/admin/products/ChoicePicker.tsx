@@ -1,11 +1,12 @@
 "use client";
 
-import { useId, useState, type KeyboardEvent } from "react";
+import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { ChoiceGroup } from "@/config/catalog";
 import { errorMessage } from "@/lib/errors";
 import { useChoicesQuery, useCreateChoiceMutation } from "@/features/admin/api/choicesApi";
 import { DEFAULT_HUE } from "../ColorHueChip";
 import { exactChoice, matchChoices } from "./choiceSearch";
+import { type DropdownPlacement, dropdownPlacement, spaceAround } from "./dropdownPlacement";
 
 type Selector =
   | { group: ChoiceGroup; listId?: never }
@@ -120,6 +121,19 @@ export default function ChoicePicker(props: Props) {
   const rows = [...suggestions, ...(canAdd ? [null] : [])];
   const showList = listOpen && rows.length > 0;
 
+  // De quel côté s'ouvre la liste : mesuré à l'ouverture, quand le nombre de lignes change et quand la fenêtre est
+  // redimensionnée, avant l'affichage pour ne pas voir la liste sauter.
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const [placement, setPlacement] = useState<DropdownPlacement>({ direction: "down", maxHeight: 288 });
+  useLayoutEffect(() => {
+    if (!showList || !fieldRef.current) return;
+    const field = fieldRef.current;
+    const measure = () => setPlacement(dropdownPlacement(spaceAround(field)));
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [showList, rows.length]);
+
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
@@ -229,7 +243,7 @@ export default function ChoicePicker(props: Props) {
         </div>
       ) : null}
 
-      <div className="relative max-w-sm">
+      <div ref={fieldRef} className="relative max-w-sm">
         <div className="flex gap-2">
           {hueField}
           <label htmlFor={inputId} className="sr-only">
@@ -262,7 +276,12 @@ export default function ChoicePicker(props: Props) {
             id={inputListId}
             role="listbox"
             aria-label={label}
-            className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-[var(--shadow)]"
+            // Ouverte vers le haut quand il n'y a pas la place dessous (champ tout en bas de la fenêtre), et jamais plus
+            // haute que la place disponible : elle défile au lieu d'être coupée par le cadre de la fenêtre.
+            style={{ maxHeight: placement.maxHeight }}
+            className={`absolute inset-x-0 z-20 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-[var(--shadow)] ${
+              placement.direction === "up" ? "bottom-full mb-1" : "top-full mt-1"
+            }`}
           >
             {rows.map((row, index) => (
               <li

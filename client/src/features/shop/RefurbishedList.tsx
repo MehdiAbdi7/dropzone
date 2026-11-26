@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Palette } from "@/config/colors";
 import type { ProductKind, Variant } from "@/types/api";
 import RefurbishedCard from "./RefurbishedCard";
-import { pinFirst } from "./variantMediaRules";
+import { mediaSummary, pinFirst } from "./variantMediaRules";
 
 type RefurbSort = "price" | "grade" | "battery";
 
@@ -43,6 +43,15 @@ export default function RefurbishedList({
   // Une fiche peut couvrir plusieurs exemplaires identiques : on compte les appareils, pas les fiches.
   const units = variants.reduce((sum, variant) => sum + variant.stock, 0);
 
+  // Un seul appareil : rien à deviner, ses photos et sa vidéo s'affichent tout de suite.
+  useEffect(() => {
+    if (onSelect && variants.length === 1 && selectedSku !== variants[0].sku) {
+      onSelect(variants[0]);
+    }
+    // Au premier affichage seulement.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -64,6 +73,12 @@ export default function RefurbishedList({
           </select>
         </label>
       </div>
+      {onSelect && variants.length > 1 && variants.some((variant) => (variant.media?.length ?? 0) > 0) ? (
+        <p className="rounded-lg border border-line bg-surface-2 p-3 text-sm">
+          Plusieurs appareils sont disponibles : appuie sur <strong>« Voir cet appareil sous le téléphone »</strong> pour afficher ses
+          photos et sa vidéo.
+        </p>
+      ) : null}
       <ul className="space-y-4">
         {sorted.map((variant) => {
           const hasMedia = (variant.media?.length ?? 0) > 0;
@@ -80,10 +95,17 @@ export default function RefurbishedList({
                 }
               }}
             >
-              {hasMedia && onSelect ? (
-                <button type="button" className="btn btn-secondary btn-small mb-2" aria-pressed={selected} onClick={() => onSelect(variant)}>
-                  {selected ? "Photos et vidéo affichées sous le téléphone" : "Voir ses photos et sa vidéo"}
-                </button>
+              {onSelect ? (
+                // L'en-tête de chaque appareil (27/11, remarque de Mehdi : « c'est dur de deviner qu'il faut cliquer sur toute
+                // la carte ») : un vrai bouton, toujours visible, qui dit ce qu'il y a à voir et ce que fait le clic.
+                <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <button type="button" className={`btn btn-small ${selected ? "btn-primary" : "btn-secondary"}`} aria-pressed={selected} onClick={() => onSelect(variant)}>
+                    {selected ? "✓ Affiché sous le téléphone" : hasMedia ? "Voir cet appareil sous le téléphone" : "Choisir cet appareil"}
+                  </button>
+                  <span className="text-sm text-ink-muted">
+                    {hasMedia ? `Photos et vidéo : ${mediaSummary(variant.media)}` : "Pas de photo ni de vidéo pour cet appareil"}
+                  </span>
+                </div>
               ) : null}
               <RefurbishedCard variant={variant} kind={kind} palette={palette} />
             </li>
