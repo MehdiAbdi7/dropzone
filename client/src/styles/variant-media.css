@@ -18,8 +18,9 @@
   }
   .viewer-thumb {
     position: relative;
-    width: 56px;
-    height: 56px;
+    /* 72 px : à 56 px les miniatures étaient trop petites pour reconnaître une photo (27/11, remarque de Mehdi). */
+    width: 72px;
+    height: 72px;
     overflow: hidden;
     border: 1.5px solid rgb(255 255 255 / 0.28);
     border-radius: 10px;
@@ -57,10 +58,13 @@
     padding: 16px;
     background: rgb(0 0 0 / 0.88);
   }
+  /* Agrandie le 27/11 (remarque de Mehdi : « trop petite ») : jusqu'à 760 px de large et 820 px de haut, sans dépasser
+     l'écran. Le fond est fixe (la page ne défile plus derrière), donc une hauteur liée à l'écran est sans risque ici,
+     contrairement aux affiches de la boutique. Les photos et la vidéo (portrait d'une story) s'y adaptent sans être rognées. */
   .media-stage {
     position: relative;
-    width: min(92vw, 460px);
-    aspect-ratio: 4 / 5;
+    width: min(94vw, 760px);
+    height: min(88dvh, 820px);
     overflow: hidden;
     border-radius: 16px;
     background: #08090d;

@@ -1,6 +1,29 @@
 import { describe, expect, it } from "vitest";
 import type { Variant } from "@/types/api";
-import { pinFirst, shownMedia } from "./variantMediaRules";
+import { mediaSummary, pinFirst, shownMedia } from "./variantMediaRules";
+
+// Ce que le client lit sur la carte d'un appareil (27/11, remarque de Mehdi : on ne devinait pas qu'il fallait cliquer
+// l'appareil pour voir ses médias) : combien de photos et s'il y a une vidéo, avant même de cliquer.
+describe("mediaSummary", () => {
+  const photo = { kind: "photo" as const, url: "p", posterUrl: null };
+  const video = { kind: "video" as const, url: "v", posterUrl: "v.jpg" };
+
+  it("compte les photos et signale la vidéo", () => {
+    expect(mediaSummary([photo, photo, video])).toBe("2 photos et la vidéo");
+    expect(mediaSummary([photo, video])).toBe("1 photo et la vidéo");
+  });
+
+  it("une photo, plusieurs photos, ou la vidéo seule", () => {
+    expect(mediaSummary([photo])).toBe("1 photo");
+    expect(mediaSummary([photo, photo, photo])).toBe("3 photos");
+    expect(mediaSummary([video])).toBe("la vidéo");
+  });
+
+  it("rien à dire sans média, ou sans le champ (réponse d'une API plus ancienne)", () => {
+    expect(mediaSummary([])).toBeNull();
+    expect(mediaSummary(undefined)).toBeNull();
+  });
+});
 
 // L'appareil visé par un lien de story passe en tête de la liste d'occasions (26/11) : sur téléphone, la liste est sous le
 // téléphone et ses miniatures, il doit être visible sans défiler (défiler vers lui sortait les miniatures de l'écran).

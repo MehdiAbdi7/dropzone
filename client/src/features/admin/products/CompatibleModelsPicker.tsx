@@ -48,7 +48,8 @@ export default function CompatibleModelsPicker({
         />
       </Field>
       {matches.length > 0 ? (
-        <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-line p-2 text-sm">
+        // 20 rem et non 12 : la liste de recherche montrait 5 modèles puis défilait dans un petit cadre.
+        <ul className="max-h-80 space-y-1 overflow-y-auto rounded-lg border border-line p-2 text-sm">
           {matches.slice(0, 30).map((model) => (
             <li key={model.id}>
               <label className="flex items-center gap-2 py-1">
