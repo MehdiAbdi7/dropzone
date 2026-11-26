@@ -7,10 +7,16 @@ export type SignedVideoUpload = {
   apiKey: string;
   timestamp: number;
   signature: string;
-  folder: string;
+  publicId: string;
   format: string;
+  allowedFormats: string;
+  overwrite: string;
   transformation: string;
 };
+
+// Dix minutes : assez pour 50 Mo sur une mauvaise connexion mobile, et pas indéfiniment (une connexion bloquée figeait le
+// panneau jusqu'au rechargement de la page).
+const UPLOAD_TIMEOUT_MS = 10 * 60_000;
 
 // Le formulaire d'envoi : le fichier et EXACTEMENT les paramètres signés, sous les noms de l'API de Cloudinary. Un
 // paramètre en plus ou en moins, ou une valeur différente, et Cloudinary refuse la signature.
@@ -20,18 +26,31 @@ export function videoUploadForm(file: File, signed: SignedVideoUpload): FormData
   form.append("api_key", signed.apiKey);
   form.append("timestamp", String(signed.timestamp));
   form.append("signature", signed.signature);
-  form.append("folder", signed.folder);
+  form.append("public_id", signed.publicId);
   form.append("format", signed.format);
+  form.append("allowed_formats", signed.allowedFormats);
+  form.append("overwrite", signed.overwrite);
   form.append("transformation", signed.transformation);
   return form;
 }
 
 // Envoie la vidéo et rend son identifiant Cloudinary. `onProgress` reçoit un pourcentage (0 à 100) : un envoi de plusieurs
-// dizaines de Mo dure, le gérant doit voir qu'il avance. XMLHttpRequest et non fetch, seul à donner la progression.
-export function sendVideoToCloudinary(file: File, signed: SignedVideoUpload, onProgress: (percent: number) => void): Promise<string> {
+// dizaines de Mo dure, le gérant doit voir qu'il avance. `signal` permet de l'annuler. XMLHttpRequest et non fetch, seul à
+// donner la progression.
+export function sendVideoToCloudinary(
+  file: File,
+  signed: SignedVideoUpload,
+  onProgress: (percent: number) => void,
+  signal?: AbortSignal,
+): Promise<string> {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new Error("Envoi annulé"));
+      return;
+    }
     const request = new XMLHttpRequest();
     request.open("POST", `https://api.cloudinary.com/v1_1/${signed.cloudName}/video/upload`);
+    request.timeout = UPLOAD_TIMEOUT_MS;
     request.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
     };
@@ -48,7 +67,9 @@ export function sendVideoToCloudinary(file: File, signed: SignedVideoUpload, onP
       }
     };
     request.onerror = () => reject(new Error("L'envoi a échoué : vérifie la connexion et réessaie"));
+    request.ontimeout = () => reject(new Error("L'envoi a été trop long : vérifie la connexion et réessaie"));
     request.onabort = () => reject(new Error("Envoi annulé"));
+    signal?.addEventListener("abort", () => request.abort(), { once: true });
     request.send(videoUploadForm(file, signed));
   });
 }

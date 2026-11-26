@@ -12,6 +12,9 @@ export type MediaFile = { publicId: string; kind: "photo" | "video" };
 // média étant déjà parties de la base, plus rien ne retrouverait le fichier : on en garde une trace (`media_orphans`) que
 // le balayage réessaie jusqu'à ce que Cloudinary réponde (`retryMediaOrphans`).
 export async function destroyMediaFiles(files: MediaFile[]): Promise<void> {
+  if (files.length === 0) {
+    return;
+  }
   // Sans clés Cloudinary (une instance de développement branchée sur la vraie base), `deleteFromCloudinary` ne fait rien et
   // ne le dit pas : sans cette vérification, les lignes partiraient sans qu'aucune trace ne reste des fichiers.
   const ready = isCloudinaryReady();

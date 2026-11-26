@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ProductImage from "@/components/ui/ProductImage";
 import { errorMessage } from "@/lib/errors";
 import {
@@ -30,6 +30,16 @@ export default function VariantMediaPanel({ variant, productId }: { variant: Var
   // Progression de l'envoi d'une vidéo (null : aucun envoi), et le refus du fichier ou l'échec de l'envoi direct.
   const [percent, setPercent] = useState<number | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const abort = useRef<AbortController | null>(null);
+  const uploading = percent !== null;
+
+  // Fermer ou recharger la page pendant l'envoi d'une vidéo le perd : le navigateur le fait confirmer.
+  useEffect(() => {
+    if (!uploading) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [uploading]);
 
   // La variante telle qu'elle est enregistrée : son stock réel est celui que l'API vérifie, pas celui qu'on tape.
   const saved = product?.variants.find((item) => item.id === variant.id);
@@ -52,14 +62,18 @@ export default function VariantMediaPanel({ variant, productId }: { variant: Var
       add({ productId, variantId: variant.id, file });
       return;
     }
+    const controller = new AbortController();
+    abort.current = controller;
     try {
       setPercent(0);
       const signed = await prepare({ variantId: variant.id }).unwrap();
-      const publicId = await sendVideoToCloudinary(file, signed, setPercent);
+      const publicId = await sendVideoToCloudinary(file, signed, setPercent, controller.signal);
       await register({ productId, variantId: variant.id, publicId }).unwrap();
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : errorMessage(error));
+      // Un envoi annulé par le gérant n'est pas une erreur à lui montrer.
+      setProblem(controller.signal.aborted ? null : error instanceof Error ? error.message : errorMessage(error));
     } finally {
+      abort.current = null;
       setPercent(null);
     }
   }
@@ -147,7 +161,14 @@ export default function VariantMediaPanel({ variant, productId }: { variant: Var
             }}
           />
         </label>
-        {percent !== null ? <progress className="block h-2 w-full max-w-xs" max={100} value={percent} aria-label="Progression de l'envoi" /> : null}
+        {percent !== null ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <progress className="block h-2 w-full max-w-xs" max={100} value={percent} aria-label="Progression de l'envoi" />
+            <button type="button" className="btn btn-outline btn-small" onClick={() => abort.current?.abort()}>
+              Annuler l&apos;envoi
+            </button>
+          </div>
+        ) : null}
         {state.reason ? <p className="text-xs text-ink-muted">{state.reason}</p> : null}
         <p className="text-xs text-ink-muted">
           Photos de {PHOTO_MAX_MB} Mo au plus, vidéo de {VIDEO_MAX_MB} Mo au plus (MP4, MOV ou WebM). La vidéo part directement chez Cloudinary :
