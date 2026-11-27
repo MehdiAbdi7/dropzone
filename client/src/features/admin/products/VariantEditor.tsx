@@ -70,8 +70,11 @@ export default function VariantEditor({
   // Une affaire repassée en neuf n'a plus d'onglet État : on retombe sur le premier onglet.
   const tab = tabs.some((item) => item.id === chosenTab) ? chosenTab : "features";
   const margin = marginPercent(variant.price, variant.purchasePrice);
-  // Le prix d'achat et la marge restent cachés tant que le code n'est pas tapé (27/11) : un client peut voir l'écran.
-  const { visible: costsVisible } = useCosts();
+  // Le prix d'achat et la marge restent cachés tant que le code n'est pas tapé (27/11) : un client peut voir l'écran. Le champ
+  // et la marge d'une même variante se débloquent ensemble (on tape le prix d'achat pour en lire la marge).
+  const { isVisible } = useCosts();
+  const costKey = `variant:${variant.key}`;
+  const costsVisible = isVisible(costKey);
   const color = lockedColor ?? variant.options.Couleur;
 
   function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
@@ -252,7 +255,7 @@ export default function VariantEditor({
               hint="Facultatif. Visible par l'admin seulement : sert au calcul du bénéfice."
             >
               {/* Caché sans le code, mais la valeur du formulaire reste : rien n'est effacé. */}
-              <CostInput id={id("purchase")} value={variant.purchasePrice} onChange={(purchasePrice) => set({ purchasePrice })} />
+              <CostInput id={id("purchase")} revealKey={costKey} value={variant.purchasePrice} onChange={(purchasePrice) => set({ purchasePrice })} />
             </Field>
             <Field id={id("stock")} label={refurbished ? "Stock de cette occasion" : "Stock"}>
               <input

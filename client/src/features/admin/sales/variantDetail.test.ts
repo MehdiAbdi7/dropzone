@@ -24,7 +24,7 @@ const deal = makeHit({
 });
 
 describe("variantDetailRows : une occasion", () => {
-  const rows = variantDetailRows(deal, { showCost: true });
+  const rows = variantDetailRows(deal);
 
   it("dit l'état de l'appareil : note, batterie, pièces changées, défauts, limitations, boîte", () => {
     expect(valueOf(rows, "Note")).toBe("8/10");
@@ -50,29 +50,29 @@ describe("variantDetailRows : une occasion", () => {
   });
 });
 
-// Le prix d'achat attend le code des prix d'achat (27/11) : sans lui, la fiche montre des points, jamais le chiffre.
-describe("variantDetailRows : le prix d'achat caché", () => {
-  it("remplace le prix d'achat par des points quand le code n'est pas tapé", () => {
-    const rows = variantDetailRows(deal, { showCost: false });
-    expect(valueOf(rows, "Prix d'achat")).toBe("••••");
-    expect(JSON.stringify(rows)).not.toContain(formatPrice(180_000));
-    expect(JSON.stringify(rows)).not.toContain("180");
+// Le prix d'achat est une ligne « secrète » (27/11) : la fenêtre la cache derrière le code des prix d'achat. La fonction rend
+// toujours le vrai prix et le drapeau ; c'est l'écran qui décide de le montrer.
+describe("variantDetailRows : la ligne du prix d'achat est secrète", () => {
+  it("marque le prix d'achat comme secret, et lui seul", () => {
+    const rows = variantDetailRows(deal);
+    expect(rows.filter((row) => row.secret).map((row) => row.label)).toEqual(["Prix d'achat"]);
   });
 
-  it("garde le prix de vente et le reste de la fiche visibles", () => {
-    const rows = variantDetailRows(deal, { showCost: false });
-    expect(valueOf(rows, "Prix de vente")).toBe(formatPrice(245_000));
-    expect(valueOf(rows, "Garantie")).toBe("6 mois");
+  it("garde le prix de vente et le reste de la fiche en clair", () => {
+    const rows = variantDetailRows(deal);
+    expect(rows.find((row) => row.label === "Prix de vente")?.secret).toBeUndefined();
+    expect(rows.find((row) => row.label === "Garantie")?.secret).toBeUndefined();
   });
 
-  it("un prix d'achat inconnu reste « non renseigné » (il ne révèle rien)", () => {
-    expect(valueOf(variantDetailRows(makeHit({ purchasePrice: null }), { showCost: false }), "Prix d'achat")).toBe("non renseigné");
+  it("un prix d'achat inconnu n'est pas secret : « non renseigné » ne révèle rien", () => {
+    const row = variantDetailRows(makeHit({ purchasePrice: null })).find((r) => r.label === "Prix d'achat");
+    expect(row).toEqual({ label: "Prix d'achat", value: "non renseigné" });
   });
 });
 
 describe("variantDetailRows : un neuf scellé", () => {
   it("dit « Neuf scellé » et n'a ni note ni batterie", () => {
-    const rows = variantDetailRows(makeHit({ warrantyMonths: 12 }), { showCost: true });
+    const rows = variantDetailRows(makeHit({ warrantyMonths: 12 }));
     expect(valueOf(rows, "État")).toBe("Neuf scellé");
     expect(valueOf(rows, "Note")).toBeUndefined();
     expect(valueOf(rows, "Batterie")).toBeUndefined();
@@ -82,7 +82,7 @@ describe("variantDetailRows : un neuf scellé", () => {
 
 describe("variantDetailRows : les cas où l'information manque", () => {
   it("une boîte non précisée, des listes vides, une note et une batterie absentes se lisent bien", () => {
-    const rows = variantDetailRows(makeHit({ condition: "refurbished" }), { showCost: true });
+    const rows = variantDetailRows(makeHit({ condition: "refurbished" }));
     expect(valueOf(rows, "Boîte")).toBe("Boîte non précisée");
     expect(valueOf(rows, "Pièces changées")).toBe("aucune");
     expect(valueOf(rows, "Défauts")).toBe("aucun");
@@ -92,7 +92,7 @@ describe("variantDetailRows : les cas où l'information manque", () => {
   });
 
   it("un prix d'achat inconnu dit « non renseigné », jamais NaN", () => {
-    const rows = variantDetailRows(makeHit({ purchasePrice: null }), { showCost: true });
+    const rows = variantDetailRows(makeHit({ purchasePrice: null }));
     expect(valueOf(rows, "Prix d'achat")).toBe("non renseigné");
     expect(JSON.stringify(rows)).not.toContain("NaN");
   });
@@ -101,14 +101,14 @@ describe("variantDetailRows : les cas où l'information manque", () => {
   it("une réponse d'une ancienne API (sans la fiche ni le prix d'achat) ne plante pas et ne dit pas NaN", () => {
     const old = { ...makeHit({ condition: "refurbished" }) } as Partial<ReturnType<typeof makeHit>>;
     for (const key of ["purchasePrice", "gifts", "replacedParts", "compatibleParts", "defects", "limitations"] as const) delete old[key];
-    const rows = variantDetailRows(old as ReturnType<typeof makeHit>, { showCost: true });
+    const rows = variantDetailRows(old as ReturnType<typeof makeHit>);
     expect(valueOf(rows, "Prix d'achat")).toBe("non renseigné");
     expect(valueOf(rows, "Pièces changées")).toBe("aucune");
     expect(JSON.stringify(rows)).not.toContain("NaN");
   });
 
   it("une garantie absente dit « aucune » ; sans origine, référence, détails ni cadeaux, ces lignes n'existent pas", () => {
-    const rows = variantDetailRows(makeHit(), { showCost: true });
+    const rows = variantDetailRows(makeHit());
     expect(valueOf(rows, "Garantie")).toBe("aucune");
     for (const label of ["Origine", "Référence", "Détails", "Cadeaux offerts"]) {
       expect(valueOf(rows, label), label).toBeUndefined();

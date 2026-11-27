@@ -44,9 +44,9 @@ export default function CostPinSettings({ onDone }: { onDone: () => void }) {
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <p className="text-sm text-ink-muted">
-        Avec un code, personne ne voit les prix d&apos;achat, la marge et le bénéfice avant de l&apos;avoir tapé : un client qui regarde l&apos;écran
-        d&apos;un vendeur ne les voit pas. Les prix se recachent d&apos;un bouton, au rechargement de la page et après 5 minutes sans toucher à
-        l&apos;écran.
+        Avec un code, les prix d&apos;achat, la marge et le bénéfice sont cachés : on tape le code pour voir UN prix à la fois, les autres
+        restent cachés. Un client qui regarde l&apos;écran d&apos;un vendeur ne les voit donc pas. Un prix débloqué se recache d&apos;un
+        toucher, tout seul après 30 secondes, ou en quittant la page.
       </p>
       <p className="text-sm font-semibold" aria-live="polite">
         {status.isLoading ? "Chargement…" : configured ? "Un code est réglé : les prix d'achat sont cachés." : "Aucun code : les prix d'achat sont visibles pour tous."}

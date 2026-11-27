@@ -24,6 +24,8 @@ import {
 // téléphone au lieu de rétrécir avec le dessin. Au survol, au toucher ou au clavier, un jour affiche son détail ; un
 // tableau caché (`sr-only`) donne les mêmes chiffres aux lecteurs d'écran.
 
+// Le déblocage du bénéfice (27/11) : le total au-dessus du graphique et le graphique se débloquent ensemble.
+const PROFIT_KEY = "dashboard:profit";
 const MARGIN = { left: 48, right: 8, top: 12, bottom: 30 };
 // Sous cette largeur (téléphone), les jours s'écrivent « 14/11 » : « sam. 14 » toucherait son voisin.
 const COMPACT_BELOW = 480;
@@ -50,8 +52,8 @@ export default function ActivityChart({
   const [active, setActive] = useState<number | null>(null);
   // Le bénéfice permet de retrouver le prix d'achat : tant que le code n'est pas tapé (27/11), le graphique ne montre aucun
   // point de ce choix (le dessin reste, vide, pour que sa taille ne saute pas au déverrouillage) et propose le code.
-  const { visible: costsVisible, askPin } = useCosts();
-  const locked = metric === "profit" && !costsVisible;
+  const { isVisible, reveal } = useCosts();
+  const locked = metric === "profit" && !isVisible(PROFIT_KEY);
   const [wrapRef, width] = useElementWidth<HTMLDivElement>(640);
   const compact = width < COMPACT_BELOW;
   const height = compact ? 220 : 260;
@@ -79,7 +81,7 @@ export default function ActivityChart({
             Activité
           </h2>
           <p className="font-display text-2xl font-extrabold tabular-nums sm:text-3xl">
-            {loading ? "…" : metric === "profit" ? <Cost label="Bénéfice">{show(total)}</Cost> : show(total)}
+            {loading ? "…" : metric === "profit" ? <Cost label="Bénéfice" id={PROFIT_KEY}>{show(total)}</Cost> : show(total)}
           </p>
           <p className="text-sm text-ink-muted">
             {config.label.toLowerCase()} sur {days} jours
@@ -197,7 +199,7 @@ export default function ActivityChart({
 
         {locked ? (
           <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center">
-            <button type="button" className="btn btn-secondary btn-small" onClick={askPin}>
+            <button type="button" className="btn btn-secondary btn-small" onClick={() => reveal(PROFIT_KEY)}>
               Bénéfice masqué : saisir le code
             </button>
           </div>

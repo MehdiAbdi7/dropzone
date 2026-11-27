@@ -1,18 +1,17 @@
-import { MASKED_COST } from "@/features/admin/costs/costVisibility";
 import { formatPrice } from "@/lib/format";
 import type { VariantHit } from "./ticket";
 
 // Ce que le bouton « Détail » de la vente montre (18/11) : une ligne par information de la fiche de l'appareil,
 // pour que le vendeur réponde au client qui demande « il a quoi, cet appareil ? ». Fonction pure : la fenêtre
 // ne fait que les afficher.
-export type DetailRow = { label: string; value: string };
+// `secret` (27/11) : une ligne qui révèle un prix d'achat. La fenêtre la cache derrière le code des prix d'achat.
+export type DetailRow = { label: string; value: string; secret?: boolean };
 
 const list = (items: string[], empty: string) => (items.length > 0 ? items.join(", ") : empty);
 
 const BOX = { true: "Avec sa boîte d'origine", false: "Sans sa boîte d'origine", null: "Boîte non précisée" };
 
-// `showCost` : le prix d'achat n'est montré qu'avec le code des prix d'achat (27/11) ; sinon la ligne est cachée par des points.
-export function variantDetailRows(source: VariantHit, options: { showCost: boolean }): DetailRow[] {
+export function variantDetailRows(source: VariantHit): DetailRow[] {
   // Le client peut passer en ligne avant l'API : une réponse sans les nouveaux champs se lit comme « rien ».
   const hit = {
     ...source,
@@ -47,6 +46,10 @@ export function variantDetailRows(source: VariantHit, options: { showCost: boole
 
   add("Stock", `${hit.stock} en stock`);
   add("Prix de vente", formatPrice(hit.price));
-  add("Prix d'achat", hit.purchasePrice === null ? "non renseigné" : options.showCost ? formatPrice(hit.purchasePrice) : MASKED_COST);
+  if (hit.purchasePrice === null) {
+    add("Prix d'achat", "non renseigné");
+  } else {
+    rows.push({ label: "Prix d'achat", value: formatPrice(hit.purchasePrice), secret: true });
+  }
   return rows;
 }

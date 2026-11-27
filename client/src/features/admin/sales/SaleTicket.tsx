@@ -60,8 +60,9 @@ type Props = { lines: TicketLine[]; setLines: Dispatch<SetStateAction<TicketLine
 
 export default function SaleTicket(props: Props) {
   const { lines, setLines } = props;
-  // Le prix d'achat est caché tant que le code n'est pas tapé (27/11) : le client regarde souvent l'écran du vendeur.
-  const { visible: costsVisible } = useCosts();
+  // Le prix d'achat est caché tant que le code n'est pas tapé (27/11) : le client regarde souvent l'écran du vendeur. Chaque
+  // ligne a son propre déblocage, que son alerte « Sous le prix d'achat » suit.
+  const { isVisible } = useCosts();
   const [createSale, saleState] = useCreateSaleMutation();
   const [createExchange, exchangeState] = useCreateExchangeMutation();
   const [createPhoneOrder, phoneState] = useCreatePhoneOrderMutation();
@@ -233,13 +234,13 @@ export default function SaleTicket(props: Props) {
                       "Prix d'achat non renseigné"
                     ) : (
                       <>
-                        Prix d&apos;achat : <Cost>{formatPrice(line.hit.purchasePrice)}</Cost>
+                        Prix d&apos;achat : <Cost id={`ticket:${line.key}`}>{formatPrice(line.hit.purchasePrice)}</Cost>
                       </>
                     )}
                   </p>
                 </div>
                 {/* « Sous le prix d'achat » dirait au client jusqu'où négocier : l'alerte attend le code, comme le prix. */}
-                {costsVisible && belowPurchasePrice(line.unitPrice, line.hit.purchasePrice) ? (
+                {isVisible(`ticket:${line.key}`) && belowPurchasePrice(line.unitPrice, line.hit.purchasePrice) ? (
                   <p role="status" className="text-sm font-semibold text-red">
                     Sous le prix d&apos;achat
                   </p>

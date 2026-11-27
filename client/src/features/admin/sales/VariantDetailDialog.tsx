@@ -2,7 +2,7 @@
 
 import ProductImage from "@/components/ui/ProductImage";
 import { CONDITION_LABELS } from "@/config/catalog";
-import { useCosts } from "@/features/admin/costs/CostGuard";
+import { Cost } from "@/features/admin/costs/CostGuard";
 import EditDialog from "@/features/admin/products/EditDialog";
 import { formatOptions } from "@/lib/format";
 import type { VariantHit } from "./ticket";
@@ -12,8 +12,6 @@ import { variantDetailRows } from "./variantDetail";
 // sans quitter la vente. Ouverte quand `hit` existe, fermée quand il est nul. Elle peut s'ouvrir depuis la
 // fenêtre de recherche de produit : Échap ou « Terminé » ne ferment alors que celle-ci.
 export default function VariantDetailDialog({ hit, onClose }: { hit: VariantHit | null; onClose: () => void }) {
-  // Le prix d'achat y est caché tant que le code n'est pas tapé (27/11) : le client regarde cette fenêtre avec le vendeur.
-  const { visible: showCost } = useCosts();
   return (
     <EditDialog open={hit !== null} title={hit?.productName ?? "Détail"} size="sm" onClose={onClose}>
       {hit ? (
@@ -26,10 +24,11 @@ export default function VariantDetailDialog({ hit, onClose }: { hit: VariantHit 
             {Object.keys(hit.options).length ? ` · ${formatOptions(hit.options)}` : ""} · {hit.sku}
           </p>
           <dl className="space-y-2 text-sm">
-            {variantDetailRows(hit, { showCost }).map((row) => (
+            {variantDetailRows(hit).map((row) => (
               <div key={row.label} className="flex justify-between gap-4 border-b border-line pb-2 last:border-0">
                 <dt className="shrink-0 text-ink-muted">{row.label}</dt>
-                <dd className="text-right font-semibold">{row.value}</dd>
+                {/* Le prix d'achat est caché derrière le code (27/11) : le client regarde cette fenêtre avec le vendeur. */}
+                <dd className="text-right font-semibold">{row.secret ? <Cost>{row.value}</Cost> : row.value}</dd>
               </div>
             ))}
           </dl>
