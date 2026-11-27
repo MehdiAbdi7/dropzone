@@ -1,8 +1,8 @@
 import type { Condition } from "@/types/api";
 
 // Les photos et la vidéo d'une variante dans le back-office (26/11), sans React : ce que l'onglet propose, et le lien
-// de la story Instagram. Les plafonds sont ceux de l'API (variantMedia.rules.ts). Depuis le 27/11, la vidéo est le lien d'un
-// Reel Instagram : on propose donc deux choses séparées, une photo (un fichier) et la vidéo (un lien).
+// de la story Instagram. Les plafonds sont ceux de l'API (variantMedia.rules.ts). Depuis le 27/11, la vidéo est le lien de la
+// story Instagram : on propose donc deux choses séparées, une photo (un fichier) et la vidéo (un lien).
 export const MAX_PHOTOS = 8;
 export const MAX_VIDEOS = 1;
 
@@ -44,10 +44,10 @@ const MO = 1024 * 1024;
 export const PHOTO_MAX_MB = 4;
 
 // Ce qui ne va pas avec la photo choisie, avant tout envoi (null si rien) : un refus clair tout de suite. Même plafond que
-// l'API : 4 Mo. La vidéo n'est plus un fichier (un lien de Reel).
+// l'API : 4 Mo. La vidéo n'est plus un fichier (un lien Instagram).
 export function fileProblem(file: { type: string; size: number }): string | null {
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-    return "Formats acceptés : JPEG, PNG ou WebP (la vidéo est un lien de Reel Instagram)";
+    return "Formats acceptés : JPEG, PNG ou WebP (la vidéo est le lien de la story Instagram)";
   }
   if (file.size > PHOTO_MAX_MB * MO) {
     return `Photo trop lourde (${PHOTO_MAX_MB} Mo au maximum)`;

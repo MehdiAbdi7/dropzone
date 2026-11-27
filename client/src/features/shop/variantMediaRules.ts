@@ -9,25 +9,18 @@ export function mediaSummary(media: VariantMedia[] | undefined): string | null {
   const photos = media.filter((item) => item.kind === "photo").length;
   const parts = [];
   if (photos > 0) parts.push(`${photos} photo${photos > 1 ? "s" : ""}`);
-  if (media.some((item) => item.kind === "video")) parts.push("la vidéo");
+  // La vidéo d'un appareil est sa story Instagram (un lien) ; une ancienne vidéo est un fichier. Le client voit « la story ».
+  const video = media.find((item) => item.kind === "video");
+  if (video) parts.push(isInstagramLink(video.url) ? "la story" : "la vidéo");
   return parts.join(" et ");
 }
 
-// La vidéo d'une variante est le lien d'un Reel Instagram (27/11), ou, pour une ancienne vidéo, un fichier Cloudinary. Un
-// Reel s'affiche avec le lecteur d'Instagram (une `<iframe>`), jamais avec une balise `<video>`.
-const REEL_PREFIX = "https://www.instagram.com/";
+// La vidéo d'une variante est le lien d'une story Instagram (27/11), ou, pour une ancienne vidéo, un fichier Cloudinary. Un
+// lien Instagram ne s'affiche pas dans la page : la tuile « Story » l'ouvre sur Instagram (un nouvel onglet).
+const INSTAGRAM_PREFIX = "https://www.instagram.com/";
 
-export function isReelLink(url: string): boolean {
-  return url.startsWith(REEL_PREFIX);
-}
-
-// L'adresse du lecteur intégrable d'un Reel : celle du Reel suivie de `embed/`. Rend null pour toute autre adresse : on ne met
-// jamais dans une `<iframe>` ce qui n'est pas d'Instagram.
-export function reelEmbedUrl(url: string): string | null {
-  if (!isReelLink(url)) {
-    return null;
-  }
-  return `${url.split(/[?#]/)[0].replace(/\/?$/, "/")}embed/`;
+export function isInstagramLink(url: string): boolean {
+  return url.startsWith(INSTAGRAM_PREFIX);
 }
 
 // Les photos et la vidéo montrées sous le téléphone (26/11) : celles de la variante choisie. Jamais celles de la couleur :

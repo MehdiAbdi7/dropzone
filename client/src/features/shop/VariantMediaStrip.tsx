@@ -4,45 +4,56 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { VariantMedia } from "@/types/api";
-import { isReelLink, reelEmbedUrl } from "./variantMediaRules";
+import { isInstagramLink } from "./variantMediaRules";
 
 // Les photos et la vidéo de la variante choisie, en miniatures sous le téléphone (26/11, demande de Mehdi : la vidéo de
-// la story Instagram d'un téléphone, à revoir, et d'autres photos du même exemplaire). Un clic ouvre le média en grand.
-// Sans médias, rien n'est rendu.
+// la story Instagram d'un téléphone, à revoir, et d'autres photos du même exemplaire). Un clic sur une photo l'ouvre en
+// grand. La vidéo est la story Instagram (27/11, décision de Mehdi : le lecteur d'Instagram ne lit pas la vidéo dans la
+// page sur téléphone, et héberger la vidéo chez nous coûtait trop de crédits) : sa tuile « Story » est un lien qui ouvre la
+// story sur Instagram, dans un nouvel onglet, donc le client retrouve le site en revenant. Sans médias, rien n'est rendu.
 export default function VariantMediaStrip({ media, label }: { media: VariantMedia[]; label: string }) {
   const [open, setOpen] = useState<number | null>(null);
   if (media.length === 0) {
     return null;
   }
+  // Ce qui s'ouvre dans la fenêtre : tout sauf la story (un lien). `position` donne, pour chaque média, sa place dans cette
+  // liste : la fenêtre passe de l'un à l'autre sans jamais tomber sur la story.
+  const viewable = media.filter((item) => !isInstagramLink(item.url));
+  const position = new Map(viewable.map((item, index) => [item.url, index]));
   return (
     <>
       <ul className="viewer-media" aria-label={`Photos et vidéo : ${label}`}>
-        {media.map((item, index) => (
-          <li key={item.url}>
-            <button
-              type="button"
-              className="viewer-thumb"
-              aria-label={item.kind === "video" ? "Voir la vidéo" : `Agrandir la photo ${index + 1}`}
-              onClick={() => setOpen(index)}
-            >
-              {/* Un Reel n'a pas d'image à nous (Instagram porte la sienne, dans la fenêtre) : une tuile « Reel ». */}
-              {isReelLink(item.url) ? (
-                <span className="viewer-thumb-reel" aria-hidden="true">
-                  Reel
-                </span>
-              ) : (
+        {media.map((item) => {
+          if (isInstagramLink(item.url)) {
+            return (
+              <li key={item.url}>
+                <a className="viewer-thumb viewer-thumb-story" href={item.url} target="_blank" rel="noopener noreferrer" aria-label="Voir la story sur Instagram (nouvel onglet)">
+                  Story
+                </a>
+              </li>
+            );
+          }
+          const place = position.get(item.url) ?? 0;
+          return (
+            <li key={item.url}>
+              <button
+                type="button"
+                className="viewer-thumb"
+                aria-label={item.kind === "video" ? "Voir la vidéo" : `Agrandir la photo ${place + 1}`}
+                onClick={() => setOpen(place)}
+              >
                 <Image src={item.posterUrl ?? item.url} alt="" fill unoptimized sizes="64px" />
-              )}
-              {item.kind === "video" ? (
-                <span className="viewer-thumb-play" aria-hidden="true">
-                  ▶
-                </span>
-              ) : null}
-            </button>
-          </li>
-        ))}
+                {item.kind === "video" ? (
+                  <span className="viewer-thumb-play" aria-hidden="true">
+                    ▶
+                  </span>
+                ) : null}
+              </button>
+            </li>
+          );
+        })}
       </ul>
-      {open !== null ? <MediaLightbox media={media} start={open} label={label} onClose={() => setOpen(null)} /> : null}
+      {open !== null ? <MediaLightbox media={viewable} start={open} label={label} onClose={() => setOpen(null)} /> : null}
     </>
   );
 }
@@ -102,11 +113,7 @@ function MediaLightbox({ media, start, label, onClose }: { media: VariantMedia[]
       <div className="media-stage" onClick={(event) => event.stopPropagation()}>
         {/* `key` : changer de média repart d'un lecteur neuf (la vidéo précédente ne continue pas en fond). */}
         {item.kind === "video" ? (
-          isReelLink(item.url) ? (
-            <ReelEmbed key={item.url} url={item.url} label={label} />
-          ) : (
-            <StoryVideo key={item.url} item={item} />
-          )
+          <StoryVideo key={item.url} item={item} />
         ) : (
           <Image key={item.url} src={item.url} alt={`${label}, photo ${index + 1}`} fill unoptimized sizes="460px" className="object-contain" />
         )}
@@ -129,23 +136,7 @@ function MediaLightbox({ media, start, label, onClose }: { media: VariantMedia[]
   );
 }
 
-// La vidéo d'un téléphone, c'est le Reel Instagram du magasin (27/11, décision de Mehdi : héberger des vidéos chez Cloudinary
-// consommait trop de crédits). Le lecteur d'Instagram est dans une `<iframe>` : elle n'existe que lorsque le client ouvre la
-// fenêtre (un clic), donc rien d'Instagram ne se charge avant. Le bandeau du haut laisse la place à la croix de la fenêtre,
-// et le lien du bas ouvre le Reel sur Instagram quand le lecteur ne s'affiche pas (Reel supprimé, compte passé en privé).
-function ReelEmbed({ url, label }: { url: string; label: string }) {
-  const embed = reelEmbedUrl(url);
-  return (
-    <div className="story-reel">
-      {embed ? <iframe src={embed} title={`Vidéo : ${label}`} allow="encrypted-media; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" /> : null}
-      <a className="story-reel-link" href={url} target="_blank" rel="noopener noreferrer">
-        Voir sur Instagram ↗
-      </a>
-    </div>
-  );
-}
-
-// La vidéo de la story : elle démarre sans le son (comme une story, et les navigateurs l'exigent), en boucle. Le client
+// Une ancienne vidéo, hébergée chez Cloudinary (avant le 27/11) : elle démarre sans le son (comme une story, et les navigateurs l'exigent), en boucle. Le client
 // la met en pause et la relance quand il veut (un clic sur la vidéo ou le bouton), et active ou coupe le son (décision de
 // Mehdi du 26/11).
 function StoryVideo({ item }: { item: VariantMedia }) {

@@ -68,19 +68,18 @@
     font-size: 1rem;
   }
 
-  /* La tuile d'un Reel Instagram (27/11) : pas d'image à nous, un fond de la teinte de la boutique et le mot « Reel ». */
-  .viewer-thumb-reel {
-    position: absolute;
-    inset: 0;
+  /* La tuile « Story » (27/11) : un lien vers la story sur Instagram, donc pas d'image à nous. Elle prend la taille et le
+     contour d'une miniature (`viewer-thumb`), avec un fond aux couleurs d'Instagram et le mot « Story » centré. */
+  .viewer-thumb-story {
     display: grid;
-    place-items: end center;
-    padding-bottom: 8px;
-    background: linear-gradient(145deg, #3d4bff, #8a3dff 60%, #ff3d8a);
+    place-items: center;
+    background: linear-gradient(145deg, #3d4bff, #8a3dff 55%, #ff3d8a);
     color: #fff;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    text-decoration: none;
   }
 
   /* Le média en grand. */
@@ -144,35 +143,7 @@
     right: 8px;
   }
 
-  /* Le Reel Instagram (27/11) : le lecteur d'Instagram en dessous d'un bandeau de 56 px (la place de la croix de la fenêtre,
-     qui sinon cacherait « Voir le profil »), et le lien « Voir sur Instagram » en bas, utile quand le lecteur ne s'affiche pas. */
-  .story-reel {
-    position: absolute;
-    inset: 56px 0 0;
-    display: flex;
-    flex-direction: column;
-  }
-  .story-reel iframe {
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-    border: 0;
-    background: #fff;
-  }
-  .story-reel-link {
-    display: block;
-    padding: 10px;
-    background: #08090d;
-    color: #fff;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    text-align: center;
-  }
-  .story-reel-link:hover {
-    text-decoration: underline;
-  }
-
-  /* La vidéo : un clic la met en pause, une barre donne pause et son. */
+  /* La vidéo (ancienne, chez Cloudinary) : un clic la met en pause, une barre donne pause et son. */
   .story-video {
     position: absolute;
     inset: 0;

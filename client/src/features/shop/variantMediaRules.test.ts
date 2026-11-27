@@ -1,24 +1,24 @@
 import { describe, expect, it } from "vitest";
 import type { Variant } from "@/types/api";
-import { isReelLink, mediaSummary, reelEmbedUrl, shownMedia } from "./variantMediaRules";
+import { isInstagramLink, mediaSummary, shownMedia } from "./variantMediaRules";
 
-// La vidéo d'un téléphone est le lien d'un Reel Instagram (27/11) : le site le met dans une `<iframe>` d'Instagram, mais
-// jamais une autre adresse (une `<iframe>` ne doit pointer que vers Instagram).
-describe("isReelLink et reelEmbedUrl", () => {
-  it("reconnaît un Reel Instagram et construit l'adresse du lecteur intégrable", () => {
-    expect(isReelLink("https://www.instagram.com/reel/DgPh-ZvNLX9/")).toBe(true);
-    expect(reelEmbedUrl("https://www.instagram.com/reel/DgPh-ZvNLX9/")).toBe("https://www.instagram.com/reel/DgPh-ZvNLX9/embed/");
+// La vidéo d'un téléphone est le lien d'une story Instagram (27/11) : le site ne la lit pas, la tuile « Story » l'ouvre sur
+// Instagram. Une ancienne vidéo Cloudinary garde son lecteur.
+describe("isInstagramLink", () => {
+  it("reconnaît un lien Instagram (story, Reel)", () => {
+    expect(isInstagramLink("https://www.instagram.com/stories/dropzone.officiel/3812345678901234567/")).toBe(true);
+    expect(isInstagramLink("https://www.instagram.com/reel/DgPh-ZvNLX9/")).toBe(true);
   });
 
-  it("ajoute la barre finale si elle manque et jette ce qui suit l'adresse", () => {
-    expect(reelEmbedUrl("https://www.instagram.com/reel/DgPh-ZvNLX9")).toBe("https://www.instagram.com/reel/DgPh-ZvNLX9/embed/");
-    expect(reelEmbedUrl("https://www.instagram.com/reel/DgPh-ZvNLX9/?igsh=abc")).toBe("https://www.instagram.com/reel/DgPh-ZvNLX9/embed/");
+  it("une ancienne vidéo Cloudinary ou un faux domaine n'est pas un lien Instagram", () => {
+    expect(isInstagramLink("https://res.cloudinary.com/x/video/upload/a.mp4")).toBe(false);
+    expect(isInstagramLink("https://instagram.com.evil.example/stories/x/1/")).toBe(false);
   });
 
-  it("une ancienne vidéo Cloudinary ou une autre adresse n'est pas un Reel et n'a pas de lecteur Instagram", () => {
-    expect(isReelLink("https://res.cloudinary.com/x/video/upload/a.mp4")).toBe(false);
-    expect(reelEmbedUrl("https://res.cloudinary.com/x/video/upload/a.mp4")).toBeNull();
-    expect(reelEmbedUrl("https://instagram.com.evil.example/reel/x/")).toBeNull();
+  it("le résumé d'une fiche dit « la story » pour un lien Instagram et « la vidéo » pour un fichier", () => {
+    const photo = { kind: "photo" as const, url: "p", posterUrl: null };
+    expect(mediaSummary([photo, { kind: "video", url: "https://www.instagram.com/stories/a/12345/", posterUrl: null }])).toBe("1 photo et la story");
+    expect(mediaSummary([photo, { kind: "video", url: "https://res.cloudinary.com/x/a.mp4", posterUrl: "a.jpg" }])).toBe("1 photo et la vidéo");
   });
 });
 

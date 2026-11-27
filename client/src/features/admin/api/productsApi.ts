@@ -140,9 +140,9 @@ const productsApi = api.injectEndpoints({
       transformResponse: data<AdminMedia>,
       invalidatesTags: (_result, _error, { productId }) => [{ type: "Products", id: productId }],
     }),
-    // La vidéo (27/11) : le lien d'un Reel Instagram. Rien à envoyer : l'API vérifie le lien et n'en garde que l'adresse propre.
-    addVariantReel: build.mutation<AdminMedia, { productId: number; variantId: number; url: string }>({
-      query: ({ variantId, url }) => ({ url: `/admin/variants/${variantId}/media/reel`, method: "POST", body: { url } }),
+    // La vidéo (27/11) : le lien de la story Instagram. Rien à envoyer : l'API vérifie le lien et n'en garde que l'adresse propre.
+    addVariantStory: build.mutation<AdminMedia, { productId: number; variantId: number; url: string }>({
+      query: ({ variantId, url }) => ({ url: `/admin/variants/${variantId}/media/story`, method: "POST", body: { url } }),
       transformResponse: data<AdminMedia>,
       invalidatesTags: (_result, _error, { productId }) => [{ type: "Products", id: productId }],
     }),
@@ -172,7 +172,7 @@ export const {
   useDeleteImageMutation,
   useReplaceMainImageMutation,
   useAddVariantMediaMutation,
-  useAddVariantReelMutation,
+  useAddVariantStoryMutation,
   useRemoveVariantMediaMutation,
   useReorderVariantMediaMutation,
   useGiftOptionsQuery,

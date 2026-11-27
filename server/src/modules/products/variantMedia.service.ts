@@ -2,7 +2,7 @@ import { uploadToCloudinary, VARIANT_FOLDER } from "../../config/cloudinary.js";
 import { prisma, type Tx } from "../../config/db.js";
 import { AppError } from "../../utils/AppError.js";
 import { destroyMediaFiles } from "./soldMedia.service.js";
-import { checkMediaRoom, mediaKindOf, posterOf, reelUrlOf } from "./variantMedia.rules.js";
+import { checkMediaRoom, mediaKindOf, posterOf, instagramUrlOf } from "./variantMedia.rules.js";
 
 // La largeur maximale d'une photo de variante, réduite à l'envoi (26/11) : assez fine pour l'agrandir à l'écran.
 const PHOTO_MAX_WIDTH = 1600;
@@ -41,7 +41,7 @@ async function roomFor(db: Tx, variantId: number, kind: "photo" | "video", size:
   return { room, position };
 }
 
-// Enregistre un média : une photo déjà chez Cloudinary (elle a un `publicId`), ou un lien de Reel (`publicId` null, rien à
+// Enregistre un média : une photo déjà chez Cloudinary (elle a un `publicId`), ou un lien Instagram (`publicId` null, rien à
 // supprimer chez Cloudinary). Deuxième vérification de la place qui reste, sous verrou de la ligne de la variante, juste
 // avant d'écrire : pendant un envoi, un autre envoi ou une vente a pu changer cette place, et deux envois en même temps ne
 // dépassent jamais le plafond. Si la vérification échoue, la photo, qui n'a pas de ligne, est supprimée de Cloudinary (avec
@@ -64,7 +64,7 @@ async function saveUploadedMedia(
     });
   } catch (error) {
     // Jamais le fichier d'un média qui existe : deux appels pour le même fichier en même temps, et le perdant ne doit pas
-    // supprimer celui du gagnant (la ligne du gagnant pointerait vers un fichier disparu). Un lien de Reel n'a pas de fichier.
+    // supprimer celui du gagnant (la ligne du gagnant pointerait vers un fichier disparu). Un lien Instagram n'a pas de fichier.
     if (media.publicId) {
       const registered = await prisma.variantMedia.findFirst({ where: { publicId: media.publicId }, select: { id: true } });
       if (!registered) {
@@ -81,7 +81,7 @@ export async function addVariantMedia(variantId: number, file: Express.Multer.Fi
     throw new AppError(400, "Aucun fichier reçu (champ « media »)");
   }
   if (mediaKindOf(file.mimetype) !== "photo") {
-    throw new AppError(400, "Formats acceptés : JPEG, PNG ou WebP (la vidéo est un lien de Reel Instagram)");
+    throw new AppError(400, "Formats acceptés : JPEG, PNG ou WebP (la vidéo est un lien Instagram)");
   }
   await variantOrThrow(variantId);
   // Première vérification, avant l'envoi : refuser tout de suite (variante épuisée, plafond atteint, fichier trop lourd)
@@ -94,14 +94,14 @@ export async function addVariantMedia(variantId: number, file: Express.Multer.Fi
   return saveUploadedMedia(variantId, { kind: "photo", ...uploaded, size: file.size });
 }
 
-// La vidéo d'une variante (27/11) : le lien d'un Reel Instagram que le gérant colle. Rien n'est envoyé ni stocké chez nous :
-// la ligne ne garde que l'adresse propre du Reel (`reelUrlOf` jette le suivi et refuse tout ce qui n'est pas un Reel ou une
+// La vidéo d'une variante (27/11) : le lien Instagram que le gérant colle. Rien n'est envoyé ni stocké chez nous :
+// la ligne ne garde que l'adresse propre (`instagramUrlOf` jette le suivi et refuse tout ce qui n'est pas une story, un Reel ou une
 // publication d'Instagram), et le site l'affiche avec le lecteur d'Instagram. La même vérification de place que pour une
 // photo (variante épuisée, une seule vidéo) tourne avant d'écrire.
-export async function addVariantReel(variantId: number, link: string): Promise<MediaView> {
-  const url = reelUrlOf(link);
+export async function addVariantStory(variantId: number, link: string): Promise<MediaView> {
+  const url = instagramUrlOf(link);
   if (!url) {
-    throw new AppError(400, "Colle le lien d'un Reel ou d'une publication Instagram (une story ne peut pas s'afficher sur le site)");
+    throw new AppError(400, "Colle le lien d'une story, d'un Reel ou d'une publication Instagram");
   }
   await variantOrThrow(variantId);
   const first = await roomFor(prisma, variantId, "video", 0);

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fileProblem, mediaPanelState, storyLink } from "./variantMedia";
 
 // Ce qu'on vérifie sur la photo choisie, avant tout envoi (26/11) : un refus clair tout de suite. Même plafond que l'API :
-// 4 Mo. Depuis le 27/11 la vidéo n'est plus un fichier : c'est le lien d'un Reel Instagram.
+// 4 Mo. Depuis le 27/11 la vidéo n'est plus un fichier : c'est le lien de la story Instagram.
 describe("fileProblem", () => {
   const mo = 1024 * 1024;
 
@@ -15,8 +15,8 @@ describe("fileProblem", () => {
     expect(fileProblem({ type: "image/png", size: 4 * mo + 1 })).toContain("4 Mo");
   });
 
-  it("refuse une vidéo ou un autre type de fichier, et renvoie vers le lien de Reel", () => {
-    expect(fileProblem({ type: "video/mp4", size: 1000 })).toContain("Reel");
+  it("refuse une vidéo ou un autre type de fichier, et renvoie vers le lien de la story", () => {
+    expect(fileProblem({ type: "video/mp4", size: 1000 })).toContain("story");
     expect(fileProblem({ type: "application/pdf", size: 1000 })).toContain("JPEG");
     expect(fileProblem({ type: "image/gif", size: 1000 })).toContain("JPEG");
   });

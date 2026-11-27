@@ -86,7 +86,7 @@ export async function purgeSoldMedia(): Promise<number> {
           AND o.status IN ('pending', 'confirmed', 'shipped', 'delivered', 'reserved')
       )
     RETURNING m.public_id AS "publicId", m.kind::text AS "kind"`;
-  // Les liens de Reel (sans fichier) partent avec leur ligne : il n'y a rien à supprimer chez Cloudinary.
+  // Les liens Instagram (sans fichier) partent avec leur ligne : il n'y a rien à supprimer chez Cloudinary.
   await destroyMediaFiles(sold.flatMap((row) => (row.publicId ? [{ publicId: row.publicId, kind: row.kind }] : [])));
   return sold.length;
 }
