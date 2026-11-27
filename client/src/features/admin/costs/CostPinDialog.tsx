@@ -63,8 +63,8 @@ function PinForm({ onSubmit }: { onSubmit: (pin: string) => Promise<void> }) {
   return (
     <div className="space-y-3">
       <p className="text-sm text-ink-muted">
-        Tape le code à {COST_PIN_LENGTH} chiffres pour voir les prix d&apos;achat, la marge et le bénéfice. Ils se recachent d&apos;un bouton, au
-        rechargement de la page, ou après 5 minutes sans toucher à l&apos;écran.
+        Tape le code à {COST_PIN_LENGTH} chiffres pour voir ce prix. Les autres restent cachés. Il se recache d&apos;un toucher, tout seul après
+        30 secondes, ou quand tu quittes la page.
       </p>
       <label className="block">
         <span className="label">Code</span>
@@ -85,7 +85,7 @@ function PinForm({ onSubmit }: { onSubmit: (pin: string) => Promise<void> }) {
         {error}
       </p>
       <button type="button" className="btn btn-primary w-full" disabled={busy || !isCompletePin(pin)} onClick={() => void submit(pin)}>
-        {busy ? "Vérification…" : "Voir les prix"}
+        {busy ? "Vérification…" : "Voir ce prix"}
       </button>
     </div>
   );
