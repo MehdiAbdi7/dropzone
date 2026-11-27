@@ -7,10 +7,12 @@ import {
   getGiftOptions,
   getProduct,
   getProducts,
+  getVariantArrivals,
   getVariants,
   patchProduct,
   postImage,
   postProduct,
+  postVariantArrival,
   postVariantMedia,
   postVariantStory,
   putMainImage,
@@ -20,6 +22,7 @@ import {
 } from "./productAdmin.controller.js";
 import {
   adminProductListQuerySchema,
+  arrivalBodySchema,
   imageParamsSchema,
   mediaOrderBodySchema,
   mediaParamsSchema,
@@ -42,6 +45,10 @@ productAdminRouter.put(
   putVariantMediaOrder,
 );
 productAdminRouter.delete("/variants/:id/media/:mediaId", validate({ params: mediaParamsSchema }), deleteVariantMedia);
+// Un arrivage de neuf (27/11) et son journal : admin seulement (aucune règle dans la table des droits). Un neuf acheté à un
+// autre prix reste une seule variante, dont le prix d'achat devient la moyenne pondérée.
+productAdminRouter.post("/variants/:id/arrivals", validate({ params: idParamsSchema, body: arrivalBodySchema }), postVariantArrival);
+productAdminRouter.get("/variants/:id/arrivals", validate({ params: idParamsSchema }), getVariantArrivals);
 // Le sélecteur de variantes du comptoir : vente au magasin et fenêtre « Modifier » (lot 3).
 productAdminRouter.get("/variants", validate({ query: variantSearchQuerySchema }), getVariants);
 productAdminRouter.get("/products", validate({ query: adminProductListQuerySchema }), getProducts);

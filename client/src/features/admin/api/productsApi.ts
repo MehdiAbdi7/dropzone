@@ -52,7 +52,13 @@ export type AdminVariant = {
   media?: AdminMedia[];
 };
 
-export type AdminMedia = { id: number; kind: "photo" | "video"; url: string; posterUrl: string | null; position: number };
+// Ce que dit l'API d'un arrivage réussi (27/11) : le stock et le prix d'achat moyen de la variante, juste après.
+export type VariantArrivalResult = { id: number; stock: number; purchasePrice: number | null };
+
+// Une ligne du journal des arrivages d'une variante neuve (27/11) : ce qui est arrivé, et ce qu'il en est sorti.
+export type VariantArrival = { id: number; createdAt: string; quantity: number; unitCost: number; stockAfter: number; costAfter: number };
+
+export type AdminMedia ={ id: number; kind: "photo" | "video"; url: string; posterUrl: string | null; position: number };
 
 export type AdminProduct = {
   id: number;
@@ -156,6 +162,25 @@ const productsApi = api.injectEndpoints({
       query: ({ variantId, ids }) => ({ url: `/admin/variants/${variantId}/media/order`, method: "PUT", body: { ids } }),
       invalidatesTags: (_result, _error, { productId }) => [{ type: "Products", id: productId }],
     }),
+    // Un arrivage de neuf (27/11) : du stock reçu à un autre prix d'achat. Le stock et le prix d'achat moyen de la variante
+    // changent tout de suite côté API, sans attendre « Enregistrer » ; la réponse dit le nouvel état.
+    addVariantArrival: build.mutation<
+      VariantArrivalResult,
+      { productId: number; variantId: number; quantity: number; unitCost: number; currentUnitCost?: number }
+    >({
+      query: ({ variantId, quantity, unitCost, currentUnitCost }) => ({
+        url: `/admin/variants/${variantId}/arrivals`,
+        method: "POST",
+        body: { quantity, unitCost, ...(currentUnitCost === undefined ? {} : { currentUnitCost }) },
+      }),
+      transformResponse: data<VariantArrivalResult>,
+      invalidatesTags: (_result, _error, { productId }) => [{ type: "Products", id: productId }, "Products"],
+    }),
+    variantArrivals: build.query<VariantArrival[], number>({
+      query: (variantId) => `/admin/variants/${variantId}/arrivals`,
+      transformResponse: data<VariantArrival[]>,
+      providesTags: ["Products"],
+    }),
     giftOptions: build.query<GiftOption[], void>({
       query: () => "/admin/gift-options",
       transformResponse: data<GiftOption[]>,
@@ -175,6 +200,8 @@ export const {
   useReplaceMainImageMutation,
   useAddVariantMediaMutation,
   useAddVariantStoryMutation,
+  useAddVariantArrivalMutation,
+  useVariantArrivalsQuery,
   useRemoveVariantMediaMutation,
   useReorderVariantMediaMutation,
   useGiftOptionsQuery,

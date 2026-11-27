@@ -6,12 +6,13 @@ import { CONDITION_LABELS, OPTION_FIELDS, type ChoiceGroup } from "@/config/cata
 import type { ProductKind } from "@/types/api";
 import { formatPrice } from "@/lib/format";
 import { useChoicesQuery } from "@/features/admin/api/choicesApi";
-import { type GiftOption } from "@/features/admin/api/productsApi";
+import { type GiftOption, type VariantArrivalResult } from "@/features/admin/api/productsApi";
 import { CostInput, useCosts } from "@/features/admin/costs/CostGuard";
 import ChoicePicker from "./ChoicePicker";
 import ColorPhotoField from "./ColorPhotoField";
 import ConditionSheet from "./ConditionSheet";
 import GiftEditor from "./GiftEditor";
+import VariantArrivalDialog from "./VariantArrivalDialog";
 import VariantMediaPanel from "./VariantMediaPanel";
 import VariantPhones from "./VariantPhones";
 import { type VariantDraft, withCondition } from "./productDraft";
@@ -35,6 +36,9 @@ type Props = {
   // Sans `onRemove` (ajout depuis la page d'une couleur), pas de bouton « Retirer ».
   onRemove?: () => void;
   onSuggestSku: () => void;
+  // Un arrivage de neuf vient d'être enregistré (27/11) : le stock et le prix d'achat moyen d'après. La fiche met à jour ses
+  // champs ET ce qu'elle croit enregistré, sinon « Enregistrer » renverrait l'ancien stock par-dessus l'arrivage.
+  onArrived?: (result: VariantArrivalResult) => void;
 };
 
 type ChoiceField = { key: string; multiple?: boolean } & (
@@ -58,8 +62,10 @@ export default function VariantEditor({
   onChange,
   onRemove,
   onSuggestSku,
+  onArrived,
 }: Props) {
   const [chosenTab, setChosenTab] = useState<VariantTabId>("features");
+  const [arrivalOpen, setArrivalOpen] = useState(false);
   const set = (patch: Partial<VariantDraft>) => onChange({ ...variant, ...patch });
   const id = (name: string) => `${variant.key}-${name}`;
   const refurbished = variant.condition === "refurbished";
@@ -267,6 +273,28 @@ export default function VariantEditor({
               />
             </Field>
           </div>
+          {/* Du stock de neuf reçu à un autre prix d'achat (27/11) : on l'ajoute à cette variante, son prix d'achat devient la
+              moyenne. Seulement pour un neuf déjà enregistré (l'arrivage part tout de suite à l'API). */}
+          {variant.id && productId && !refurbished ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => setArrivalOpen(true)}>
+                + Arrivage
+              </button>
+              <p className="text-xs text-ink-muted">
+                Du stock reçu à un autre prix d&apos;achat : le prix d&apos;achat devient la moyenne, sans créer une deuxième variante.
+              </p>
+              <VariantArrivalDialog
+                open={arrivalOpen}
+                variantId={variant.id}
+                productId={productId}
+                onClose={() => setArrivalOpen(false)}
+                onDone={(result) => {
+                  onArrived?.(result);
+                  setArrivalOpen(false);
+                }}
+              />
+            </div>
+          ) : null}
           {/* La marge se lit en direct : plus besoin de la calculer de tête. */}
           {margin !== null && costsVisible ? (
             <p

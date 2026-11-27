@@ -375,11 +375,34 @@ model ProductVariant {
   status           ProductStatus @default(published)
   // Les photos et la vidéo de CET exemplaire (26/11) : supprimées dès que son stock tombe à 0.
   media            VariantMedia[]
+  // Le journal des arrivages d'un neuf (27/11) : chaque réception de stock à son prix d'achat.
+  arrivals         VariantArrival[]
 
   @@index([productId])
   @@index([status])
   @@index([stockedAt(sort: Desc)])
   @@map("product_variants")
+}
+
+// Le journal des arrivages d'une variante neuve (27/11, demande de Mehdi) : un neuf acheté à 350 000 DA puis à 340 000 DA
+// reste UNE variante, dont le prix d'achat devient la moyenne pondérée (comme les pièces de l'atelier). Une ligne par arrivage,
+// jamais modifiée : la quantité reçue, son prix unitaire, et ce qu'il en est sorti (stock et prix d'achat moyen juste après).
+// Le bénéfice des ventes déjà faites ne change pas : chaque ligne vendue a figé son prix d'achat (`unitCost`).
+model VariantArrival {
+  id         Int            @id @default(autoincrement())
+  createdAt  DateTime       @default(now()) @map("created_at")
+  variantId  Int            @map("variant_id")
+  variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  quantity   Int
+  unitCost   Int            @map("unit_cost")
+  stockAfter Int            @map("stock_after")
+  // Le prix d'achat moyen de la variante juste après cet arrivage : celui que le bénéfice des ventes suivantes a lu.
+  costAfter  Int            @map("cost_after")
+  // Pas de clé étrangère : la trace survit à un compte supprimé, comme celle des mouvements de pièces.
+  userId     Int?           @map("user_id")
+
+  @@index([variantId])
+  @@map("variant_arrivals")
 }
 
 // Les photos et la vidéo d'une variante précise (26/11, demande de Mehdi : la vidéo de la story Instagram d'un
