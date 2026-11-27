@@ -5,6 +5,7 @@ import { AppError } from "../../utils/AppError.js";
 import { escapeLike } from "../../utils/escapeLike.js";
 import { paginate, paginationMeta } from "../../utils/pagination.js";
 import { slugify } from "../../utils/slugify.js";
+import { keepMarksOf, NO_MARKS } from "./diagramMarks.js";
 import type { AdminProductListQuery, ProductBody } from "./product.schema.js";
 import { addMissingModelColors, alignVariantColors, variantColors } from "../models/modelColors.js";
 import { DEVICE_KINDS, SELLABLE, computeMinNewPrice, computeMinPrice, refreshMinPrice } from "./product.service.js";
@@ -106,7 +107,8 @@ export async function getAdminProduct(id: number) {
 // Aussi utilisé par l'ajout d'un exemplaire depuis la page d'une couleur.
 export function withoutDealSheet<V extends ProductBody["variants"][number]>(variant: V): V {
   if (variant.condition === "refurbished") {
-    return variant;
+    // Un point n'a de sens que pour une valeur encore sur la fiche : retirer une pièce ou un défaut retire son point.
+    return { ...variant, diagramMarks: keepMarksOf(variant.diagramMarks, variant) };
   }
   return {
     ...variant,
@@ -115,6 +117,7 @@ export function withoutDealSheet<V extends ProductBody["variants"][number]>(vari
     replacedParts: [],
     compatibleParts: [],
     defects: [],
+    diagramMarks: NO_MARKS,
     limitations: [],
     withBox: null,
   };

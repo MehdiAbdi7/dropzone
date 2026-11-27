@@ -114,6 +114,9 @@ export type Variant = {
   // Les pièces changées qui ne sont pas d'origine (les autres le sont).
   compatibleParts: string[];
   defects: string[];
+  // Les points posés à la main sur le dessin (27/11), pour les valeurs qui ne sont pas dans les listes. Facultatif exprès :
+  // une réponse mise en cache avant cette version ne l'a pas.
+  diagramMarks?: DiagramMarks;
   limitations: string[];
   // Une affaire : avec ou sans sa boîte d'origine (null pour un neuf scellé, ou pour une
   // affaire importée dont l'annonce n'en parlait pas), et les détails du gérant.
@@ -131,6 +134,12 @@ export type Variant = {
   // cache avant cette version ne l'a pas.
   media?: VariantMedia[];
 };
+
+// Un point du dessin d'un reconditionné, dans le repère du dessin (220 sur 200), le même pour tous les appareils.
+export type DiagramPoint = { x: number; y: number };
+
+// Les points posés à la main, par étiquette : `parts` pour les pièces remplacées, `defects` pour les défauts visibles.
+export type DiagramMarks = { parts: Record<string, DiagramPoint>; defects: Record<string, DiagramPoint> };
 
 // Une photo, ou la vidéo (avec sa vignette) d'une variante.
 export type VariantMedia = { kind: "photo" | "video"; url: string; posterUrl: string | null };

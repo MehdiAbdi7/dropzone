@@ -3,9 +3,11 @@
 import { Fragment } from "react";
 import Field from "@/components/ui/Field";
 import { FAMILIES } from "@/config/catalog";
+import type { ProductKind } from "@/types/api";
 import ChoicePicker from "./ChoicePicker";
 import { SectionHeading } from "./FormParts";
-import { type PartOrigin, type VariantDraft, withReplacedParts } from "./productDraft";
+import MarkPlacer from "./MarkPlacer";
+import { type PartOrigin, type VariantDraft, withDefects, withReplacedParts } from "./productDraft";
 
 const ORIGIN_LABELS: Record<PartOrigin, string> = { origine: "D'origine", compatible: "Compatible" };
 
@@ -45,12 +47,16 @@ function PartOriginPicker({
 // boîte d'origine et détails pour le client.
 export default function ConditionSheet({
   variant,
+  kind,
   number,
   idOf,
   set,
   onChange,
 }: {
   variant: VariantDraft;
+  // La sorte de l'appareil (27/11) : elle donne le dessin sur lequel placer à la main une pièce ou un défaut ajouté hors des
+  // listes. Sans elle (la reprise d'un appareil, dont la fiche n'enregistre pas ces points), on ne propose pas le dessin.
+  kind?: ProductKind;
   // Le numéro de la section dans une page numérotée (« 04 » dans la reprise). Sans numéro (onglet État d'une variante),
   // la fiche n'a ni titre ni fond : l'onglet porte déjà son nom.
   number?: string;
@@ -99,7 +105,9 @@ export default function ConditionSheet({
             onChange={(values) =>
               family.field === "replacedParts"
                 ? onChange(withReplacedParts(variant, values))
-                : set({ [family.field]: values })
+                : family.field === "defects"
+                  ? onChange(withDefects(variant, values))
+                  : set({ [family.field]: values })
             }
           />
           {family.field === "replacedParts" && variant.replacedParts.length > 0 ? (
@@ -109,6 +117,7 @@ export default function ConditionSheet({
           ) : null}
         </Fragment>
       ))}
+      {kind ? <MarkPlacer variant={variant} kind={kind} onChange={onChange} /> : null}
       <fieldset className="space-y-2 rounded-lg border border-line bg-surface p-4">
         <legend className="label px-1">Boîte d&apos;origine</legend>
         {variant.withBox === null ? (

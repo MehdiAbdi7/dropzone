@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/format";
 import type { ProductKind, Variant } from "@/types/api";
 import { boxLabel, dealFacts, partOrigin } from "./dealLabels";
 import DeviceDiagram from "./DeviceDiagram";
+import { diagramKindOf } from "./diagramShapes";
 import { zonesOf } from "./diagramZones";
 
 // La carte d'une affaire, la « radiographie » : le prix, la couleur et la boîte, les
@@ -25,7 +26,7 @@ export default function RefurbishedCard({
   const { Couleur: color, ...otherOptions } = variant.options;
   const swatch = color ? swatchOf(color, palette) : null;
   const zones = zonesOf(variant, kind);
-  const diagramKind = kind === "tablet" || kind === "laptop" || kind === "watch" ? kind : "phone";
+  const diagramKind = diagramKindOf(kind);
   const pristine = variant.replacedParts.length === 0 && variant.defects.length === 0;
   const box = boxLabel(variant.withBox);
   const facts = dealFacts(variant);
@@ -87,7 +88,13 @@ export default function RefurbishedCard({
       ) : null}
 
       <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
-        <DeviceDiagram kind={diagramKind} replaced={zones.replaced} defects={zones.defects} />
+        <DeviceDiagram
+          kind={diagramKind}
+          replaced={zones.replaced}
+          defects={zones.defects}
+          replacedDots={zones.replacedDots}
+          defectDots={zones.defectDots}
+        />
         <div className="space-y-3 text-sm">
           {pristine ? (
             <p className="font-semibold">Aucune pièce changée, aucun défaut.</p>

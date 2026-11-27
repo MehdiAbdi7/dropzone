@@ -369,6 +369,8 @@ export async function getProductBySlug(slug: string) {
           batteryHealth: true,
           replacedParts: true,
           defects: true,
+          // Les points posés à la main sur le dessin (27/11), pour les valeurs qui ne sont pas dans les listes.
+          diagramMarks: true,
           limitations: true,
           compatibleParts: true,
           withBox: true,

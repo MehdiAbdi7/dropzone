@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { Condition, Options, Page, ProductKind, ProductStatus } from "@/types/api";
+import type { Condition, DiagramMarks, Options, Page, ProductKind, ProductStatus } from "@/types/api";
 import { data, imageForm, mediaForm } from "./shared";
 
 // Les produits du back-office : la liste, la fiche, les photos et les articles offerts.
@@ -34,6 +34,8 @@ export type AdminVariant = {
   replacedParts: string[];
   compatibleParts: string[];
   defects: string[];
+  // Les points posés à la main sur le dessin (27/11) : absent d'une API pas encore déployée.
+  diagramMarks?: DiagramMarks;
   limitations: string[];
   withBox: boolean | null;
   details: string | null;

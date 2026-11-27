@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { idParamsSchema } from "../../utils/idParams.js";
 import { paginationQuery } from "../../utils/pagination.js";
+import { diagramMarksSchema } from "./diagramMarks.js";
 
 const slug = z.string().trim().regex(/^[a-z0-9-]{1,120}$/);
 
@@ -103,6 +104,8 @@ export const sheetFields = {
   // Les pièces changées qui ne sont pas d'origine.
   compatibleParts: labelList,
   defects: labelList,
+  // Les points posés à la main sur le dessin, pour les valeurs qui ne sont pas dans les listes (27/11).
+  diagramMarks: diagramMarksSchema,
   limitations: labelList,
   // Avec ou sans sa boîte d'origine : obligatoire pour une affaire (voir checkRefurbishedSheet).
   // « Non précisée » (null) n'existe que pour les annonces importées : le gérant choisit.

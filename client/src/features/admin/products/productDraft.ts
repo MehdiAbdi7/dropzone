@@ -1,6 +1,6 @@
 import { DEVICE_KINDS } from "@/config/catalog";
 import { defaultWarrantyMonths } from "@/config/warranty";
-import type { Condition, Options, ProductKind, ProductStatus } from "@/types/api";
+import type { Condition, DiagramMarks, DiagramPoint, Options, ProductKind, ProductStatus } from "@/types/api";
 import type { AdminProduct, ProductBody } from "@/features/admin/api/productsApi";
 
 // L'état du formulaire produit. Les nombres restent en texte tant qu'on tape
@@ -25,6 +25,8 @@ export type VariantDraft = {
   // promesse au client.
   partOrigins: Record<string, PartOrigin>;
   defects: string[];
+  // Les points posés à la main sur le dessin (27/11), pour les pièces et les défauts qui ne sont pas dans les listes.
+  diagramMarks: DiagramMarks;
   limitations: string[];
   // Une affaire : avec (true) ou sans (false) sa boîte d'origine, et les détails pour le
   // client. null : une affaire importée dont l'annonce ne parlait pas de la boîte ; le
@@ -84,6 +86,7 @@ export function emptyVariant(condition: Condition = "new", kind?: ProductKind): 
     replacedParts: [],
     partOrigins: {},
     defects: [],
+    diagramMarks: noMarks(),
     limitations: [],
     withBox: false,
     details: "",
@@ -151,7 +154,41 @@ export function withReplacedParts(variant: VariantDraft, replacedParts: string[]
   const partOrigins = Object.fromEntries(
     Object.entries(variant.partOrigins).filter(([part]) => replacedParts.includes(part)),
   );
-  return { ...variant, replacedParts, partOrigins };
+  return keepMarks({ ...variant, replacedParts, partOrigins });
+}
+
+// Les défauts cochés dans le formulaire ; un défaut décoché perd son point, comme une pièce décochée perd son choix.
+export function withDefects(variant: VariantDraft, defects: string[]): VariantDraft {
+  return keepMarks({ ...variant, defects });
+}
+
+// Aucun point posé à la main (un objet neuf à chaque appel : le brouillon ne partage jamais le même objet).
+export function noMarks(): DiagramMarks {
+  return { parts: {}, defects: {} };
+}
+
+// Ne garde que les points des valeurs encore sur la fiche : retirer une pièce ou un défaut retire son point, pour qu'il ne
+// revienne pas à une mauvaise place si on recoche la valeur plus tard.
+function keepMarks(variant: VariantDraft): VariantDraft {
+  const only = (group: Record<string, DiagramPoint>, labels: string[]) =>
+    Object.fromEntries(Object.entries(group).filter(([label]) => labels.includes(label)));
+  return {
+    ...variant,
+    diagramMarks: {
+      parts: only(variant.diagramMarks.parts, variant.replacedParts),
+      defects: only(variant.diagramMarks.defects, variant.defects),
+    },
+  };
+}
+
+// Pose (ou déplace) le point d'une valeur sur le dessin : `parts` pour une pièce remplacée, `defects` pour un défaut.
+export function withMark(
+  variant: VariantDraft,
+  group: keyof DiagramMarks,
+  label: string,
+  point: DiagramPoint,
+): VariantDraft {
+  return { ...variant, diagramMarks: { ...variant.diagramMarks, [group]: { ...variant.diagramMarks[group], [label]: point } } };
 }
 
 // Un nouveau produit, vide ou prérempli depuis le Catalogue : « Créer la fiche » d'un modèle,
@@ -210,6 +247,7 @@ export function draftFromProduct(product: AdminProduct): ProductDraft {
         variant.replacedParts.map((part) => [part, variant.compatibleParts.includes(part) ? "compatible" : "origine"]),
       ),
       defects: variant.defects,
+      diagramMarks: variant.diagramMarks ?? noMarks(),
       limitations: variant.limitations,
       // Une affaire importée sans boîte connue garde null (« à corriger ») ; un neuf
       // scellé n'a pas de boîte à dire, la case reste simplement décochée.
@@ -264,6 +302,8 @@ export function variantBody(variant: VariantDraft): ProductBody["variants"][numb
     batteryHealth: toNullable(variant.batteryHealth),
     replacedParts: variant.replacedParts,
     defects: variant.defects,
+    // Les points ne partent que pour les valeurs encore cochées (l'API fait le même tri).
+    diagramMarks: deal ? keepMarks(variant).diagramMarks : noMarks(),
     limitations: variant.limitations,
     // Un neuf scellé n'a ni boîte à dire, ni pièce, ni détails : l'API les refuserait.
     compatibleParts: deal ? variant.replacedParts.filter((part) => variant.partOrigins[part] === "compatible") : [],
