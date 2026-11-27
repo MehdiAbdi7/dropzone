@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useDismantleTradeInMutation, useUseTradeInPartMutation, type TradeInRow } from "@/features/admin/api/exchangeApi";
 import { usePartsQuery } from "@/features/admin/api/partsApi";
+import { Cost } from "@/features/admin/costs/CostGuard";
 import EditDialog from "@/features/admin/products/EditDialog";
 import { errorMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/format";
@@ -126,7 +127,9 @@ function UsePartForm({ tradeIn, onDone }: { tradeIn: TradeInRow; onDone: () => v
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
-      <p className="text-sm text-ink-muted">Frais de remise en état actuels : {formatPrice(tradeIn.repairCost)}.</p>
+      <p className="text-sm text-ink-muted">
+        Frais de remise en état actuels : <Cost label="Frais de remise en état">{formatPrice(tradeIn.repairCost)}</Cost>.
+      </p>
       <div className="grid gap-3 sm:grid-cols-[1fr_6rem]">
         <label className="text-sm font-semibold">
           <span className="label">Pièce</span>
@@ -146,7 +149,8 @@ function UsePartForm({ tradeIn, onDone }: { tradeIn: TradeInRow; onDone: () => v
       </div>
       {cost !== null ? (
         <p className="rounded-md bg-surface-2 p-3 text-sm font-semibold" aria-live="polite">
-          S&apos;ajoute aux frais : {formatPrice(cost)}, soit {formatPrice(tradeIn.repairCost + cost)} en tout.
+          S&apos;ajoute aux frais : <Cost label="Prix d'achat de la pièce">{formatPrice(cost)}</Cost>, soit{" "}
+          <Cost label="Frais de remise en état">{formatPrice(tradeIn.repairCost + cost)}</Cost> en tout.
         </p>
       ) : null}
       {problem ? <p className="text-sm text-ink-muted">{problem}</p> : null}

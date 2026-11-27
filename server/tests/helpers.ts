@@ -19,7 +19,8 @@ export async function resetDb() {
     RESTART IDENTITY CASCADE`;
   // Les réglages du magasin ont une seule ligne (id = 1), créée par la migration : on remet ses
   // valeurs de départ au lieu de la supprimer.
-  await prisma.$executeRaw`UPDATE store_settings SET opening_time = '09:00', closing_time = '20:00', closed_days = '{}'`;
+  // Le code des prix d'achat aussi (27/11) : un code réglé par un test ne doit pas rester pour le suivant.
+  await prisma.$executeRaw`UPDATE store_settings SET opening_time = '09:00', closing_time = '20:00', closed_days = '{}', cost_pin_hash = NULL`;
   // Les réglages de la facture (lot 6) : une seule ligne aussi, remise à ses valeurs de départ.
   await prisma.$executeRaw`DELETE FROM invoice_settings`;
   await prisma.$executeRaw`INSERT INTO invoice_settings (id) VALUES (1)`;

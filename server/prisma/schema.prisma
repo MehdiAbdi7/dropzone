@@ -739,6 +739,9 @@ model StoreSettings {
   // commande quand le magasin l'envoie au client.
   reservationAdvance Int    @default(0) @map("reservation_advance")
   baridiNumber       String @default("") @map("baridi_number")
+  // Le code à 4 chiffres des prix d'achat (27/11), gardé chiffré (scrypt, sel au hasard), jamais en clair. Vide (null) : aucun
+  // code réglé, le back-office ne cache rien. Jamais renvoyé par une route : on ne lit que « un code existe-t-il ».
+  costPinHash        String? @map("cost_pin_hash")
 
   @@map("store_settings")
 }

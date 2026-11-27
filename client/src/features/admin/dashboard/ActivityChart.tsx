@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { OverviewDays } from "@/features/admin/api/overviewApi";
+import { Cost, useCosts } from "@/features/admin/costs/CostGuard";
 import { formatPrice } from "@/lib/format";
 import { useElementWidth } from "@/lib/useElementWidth";
 import {
@@ -47,6 +48,10 @@ export default function ActivityChart({
   loading: boolean;
 }) {
   const [active, setActive] = useState<number | null>(null);
+  // Le bénéfice permet de retrouver le prix d'achat : tant que le code n'est pas tapé (27/11), le graphique ne montre aucun
+  // point de ce choix (le dessin reste, vide, pour que sa taille ne saute pas au déverrouillage) et propose le code.
+  const { visible: costsVisible, askPin } = useCosts();
+  const locked = metric === "profit" && !costsVisible;
   const [wrapRef, width] = useElementWidth<HTMLDivElement>(640);
   const compact = width < COMPACT_BELOW;
   const height = compact ? 220 : 260;
@@ -54,7 +59,7 @@ export default function ActivityChart({
   const plotHeight = height - MARGIN.top - MARGIN.bottom;
 
   const config = METRICS.find((item) => item.key === metric) ?? METRICS[0];
-  const points = series ?? [];
+  const points = locked ? [] : (series ?? []);
   const values = points.map((point) => metricValue(point, metric));
   const max = niceMax(Math.max(0, ...values));
   const step = points.length > 0 ? plotWidth / points.length : plotWidth;
@@ -73,7 +78,9 @@ export default function ActivityChart({
           <h2 id="activite" className="text-lg">
             Activité
           </h2>
-          <p className="font-display text-2xl font-extrabold tabular-nums sm:text-3xl">{loading ? "…" : show(total)}</p>
+          <p className="font-display text-2xl font-extrabold tabular-nums sm:text-3xl">
+            {loading ? "…" : metric === "profit" ? <Cost label="Bénéfice">{show(total)}</Cost> : show(total)}
+          </p>
           <p className="text-sm text-ink-muted">
             {config.label.toLowerCase()} sur {days} jours
           </p>
@@ -188,12 +195,18 @@ export default function ActivityChart({
           </div>
         ) : null}
 
-        {!loading && total === 0 ? (
+        {locked ? (
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center">
+            <button type="button" className="btn btn-secondary btn-small" onClick={askPin}>
+              Bénéfice masqué : saisir le code
+            </button>
+          </div>
+        ) : !loading && total === 0 ? (
           <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-sm text-ink-muted">Rien sur cette période.</p>
         ) : null}
       </div>
 
-      {metric === "profit" && profitUnknown > 0 ? (
+      {metric === "profit" && !locked && profitUnknown > 0 ? (
         <p className="text-xs text-ink-muted">
           {profitUnknown} vente{profitUnknown > 1 ? "s" : ""} sans prix d&apos;achat connu n&apos;{profitUnknown > 1 ? "entrent" : "entre"} pas dans le bénéfice.
         </p>

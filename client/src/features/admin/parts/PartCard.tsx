@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { PartRow } from "@/features/admin/api/partsApi";
+import { Cost } from "@/features/admin/costs/CostGuard";
 import { formatPrice } from "@/lib/format";
 import ArrivalDialog from "./ArrivalDialog";
 import PartFormDialog from "./PartFormDialog";
@@ -34,7 +35,7 @@ export default function PartCard({ part, categoryName }: { part: PartRow; catego
         )}
       </div>
       <p className="text-sm text-ink-muted tabular-nums">
-        Achat {formatPrice(part.purchasePrice)} · Vente {formatPrice(part.salePrice)}
+        Achat <Cost>{formatPrice(part.purchasePrice)}</Cost> · Vente {formatPrice(part.salePrice)}
       </p>
       <div className="mt-auto flex flex-wrap gap-1.5">
         <button type="button" className="btn btn-primary btn-small" onClick={() => setOpen("arrival")}>

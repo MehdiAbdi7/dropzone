@@ -24,7 +24,7 @@ const deal = makeHit({
 });
 
 describe("variantDetailRows : une occasion", () => {
-  const rows = variantDetailRows(deal);
+  const rows = variantDetailRows(deal, { showCost: true });
 
   it("dit l'état de l'appareil : note, batterie, pièces changées, défauts, limitations, boîte", () => {
     expect(valueOf(rows, "Note")).toBe("8/10");
@@ -50,9 +50,29 @@ describe("variantDetailRows : une occasion", () => {
   });
 });
 
+// Le prix d'achat attend le code des prix d'achat (27/11) : sans lui, la fiche montre des points, jamais le chiffre.
+describe("variantDetailRows : le prix d'achat caché", () => {
+  it("remplace le prix d'achat par des points quand le code n'est pas tapé", () => {
+    const rows = variantDetailRows(deal, { showCost: false });
+    expect(valueOf(rows, "Prix d'achat")).toBe("••••");
+    expect(JSON.stringify(rows)).not.toContain(formatPrice(180_000));
+    expect(JSON.stringify(rows)).not.toContain("180");
+  });
+
+  it("garde le prix de vente et le reste de la fiche visibles", () => {
+    const rows = variantDetailRows(deal, { showCost: false });
+    expect(valueOf(rows, "Prix de vente")).toBe(formatPrice(245_000));
+    expect(valueOf(rows, "Garantie")).toBe("6 mois");
+  });
+
+  it("un prix d'achat inconnu reste « non renseigné » (il ne révèle rien)", () => {
+    expect(valueOf(variantDetailRows(makeHit({ purchasePrice: null }), { showCost: false }), "Prix d'achat")).toBe("non renseigné");
+  });
+});
+
 describe("variantDetailRows : un neuf scellé", () => {
   it("dit « Neuf scellé » et n'a ni note ni batterie", () => {
-    const rows = variantDetailRows(makeHit({ warrantyMonths: 12 }));
+    const rows = variantDetailRows(makeHit({ warrantyMonths: 12 }), { showCost: true });
     expect(valueOf(rows, "État")).toBe("Neuf scellé");
     expect(valueOf(rows, "Note")).toBeUndefined();
     expect(valueOf(rows, "Batterie")).toBeUndefined();
@@ -62,7 +82,7 @@ describe("variantDetailRows : un neuf scellé", () => {
 
 describe("variantDetailRows : les cas où l'information manque", () => {
   it("une boîte non précisée, des listes vides, une note et une batterie absentes se lisent bien", () => {
-    const rows = variantDetailRows(makeHit({ condition: "refurbished" }));
+    const rows = variantDetailRows(makeHit({ condition: "refurbished" }), { showCost: true });
     expect(valueOf(rows, "Boîte")).toBe("Boîte non précisée");
     expect(valueOf(rows, "Pièces changées")).toBe("aucune");
     expect(valueOf(rows, "Défauts")).toBe("aucun");
@@ -72,7 +92,7 @@ describe("variantDetailRows : les cas où l'information manque", () => {
   });
 
   it("un prix d'achat inconnu dit « non renseigné », jamais NaN", () => {
-    const rows = variantDetailRows(makeHit({ purchasePrice: null }));
+    const rows = variantDetailRows(makeHit({ purchasePrice: null }), { showCost: true });
     expect(valueOf(rows, "Prix d'achat")).toBe("non renseigné");
     expect(JSON.stringify(rows)).not.toContain("NaN");
   });
@@ -81,14 +101,14 @@ describe("variantDetailRows : les cas où l'information manque", () => {
   it("une réponse d'une ancienne API (sans la fiche ni le prix d'achat) ne plante pas et ne dit pas NaN", () => {
     const old = { ...makeHit({ condition: "refurbished" }) } as Partial<ReturnType<typeof makeHit>>;
     for (const key of ["purchasePrice", "gifts", "replacedParts", "compatibleParts", "defects", "limitations"] as const) delete old[key];
-    const rows = variantDetailRows(old as ReturnType<typeof makeHit>);
+    const rows = variantDetailRows(old as ReturnType<typeof makeHit>, { showCost: true });
     expect(valueOf(rows, "Prix d'achat")).toBe("non renseigné");
     expect(valueOf(rows, "Pièces changées")).toBe("aucune");
     expect(JSON.stringify(rows)).not.toContain("NaN");
   });
 
   it("une garantie absente dit « aucune » ; sans origine, référence, détails ni cadeaux, ces lignes n'existent pas", () => {
-    const rows = variantDetailRows(makeHit());
+    const rows = variantDetailRows(makeHit(), { showCost: true });
     expect(valueOf(rows, "Garantie")).toBe("aucune");
     for (const label of ["Origine", "Référence", "Détails", "Cadeaux offerts"]) {
       expect(valueOf(rows, label), label).toBeUndefined();

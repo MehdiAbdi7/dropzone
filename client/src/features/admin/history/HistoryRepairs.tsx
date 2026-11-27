@@ -1,4 +1,5 @@
 import type { HistoryRepair } from "@/features/admin/api/historyApi";
+import { Cost } from "@/features/admin/costs/CostGuard";
 import { historyAmountText, repairNumber } from "@/features/admin/repairs/repairsView";
 import { formatPrice } from "@/lib/format";
 
@@ -35,8 +36,12 @@ export default function HistoryRepairs({ repairs }: { repairs: HistoryRepair[] }
                 <span className="block font-bold tabular-nums">
                   {historyAmountText(repair.paidAmount, repair.payMethod)}
                 </span>
-                <span className="block text-ink-muted">pièces {formatPrice(repair.partsCost)}</span>
-                <span className="block text-ink-muted">bénéfice {profitText(repair.profit)}</span>
+                <span className="block text-ink-muted">
+                  pièces <Cost label="Coût des pièces">{formatPrice(repair.partsCost)}</Cost>
+                </span>
+                <span className="block text-ink-muted">
+                  bénéfice <Cost label="Bénéfice">{profitText(repair.profit)}</Cost>
+                </span>
               </span>
             </li>
           ))}

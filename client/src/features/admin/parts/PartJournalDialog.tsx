@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useCorrectStockMutation, usePartMovementsQuery, type PartRow } from "@/features/admin/api/partsApi";
+import { Cost } from "@/features/admin/costs/CostGuard";
 import EditDialog from "@/features/admin/products/EditDialog";
 import { errorMessage } from "@/lib/errors";
 import { formatDate, formatPrice } from "@/lib/format";
@@ -88,7 +89,12 @@ function Journal({ part }: { part: PartRow }) {
               </p>
               <p className="text-ink-muted">
                 {formatDate(movement.createdAt)}
-                {movement.unitCost !== null ? ` · à ${formatPrice(movement.unitCost)} l'unité` : ""}
+                {movement.unitCost !== null ? (
+                  <>
+                    {" "}
+                    · à <Cost>{formatPrice(movement.unitCost)}</Cost> l&apos;unité
+                  </>
+                ) : null}
                 {movement.note ? ` · ${movement.note}` : ""}
               </p>
             </li>

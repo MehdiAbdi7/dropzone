@@ -1,3 +1,4 @@
+import { MASKED_COST } from "@/features/admin/costs/costVisibility";
 import { formatPrice } from "@/lib/format";
 import type { VariantHit } from "./ticket";
 
@@ -10,7 +11,8 @@ const list = (items: string[], empty: string) => (items.length > 0 ? items.join(
 
 const BOX = { true: "Avec sa boîte d'origine", false: "Sans sa boîte d'origine", null: "Boîte non précisée" };
 
-export function variantDetailRows(source: VariantHit): DetailRow[] {
+// `showCost` : le prix d'achat n'est montré qu'avec le code des prix d'achat (27/11) ; sinon la ligne est cachée par des points.
+export function variantDetailRows(source: VariantHit, options: { showCost: boolean }): DetailRow[] {
   // Le client peut passer en ligne avant l'API : une réponse sans les nouveaux champs se lit comme « rien ».
   const hit = {
     ...source,
@@ -45,6 +47,6 @@ export function variantDetailRows(source: VariantHit): DetailRow[] {
 
   add("Stock", `${hit.stock} en stock`);
   add("Prix de vente", formatPrice(hit.price));
-  add("Prix d'achat", hit.purchasePrice === null ? "non renseigné" : formatPrice(hit.purchasePrice));
+  add("Prix d'achat", hit.purchasePrice === null ? "non renseigné" : options.showCost ? formatPrice(hit.purchasePrice) : MASKED_COST);
   return rows;
 }

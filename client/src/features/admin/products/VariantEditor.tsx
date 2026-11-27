@@ -7,6 +7,7 @@ import type { ProductKind } from "@/types/api";
 import { formatPrice } from "@/lib/format";
 import { useChoicesQuery } from "@/features/admin/api/choicesApi";
 import { type GiftOption } from "@/features/admin/api/productsApi";
+import { CostInput, useCosts } from "@/features/admin/costs/CostGuard";
 import ChoicePicker from "./ChoicePicker";
 import ColorPhotoField from "./ColorPhotoField";
 import ConditionSheet from "./ConditionSheet";
@@ -69,6 +70,8 @@ export default function VariantEditor({
   // Une affaire repassée en neuf n'a plus d'onglet État : on retombe sur le premier onglet.
   const tab = tabs.some((item) => item.id === chosenTab) ? chosenTab : "features";
   const margin = marginPercent(variant.price, variant.purchasePrice);
+  // Le prix d'achat et la marge restent cachés tant que le code n'est pas tapé (27/11) : un client peut voir l'écran.
+  const { visible: costsVisible } = useCosts();
   const color = lockedColor ?? variant.options.Couleur;
 
   function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
@@ -248,13 +251,8 @@ export default function VariantEditor({
               label="Prix d'achat (DA)"
               hint="Facultatif. Visible par l'admin seulement : sert au calcul du bénéfice."
             >
-              <input
-                id={id("purchase")}
-                className="input"
-                inputMode="numeric"
-                value={variant.purchasePrice}
-                onChange={(event) => set({ purchasePrice: event.target.value.replace(/\D/g, "") })}
-              />
+              {/* Caché sans le code, mais la valeur du formulaire reste : rien n'est effacé. */}
+              <CostInput id={id("purchase")} value={variant.purchasePrice} onChange={(purchasePrice) => set({ purchasePrice })} />
             </Field>
             <Field id={id("stock")} label={refurbished ? "Stock de cette occasion" : "Stock"}>
               <input
@@ -267,7 +265,7 @@ export default function VariantEditor({
             </Field>
           </div>
           {/* La marge se lit en direct : plus besoin de la calculer de tête. */}
-          {margin !== null ? (
+          {margin !== null && costsVisible ? (
             <p
               aria-live="polite"
               className={`rounded-lg border p-3 text-sm font-semibold ${margin < 0 ? "border-red bg-red-soft text-red" : "border-line bg-surface-2/40"}`}

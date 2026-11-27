@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useReservationSettingsQuery, useSaveReservationSettingsMutation, useSaveStoreHoursMutation, type ReservationSettings } from "@/features/admin/api/storeApi";
 import { useAdminRole } from "@/features/admin/AdminRoleContext";
+import CostPinSettings from "@/features/admin/costs/CostPinSettings";
 import EditDialog from "@/features/admin/products/EditDialog";
 import InvoiceSettingsSection from "@/features/admin/invoice/InvoiceSettingsForm";
 import { useStoreHoursQuery } from "@/features/orders/ordersApi";
@@ -31,7 +32,7 @@ const DAYS: [number, string][] = [
 export default function SettingsPage() {
   const { data, isError } = useStoreHoursQuery();
   // Chaque réglage est derrière un bouton, dans sa fenêtre (refonte du 18/11).
-  const [open, setOpen] = useState<"hours" | "invoice" | "reservation" | null>(null);
+  const [open, setOpen] = useState<"hours" | "invoice" | "reservation" | "costPin" | null>(null);
   // L'avance et le numéro BaridiMob : l'admin seul (l'API refuse les autres rôles).
   const isAdmin = useAdminRole() === "admin";
   const reservation = useReservationSettingsQuery(undefined, { skip: !isAdmin });
@@ -56,6 +57,14 @@ export default function SettingsPage() {
             onClick={() => setOpen("reservation")}
           />
         ) : null}
+        {/* Le code à 4 chiffres des prix d'achat (27/11) : l'admin seul le règle et le donne à ses employés. */}
+        {isAdmin ? (
+          <SettingButton
+            title="Code des prix d'achat"
+            text="Un code à 4 chiffres : sans lui, les prix d'achat, la marge et le bénéfice restent cachés à l'écran."
+            onClick={() => setOpen("costPin")}
+          />
+        ) : null}
         <SettingButton
           title="Facture"
           text="Raison sociale, RC, NIF, adresse et garantie imprimés sur la facture."
@@ -70,6 +79,11 @@ export default function SettingsPage() {
       {isAdmin ? (
         <EditDialog open={open === "reservation"} title="Réservation illimitée" size="sm" onClose={close}>
           {reservation.data ? <ReservationForm initial={reservation.data} onDone={close} /> : null}
+        </EditDialog>
+      ) : null}
+      {isAdmin ? (
+        <EditDialog open={open === "costPin"} title="Code des prix d'achat" size="sm" onClose={close}>
+          <CostPinSettings onDone={close} />
         </EditDialog>
       ) : null}
       {/* Ce qui s'imprime sur la facture (lot 6). */}

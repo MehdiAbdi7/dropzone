@@ -13,6 +13,7 @@ import {
   tradeInProblem,
   type TradeInDraft,
 } from "@/features/admin/exchange/exchange";
+import { Cost, useCosts } from "@/features/admin/costs/CostGuard";
 import EditDialog from "@/features/admin/products/EditDialog";
 import QuantityStepper from "@/features/cart/QuantityStepper";
 import { useCartPreviewQuery } from "@/features/orders/ordersApi";
@@ -59,6 +60,8 @@ type Props = { lines: TicketLine[]; setLines: Dispatch<SetStateAction<TicketLine
 
 export default function SaleTicket(props: Props) {
   const { lines, setLines } = props;
+  // Le prix d'achat est caché tant que le code n'est pas tapé (27/11) : le client regarde souvent l'écran du vendeur.
+  const { visible: costsVisible } = useCosts();
   const [createSale, saleState] = useCreateSaleMutation();
   const [createExchange, exchangeState] = useCreateExchangeMutation();
   const [createPhoneOrder, phoneState] = useCreatePhoneOrderMutation();
@@ -226,10 +229,17 @@ export default function SaleTicket(props: Props) {
                   <p className="pb-2 text-sm text-ink-muted">Catalogue : {formatPrice(line.listPrice)}</p>
                   {/* La limite de la négociation : ce que l'appareil a coûté au magasin. */}
                   <p className="pb-2 text-sm text-ink-muted">
-                    {line.hit.purchasePrice == null ? "Prix d'achat non renseigné" : `Prix d'achat : ${formatPrice(line.hit.purchasePrice)}`}
+                    {line.hit.purchasePrice == null ? (
+                      "Prix d'achat non renseigné"
+                    ) : (
+                      <>
+                        Prix d&apos;achat : <Cost>{formatPrice(line.hit.purchasePrice)}</Cost>
+                      </>
+                    )}
                   </p>
                 </div>
-                {belowPurchasePrice(line.unitPrice, line.hit.purchasePrice) ? (
+                {/* « Sous le prix d'achat » dirait au client jusqu'où négocier : l'alerte attend le code, comme le prix. */}
+                {costsVisible && belowPurchasePrice(line.unitPrice, line.hit.purchasePrice) ? (
                   <p role="status" className="text-sm font-semibold text-red">
                     Sous le prix d&apos;achat
                   </p>

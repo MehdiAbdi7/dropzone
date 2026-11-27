@@ -286,3 +286,18 @@ export const RouteIcon = (props: IconProps) => (
     <path d="M8.5 19H17a3.5 3.5 0 0 0 0-7H7a3.5 3.5 0 0 1 0-7h8.5" />
   </Icon>
 );
+
+// Un cadenas fermé (les prix d'achat sont cachés) et ouvert (ils sont visibles), pour le code du back-office.
+export const LockIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="4" y="11" width="16" height="10" rx="2" />
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+  </Icon>
+);
+
+export const UnlockIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="4" y="11" width="16" height="10" rx="2" />
+    <path d="M8 11V7a4 4 0 0 1 7.5-2" />
+  </Icon>
+);

@@ -24,6 +24,7 @@ import { stageAdminRouter, stageRouter } from "./modules/stage/stage.routes.js";
 import { purgeSoldMediaMiddleware } from "./middlewares/purgeSoldMedia.js";
 import { releaseReservationsMiddleware } from "./middlewares/releaseReservations.js";
 import { cashAdminRouter } from "./modules/cash/cash.routes.js";
+import { costPinAdminRouter } from "./modules/costPin/costPin.routes.js";
 import { deliveriesAdminRouter } from "./modules/deliveries/deliveries.routes.js";
 import { exchangeAdminRouter } from "./modules/exchanges/exchange.routes.js";
 import { historyAdminRouter } from "./modules/history/history.routes.js";
@@ -85,6 +86,7 @@ adminRouter.use(
   accountAdminRouter,
   stageAdminRouter,
   storeAdminRouter,
+  costPinAdminRouter,
   cashAdminRouter,
   historyAdminRouter,
   deliveriesAdminRouter,
