@@ -48,6 +48,15 @@ export const mediaOrderBodySchema = z.object({ ids: z.array(z.number().int().pos
 // La vidéo d'une variante (27/11) : le lien Instagram collé par le gérant. `instagramUrlOf` en vérifie la forme ensuite.
 export const storyBodySchema = z.object({ url: z.string().min(1).max(300) });
 
+// Un arrivage de neuf (27/11) : la quantité reçue et son prix d'achat unitaire (0 DA permis : un lot offert). Le prix
+// d'achat du stock actuel n'est demandé que s'il n'est pas connu (voir `addVariantArrival`).
+const arrivalPrice = z.number({ error: "Un prix en dinars" }).int({ error: "Un prix en dinars, sans virgule" }).min(0).max(10_000_000);
+export const arrivalBodySchema = z.object({
+  quantity: z.number({ error: "La quantité reçue" }).int({ error: "Un nombre entier" }).min(1).max(10_000),
+  unitCost: arrivalPrice,
+  currentUnitCost: arrivalPrice.optional(),
+});
+
 export const adminProductListQuerySchema = z.object({
   q: z.string().trim().min(1).max(100).optional(),
   status: z.enum(["draft", "published"]).optional(),

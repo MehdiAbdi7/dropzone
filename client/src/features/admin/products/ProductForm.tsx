@@ -8,7 +8,13 @@ import { CONDITION_LABELS, SPEC_SUGGESTIONS } from "@/config/catalog";
 import { useBrandsQuery, useCategoriesQuery, useMakersQuery, useModelsQuery, type DeviceModel } from "@/features/admin/api/catalogApi";
 import { useModelColorsQuery } from "@/features/admin/api/colorsApi";
 import { colorRows, colorsSummary } from "@/features/admin/catalog/modelCard";
-import { useCreateProductMutation, useGiftOptionsQuery, useUploadImageMutation, useUpdateProductMutation } from "@/features/admin/api/productsApi";
+import {
+  useCreateProductMutation,
+  useGiftOptionsQuery,
+  useUploadImageMutation,
+  useUpdateProductMutation,
+  type VariantArrivalResult,
+} from "@/features/admin/api/productsApi";
 import { usePalette } from "../usePalette";
 import EditDialog from "./EditDialog";
 import Breadcrumb, { type Crumb } from "@/features/shop/Breadcrumb";
@@ -178,6 +184,22 @@ export default function ProductForm({
     } catch {
       // L'erreur s'affiche dans la fenêtre, au-dessus du bouton.
     }
+  }
+
+  // Un arrivage de neuf est parti tout de suite à l'API (27/11) : le stock et le prix d'achat moyen de la variante ont changé
+  // là-bas. La fiche les reprend dans ses champs ET dans ce qu'elle croit enregistré : sinon fermer la fenêtre rendrait
+  // l'ancien stock, et « Enregistrer » le renverrait par-dessus l'arrivage.
+  function applyArrival(key: string, result: VariantArrivalResult) {
+    const update = (current: ProductDraft): ProductDraft => ({
+      ...current,
+      variants: current.variants.map((variant) =>
+        variant.key === key
+          ? { ...variant, stock: String(result.stock), purchasePrice: result.purchasePrice === null ? "" : String(result.purchasePrice) }
+          : variant,
+      ),
+    });
+    setDraft(update);
+    setSaved(update);
   }
 
   // Fermer une fenêtre sans enregistrer : en modification, on revient à ce que l'API a reçu.
@@ -526,6 +548,7 @@ export default function ProductForm({
             modelColors={models.find((model) => model.id === draft.deviceModelId)?.colors ?? []}
             modelId={isDevice ? draft.deviceModelId : null}
             productId={productId}
+            onArrived={(result) => applyArrival(editedVariant.key, result)}
             onChange={(next) => set({ variants: draft.variants.map((v) => (v.key === editedVariant.key ? next : v)) })}
             onRemove={() => {
               // Une variante pas encore enregistrée disparaît simplement ; une variante enregistrée demande confirmation,

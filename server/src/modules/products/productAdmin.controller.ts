@@ -12,7 +12,18 @@ import {
   replaceMainImage,
   updateProduct,
 } from "./productAdmin.service.js";
+import { addVariantArrival, listVariantArrivals, type ArrivalInput } from "./variantArrival.service.js";
 import { addVariantMedia, addVariantStory, removeVariantMedia, reorderVariantMedia } from "./variantMedia.service.js";
+
+// Un arrivage de neuf (27/11) : le stock et le prix d'achat moyen changent, une ligne entre au journal.
+export async function postVariantArrival(req: Request, res: Response) {
+  const variant = await addVariantArrival(Number(req.params.id), req.body as ArrivalInput, res.locals.user?.id);
+  res.status(201).json({ data: variant });
+}
+
+export async function getVariantArrivals(req: Request, res: Response) {
+  res.json({ data: await listVariantArrivals(Number(req.params.id)) });
+}
 
 export async function postVariantMedia(req: Request, res: Response) {
   res.status(201).json({ data: await addVariantMedia(Number(req.params.id), req.file) });
