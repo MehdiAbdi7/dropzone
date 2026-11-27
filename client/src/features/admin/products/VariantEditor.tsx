@@ -279,7 +279,7 @@ export default function VariantEditor({
 
         {refurbished ? (
           <div role="tabpanel" id={id("panel-state")} aria-labelledby={id("tab-state")} hidden={tab !== "state"}>
-            <ConditionSheet variant={variant} idOf={id} set={set} onChange={onChange} />
+            <ConditionSheet variant={variant} kind={kind} idOf={id} set={set} onChange={onChange} />
           </div>
         ) : null}
 

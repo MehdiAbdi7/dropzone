@@ -347,6 +347,9 @@ model ProductVariant {
   // Les pièces changées qui ne sont pas d'origine (CHECK : une partie de replacedParts).
   compatibleParts  String[]      @default([]) @map("compatible_parts")
   defects          String[]      @default([])
+  // Les points posés à la main sur le dessin de l'appareil (27/11) pour les pièces et les défauts qui ne sont pas dans les
+  // listes : { parts: { "Verre de l'écran": { x, y } }, defects: { … } }, dans le repère du dessin (220 sur 200).
+  diagramMarks     Json          @default("{}") @map("diagram_marks")
   limitations      String[]      @default([])
   // Avec (true) ou sans (false) sa boîte d'origine. Une affaire importée d'une annonce
   // qui n'en parle pas reste à null (« Boîte non précisée ») ; un neuf scellé est

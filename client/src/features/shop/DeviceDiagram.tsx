@@ -1,20 +1,13 @@
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
+import type { DiagramPoint } from "@/types/api";
+import { DIAGRAM_HEIGHT, DIAGRAM_WIDTH, DIAGRAM_ZONES, type DiagramKind, type Shape } from "./diagramShapes";
 import type { Zone } from "./diagramZones";
 
 // La « radiographie » d'un reconditionné : un dessin de l'appareil, en bleu les pièces
 // changées, un point rouge à l'endroit de chaque défaut. Décoratif pour un lecteur
 // d'écran (aria-hidden) : la légende en texte, à côté, porte l'information.
 // Les couleurs viennent des variables du thème : justes en clair et en sombre.
-
-type Kind = "phone" | "tablet" | "laptop" | "watch";
-
-// La forme d'une zone (null : rien à dessiner, seulement un point pour un défaut) et
-// l'endroit où poser la pastille rouge d'un défaut.
-type Shape =
-  | { type: "rect"; x: number; y: number; w: number; h: number; r: number; dashed?: boolean }
-  | { type: "circle"; cx: number; cy: number; r: number }
-  | null;
-type ZoneShape = { shape: Shape; dot: [number, number] };
+// La forme de chaque zone est dans diagramShapes.ts.
 
 type Style = { fill: string; fillOpacity?: number; stroke: string; strokeWidth: number };
 const NORMAL: Style = { fill: "var(--surface-2)", stroke: "var(--line)", strokeWidth: 1.5 };
@@ -41,97 +34,69 @@ function draw(shape: Shape, style: Style): ReactNode {
   return null;
 }
 
-const rect = (x: number, y: number, w: number, h: number, r: number, dashed = false): Shape => ({
-  type: "rect",
-  x,
-  y,
-  w,
-  h,
-  r,
-  dashed,
-});
-
-// Téléphone : la face à gauche (x 10 à 100), le dos à droite (x 120 à 210).
-// Dans l'ordre du dessin : les grandes zones d'abord, les petites par-dessus.
-const PHONE: [Zone, ZoneShape][] = [
-  ["screen", { shape: rect(16, 16, 78, 168, 9), dot: [55, 110] }],
-  ["speaker", { shape: rect(45, 11, 20, 3, 1.5), dot: [55, 12] }],
-  ["frontCamera", { shape: { type: "circle", cx: 55, cy: 26, r: 4 }, dot: [55, 26] }],
-  ["port", { shape: rect(47, 187, 16, 4, 2), dot: [55, 189] }],
-  ["frame", { shape: null, dot: [100, 70] }],
-  ["corners", { shape: null, dot: [16, 186] }],
-  ["back", { shape: rect(126, 16, 78, 168, 9), dot: [178, 150] }],
-  ["battery", { shape: rect(140, 68, 50, 92, 6, true), dot: [165, 114] }],
-  ["rearCamera", { shape: rect(130, 20, 36, 36, 9), dot: [148, 38] }],
-];
-
-// Tablette : les mêmes pièces que le téléphone, en proportions de tablette (3:4) ;
-// la face à gauche (x 6 à 104), le dos à droite (x 116 à 214).
-const TABLET: [Zone, ZoneShape][] = [
-  ["screen", { shape: rect(12, 41, 86, 118, 4), dot: [55, 100] }],
-  ["speaker", { shape: rect(7, 92, 2.5, 16, 1.2), dot: [8, 100] }],
-  ["frontCamera", { shape: { type: "circle", cx: 55, cy: 37.5, r: 2.5 }, dot: [55, 37.5] }],
-  ["port", { shape: rect(47, 162, 16, 3, 1.5), dot: [55, 164] }],
-  ["frame", { shape: null, dot: [104, 70] }],
-  ["corners", { shape: null, dot: [10, 162] }],
-  ["back", { shape: rect(121, 40, 88, 120, 10), dot: [178, 140] }],
-  ["battery", { shape: rect(138, 70, 54, 70, 6, true), dot: [165, 105] }],
-  ["rearCamera", { shape: rect(124, 43, 20, 20, 6), dot: [134, 53] }],
-];
-
-// PC portable ouvert : l'écran (capot) en haut, la base en bas.
-const LAPTOP: [Zone, ZoneShape][] = [
-  ["lid", { shape: rect(40, 8, 140, 96, 8), dot: [52, 18] }],
-  ["screen", { shape: rect(48, 16, 124, 80, 4), dot: [110, 56] }],
-  ["keyboard", { shape: rect(42, 116, 136, 34, 4), dot: [110, 133] }],
-  ["trackpad", { shape: rect(88, 156, 44, 26, 4), dot: [110, 169] }],
-  ["palmRest", { shape: null, dot: [60, 172] }],
-  ["battery", { shape: rect(140, 158, 34, 22, 3, true), dot: [157, 169] }],
-];
-
-// Montre : la face à gauche (bracelet, boîtier, écran), le dos du boîtier à droite.
-const WATCH: [Zone, ZoneShape][] = [
-  ["band", { shape: rect(38, 10, 44, 180, 14), dot: [60, 24] }],
-  ["case", { shape: rect(26, 52, 68, 96, 20), dot: [92, 100] }],
-  ["screen", { shape: rect(34, 60, 52, 80, 14), dot: [60, 100] }],
-  ["caseBack", { shape: { type: "circle", cx: 160, cy: 100, r: 40 }, dot: [160, 100] }],
-];
-
-const LAYOUTS: Record<Kind, { zones: [Zone, ZoneShape][]; outline: ReactNode }> = {
-  phone: {
-    zones: PHONE,
-    outline: (
-      <>
-        <rect x={10} y={8} width={90} height={186} rx={16} fill="var(--surface)" stroke="var(--ink-muted)" strokeWidth={2} />
-        <rect x={120} y={8} width={90} height={186} rx={16} fill="var(--surface)" stroke="var(--ink-muted)" strokeWidth={2} />
-      </>
-    ),
-  },
-  tablet: {
-    zones: TABLET,
-    outline: (
-      <>
-        <rect x={6} y={34} width={98} height={132} rx={12} fill="var(--surface)" stroke="var(--ink-muted)" strokeWidth={2} />
-        <rect x={116} y={34} width={98} height={132} rx={12} fill="var(--surface)" stroke="var(--ink-muted)" strokeWidth={2} />
-      </>
-    ),
-  },
-  laptop: {
-    zones: LAPTOP,
-    outline: <path d="M30 108 H190 L210 190 H10 Z" fill="var(--surface)" stroke="var(--ink-muted)" strokeWidth={2} />,
-  },
-  watch: {
-    zones: WATCH,
-    outline: <circle cx={160} cy={100} r={48} fill="var(--surface)" stroke="var(--ink-muted)" strokeWidth={2} />,
-  },
+const OUTLINES: Record<DiagramKind, ReactNode> = {
+  phone: (
+    <>
+      <rect x={10} y={8} width={90} height={186} rx={16} fill="var(--surface)" stroke="var(--ink-muted)" strokeWidth={2} />
+      <rect x={120} y={8} width={90} height={186} rx={16} fill="var(--surface)" stroke="var(--ink-muted)" strokeWidth={2} />
+    </>
+  ),
+  tablet: (
+    <>
+      <rect x={6} y={34} width={98} height={132} rx={12} fill="var(--surface)" stroke="var(--ink-muted)" strokeWidth={2} />
+      <rect x={116} y={34} width={98} height={132} rx={12} fill="var(--surface)" stroke="var(--ink-muted)" strokeWidth={2} />
+    </>
+  ),
+  laptop: <path d="M30 108 H190 L210 190 H10 Z" fill="var(--surface)" stroke="var(--ink-muted)" strokeWidth={2} />,
+  watch: <circle cx={160} cy={100} r={48} fill="var(--surface)" stroke="var(--ink-muted)" strokeWidth={2} />,
 };
 
-export default function DeviceDiagram({ kind, replaced, defects }: { kind: Kind; replaced: Zone[]; defects: Zone[] }) {
-  const { zones, outline } = LAYOUTS[kind];
+// Un dixième près : assez fin pour un clic, et des nombres courts à ranger.
+const tenth = (value: number) => Math.round(value * 10) / 10;
+
+export default function DeviceDiagram({
+  kind,
+  replaced,
+  defects,
+  replacedDots = [],
+  defectDots = [],
+  onPick,
+  activeDot,
+}: {
+  kind: DiagramKind;
+  replaced: Zone[];
+  defects: Zone[];
+  // Les points posés à la main (27/11) : un point bleu pour une pièce hors de toute zone, un point rouge pour un défaut.
+  replacedDots?: DiagramPoint[];
+  defectDots?: DiagramPoint[];
+  // Le back-office : le dessin devient cliquable pour placer un point (27/11). Sur la boutique, il reste décoratif.
+  onPick?: (point: DiagramPoint) => void;
+  // Le point en cours de placement, entouré pour le repérer parmi les autres.
+  activeDot?: DiagramPoint;
+}) {
+  const zones = DIAGRAM_ZONES[kind];
   const dotOf = (zone: Zone) => zones.find(([name]) => name === zone)?.[1].dot;
+
+  // La position du clic dans le repère du dessin : la place sur l'écran, ramenée aux 220 sur 200 du `viewBox`.
+  function pick(event: MouseEvent<SVGSVGElement>) {
+    if (!onPick) return;
+    const box = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - box.left) / box.width) * DIAGRAM_WIDTH;
+    const y = ((event.clientY - box.top) / box.height) * DIAGRAM_HEIGHT;
+    onPick({ x: tenth(Math.min(DIAGRAM_WIDTH, Math.max(0, x))), y: tenth(Math.min(DIAGRAM_HEIGHT, Math.max(0, y))) });
+  }
+
   return (
-    <svg viewBox="0 0 220 200" className="mx-auto h-auto w-full max-w-56" aria-hidden="true" focusable="false">
-      {outline}
+    <svg
+      viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
+      className={`mx-auto h-auto w-full max-w-56 ${onPick ? "cursor-crosshair" : ""}`}
+      // Décoratif sur la boutique ; cliquable dans le back-office, où il a un nom pour un lecteur d'écran.
+      {...(onPick
+        ? { role: "img", "aria-label": "Dessin de l'appareil : cliquer pour placer le point", onClick: pick }
+        : { "aria-hidden": true })}
+      focusable="false"
+    >
+      {OUTLINES[kind]}
       {zones.map(([zone, { shape }]) => (
         <g key={zone}>{draw(shape, replaced.includes(zone) ? CHANGED : NORMAL)}</g>
       ))}
@@ -141,6 +106,15 @@ export default function DeviceDiagram({ kind, replaced, defects }: { kind: Kind;
           <circle key={zone} cx={dot[0]} cy={dot[1]} r={6} fill="var(--red)" stroke="var(--surface)" strokeWidth={2} />
         ) : null;
       })}
+      {replacedDots.map((dot) => (
+        <circle key={`part-${dot.x}-${dot.y}`} cx={dot.x} cy={dot.y} r={6} fill="var(--blue)" stroke="var(--surface)" strokeWidth={2} />
+      ))}
+      {defectDots.map((dot) => (
+        <circle key={`defect-${dot.x}-${dot.y}`} cx={dot.x} cy={dot.y} r={6} fill="var(--red)" stroke="var(--surface)" strokeWidth={2} />
+      ))}
+      {activeDot ? (
+        <circle cx={activeDot.x} cy={activeDot.y} r={10} fill="none" stroke="var(--ink)" strokeWidth={2} strokeDasharray="3 2" />
+      ) : null}
     </svg>
   );
 }

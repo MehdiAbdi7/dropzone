@@ -13,6 +13,8 @@ import {
   variantBody,
   type VariantDraft,
   withCondition,
+  withDefects,
+  withMark,
   withReplacedParts,
 } from "./productDraft";
 
@@ -82,6 +84,51 @@ describe("withReplacedParts", () => {
     const next = withReplacedParts(deal(), ["Batterie"]);
     expect(next).toMatchObject({ replacedParts: ["Batterie"], partOrigins: { Batterie: "origine" } });
     expect(sent(next).compatibleParts).toEqual([]);
+  });
+});
+
+// Les points posés à la main sur le dessin (27/11), pour les pièces et les défauts ajoutés hors des listes.
+describe("Points sur le dessin", () => {
+  const placed = () => {
+    let variant = { ...deal(), replacedParts: ["Verre de l'écran", "Batterie"], defects: ["Bouton volume cassé"] };
+    variant = withMark(variant, "parts", "Verre de l'écran", { x: 55, y: 110 });
+    return withMark(variant, "defects", "Bouton volume cassé", { x: 100.5, y: 70 });
+  };
+
+  it("withMark pose le point d'une pièce ou d'un défaut, et le déplace en le reposant", () => {
+    const moved = withMark(placed(), "defects", "Bouton volume cassé", { x: 30, y: 40 });
+    expect(moved.diagramMarks.defects).toEqual({ "Bouton volume cassé": { x: 30, y: 40 } });
+    expect(moved.diagramMarks.parts).toEqual({ "Verre de l'écran": { x: 55, y: 110 } });
+  });
+
+  it("une variante vide n'a aucun point, et deux variantes ne partagent jamais le même objet", () => {
+    const a = emptyVariant();
+    const b = emptyVariant();
+    expect(a.diagramMarks).toEqual({ parts: {}, defects: {} });
+    expect(a.diagramMarks).not.toBe(b.diagramMarks);
+  });
+
+  it("décocher un défaut retire son point, et garde celui des pièces", () => {
+    const next = withDefects(placed(), []);
+    expect(next.diagramMarks).toEqual({ parts: { "Verre de l'écran": { x: 55, y: 110 } }, defects: {} });
+  });
+
+  it("décocher une pièce retire son point", () => {
+    const next = withReplacedParts(placed(), ["Batterie"]);
+    expect(next.diagramMarks.parts).toEqual({});
+    expect(next.diagramMarks.defects).toEqual({ "Bouton volume cassé": { x: 100.5, y: 70 } });
+  });
+
+  it("les points partent à l'API pour une occasion, seulement pour les valeurs cochées", () => {
+    const stale = { ...placed(), diagramMarks: { ...placed().diagramMarks, defects: { ...placed().diagramMarks.defects, "Vieux défaut": { x: 1, y: 1 } } } };
+    expect(sent(stale).diagramMarks).toEqual({
+      parts: { "Verre de l'écran": { x: 55, y: 110 } },
+      defects: { "Bouton volume cassé": { x: 100.5, y: 70 } },
+    });
+  });
+
+  it("un neuf scellé n'envoie aucun point", () => {
+    expect(sent({ ...placed(), condition: "new" }).diagramMarks).toEqual({ parts: {}, defects: {} });
   });
 });
 
