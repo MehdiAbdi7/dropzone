@@ -1,26 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { fileProblem, mediaPanelState, storyLink } from "./variantMedia";
 
-// Ce qu'on vérifie sur le fichier choisi, avant tout envoi (26/11) : un refus clair tout de suite vaut mieux qu'une minute
-// d'envoi pour apprendre que 60 Mo c'est trop. Mêmes plafonds que l'API : photo 4 Mo, vidéo 50 Mo.
+// Ce qu'on vérifie sur la photo choisie, avant tout envoi (26/11) : un refus clair tout de suite. Même plafond que l'API :
+// 4 Mo. Depuis le 27/11 la vidéo n'est plus un fichier : c'est le lien d'un Reel Instagram.
 describe("fileProblem", () => {
   const mo = 1024 * 1024;
 
-  it("accepte une photo, une vidéo dans les limites", () => {
+  it("accepte une photo dans la limite", () => {
     expect(fileProblem({ type: "image/jpeg", size: 3 * mo })).toBeNull();
-    expect(fileProblem({ type: "video/mp4", size: 49 * mo })).toBeNull();
-    expect(fileProblem({ type: "video/quicktime", size: 50 * mo })).toBeNull();
+    expect(fileProblem({ type: "image/webp", size: 4 * mo })).toBeNull();
   });
 
   it("refuse une photo de plus de 4 Mo, avec son plafond dans le message", () => {
     expect(fileProblem({ type: "image/png", size: 4 * mo + 1 })).toContain("4 Mo");
   });
 
-  it("refuse une vidéo de plus de 50 Mo, avec son plafond dans le message", () => {
-    expect(fileProblem({ type: "video/mp4", size: 50 * mo + 1 })).toContain("50 Mo");
-  });
-
-  it("refuse un autre type de fichier", () => {
+  it("refuse une vidéo ou un autre type de fichier, et renvoie vers le lien de Reel", () => {
+    expect(fileProblem({ type: "video/mp4", size: 1000 })).toContain("Reel");
     expect(fileProblem({ type: "application/pdf", size: 1000 })).toContain("JPEG");
     expect(fileProblem({ type: "image/gif", size: 1000 })).toContain("JPEG");
   });
@@ -55,12 +51,23 @@ describe("mediaPanelState", () => {
     });
   });
 
-  it("accepte encore une vidéo quand il y a 8 photos", () => {
-    expect(mediaPanelState({ id: 4, stock: 1 }, photos(8))).toMatchObject({ canAdd: true, reason: null });
+  it("accepte encore la vidéo quand il y a 8 photos, mais plus de photo", () => {
+    expect(mediaPanelState({ id: 4, stock: 1 }, photos(8))).toMatchObject({ canAdd: true, canAddPhoto: false, canAddVideo: true, reason: null });
   });
 
-  it("variante libre : on peut ajouter, sans raison de refus", () => {
-    expect(mediaPanelState({ id: 4, stock: 2 }, [])).toEqual({ canAdd: true, reason: null, photos: 0, videos: 0 });
+  it("accepte encore des photos quand la vidéo est là, mais plus de vidéo", () => {
+    expect(mediaPanelState({ id: 4, stock: 1 }, [{ kind: "video" }])).toMatchObject({ canAdd: true, canAddPhoto: true, canAddVideo: false });
+  });
+
+  it("variante libre : on peut tout ajouter, sans raison de refus", () => {
+    expect(mediaPanelState({ id: 4, stock: 2 }, [])).toEqual({
+      canAdd: true,
+      canAddPhoto: true,
+      canAddVideo: true,
+      reason: null,
+      photos: 0,
+      videos: 0,
+    });
   });
 });
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "../src/config/db.js";
-import { deleteFromCloudinary, getUploadedVideo, signVideoUpload, uploadToCloudinary } from "../src/config/cloudinary.js";
+import { deleteFromCloudinary, uploadToCloudinary } from "../src/config/cloudinary.js";
 import { createCatalog, loginAs, resetDb } from "./helpers.js";
 
 // Cloudinary simulé : rien ne quitte le PC.
@@ -9,26 +9,12 @@ vi.mock("../src/config/cloudinary.js", () => ({
   isCloudinaryReady: vi.fn(() => true),
   uploadToCloudinary: vi.fn(async () => ({ url: "https://x/photo.webp", publicId: "dropzone/variants/photo" })),
   deleteFromCloudinary: vi.fn(async () => undefined),
-  signVideoUpload: vi.fn((variantId: number) => ({
-    cloudName: "demo",
-    apiKey: "123",
-    timestamp: 1_700_000_000,
-    signature: "signature",
-    publicId: `dropzone/variants/v${variantId}-abc`,
-    format: "mp4",
-    allowedFormats: "mp4,mov,webm",
-    overwrite: "false",
-    transformation: "c_limit,q_auto,w_720",
-  })),
-  getUploadedVideo: vi.fn(async () => ({ url: "https://x/video/upload/story.mp4", bytes: 8_000_000, duration: 15, width: 720 })),
-  listVariantVideos: vi.fn(async () => []),
 }));
 
 // Les photos et la vidéo d'une variante, ajoutées depuis le back-office (26/11, demande de Mehdi : la vidéo de la story
-// Instagram d'un téléphone). Une photo traverse l'API (4 Mo au plus) ; une vidéo part directement du navigateur chez
-// Cloudinary : l'API signe l'envoi (identifiant choisi par elle, formats limités) puis enregistre ce que Cloudinary a
-// reçu, après avoir vérifié sa taille, sa durée et qu'elle a bien une image. Une variante épuisée refuse tout, les
-// plafonds sont de 8 photos et 1 vidéo.
+// Instagram d'un téléphone). Une photo traverse l'API (4 Mo au plus). La vidéo, depuis le 27/11, est le lien d'un Reel
+// Instagram : rien n'est envoyé, l'API vérifie la forme du lien et n'en garde que l'adresse propre. Une variante épuisée
+// refuse tout, les plafonds sont de 8 photos et 1 vidéo.
 beforeEach(async () => {
   vi.clearAllMocks();
   await resetDb();
@@ -41,10 +27,9 @@ const photo = { filename: "photo.png", contentType: "image/png" };
 const mediaOf = (id: number) => prisma.variantMedia.findMany({ where: { variantId: id }, orderBy: { position: "asc" } });
 const seed = (id: number, kind: "photo" | "video", position: number) =>
   prisma.variantMedia.create({ data: { variantId: id, kind, url: `https://x/${position}`, publicId: `pid-${id}-${kind}-${position}`, position } });
-// L'identifiant d'une vidéo envoyée pour la variante `id` : celui que l'API a signé (`v<id>-…`).
-const videoId = (id: number, suffix = "story") => `dropzone/variants/v${id}-${suffix}`;
-const registerVideo = (agent: Awaited<ReturnType<typeof loginAs>>["agent"], id: number, publicId = videoId(id)) =>
-  agent.post(`/admin/variants/${id}/media/video`).send({ publicId });
+const reelLink = "https://www.instagram.com/reel/DgPh-ZvNLX9/";
+const postReel = (agent: Awaited<ReturnType<typeof loginAs>>["agent"], id: number, url = reelLink) =>
+  agent.post(`/admin/variants/${id}/media/reel`).send({ url });
 
 describe("POST /admin/variants/:id/media (une photo)", () => {
   it("ajoute une photo à la dernière position", async () => {
@@ -100,7 +85,7 @@ describe("POST /admin/variants/:id/media (une photo)", () => {
     expect(response.status).toBe(400);
   });
 
-  it("refuse une vidéo envoyée par ici : elle part directement chez Cloudinary", async () => {
+  it("refuse un fichier vidéo : la vidéo est un lien de Reel Instagram", async () => {
     const id = await variantId("IP-R-DEAL");
     const { agent } = await loginAs("admin");
 
@@ -138,202 +123,78 @@ describe("POST /admin/variants/:id/media (une photo)", () => {
   });
 });
 
-describe("POST /admin/variants/:id/media/video-upload (signer l'envoi direct d'une vidéo)", () => {
-  it("rend les paramètres signés, avec un identifiant choisi par l'API et lié à la variante", async () => {
+describe("POST /admin/variants/:id/media/reel (la vidéo : le lien d'un Reel Instagram)", () => {
+  it("enregistre l'adresse propre du Reel, sans vignette à nous et sans rien envoyer à Cloudinary", async () => {
     const id = await variantId("IP-R-DEAL");
     const { agent } = await loginAs("admin");
 
-    const response = await agent.post(`/admin/variants/${id}/media/video-upload`).expect(200);
+    const response = await postReel(agent, id, `${reelLink}?igsh=abc123&utm_source=ig_web_copy_link`);
 
-    expect(signVideoUpload).toHaveBeenCalledWith(id);
-    expect(response.body.data).toEqual({
-      cloudName: "demo",
-      apiKey: "123",
-      timestamp: 1_700_000_000,
-      signature: "signature",
-      publicId: `dropzone/variants/v${id}-abc`,
-      format: "mp4",
-      allowedFormats: "mp4,mov,webm",
-      overwrite: "false",
-      transformation: "c_limit,q_auto,w_720",
-    });
+    expect(response.status).toBe(201);
+    expect(response.body.data).toMatchObject({ kind: "video", url: reelLink, posterUrl: null });
+    const [saved] = await mediaOf(id);
+    expect(saved).toMatchObject({ kind: "video", url: reelLink, publicId: null });
+    expect(uploadToCloudinary).not.toHaveBeenCalled();
   });
 
-  it("refuse de signer pour une variante épuisée", async () => {
-    const id = await variantId("IP-R-SOLD");
+  it("refuse une story, un autre site et ce qui n'est pas un lien (400), sans rien écrire", async () => {
+    const id = await variantId("IP-R-DEAL");
     const { agent } = await loginAs("admin");
 
-    await agent.post(`/admin/variants/${id}/media/video-upload`).expect(409);
-
-    expect(signVideoUpload).not.toHaveBeenCalled();
+    for (const url of ["https://www.instagram.com/stories/dropzone.officiel/3812345678901234567/", "https://youtu.be/abc", "pas un lien"]) {
+      expect((await postReel(agent, id, url)).status).toBe(400);
+    }
+    expect(await mediaOf(id)).toHaveLength(0);
   });
 
-  it("refuse de signer quand la variante a déjà sa vidéo", async () => {
+  it("refuse une variante épuisée (409)", async () => {
+    const id = await variantId("IP-R-DEAL");
+    await prisma.productVariant.update({ where: { id }, data: { stock: 0 } });
+    const { agent } = await loginAs("admin");
+
+    expect((await postReel(agent, id)).status).toBe(409);
+    expect(await mediaOf(id)).toHaveLength(0);
+  });
+
+  it("refuse une deuxième vidéo (409) et garde la première", async () => {
     const id = await variantId("IP-R-DEAL");
     await seed(id, "video", 0);
     const { agent } = await loginAs("admin");
 
-    await agent.post(`/admin/variants/${id}/media/video-upload`).expect(409);
+    expect((await postReel(agent, id)).status).toBe(409);
+    expect(await mediaOf(id)).toHaveLength(1);
+  });
 
-    expect(signVideoUpload).not.toHaveBeenCalled();
+  it("deux liens en même temps : une seule vidéo est gardée", async () => {
+    const id = await variantId("IP-R-DEAL");
+    const { agent } = await loginAs("admin");
+
+    const [first, second] = await Promise.all([postReel(agent, id), postReel(agent, id, "https://www.instagram.com/reel/AbCdE12345/")]);
+
+    expect([first.status, second.status].sort()).toEqual([201, 409]);
+    expect(await mediaOf(id)).toHaveLength(1);
   });
 
   it("répond 404 pour une variante inconnue et 403 à un vendeur", async () => {
     const admin = await loginAs("admin");
-    await admin.agent.post("/admin/variants/999999/media/video-upload").expect(404);
+    expect((await postReel(admin.agent, 999999)).status).toBe(404);
     const seller = await loginAs("seller");
-    await seller.agent.post(`/admin/variants/${await variantId("IP-R-DEAL")}/media/video-upload`).expect(403);
-  });
-});
-
-describe("POST /admin/variants/:id/media/video (enregistrer la vidéo envoyée)", () => {
-  it("enregistre la vidéo avec l'adresse que Cloudinary a reçue (jamais celle du navigateur) et sa vignette", async () => {
-    const id = await variantId("IP-R-DEAL");
-    const { agent } = await loginAs("admin");
-
-    const response = await registerVideo(agent, id);
-
-    expect(response.status).toBe(201);
-    expect(response.body.data).toMatchObject({ kind: "video", url: "https://x/video/upload/story.mp4", posterUrl: "https://x/video/upload/story.jpg" });
-    expect(getUploadedVideo).toHaveBeenCalledWith(videoId(id));
-    expect(await mediaOf(id)).toHaveLength(1);
-  });
-
-  it("refuse un identifiant hors du dossier des variantes, sans rien supprimer", async () => {
-    const id = await variantId("IP-R-DEAL");
-    const { agent } = await loginAs("admin");
-
-    const response = await registerVideo(agent, id, "dropzone/products/autre");
-
-    expect(response.status).toBe(400);
-    expect(getUploadedVideo).not.toHaveBeenCalled();
-    expect(deleteFromCloudinary).not.toHaveBeenCalled();
-  });
-
-  it("refuse l'identifiant signé pour une AUTRE variante, sans rien supprimer", async () => {
-    const id = await variantId("IP-R-DEAL");
-    const other = await variantId("IP-R-WIFI");
-    const { agent } = await loginAs("admin");
-
-    const response = await registerVideo(agent, id, videoId(other));
-
-    expect(response.status).toBe(400);
-    expect(getUploadedVideo).not.toHaveBeenCalled();
-    expect(deleteFromCloudinary).not.toHaveBeenCalled();
-  });
-
-  it("répond 404 quand Cloudinary n'a pas cette vidéo", async () => {
-    vi.mocked(getUploadedVideo).mockResolvedValueOnce(null);
-    const id = await variantId("IP-R-DEAL");
-    const { agent } = await loginAs("admin");
-
-    const response = await registerVideo(agent, id);
-
-    expect(response.status).toBe(404);
-    expect(await mediaOf(id)).toHaveLength(0);
-  });
-
-  it("refuse une vidéo de plus de 50 Mo (413) et la supprime de Cloudinary", async () => {
-    vi.mocked(getUploadedVideo).mockResolvedValueOnce({ url: "https://x/video/upload/gros.mp4", bytes: 50 * 1024 * 1024 + 1, duration: 15, width: 720 });
-    const id = await variantId("IP-R-DEAL");
-    const { agent } = await loginAs("admin");
-
-    const response = await registerVideo(agent, id, videoId(id, "gros"));
-
-    expect(response.status).toBe(413);
-    expect(await mediaOf(id)).toHaveLength(0);
-    expect(deleteFromCloudinary).toHaveBeenCalledWith(videoId(id, "gros"), "video");
-  });
-
-  it("refuse une vidéo de plus de 120 s (la compression à l'envoi cache sa vraie taille) et la supprime", async () => {
-    vi.mocked(getUploadedVideo).mockResolvedValueOnce({ url: "https://x/video/upload/longue.mp4", bytes: 9_000_000, duration: 300, width: 720 });
-    const id = await variantId("IP-R-DEAL");
-    const { agent } = await loginAs("admin");
-
-    const response = await registerVideo(agent, id, videoId(id, "longue"));
-
-    expect(response.status).toBe(413);
-    expect(await mediaOf(id)).toHaveLength(0);
-    expect(deleteFromCloudinary).toHaveBeenCalledWith(videoId(id, "longue"), "video");
-  });
-
-  it("refuse un fichier sans image (un son que Cloudinary range avec les vidéos) et le supprime", async () => {
-    vi.mocked(getUploadedVideo).mockResolvedValueOnce({ url: "https://x/video/upload/son.mp4", bytes: 1_000_000, duration: 20, width: 0 });
-    const id = await variantId("IP-R-DEAL");
-    const { agent } = await loginAs("admin");
-
-    const response = await registerVideo(agent, id, videoId(id, "son"));
-
-    expect(response.status).toBe(400);
-    expect(deleteFromCloudinary).toHaveBeenCalledWith(videoId(id, "son"), "video");
-  });
-
-  it("refuse une deuxième vidéo (409) et supprime la nouvelle de Cloudinary, pas l'ancienne", async () => {
-    const id = await variantId("IP-R-DEAL");
-    await seed(id, "video", 0);
-    const { agent } = await loginAs("admin");
-
-    const response = await registerVideo(agent, id, videoId(id, "deuxieme"));
-
-    expect(response.status).toBe(409);
-    expect(await mediaOf(id)).toHaveLength(1);
-    expect(deleteFromCloudinary).toHaveBeenCalledTimes(1);
-    expect(deleteFromCloudinary).toHaveBeenCalledWith(videoId(id, "deuxieme"), "video");
-  });
-
-  it("refuse une variante épuisée (409) et supprime la vidéo de Cloudinary", async () => {
-    const id = await variantId("IP-R-SOLD");
-    const { agent } = await loginAs("admin");
-
-    const response = await registerVideo(agent, id);
-
-    expect(response.status).toBe(409);
-    expect(deleteFromCloudinary).toHaveBeenCalledWith(videoId(id), "video");
-  });
-
-  it("refuse d'enregistrer deux fois la même vidéo, sans jamais supprimer celle qui est déjà enregistrée", async () => {
-    const id = await variantId("IP-R-DEAL");
-    const { agent } = await loginAs("admin");
-    await registerVideo(agent, id).expect(201);
-
-    const response = await registerVideo(agent, id);
-
-    expect(response.status).toBe(409);
-    expect(await mediaOf(id)).toHaveLength(1);
-    expect(deleteFromCloudinary).not.toHaveBeenCalled();
-  });
-
-  it("la même vidéo enregistrée deux fois en même temps : une ligne, et le fichier du gagnant n'est jamais supprimé", async () => {
-    const id = await variantId("IP-R-DEAL");
-    const { agent } = await loginAs("admin");
-
-    const [first, second] = await Promise.all([registerVideo(agent, id), registerVideo(agent, id)]);
-
-    expect([first.status, second.status].sort()).toEqual([201, 409]);
-    expect(await mediaOf(id)).toHaveLength(1);
-    expect(deleteFromCloudinary).not.toHaveBeenCalled();
-  });
-
-  it("deux enregistrements en même temps : une seule vidéo est gardée, l'autre est supprimée de Cloudinary", async () => {
-    const id = await variantId("IP-R-DEAL");
-    const { agent } = await loginAs("admin");
-
-    const [first, second] = await Promise.all([registerVideo(agent, id, videoId(id, "a")), registerVideo(agent, id, videoId(id, "b"))]);
-
-    expect([first.status, second.status].sort()).toEqual([201, 409]);
-    expect(await mediaOf(id)).toHaveLength(1);
-    expect(deleteFromCloudinary).toHaveBeenCalledTimes(1);
-    expect(deleteFromCloudinary).toHaveBeenCalledWith(expect.stringMatching(/^dropzone\/variants\/v\d+-[ab]$/), "video");
-  });
-
-  it("répond 403 à un vendeur", async () => {
-    const { agent } = await loginAs("seller");
-
-    await registerVideo(agent, await variantId("IP-R-DEAL")).expect(403);
+    expect((await postReel(seller.agent, await variantId("IP-R-DEAL"))).status).toBe(403);
   });
 });
 
 describe("DELETE /admin/variants/:id/media/:mediaId", () => {
+  it("retire un lien de Reel de la base sans rien demander à Cloudinary", async () => {
+    const id = await variantId("IP-R-DEAL");
+    const { agent } = await loginAs("admin");
+    const created = await postReel(agent, id);
+
+    await agent.delete(`/admin/variants/${id}/media/${created.body.data.id}`).expect(204);
+
+    expect(await mediaOf(id)).toHaveLength(0);
+    expect(deleteFromCloudinary).not.toHaveBeenCalled();
+  });
+
   it("retire le média de la base et de Cloudinary (une vidéo avec son type)", async () => {
     const id = await variantId("IP-R-DEAL");
     const item = await seed(id, "video", 0);
