@@ -18,13 +18,13 @@ export const uploadImage = multer({
 
 // Une photo d'une variante (26/11) : le champ s'appelle « media ». 4 Mo au plus, sous les 4,5 Mo que Vercel accepte pour
 // un corps de requête (la photo traverse sa réécriture vers l'API). Une vidéo ne passe pas par ici : c'est le lien d'un
-// Reel Instagram (voir `addVariantReel`).
+// Instagram (voir `addVariantStory`).
 export const uploadMedia = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 4 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, callback) => {
     if (!ACCEPTED.includes(file.mimetype)) {
-      callback(new AppError(400, "Formats acceptés : JPEG, PNG ou WebP (la vidéo est un lien de Reel Instagram)"));
+      callback(new AppError(400, "Formats acceptés : JPEG, PNG ou WebP (la vidéo est un lien Instagram)"));
       return;
     }
     callback(null, true);

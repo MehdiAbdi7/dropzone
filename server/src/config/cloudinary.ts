@@ -45,8 +45,8 @@ export function uploadToCloudinary(
   });
 }
 
-// Le dossier des photos d'une variante. La vidéo n'est plus envoyée chez Cloudinary (27/11) : c'est un lien de Reel
-// Instagram, car la lecture et la compression des vidéos consommaient trop de crédits du forfait gratuit.
+// Le dossier des photos d'une variante. La vidéo n'est plus envoyée chez Cloudinary (27/11) : c'est un lien
+// Instagram (story, Reel), car la lecture et la compression des vidéos consommaient trop de crédits du forfait gratuit.
 export const VARIANT_FOLDER = "dropzone/variants";
 
 // Les clés Cloudinary sont-elles réglées ? Sans elles, rien ne peut y être supprimé : l'appelant doit alors garder une trace

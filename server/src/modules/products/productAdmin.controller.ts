@@ -12,14 +12,14 @@ import {
   replaceMainImage,
   updateProduct,
 } from "./productAdmin.service.js";
-import { addVariantMedia, addVariantReel, removeVariantMedia, reorderVariantMedia } from "./variantMedia.service.js";
+import { addVariantMedia, addVariantStory, removeVariantMedia, reorderVariantMedia } from "./variantMedia.service.js";
 
 export async function postVariantMedia(req: Request, res: Response) {
   res.status(201).json({ data: await addVariantMedia(Number(req.params.id), req.file) });
 }
 
-export async function postVariantReel(req: Request, res: Response) {
-  res.status(201).json({ data: await addVariantReel(Number(req.params.id), (req.body as { url: string }).url) });
+export async function postVariantStory(req: Request, res: Response) {
+  res.status(201).json({ data: await addVariantStory(Number(req.params.id), (req.body as { url: string }).url) });
 }
 
 export async function deleteVariantMedia(req: Request, res: Response) {

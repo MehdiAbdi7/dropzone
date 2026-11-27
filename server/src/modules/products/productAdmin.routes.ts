@@ -12,7 +12,7 @@ import {
   postImage,
   postProduct,
   postVariantMedia,
-  postVariantReel,
+  postVariantStory,
   putMainImage,
   putVariantMediaOrder,
   removeProduct,
@@ -24,7 +24,7 @@ import {
   mediaOrderBodySchema,
   mediaParamsSchema,
   productBodySchema,
-  reelBodySchema,
+  storyBodySchema,
   variantSearchQuerySchema,
 } from "./product.schema.js";
 
@@ -34,8 +34,8 @@ export const productAdminRouter = Router();
 productAdminRouter.get("/gift-options", getGiftOptions);
 // Les photos et la vidéo d'une variante (26/11) : admin seulement, comme tout ce qui n'est pas dans la table des droits.
 productAdminRouter.post("/variants/:id/media", validate({ params: idParamsSchema }), uploadMedia, postVariantMedia);
-// La vidéo (27/11) : le lien d'un Reel Instagram, rien à envoyer.
-productAdminRouter.post("/variants/:id/media/reel", validate({ params: idParamsSchema, body: reelBodySchema }), postVariantReel);
+// La vidéo (27/11) : le lien Instagram, rien à envoyer.
+productAdminRouter.post("/variants/:id/media/story", validate({ params: idParamsSchema, body: storyBodySchema }), postVariantStory);
 productAdminRouter.put(
   "/variants/:id/media/order",
   validate({ params: idParamsSchema, body: mediaOrderBodySchema }),

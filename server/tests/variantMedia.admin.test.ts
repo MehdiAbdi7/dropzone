@@ -28,8 +28,8 @@ const mediaOf = (id: number) => prisma.variantMedia.findMany({ where: { variantI
 const seed = (id: number, kind: "photo" | "video", position: number) =>
   prisma.variantMedia.create({ data: { variantId: id, kind, url: `https://x/${position}`, publicId: `pid-${id}-${kind}-${position}`, position } });
 const reelLink = "https://www.instagram.com/reel/DgPh-ZvNLX9/";
-const postReel = (agent: Awaited<ReturnType<typeof loginAs>>["agent"], id: number, url = reelLink) =>
-  agent.post(`/admin/variants/${id}/media/reel`).send({ url });
+const postStory = (agent: Awaited<ReturnType<typeof loginAs>>["agent"], id: number, url = reelLink) =>
+  agent.post(`/admin/variants/${id}/media/story`).send({ url });
 
 describe("POST /admin/variants/:id/media (une photo)", () => {
   it("ajoute une photo à la dernière position", async () => {
@@ -123,12 +123,12 @@ describe("POST /admin/variants/:id/media (une photo)", () => {
   });
 });
 
-describe("POST /admin/variants/:id/media/reel (la vidéo : le lien d'un Reel Instagram)", () => {
+describe("POST /admin/variants/:id/media/story (la vidéo : le lien d'un Reel Instagram)", () => {
   it("enregistre l'adresse propre du Reel, sans vignette à nous et sans rien envoyer à Cloudinary", async () => {
     const id = await variantId("IP-R-DEAL");
     const { agent } = await loginAs("admin");
 
-    const response = await postReel(agent, id, `${reelLink}?igsh=abc123&utm_source=ig_web_copy_link`);
+    const response = await postStory(agent, id, `${reelLink}?igsh=abc123&utm_source=ig_web_copy_link`);
 
     expect(response.status).toBe(201);
     expect(response.body.data).toMatchObject({ kind: "video", url: reelLink, posterUrl: null });
@@ -137,12 +137,24 @@ describe("POST /admin/variants/:id/media/reel (la vidéo : le lien d'un Reel Ins
     expect(uploadToCloudinary).not.toHaveBeenCalled();
   });
 
-  it("refuse une story, un autre site et ce qui n'est pas un lien (400), sans rien écrire", async () => {
+  it("enregistre le lien d'une story, sans le suivi", async () => {
+    const id = await variantId("IP-R-DEAL");
+    const { agent } = await loginAs("admin");
+    const story = "https://www.instagram.com/stories/dropzone.officiel/3812345678901234567/";
+
+    const response = await postStory(agent, id, `${story}?igsh=abc123`);
+
+    expect(response.status).toBe(201);
+    expect(response.body.data).toMatchObject({ kind: "video", url: story, posterUrl: null });
+    expect((await mediaOf(id))[0]).toMatchObject({ url: story, publicId: null });
+  });
+
+  it("refuse un autre site et ce qui n'est pas un lien (400), sans rien écrire", async () => {
     const id = await variantId("IP-R-DEAL");
     const { agent } = await loginAs("admin");
 
-    for (const url of ["https://www.instagram.com/stories/dropzone.officiel/3812345678901234567/", "https://youtu.be/abc", "pas un lien"]) {
-      expect((await postReel(agent, id, url)).status).toBe(400);
+    for (const url of ["https://youtu.be/abc", "https://www.instagram.com/dropzone.officiel/", "pas un lien"]) {
+      expect((await postStory(agent, id, url)).status).toBe(400);
     }
     expect(await mediaOf(id)).toHaveLength(0);
   });
@@ -152,7 +164,7 @@ describe("POST /admin/variants/:id/media/reel (la vidéo : le lien d'un Reel Ins
     await prisma.productVariant.update({ where: { id }, data: { stock: 0 } });
     const { agent } = await loginAs("admin");
 
-    expect((await postReel(agent, id)).status).toBe(409);
+    expect((await postStory(agent, id)).status).toBe(409);
     expect(await mediaOf(id)).toHaveLength(0);
   });
 
@@ -161,7 +173,7 @@ describe("POST /admin/variants/:id/media/reel (la vidéo : le lien d'un Reel Ins
     await seed(id, "video", 0);
     const { agent } = await loginAs("admin");
 
-    expect((await postReel(agent, id)).status).toBe(409);
+    expect((await postStory(agent, id)).status).toBe(409);
     expect(await mediaOf(id)).toHaveLength(1);
   });
 
@@ -169,7 +181,7 @@ describe("POST /admin/variants/:id/media/reel (la vidéo : le lien d'un Reel Ins
     const id = await variantId("IP-R-DEAL");
     const { agent } = await loginAs("admin");
 
-    const [first, second] = await Promise.all([postReel(agent, id), postReel(agent, id, "https://www.instagram.com/reel/AbCdE12345/")]);
+    const [first, second] = await Promise.all([postStory(agent, id), postStory(agent, id, "https://www.instagram.com/reel/AbCdE12345/")]);
 
     expect([first.status, second.status].sort()).toEqual([201, 409]);
     expect(await mediaOf(id)).toHaveLength(1);
@@ -177,9 +189,9 @@ describe("POST /admin/variants/:id/media/reel (la vidéo : le lien d'un Reel Ins
 
   it("répond 404 pour une variante inconnue et 403 à un vendeur", async () => {
     const admin = await loginAs("admin");
-    expect((await postReel(admin.agent, 999999)).status).toBe(404);
+    expect((await postStory(admin.agent, 999999)).status).toBe(404);
     const seller = await loginAs("seller");
-    expect((await postReel(seller.agent, await variantId("IP-R-DEAL"))).status).toBe(403);
+    expect((await postStory(seller.agent, await variantId("IP-R-DEAL"))).status).toBe(403);
   });
 });
 
@@ -187,7 +199,7 @@ describe("DELETE /admin/variants/:id/media/:mediaId", () => {
   it("retire un lien de Reel de la base sans rien demander à Cloudinary", async () => {
     const id = await variantId("IP-R-DEAL");
     const { agent } = await loginAs("admin");
-    const created = await postReel(agent, id);
+    const created = await postStory(agent, id);
 
     await agent.delete(`/admin/variants/${id}/media/${created.body.data.id}`).expect(204);
 
