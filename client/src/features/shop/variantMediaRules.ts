@@ -13,6 +13,23 @@ export function mediaSummary(media: VariantMedia[] | undefined): string | null {
   return parts.join(" et ");
 }
 
+// La vidéo d'une variante est le lien d'un Reel Instagram (27/11), ou, pour une ancienne vidéo, un fichier Cloudinary. Un
+// Reel s'affiche avec le lecteur d'Instagram (une `<iframe>`), jamais avec une balise `<video>`.
+const REEL_PREFIX = "https://www.instagram.com/";
+
+export function isReelLink(url: string): boolean {
+  return url.startsWith(REEL_PREFIX);
+}
+
+// L'adresse du lecteur intégrable d'un Reel : celle du Reel suivie de `embed/`. Rend null pour toute autre adresse : on ne met
+// jamais dans une `<iframe>` ce qui n'est pas d'Instagram.
+export function reelEmbedUrl(url: string): string | null {
+  if (!isReelLink(url)) {
+    return null;
+  }
+  return `${url.split(/[?#]/)[0].replace(/\/?$/, "/")}embed/`;
+}
+
 // Les photos et la vidéo montrées sous le téléphone (26/11) : celles de la variante choisie. Jamais celles de la couleur :
 // plusieurs variantes peuvent partager une couleur, chacune a ses propres médias. Aucune variante choisie, un SKU inconnu ou
 // une réponse d'API sans le champ (mise en cache avant cette version) : rien à montrer.

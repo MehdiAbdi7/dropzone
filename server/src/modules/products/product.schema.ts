@@ -44,8 +44,8 @@ export const imageParamsSchema = idParamsSchema.extend({ imageId: z.coerce.numbe
 // Les médias d'une variante (26/11) : l'adresse d'un média, et la liste dans l'ordre voulu (8 photos et 1 vidéo au plus).
 export const mediaParamsSchema = idParamsSchema.extend({ mediaId: z.coerce.number().int().positive() });
 export const mediaOrderBodySchema = z.object({ ids: z.array(z.number().int().positive()).max(9) });
-// Une vidéo envoyée directement chez Cloudinary : le navigateur donne son identifiant (le reste vient de Cloudinary).
-export const registerVideoBodySchema = z.object({ publicId: z.string().min(1).max(200) });
+// La vidéo d'une variante (27/11) : le lien d'un Reel Instagram collé par le gérant. `reelUrlOf` en vérifie la forme ensuite.
+export const reelBodySchema = z.object({ url: z.string().min(1).max(300) });
 
 export const adminProductListQuerySchema = z.object({
   q: z.string().trim().min(1).max(100).optional(),

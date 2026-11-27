@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { VariantMedia } from "@/types/api";
+import { isReelLink, reelEmbedUrl } from "./variantMediaRules";
 
 // Les photos et la vidéo de la variante choisie, en miniatures sous le téléphone (26/11, demande de Mehdi : la vidéo de
 // la story Instagram d'un téléphone, à revoir, et d'autres photos du même exemplaire). Un clic ouvre le média en grand.
@@ -24,7 +25,14 @@ export default function VariantMediaStrip({ media, label }: { media: VariantMedi
               aria-label={item.kind === "video" ? "Voir la vidéo" : `Agrandir la photo ${index + 1}`}
               onClick={() => setOpen(index)}
             >
-              <Image src={item.posterUrl ?? item.url} alt="" fill unoptimized sizes="64px" />
+              {/* Un Reel n'a pas d'image à nous (Instagram porte la sienne, dans la fenêtre) : une tuile « Reel ». */}
+              {isReelLink(item.url) ? (
+                <span className="viewer-thumb-reel" aria-hidden="true">
+                  Reel
+                </span>
+              ) : (
+                <Image src={item.posterUrl ?? item.url} alt="" fill unoptimized sizes="64px" />
+              )}
               {item.kind === "video" ? (
                 <span className="viewer-thumb-play" aria-hidden="true">
                   ▶
@@ -94,7 +102,11 @@ function MediaLightbox({ media, start, label, onClose }: { media: VariantMedia[]
       <div className="media-stage" onClick={(event) => event.stopPropagation()}>
         {/* `key` : changer de média repart d'un lecteur neuf (la vidéo précédente ne continue pas en fond). */}
         {item.kind === "video" ? (
-          <StoryVideo key={item.url} item={item} />
+          isReelLink(item.url) ? (
+            <ReelEmbed key={item.url} url={item.url} label={label} />
+          ) : (
+            <StoryVideo key={item.url} item={item} />
+          )
         ) : (
           <Image key={item.url} src={item.url} alt={`${label}, photo ${index + 1}`} fill unoptimized sizes="460px" className="object-contain" />
         )}
@@ -114,6 +126,22 @@ function MediaLightbox({ media, start, label, onClose }: { media: VariantMedia[]
       </button>
     </div>,
     document.body,
+  );
+}
+
+// La vidéo d'un téléphone, c'est le Reel Instagram du magasin (27/11, décision de Mehdi : héberger des vidéos chez Cloudinary
+// consommait trop de crédits). Le lecteur d'Instagram est dans une `<iframe>` : elle n'existe que lorsque le client ouvre la
+// fenêtre (un clic), donc rien d'Instagram ne se charge avant. Le bandeau du haut laisse la place à la croix de la fenêtre,
+// et le lien du bas ouvre le Reel sur Instagram quand le lecteur ne s'affiche pas (Reel supprimé, compte passé en privé).
+function ReelEmbed({ url, label }: { url: string; label: string }) {
+  const embed = reelEmbedUrl(url);
+  return (
+    <div className="story-reel">
+      {embed ? <iframe src={embed} title={`Vidéo : ${label}`} allow="encrypted-media; fullscreen" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" /> : null}
+      <a className="story-reel-link" href={url} target="_blank" rel="noopener noreferrer">
+        Voir sur Instagram ↗
+      </a>
+    </div>
   );
 }
 

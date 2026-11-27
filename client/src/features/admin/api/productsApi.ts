@@ -1,6 +1,5 @@
 import { api } from "@/lib/api";
 import type { Condition, Options, Page, ProductKind, ProductStatus } from "@/types/api";
-import type { SignedVideoUpload } from "@/features/admin/products/videoUpload";
 import { data, imageForm, mediaForm } from "./shared";
 
 // Les produits du back-office : la liste, la fiche, les photos et les articles offerts.
@@ -141,15 +140,9 @@ const productsApi = api.injectEndpoints({
       transformResponse: data<AdminMedia>,
       invalidatesTags: (_result, _error, { productId }) => [{ type: "Products", id: productId }],
     }),
-    // Une vidéo part directement du navigateur chez Cloudinary (voir videoUpload.ts) : 1) l'API signe l'envoi ; 2) une fois
-    // envoyée, l'API enregistre la vidéo que Cloudinary a reçue. La fiche est relue aussi après un échec : l'enregistrement
-    // a pu réussir même si la réponse s'est perdue.
-    prepareVideoUpload: build.mutation<SignedVideoUpload, { variantId: number }>({
-      query: ({ variantId }) => ({ url: `/admin/variants/${variantId}/media/video-upload`, method: "POST" }),
-      transformResponse: data<SignedVideoUpload>,
-    }),
-    registerVideo: build.mutation<AdminMedia, { productId: number; variantId: number; publicId: string }>({
-      query: ({ variantId, publicId }) => ({ url: `/admin/variants/${variantId}/media/video`, method: "POST", body: { publicId } }),
+    // La vidéo (27/11) : le lien d'un Reel Instagram. Rien à envoyer : l'API vérifie le lien et n'en garde que l'adresse propre.
+    addVariantReel: build.mutation<AdminMedia, { productId: number; variantId: number; url: string }>({
+      query: ({ variantId, url }) => ({ url: `/admin/variants/${variantId}/media/reel`, method: "POST", body: { url } }),
       transformResponse: data<AdminMedia>,
       invalidatesTags: (_result, _error, { productId }) => [{ type: "Products", id: productId }],
     }),
@@ -179,8 +172,7 @@ export const {
   useDeleteImageMutation,
   useReplaceMainImageMutation,
   useAddVariantMediaMutation,
-  usePrepareVideoUploadMutation,
-  useRegisterVideoMutation,
+  useAddVariantReelMutation,
   useRemoveVariantMediaMutation,
   useReorderVariantMediaMutation,
   useGiftOptionsQuery,

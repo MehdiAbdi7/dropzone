@@ -1,50 +1,56 @@
 import type { Condition } from "@/types/api";
 
 // Les photos et la vidéo d'une variante dans le back-office (26/11), sans React : ce que l'onglet propose, et le lien
-// de la story Instagram. Les plafonds sont ceux de l'API (variantMedia.rules.ts).
+// de la story Instagram. Les plafonds sont ceux de l'API (variantMedia.rules.ts). Depuis le 27/11, la vidéo est le lien d'un
+// Reel Instagram : on propose donc deux choses séparées, une photo (un fichier) et la vidéo (un lien).
 export const MAX_PHOTOS = 8;
 export const MAX_VIDEOS = 1;
 
-type PanelState = { canAdd: boolean; reason: string | null; photos: number; videos: number };
+type PanelState = {
+  canAdd: boolean;
+  canAddPhoto: boolean;
+  canAddVideo: boolean;
+  reason: string | null;
+  photos: number;
+  videos: number;
+};
 
 // Peut-on ajouter un média, et sinon pourquoi ? Une variante pas encore enregistrée n'a pas d'identifiant pour recevoir
-// un fichier ; une variante épuisée est refusée par l'API (ses médias ne partiraient jamais, la suppression se
-// déclenche quand le stock baisse). On peut toujours retirer un média existant.
+// un média ; une variante épuisée est refusée par l'API (ses médias ne partiraient jamais, la suppression se
+// déclenche quand le stock baisse). Les photos et la vidéo ont chacune leur plafond : 8 photos n'empêchent pas d'ajouter la
+// vidéo. On peut toujours retirer un média existant.
 export function mediaPanelState(
   variant: { id?: number; stock: number | string },
   media: { kind: "photo" | "video" }[],
 ): PanelState {
   const photos = media.filter((item) => item.kind === "photo").length;
   const videos = media.filter((item) => item.kind === "video").length;
+  const none = { canAdd: false, canAddPhoto: false, canAddVideo: false, photos, videos };
   if (!variant.id) {
-    return { canAdd: false, reason: "Enregistre d'abord la fiche", photos, videos };
+    return { ...none, reason: "Enregistre d'abord la fiche" };
   }
   if (!(Number(variant.stock) > 0)) {
-    return { canAdd: false, reason: "Pas de médias sur une variante épuisée", photos, videos };
+    return { ...none, reason: "Pas de médias sur une variante épuisée" };
   }
-  if (photos >= MAX_PHOTOS && videos >= MAX_VIDEOS) {
-    return { canAdd: false, reason: `${MAX_PHOTOS} photos et la vidéo sont déjà là : retire-en une pour en ajouter`, photos, videos };
+  const canAddPhoto = photos < MAX_PHOTOS;
+  const canAddVideo = videos < MAX_VIDEOS;
+  if (!canAddPhoto && !canAddVideo) {
+    return { ...none, reason: `${MAX_PHOTOS} photos et la vidéo sont déjà là : retire-en une pour en ajouter` };
   }
-  return { canAdd: true, reason: null, photos, videos };
+  return { canAdd: true, canAddPhoto, canAddVideo, reason: null, photos, videos };
 }
 
 const MO = 1024 * 1024;
 export const PHOTO_MAX_MB = 4;
-export const VIDEO_MAX_MB = 50;
 
-// Ce qui ne va pas avec le fichier choisi, avant tout envoi (null si rien) : un refus clair tout de suite vaut mieux
-// qu'une minute d'envoi pour apprendre que c'est trop lourd. Mêmes plafonds que l'API : photo 4 Mo, vidéo 50 Mo.
+// Ce qui ne va pas avec la photo choisie, avant tout envoi (null si rien) : un refus clair tout de suite. Même plafond que
+// l'API : 4 Mo. La vidéo n'est plus un fichier (un lien de Reel).
 export function fileProblem(file: { type: string; size: number }): string | null {
-  const photo = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
-  const video = ["video/mp4", "video/quicktime", "video/webm"].includes(file.type);
-  if (!photo && !video) {
-    return "Formats acceptés : JPEG, PNG, WebP, MP4, MOV ou WebM";
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    return "Formats acceptés : JPEG, PNG ou WebP (la vidéo est un lien de Reel Instagram)";
   }
-  if (photo && file.size > PHOTO_MAX_MB * MO) {
+  if (file.size > PHOTO_MAX_MB * MO) {
     return `Photo trop lourde (${PHOTO_MAX_MB} Mo au maximum)`;
-  }
-  if (video && file.size > VIDEO_MAX_MB * MO) {
-    return `Vidéo trop lourde (${VIDEO_MAX_MB} Mo au maximum)`;
   }
   return null;
 }

@@ -1,56 +1,43 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import ProductImage from "@/components/ui/ProductImage";
 import { errorMessage } from "@/lib/errors";
 import {
   useAddVariantMediaMutation,
+  useAddVariantReelMutation,
   useAdminProductQuery,
-  usePrepareVideoUploadMutation,
-  useRegisterVideoMutation,
   useRemoveVariantMediaMutation,
   useReorderVariantMediaMutation,
 } from "@/features/admin/api/productsApi";
+import { isReelLink } from "@/features/shop/variantMediaRules";
 import type { VariantDraft } from "./productDraft";
-import { fileProblem, mediaPanelState, PHOTO_MAX_MB, storyLink, VIDEO_MAX_MB } from "./variantMedia";
-import { sendVideoToCloudinary } from "./videoUpload";
+import { fileProblem, mediaPanelState, PHOTO_MAX_MB, storyLink } from "./variantMedia";
 
 // L'onglet « Photos et vidéo » d'une variante (26/11, demande de Mehdi : la vidéo de la story Instagram d'un téléphone et
 // d'autres photos du même exemplaire). Ces médias appartiennent à CETTE variante, pas à la couleur du modèle : ils
-// s'ajoutent à la photo de la couleur et disparaissent dès que l'exemplaire est vendu. L'envoi part tout de suite, sans
-// attendre « Enregistrer » ; la liste vient de la fiche du produit (relue après chaque envoi).
+// s'ajoutent à la photo de la couleur et disparaissent dès que l'exemplaire est vendu. Les photos sont des fichiers ; la
+// vidéo, depuis le 27/11, est le lien d'un Reel Instagram (rien à envoyer : le site l'affiche avec le lecteur d'Instagram).
+// L'ajout part tout de suite, sans attendre « Enregistrer » ; la liste vient de la fiche du produit (relue après chaque ajout).
 export default function VariantMediaPanel({ variant, productId }: { variant: VariantDraft; productId?: number }) {
   const { data: product } = useAdminProductQuery(productId ?? 0, { skip: !productId });
   const [add, addState] = useAddVariantMediaMutation();
+  const [addReel, reelState] = useAddVariantReelMutation();
   const [remove, removeState] = useRemoveVariantMediaMutation();
   const [reorder, reorderState] = useReorderVariantMediaMutation();
-  const [prepare, prepareState] = usePrepareVideoUploadMutation();
-  const [register, registerState] = useRegisterVideoMutation();
   const [copied, setCopied] = useState(false);
-  // Progression de l'envoi d'une vidéo (null : aucun envoi), et le refus du fichier ou l'échec de l'envoi direct.
-  const [percent, setPercent] = useState<number | null>(null);
+  // Le lien de Reel en cours de saisie, et le refus de la photo choisie (trop lourde, mauvais format).
+  const [reelLink, setReelLink] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
-  const abort = useRef<AbortController | null>(null);
-  const uploading = percent !== null;
-
-  // Fermer ou recharger la page pendant l'envoi d'une vidéo le perd : le navigateur le fait confirmer.
-  useEffect(() => {
-    if (!uploading) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [uploading]);
 
   // La variante telle qu'elle est enregistrée : son stock réel est celui que l'API vérifie, pas celui qu'on tape.
   const saved = product?.variants.find((item) => item.id === variant.id);
   const media = saved?.media ?? [];
   const state = mediaPanelState({ id: variant.id, stock: saved?.stock ?? variant.stock }, media);
-  const busy =
-    addState.isLoading || removeState.isLoading || reorderState.isLoading || prepareState.isLoading || registerState.isLoading || percent !== null;
-  const failure = addState.error ?? removeState.error ?? reorderState.error ?? prepareState.error ?? registerState.error;
+  const busy = addState.isLoading || reelState.isLoading || removeState.isLoading || reorderState.isLoading;
+  const failure = addState.error ?? reelState.error ?? removeState.error ?? reorderState.error;
 
-  // Une photo traverse l'API ; une vidéo part directement chez Cloudinary (signée par l'API, enregistrée après l'envoi).
-  async function onFile(file: File) {
+  function onPhoto(file: File) {
     setProblem(null);
     const refused = fileProblem(file);
     if (refused) {
@@ -58,25 +45,21 @@ export default function VariantMediaPanel({ variant, productId }: { variant: Var
       return;
     }
     if (!productId || !variant.id) return;
-    if (!file.type.startsWith("video/")) {
-      add({ productId, variantId: variant.id, file });
-      return;
-    }
-    const controller = new AbortController();
-    abort.current = controller;
+    add({ productId, variantId: variant.id, file });
+  }
+
+  // Le lien est vérifié par l'API (un Reel ou une publication Instagram, pas une story) ; on vide le champ seulement si c'est accepté.
+  async function onReel() {
+    setProblem(null);
+    if (!productId || !variant.id || !reelLink.trim()) return;
     try {
-      setPercent(0);
-      const signed = await prepare({ variantId: variant.id }).unwrap();
-      const publicId = await sendVideoToCloudinary(file, signed, setPercent, controller.signal);
-      await register({ productId, variantId: variant.id, publicId }).unwrap();
-    } catch (error) {
-      // Un envoi annulé par le gérant n'est pas une erreur à lui montrer.
-      setProblem(controller.signal.aborted ? null : error instanceof Error ? error.message : errorMessage(error));
-    } finally {
-      abort.current = null;
-      setPercent(null);
+      await addReel({ productId, variantId: variant.id, url: reelLink.trim() }).unwrap();
+      setReelLink("");
+    } catch {
+      // L'erreur de l'API s'affiche plus bas (`failure`) ; le lien reste dans le champ pour le corriger.
     }
   }
+
   const color = variant.options.Couleur;
   const link = saved && product && color ? storyLink({ slug: product.slug, color, condition: variant.condition, sku: variant.sku }) : null;
 
@@ -110,10 +93,25 @@ export default function VariantMediaPanel({ variant, productId }: { variant: Var
           {media.map((item, index) => (
             <li key={item.id} className="space-y-2">
               <div className="relative aspect-square overflow-hidden rounded-lg border border-line bg-surface-2">
-                <ProductImage src={item.posterUrl ?? item.url} alt={item.kind === "video" ? "Vidéo de la variante" : "Photo de la variante"} sizes="160px" />
-                {item.kind === "video" ? (
-                  <span className="absolute left-2 top-2 rounded bg-black/70 px-2 py-0.5 text-xs font-semibold text-white">▶ Vidéo</span>
-                ) : null}
+                {isReelLink(item.url) ? (
+                  // Un Reel n'a pas d'image à nous : une tuile qui ouvre le Reel sur Instagram pour le revoir.
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute inset-0 grid place-items-center bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-center text-sm font-semibold text-white"
+                  >
+                    ▶ Reel Instagram
+                    <span className="block text-xs font-normal opacity-80">Ouvrir ↗</span>
+                  </a>
+                ) : (
+                  <>
+                    <ProductImage src={item.posterUrl ?? item.url} alt={item.kind === "video" ? "Vidéo de la variante" : "Photo de la variante"} sizes="160px" />
+                    {item.kind === "video" ? (
+                      <span className="absolute left-2 top-2 rounded bg-black/70 px-2 py-0.5 text-xs font-semibold text-white">▶ Vidéo</span>
+                    ) : null}
+                  </>
+                )}
               </div>
               <div className="flex gap-1">
                 <button type="button" className="btn btn-outline btn-small" aria-label="Avancer d'une place" disabled={busy || index === 0} onClick={() => move(index, -1)}>
@@ -133,7 +131,10 @@ export default function VariantMediaPanel({ variant, productId }: { variant: Var
                   className="btn btn-outline btn-small"
                   disabled={busy}
                   onClick={() => {
-                    if (productId && variant.id && window.confirm("Retirer ce média ? Il sera supprimé de façon définitive.")) {
+                    const message = isReelLink(item.url)
+                      ? "Retirer ce lien ? Le Reel reste sur Instagram, il ne sera plus montré sur le site."
+                      : "Retirer ce média ? Il sera supprimé de façon définitive.";
+                    if (productId && variant.id && window.confirm(message)) {
                       remove({ productId, variantId: variant.id, mediaId: item.id });
                     }
                   }}
@@ -147,33 +148,52 @@ export default function VariantMediaPanel({ variant, productId }: { variant: Var
       ) : null}
 
       <div className="space-y-2">
-        <label className={`btn btn-secondary btn-small ${state.canAdd && !busy ? "cursor-pointer" : "pointer-events-none opacity-50"}`}>
-          {percent !== null ? `Envoi de la vidéo… ${percent} %` : addState.isLoading ? "Envoi…" : "Ajouter une photo ou la vidéo"}
+        <label className={`btn btn-secondary btn-small ${state.canAddPhoto && !busy ? "cursor-pointer" : "pointer-events-none opacity-50"}`}>
+          {addState.isLoading ? "Envoi…" : "Ajouter une photo"}
           <input
             type="file"
-            accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
+            accept="image/jpeg,image/png,image/webp"
             className="sr-only"
-            disabled={!state.canAdd || busy}
+            disabled={!state.canAddPhoto || busy}
             onChange={(event) => {
               const file = event.target.files?.[0];
               event.target.value = "";
-              if (file) void onFile(file);
+              if (file) onPhoto(file);
             }}
           />
         </label>
-        {percent !== null ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <progress className="block h-2 w-full max-w-xs" max={100} value={percent} aria-label="Progression de l'envoi" />
-            <button type="button" className="btn btn-outline btn-small" onClick={() => abort.current?.abort()}>
-              Annuler l&apos;envoi
-            </button>
-          </div>
-        ) : null}
-        {state.reason ? <p className="text-xs text-ink-muted">{state.reason}</p> : null}
+        <p className="text-xs text-ink-muted">Photos de {PHOTO_MAX_MB} Mo au plus (JPEG, PNG ou WebP).</p>
+      </div>
+
+      <div className="space-y-2">
+        <label className="label" htmlFor={`reel-${variant.id ?? "new"}`}>
+          Vidéo : lien du Reel Instagram
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            id={`reel-${variant.id ?? "new"}`}
+            className="input min-w-0 flex-1 text-sm"
+            inputMode="url"
+            placeholder="https://www.instagram.com/reel/…"
+            value={reelLink}
+            disabled={!state.canAddVideo || busy}
+            onChange={(event) => setReelLink(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void onReel();
+              }
+            }}
+          />
+          <button type="button" className="btn btn-secondary btn-small" disabled={!state.canAddVideo || busy || !reelLink.trim()} onClick={() => void onReel()}>
+            {reelState.isLoading ? "Ajout…" : "Ajouter le Reel"}
+          </button>
+        </div>
         <p className="text-xs text-ink-muted">
-          Photos de {PHOTO_MAX_MB} Mo au plus, vidéo de {VIDEO_MAX_MB} Mo au plus (MP4, MOV ou WebM). La vidéo part directement chez Cloudinary :
-          ne ferme pas la page pendant l&apos;envoi.
+          Publie la vidéo en Reel sur le compte du magasin (public), copie son lien et colle-le ici. Une story ne peut pas s&apos;afficher sur le
+          site.
         </p>
+        {state.reason ? <p className="text-xs text-ink-muted">{state.reason}</p> : null}
       </div>
 
       {link ? (

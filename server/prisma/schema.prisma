@@ -389,7 +389,9 @@ model VariantMedia {
   kind      MediaKind
   url       String
   // Unique (26/11) : deux médias avec le même fichier Cloudinary, et supprimer l'un supprimerait le fichier de l'autre.
-  publicId  String         @unique @map("public_id")
+  // Vide (27/11) pour la vidéo, qui est le lien d'un Reel Instagram : aucun fichier chez Cloudinary à supprimer. Postgres
+  // laisse plusieurs lignes vides malgré l'unicité.
+  publicId  String?        @unique @map("public_id")
   position  Int            @default(0)
   createdAt DateTime       @default(now()) @map("created_at")
 

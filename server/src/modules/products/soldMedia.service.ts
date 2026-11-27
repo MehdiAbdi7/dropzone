@@ -1,5 +1,5 @@
 import type { Prisma } from "../../generated/prisma/client.js";
-import { deleteFromCloudinary, isCloudinaryReady, listVariantVideos } from "../../config/cloudinary.js";
+import { deleteFromCloudinary, isCloudinaryReady } from "../../config/cloudinary.js";
 import { prisma } from "../../config/db.js";
 
 // Ce qui se vend se supprime (26/11, décision de Mehdi, précisée le même jour) : les photos et la vidéo d'une variante
@@ -54,9 +54,14 @@ export async function retryMediaOrphans(): Promise<number> {
   return done;
 }
 
-// Les fichiers des variantes visées : à lire AVANT de les supprimer, après il n'y a plus de lignes pour les retrouver.
+// Les fichiers des variantes visées : à lire AVANT de les supprimer, après il n'y a plus de lignes pour les retrouver. Un
+// lien de Reel (sans `publicId`) n'a pas de fichier chez nous : il n'est pas rendu.
 export async function mediaFilesOfVariants(where: Prisma.ProductVariantWhereInput): Promise<MediaFile[]> {
-  return prisma.variantMedia.findMany({ where: { variant: where }, select: { publicId: true, kind: true } });
+  const rows = await prisma.variantMedia.findMany({
+    where: { variant: where, publicId: { not: null } },
+    select: { publicId: true, kind: true },
+  });
+  return rows.flatMap((row) => (row.publicId ? [{ publicId: row.publicId, kind: row.kind }] : []));
 }
 
 // Supprime les médias de toute variante VENDUE ; rend le nombre de lignes supprimées. Les lignes partent d'abord (la
@@ -69,7 +74,7 @@ export async function mediaFilesOfVariants(where: Prisma.ProductVariantWhereInpu
 // Une seule requête qui supprime ET rend les fichiers (`DELETE … RETURNING`) : deux balayages en même temps ne
 // détruisent jamais deux fois le même fichier, et un stock remis entre la lecture et la suppression est impossible.
 export async function purgeSoldMedia(): Promise<number> {
-  const sold = await prisma.$queryRaw<MediaFile[]>`
+  const sold = await prisma.$queryRaw<{ publicId: string | null; kind: MediaFile["kind"] }[]>`
     DELETE FROM variant_media m
     USING product_variants v
     WHERE m.variant_id = v.id
@@ -81,48 +86,14 @@ export async function purgeSoldMedia(): Promise<number> {
           AND o.status IN ('pending', 'confirmed', 'shipped', 'delivered', 'reserved')
       )
     RETURNING m.public_id AS "publicId", m.kind::text AS "kind"`;
-  await destroyMediaFiles(sold);
+  // Les liens de Reel (sans fichier) partent avec leur ligne : il n'y a rien à supprimer chez Cloudinary.
+  await destroyMediaFiles(sold.flatMap((row) => (row.publicId ? [{ publicId: row.publicId, kind: row.kind }] : [])));
   return sold.length;
 }
 
-// Une vidéo part directement du navigateur chez Cloudinary : si l'onglet se ferme avant l'enregistrement, elle reste là
-// sans aucune ligne en base. Supprime les vidéos des variantes vieilles de plus d'une heure que rien ne désigne (ni un
-// média, ni une trace à réessayer). Une vidéo plus récente est peut-être en cours d'envoi : on n'y touche pas.
-const STRAY_AFTER_MS = 3_600_000;
-// Garde-fou : une vidéo perdue est un accident rare (un onglet fermé), jamais plus de quelques-unes d'un coup. Si le balayage
-// en voit davantage, c'est que cette instance ne regarde pas la même base que Cloudinary (une copie de développement avec les
-// vraies clés Cloudinary et une base jetable verrait TOUTES les vidéos de production comme perdues) : elle n'en supprime
-// aucune et le dit dans les logs.
-const MAX_STRAY_PER_SWEEP = 5;
-
-export async function sweepStrayVideos(): Promise<number> {
-  const old = (await listVariantVideos()).filter((video) => Date.now() - video.createdAt.getTime() > STRAY_AFTER_MS);
-  if (old.length === 0) {
-    return 0;
-  }
-  const publicIds = old.map((video) => video.publicId);
-  const [registered, traced] = await Promise.all([
-    prisma.variantMedia.findMany({ where: { publicId: { in: publicIds } }, select: { publicId: true } }),
-    prisma.mediaOrphan.findMany({ where: { publicId: { in: publicIds } }, select: { publicId: true } }),
-  ]);
-  const known = new Set([...registered, ...traced].map((item) => item.publicId));
-  const stray = old.filter((video) => !known.has(video.publicId));
-  if (stray.length > MAX_STRAY_PER_SWEEP) {
-    console.error(
-      `[médias] ${stray.length} vidéos sans média en base : trop pour un accident, rien n'est supprimé (cette instance lit-elle la bonne base ?)`,
-    );
-    return 0;
-  }
-  await destroyMediaFiles(stray.map((video) => ({ publicId: video.publicId, kind: "video" as const })));
-  return stray.length;
-}
-
-// Un tour de balayage : supprime les médias des variantes vendues, réessaie les fichiers restés chez Cloudinary, puis
-// retrouve les vidéos envoyées mais jamais enregistrées. Chaque étape est indépendante : une base ou un Cloudinary en panne
-// pour l'une ne doit pas empêcher les autres.
-export async function sweepMedia(
-  steps: (() => Promise<unknown>)[] = [purgeSoldMedia, retryMediaOrphans, sweepStrayVideos],
-): Promise<void> {
+// Un tour de balayage : supprime les médias des variantes vendues, puis réessaie les fichiers restés chez Cloudinary. Chaque
+// étape est indépendante : une base ou un Cloudinary en panne pour l'une ne doit pas empêcher l'autre.
+export async function sweepMedia(steps: (() => Promise<unknown>)[] = [purgeSoldMedia, retryMediaOrphans]): Promise<void> {
   for (const step of steps) {
     try {
       await step();
@@ -132,8 +103,8 @@ export async function sweepMedia(
   }
 }
 
-// Le filet de sécurité : un chemin qui baisse le stock sans passer par l'API (un script d'import) est rattrapé ici, les
-// fichiers que Cloudinary n'a pas pu supprimer sont réessayés, les vidéos jamais enregistrées sont retrouvées. Un premier
+// Le filet de sécurité : un chemin qui baisse le stock sans passer par l'API (un script d'import) est rattrapé ici, et les
+// fichiers que Cloudinary n'a pas pu supprimer sont réessayés. Un premier
 // tour peu après le démarrage (chaque redéploiement remet le compteur d'une heure à zéro), puis un tour par heure.
 // Rend de quoi arrêter les deux minuteries.
 export function startMediaSweep(

@@ -1,6 +1,26 @@
 import { describe, expect, it } from "vitest";
 import type { Variant } from "@/types/api";
-import { mediaSummary, shownMedia } from "./variantMediaRules";
+import { isReelLink, mediaSummary, reelEmbedUrl, shownMedia } from "./variantMediaRules";
+
+// La vidéo d'un téléphone est le lien d'un Reel Instagram (27/11) : le site le met dans une `<iframe>` d'Instagram, mais
+// jamais une autre adresse (une `<iframe>` ne doit pointer que vers Instagram).
+describe("isReelLink et reelEmbedUrl", () => {
+  it("reconnaît un Reel Instagram et construit l'adresse du lecteur intégrable", () => {
+    expect(isReelLink("https://www.instagram.com/reel/DgPh-ZvNLX9/")).toBe(true);
+    expect(reelEmbedUrl("https://www.instagram.com/reel/DgPh-ZvNLX9/")).toBe("https://www.instagram.com/reel/DgPh-ZvNLX9/embed/");
+  });
+
+  it("ajoute la barre finale si elle manque et jette ce qui suit l'adresse", () => {
+    expect(reelEmbedUrl("https://www.instagram.com/reel/DgPh-ZvNLX9")).toBe("https://www.instagram.com/reel/DgPh-ZvNLX9/embed/");
+    expect(reelEmbedUrl("https://www.instagram.com/reel/DgPh-ZvNLX9/?igsh=abc")).toBe("https://www.instagram.com/reel/DgPh-ZvNLX9/embed/");
+  });
+
+  it("une ancienne vidéo Cloudinary ou une autre adresse n'est pas un Reel et n'a pas de lecteur Instagram", () => {
+    expect(isReelLink("https://res.cloudinary.com/x/video/upload/a.mp4")).toBe(false);
+    expect(reelEmbedUrl("https://res.cloudinary.com/x/video/upload/a.mp4")).toBeNull();
+    expect(reelEmbedUrl("https://instagram.com.evil.example/reel/x/")).toBeNull();
+  });
+});
 
 // Ce que le client lit sur la fiche d'un appareil d'occasion : combien de photos et s'il y a une vidéo, avant d'ouvrir.
 describe("mediaSummary", () => {
