@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useCreatePartMutation, usePartCategoriesQuery, useUpdatePartMutation, type PartRow } from "@/features/admin/api/partsApi";
+import { CostInput } from "@/features/admin/costs/CostGuard";
 import EditDialog from "@/features/admin/products/EditDialog";
 import { errorMessage } from "@/lib/errors";
 import { categoryChoiceProblem, partDraftProblem, partEditProblem, partPatchBody } from "./partsView";
@@ -88,7 +89,7 @@ export function PartForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm font-semibold">
           <span className="label">Prix d&apos;achat (DA)</span>
-          <input className="input" inputMode="numeric" value={purchase} onChange={(event) => setPurchase(digits(event.target.value))} />
+          <CostInput value={purchase} onChange={setPurchase} />
         </label>
         <label className="block text-sm font-semibold">
           <span className="label">Prix de vente (DA)</span>

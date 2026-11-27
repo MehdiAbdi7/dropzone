@@ -1,5 +1,6 @@
 import { PAYMENT_METHOD_LABELS } from "@/config/catalog";
 import type { History } from "@/features/admin/api/historyApi";
+import { Cost } from "@/features/admin/costs/CostGuard";
 import { formatPrice } from "@/lib/format";
 import type { PaymentMethod } from "@/types/api";
 import { summaryWords, type HistoryView } from "./historyView";
@@ -53,7 +54,9 @@ export default function HistorySummary({ totals, tab }: { totals: History["total
 
       <div className="card space-y-3 p-5">
         <h2 className="text-sm font-semibold text-ink-muted">Bénéfice</h2>
-        <p className="font-display text-3xl font-bold tabular-nums">{formatPrice(totals.profit)}</p>
+        <p className="font-display text-3xl font-bold tabular-nums">
+          <Cost label="Bénéfice">{formatPrice(totals.profit)}</Cost>
+        </p>
         <p className="text-sm text-ink-muted">
           {totals.unknownCostSales > 0
             ? `${totals.unknownCostSales} vente${totals.unknownCostSales > 1 ? "s" : ""} sans prix d'achat, non comptée${

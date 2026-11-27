@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useAddArrivalMutation, type PartRow } from "@/features/admin/api/partsApi";
+import { Cost, CostInput } from "@/features/admin/costs/CostGuard";
 import EditDialog from "@/features/admin/products/EditDialog";
 import { errorMessage } from "@/lib/errors";
 import { formatPrice } from "@/lib/format";
@@ -44,7 +45,7 @@ function ArrivalForm({ part, onDone }: { part: PartRow; onDone: () => void }) {
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <p className="text-sm text-ink-muted">
-        En stock : {part.stock} · prix d&apos;achat actuel : {formatPrice(part.purchasePrice)}
+        En stock : {part.stock} · prix d&apos;achat actuel : <Cost>{formatPrice(part.purchasePrice)}</Cost>
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block text-sm font-semibold">
@@ -53,12 +54,12 @@ function ArrivalForm({ part, onDone }: { part: PartRow; onDone: () => void }) {
         </label>
         <label className="block text-sm font-semibold">
           <span className="label">Prix d&apos;achat unitaire (DA)</span>
-          <input className="input" inputMode="numeric" value={unitCost} onChange={(event) => setUnitCost(digits(event.target.value))} />
+          <CostInput value={unitCost} onChange={setUnitCost} />
         </label>
       </div>
       {average !== null ? (
         <p className="rounded-md bg-surface-2 p-3 text-sm font-semibold" aria-live="polite">
-          Après l&apos;arrivage : {part.stock + arrival.quantity} en stock, prix d&apos;achat moyen {formatPrice(average)}.
+          Après l&apos;arrivage : {part.stock + arrival.quantity} en stock, prix d&apos;achat moyen <Cost>{formatPrice(average)}</Cost>.
         </p>
       ) : null}
       {problem ? <p className="text-sm text-ink-muted">{problem}</p> : null}

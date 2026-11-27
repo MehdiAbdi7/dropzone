@@ -43,6 +43,10 @@ export const ACCESS_RULES: AccessRule[] = [
   // Une commande reçue par téléphone (19/11) : le vendeur la saisit, la page Commandes reste au responsable.
   { method: "POST", path: "/orders", min: "seller" },
   { method: "GET", path: "/variants", min: "seller", showsCost: true },
+  // Le code des prix d'achat (27/11) : tout le back-office sait si un code existe et peut le taper, y compris le technicien
+  // (qui voit le prix des pièces). Le régler ou le retirer reste à l'admin : ces routes ne sont pas dans la table.
+  { method: "GET", path: "/cost-pin", roles: ["technician", "seller", "order_manager"] },
+  { method: "POST", path: "/cost-pin/verify", roles: ["technician", "seller", "order_manager"] },
   { method: "GET", path: "/invoice-settings", min: "seller" },
   { method: "PUT", path: "/invoice-settings", min: "seller" },
   { method: "PUT", path: "/store/hours", min: "seller" },

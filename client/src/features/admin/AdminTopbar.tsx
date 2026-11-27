@@ -11,6 +11,7 @@ import { playTestChime } from "@/lib/orderAlertSound";
 import { useHydrated } from "@/lib/useHydrated";
 import { canAccess, homeFor } from "./access";
 import { useCashDialog } from "./cash/CashDialogContext";
+import CostToggle from "./costs/CostToggle";
 import { initialsOf, roleLabel, todayLabel } from "./adminIdentity";
 import { useAdminRole } from "./AdminRoleContext";
 import { ACCOUNT_HREF, MENU_SECTIONS, SETTINGS_HREF, isVisibleTo, sectionFor } from "./navConfig";
@@ -80,6 +81,8 @@ export default function AdminTopbar({ firstName, lastName }: { firstName: string
             <CashIcon size={18} />
           </button>
         ) : null}
+        {/* Le cadenas des prix d'achat (27/11) : il n'existe que si l'admin a réglé un code. */}
+        <CostToggle />
         <ThemeToggle />
         <div ref={menuRef} className="relative">
           <button

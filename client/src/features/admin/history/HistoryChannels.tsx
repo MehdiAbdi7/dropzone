@@ -1,4 +1,5 @@
 import type { History, HistoryChannelType } from "@/features/admin/api/historyApi";
+import { Cost } from "@/features/admin/costs/CostGuard";
 import { formatPrice } from "@/lib/format";
 
 // Les noms des onglets de l'historique : ce que chaque canal rapporte au gérant.
@@ -27,7 +28,7 @@ export default function HistoryChannels({ channels, onPick }: { channels: Histor
               <span className="text-sm font-semibold text-ink-muted">{CHANNEL_LABELS[type]}</span>
               <span className="block font-display text-2xl font-bold tabular-nums">{formatPrice(channel.collected)}</span>
               <span className="block text-sm text-ink-muted">
-                {channel.salesCount} vente{channel.salesCount > 1 ? "s" : ""} · bénéfice {formatPrice(channel.profit)}
+                {channel.salesCount} vente{channel.salesCount > 1 ? "s" : ""} · bénéfice <Cost label="Bénéfice">{formatPrice(channel.profit)}</Cost>
               </span>
               {channel.returnFees > 0 ? (
                 <span className="block text-sm text-ink-muted">dont frais de retour payés : −{formatPrice(channel.returnFees)}</span>

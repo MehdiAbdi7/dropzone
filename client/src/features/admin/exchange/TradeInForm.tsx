@@ -5,6 +5,7 @@ import { KIND_LABELS, OPTION_FIELDS } from "@/config/catalog";
 import { formatPrice } from "@/lib/format";
 import type { ProductKind } from "@/types/api";
 import { useChoicesQuery } from "@/features/admin/api/choicesApi";
+import { CostInput } from "@/features/admin/costs/CostGuard";
 import ChoicePicker from "@/features/admin/products/ChoicePicker";
 import ConditionSheet from "@/features/admin/products/ConditionSheet";
 import ModelPicker from "@/features/admin/products/ModelPicker";
@@ -126,12 +127,12 @@ export default function TradeInForm({
             />
             <p className="text-sm">Repris à {formatPrice(price)} (ce prix ne change pas).</p>
             <Field id={id("repair")} label="Frais de remise en état (DA)" hint="Laissez vide s'il n'y en a pas.">
-              <input
+              {/* Un coût : caché sans le code des prix d'achat (27/11). Le prix de reprise, lui, est celui que le client entend. */}
+              <CostInput
                 id={id("repair")}
                 className="input w-full sm:w-64"
-                inputMode="numeric"
                 value={draft.repairCost}
-                onChange={(event) => onChange({ ...draft, repairCost: event.target.value.replace(/\D/g, "") })}
+                onChange={(repairCost) => onChange({ ...draft, repairCost })}
               />
             </Field>
           </section>

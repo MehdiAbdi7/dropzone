@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { usePublishTradeInMutation, useUpdateTradeInMutation, type TradeInRow } from "@/features/admin/api/exchangeApi";
+import { Cost } from "@/features/admin/costs/CostGuard";
 import EditDialog from "@/features/admin/products/EditDialog";
 import { errorMessage } from "@/lib/errors";
 import { formatOptions, formatPrice } from "@/lib/format";
@@ -40,7 +41,11 @@ export default function TradeInCard({ tradeIn, onPublished }: { tradeIn: TradeIn
         <p className="font-display text-lg font-bold tabular-nums">Repris à {formatPrice(tradeIn.price)}</p>
       </div>
       <p className="text-sm">{sheetSummary(tradeIn.sheet) || "Fiche d'état sans détail"}</p>
-      {tradeIn.repairCost > 0 ? <p className="text-sm font-semibold">Remise en état : {formatPrice(tradeIn.repairCost)}</p> : null}
+      {tradeIn.repairCost > 0 ? (
+        <p className="text-sm font-semibold">
+          Remise en état : <Cost label="Frais de remise en état">{formatPrice(tradeIn.repairCost)}</Cost>
+        </p>
+      ) : null}
       <p className="text-sm text-ink-muted">
         Échange n° {tradeIn.dailyNumber} du {dayLabel(tradeIn.businessDate)} · {tradeIn.customerName} · {tradeIn.customerPhone}
       </p>
@@ -141,8 +146,12 @@ function PublishForm({ tradeIn, onDone }: { tradeIn: TradeInRow; onDone: () => v
   return (
     <form onSubmit={submit} className="space-y-4">
       <p className="text-sm text-ink-muted">
-        Prix d&apos;achat de l&apos;occasion : {formatPrice(cost)}
-        {tradeIn.repairCost > 0 ? ` (reprise ${formatPrice(tradeIn.price)} + remise en état ${formatPrice(tradeIn.repairCost)})` : ""}.
+        Prix d&apos;achat de l&apos;occasion :{" "}
+        <Cost>
+          {formatPrice(cost)}
+          {tradeIn.repairCost > 0 ? ` (reprise ${formatPrice(tradeIn.price)} + remise en état ${formatPrice(tradeIn.repairCost)})` : ""}
+        </Cost>
+        .
       </p>
       <label className="block text-sm font-semibold">
         <span className="label">Prix de revente (DA)</span>
@@ -156,7 +165,7 @@ function PublishForm({ tradeIn, onDone }: { tradeIn: TradeInRow; onDone: () => v
       </label>
       {margin ? (
         <p className="text-sm font-semibold" aria-live="polite">
-          {margin}
+          <Cost label="Marge">{margin}</Cost>
         </p>
       ) : null}
       {error ? (

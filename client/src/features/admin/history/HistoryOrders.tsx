@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { STATUS_LABELS } from "@/config/catalog";
 import type { History, HistoryOrder } from "@/features/admin/api/historyApi";
+import { Cost } from "@/features/admin/costs/CostGuard";
 import { invoiceAvailable } from "@/features/admin/invoice/invoiceRules";
 import { dailyLabel } from "@/features/admin/orders/orderLabels";
 import { formatPrice } from "@/lib/format";
@@ -45,7 +46,9 @@ export default function HistoryOrders({ orders, truncated, onOpen }: { orders: H
               <span className="shrink-0 text-right text-sm">
                 <span className="block font-bold">{formatPrice(order.total)}</span>
                 <span className="block text-ink-muted">payé {formatPrice(order.paid)}</span>
-                <span className="block text-ink-muted">bénéfice {profitText(order)}</span>
+                <span className="block text-ink-muted">
+                  bénéfice <Cost label="Bénéfice">{profitText(order)}</Cost>
+                </span>
                 {order.discount !== 0 ? (
                   <span className="block text-ink-muted">
                     {order.discount > 0 ? "réduction" : "supplément"} {formatPrice(Math.abs(order.discount))}
@@ -100,7 +103,9 @@ export default function HistoryOrders({ orders, truncated, onOpen }: { orders: H
                 <td>{STATUS_LABELS[order.status]}</td>
                 <td className="tabular-nums">{formatPrice(order.total)}</td>
                 <td className="tabular-nums">{formatPrice(order.paid)}</td>
-                <td className="tabular-nums">{profitText(order)}</td>
+                <td className="tabular-nums">
+                  <Cost label="Bénéfice">{profitText(order)}</Cost>
+                </td>
                 <td className="tabular-nums">{order.discount === 0 ? "—" : discountText(order.discount)}</td>
                 <td>
                   {/* Voir ou télécharger (impression ou PDF) : possible selon le type et l'étape de la commande. */}

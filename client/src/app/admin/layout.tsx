@@ -10,6 +10,7 @@ import AdminSidebar from "@/features/admin/AdminSidebar";
 import AdminSubNav from "@/features/admin/AdminSubNav";
 import AdminTopbar from "@/features/admin/AdminTopbar";
 import { CashDialogProvider } from "@/features/admin/cash/CashDialogContext";
+import { CostGuardProvider } from "@/features/admin/costs/CostGuard";
 import { getCurrentUser } from "@/lib/serverFetch";
 
 export const metadata: Metadata = {
@@ -29,6 +30,8 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
 
   return (
     <AdminRoleProvider role={user.role}>
+      {/* Le verrou des prix d'achat (27/11) : tout le back-office cache ce qui révèle un prix d'achat tant que le code n'est pas tapé. */}
+      <CostGuardProvider>
       <CashDialogProvider>
       {/* `admin-skin` (styles/admin.css) : l'habillage du back-office, sans toucher à celui de la boutique. */}
       <div className="admin-skin flex flex-1 flex-col lg:flex-row">
@@ -56,6 +59,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
         </div>
       </div>
       </CashDialogProvider>
+      </CostGuardProvider>
     </AdminRoleProvider>
   );
 }

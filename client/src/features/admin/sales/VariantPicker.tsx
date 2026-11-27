@@ -5,6 +5,7 @@ import { CONDITION_LABELS } from "@/config/catalog";
 import ProductImage from "@/components/ui/ProductImage";
 import { useCategoriesQuery } from "@/features/admin/api/catalogApi";
 import { useSearchVariantsQuery } from "@/features/admin/api/salesApi";
+import { Cost } from "@/features/admin/costs/CostGuard";
 import { formatOptions, formatPrice } from "@/lib/format";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import type { OnTicket, VariantHit } from "./ticket";
@@ -252,7 +253,9 @@ export function VariantCard({
           </span>
           {/* La limite de la négociation : visible au vendeur, jamais sur le site. */}
           {hit.purchasePrice != null ? (
-            <span className="text-xs text-ink-muted">Achat : {formatPrice(hit.purchasePrice)}</span>
+            <span className="text-xs text-ink-muted">
+              Achat : <Cost>{formatPrice(hit.purchasePrice)}</Cost>
+            </span>
           ) : null}
         </span>
       </div>

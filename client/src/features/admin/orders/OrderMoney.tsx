@@ -1,5 +1,6 @@
 import { PAYMENT_METHOD_LABELS } from "@/config/catalog";
 import type { AdminOrder } from "@/features/admin/api/ordersApi";
+import { Cost } from "@/features/admin/costs/CostGuard";
 import { formatDate, formatPrice } from "@/lib/format";
 
 const KIND_LABELS: Record<string, string> = {
@@ -26,7 +27,7 @@ export default function OrderMoney({ order }: { order: AdminOrder }) {
         <div className="flex justify-between gap-3">
           <dt className="text-ink-muted">Bénéfice</dt>
           <dd className="font-semibold tabular-nums">
-            {order.profit === null ? "inconnu (prix d'achat manquant)" : formatPrice(order.profit)}
+            <Cost label="Bénéfice">{order.profit === null ? "inconnu (prix d'achat manquant)" : formatPrice(order.profit)}</Cost>
           </dd>
         </div>
         {/* La réduction accordée par rapport au prix catalogue (lot 3), quand il y en a une. */}

@@ -1,4 +1,4 @@
-import { rateLimit } from "express-rate-limit";
+import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 import { env } from "../config/env.js";
 
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
@@ -18,3 +18,13 @@ export const orderLimiter = rateLimit({ ...common, windowMs: FIFTEEN_MINUTES, li
 export const trackLimiter = rateLimit({ ...common, windowMs: FIFTEEN_MINUTES, limit: 20 });
 // Changer son email ou son mot de passe redonne le mot de passe actuel : on limite les essais, comme au login.
 export const accountLimiter = rateLimit({ ...common, windowMs: FIFTEEN_MINUTES, limit: 10 });
+// Le code à 4 chiffres des prix d'achat (27/11) : 10 000 possibilités seulement, donc cinq essais ratés par quart d'heure.
+// Compté par utilisateur connecté et non par adresse (tous les employés partagent le wifi du magasin : l'erreur de l'un ne
+// doit pas bloquer les autres). Un bon code ne compte pas (`skipSuccessfulRequests`) : seul un essai raté use la limite.
+export const costPinLimiter = rateLimit({
+  ...common,
+  windowMs: FIFTEEN_MINUTES,
+  limit: 5,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req, res) => `user:${res.locals.user?.id ?? ipKeyGenerator(req.ip ?? "")}`,
+});

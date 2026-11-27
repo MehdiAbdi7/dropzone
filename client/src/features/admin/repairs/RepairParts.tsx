@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { usePartCategoriesQuery, usePartsQuery } from "@/features/admin/api/partsApi";
+import { Cost } from "@/features/admin/costs/CostGuard";
 import { activeCategoryId, visibleParts } from "@/features/admin/parts/partsView";
 import {
   useAddRepairPartMutation,
@@ -36,13 +37,19 @@ export default function RepairParts({ repair }: { repair: RepairDetail }) {
             line={line}
             editable={editable}
             priceText={
-              caps.seesClientMoney && caps.seesPartCost
-                ? `Achat ${formatPrice(line.unitCost)} · Vente ${formatPrice(line.unitPrice)} l'unité`
-                : caps.seesClientMoney
-                  ? `${formatPrice(line.unitPrice)} l'unité`
-                  : caps.seesPartCost
-                    ? `Achat : ${formatPrice(line.unitCost)} l'unité`
-                    : ""
+              caps.seesClientMoney && caps.seesPartCost ? (
+                <>
+                  Achat <Cost>{formatPrice(line.unitCost)}</Cost> · Vente {formatPrice(line.unitPrice)} l&apos;unité
+                </>
+              ) : caps.seesClientMoney ? (
+                `${formatPrice(line.unitPrice)} l'unité`
+              ) : caps.seesPartCost ? (
+                <>
+                  Achat : <Cost>{formatPrice(line.unitCost)}</Cost> l&apos;unité
+                </>
+              ) : (
+                ""
+              )
             }
             busy={updating.isLoading || removing.isLoading}
             onQuantity={(quantity) => update({ id: repair.id, lineId: line.id, quantity })}
@@ -70,7 +77,7 @@ function Line({
 }: {
   line: RepairLine;
   editable: boolean;
-  priceText: string;
+  priceText: ReactNode;
   busy: boolean;
   onQuantity: (quantity: number) => void;
   onRemove: () => void;
@@ -176,7 +183,14 @@ function AddPart({ repair }: { repair: RepairDetail }) {
                     {searching ? <p className="text-xs font-semibold uppercase tracking-wide text-blue-ink">{categoryName(part.categoryId)}</p> : null}
                     <p className="font-semibold leading-snug">{part.name}</p>
                     <p className="text-xs text-ink-muted">
-                      {seesCost ? `Achat ${formatPrice(part.purchasePrice)} · Vente ${formatPrice(part.salePrice)}` : formatPrice(part.salePrice)} ·{" "}
+                      {seesCost ? (
+                        <>
+                          Achat <Cost>{formatPrice(part.purchasePrice)}</Cost> · Vente {formatPrice(part.salePrice)}
+                        </>
+                      ) : (
+                        formatPrice(part.salePrice)
+                      )}{" "}
+                      ·{" "}
                       {part.stock === 0 ? <span className="font-bold text-red">Épuisée</span> : `${part.stock} en stock`}
                       {inRepair > 0 ? ` · déjà ${inRepair} dans la fiche` : ""}
                     </p>
